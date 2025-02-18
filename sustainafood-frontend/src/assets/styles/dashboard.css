@@ -1,0 +1,107 @@
+/* Ajuster la disposition du Dashboard */
+.dashboard-container {
+    display: flex;
+}
+
+/* Espace autour du contenu */
+.content {
+    flex-grow: 1;
+    padding: 20px; /* ✅ Augmenter l'espacement */
+}
+
+/* Ajuster la hauteur et l'espacement des cartes de stats */
+.card-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px; /* ✅ Augmenter l’espace entre les cartes */
+    flex-wrap: wrap;
+    margin-top: 30px; /* ✅ Ajoute un espace entre la navbar et les cartes */
+}
+
+/* Taille des cartes */
+.card {
+    width: 200px;
+    height: 120px;
+    padding: 12px;
+    font-size: 14px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Ajuster l’espace entre le graphique et le statut des projets */
+.charts-status-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin-top: 20px; /* ✅ Augmente l’espace entre cartes et graphiques */
+    align-items: flex-start;
+}
+
+/* Ajuster la taille des graphiques */
+.charts-container {
+    width: 60%;
+}
+
+/* Ajuster la taille de la section Project Status */
+.project-status {
+    width: 35%;
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Ajuster la hauteur et la disposition des items de statut */
+.project-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+
+/* Ajuster les barres de progression */
+.progress-container {
+    height: 5px;
+    width: 100px;
+    border-radius: 3px;
+    background: #e0e0e0;
+}
+
+/* Texte des pourcentages */
+.progress-text {
+    font-size: 12px;
+    width: 30px;
+    text-align: right;
+}
+
+/* Ajuster la barre de navigation */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: white;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Barre de recherche plus compacte */
+.search-container {
+    width: 200px;
+    padding: 5px 10px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+}
+
+/* Icône de recherche */
+.search-container input {
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 5px;
+    width: 100%;
+    
+}

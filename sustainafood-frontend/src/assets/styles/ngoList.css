@@ -1,0 +1,57 @@
+/* Style de la page ONG */
+.ngo-list {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 1200px;
+    margin: 20px auto;
+}
+
+/* Titre */
+.ngo-list h3 {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+/* Tableau */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Photo des ONG */
+.ngo-photo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+/* Boutons actions */
+.view-btn, .edit-btn, .delete-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 16px;
+    margin-right: 8px;
+}
+
+.view-btn:hover {
+    color: blue;
+}
+
+.edit-btn:hover {
+    color: green;
+}
+
+.delete-btn:hover {
+    color: red;
+}

@@ -1,0 +1,73 @@
+/* Style général de la navbar */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 10px 20px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Barre de recherche */
+.search-container {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 5px 10px;
+    background: #f9f9f9;
+}
+
+.search-container input {
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 5px;
+    width: 200px;
+}
+
+.search-icon {
+    color: #666;
+    cursor: pointer;
+}
+
+/* Espace entre les icônes */
+.navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Augmente l'espacement */
+}
+
+/* Style des icônes */
+.icon {
+    font-size: 22px;
+    cursor: pointer;
+    transition: 0.3s ease-in-out;
+}
+
+/* Couleurs des icônes */
+.globe { color: #3498db; }  /* Bleu */
+.moon { color: #f1c40f; }   /* Jaune */
+.bell { color: #e74c3c; }   /* Rouge */
+.user { color: #2c3e50; }   /* Bleu foncé */
+
+/* Effet au survol */
+.icon:hover {
+    transform: scale(1.1);
+}
+
+/* Style de la notification */
+.notification-container {
+    position: relative;
+}
+
+.badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: red;
+    color: white;
+    font-size: 12px;
+    padding: 3px 6px;
+    border-radius: 50%;
+}

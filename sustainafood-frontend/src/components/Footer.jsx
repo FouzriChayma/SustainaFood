@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn } from 'react-icons/fa';
 
 const FooterContainer = styled.footer`
-  background: linear-gradient(135deg, #a8e063, #56ab2f);
+  background: linear-gradient(135deg, #8dc73f, #56ab2a);
   color: white;
   padding: 40px 20px;
   font-family: 'Poppins', sans-serif;

@@ -3,8 +3,8 @@ import styled from 'styled-components';
 import logo from '../assets/images/logooo.png';
 
 const NavbarContainer = styled.nav`
-  background: #56ab2f;
-  padding: 0.5rem 1rem;
+  background: #8dc73f;
+  padding: 0.1rem 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -24,7 +24,7 @@ const Logo = styled.img`
 `;
 
 const Title = styled.h1`
-  color: black;
+  color: white;
   font-size: 1.5rem;
   font-weight: bold;
 `;

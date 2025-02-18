@@ -7,6 +7,8 @@ import Footer from '../components/Footer';
 import edit from '../assets/images/edit.png';
 import dhiaphoto from '../assets/images/dhiaphoto.png';
 import assilphoto from '../assets/images/assilphoto.png';
+import { Link } from 'react-router-dom';
+
 const Profile = () => {
   return (
     <>
@@ -17,15 +19,19 @@ const Profile = () => {
           <div className="profile-header">
             <h1>My Profile</h1>
             <div className="date-switcher">
+            
+
               <button className='btnProfile'>     
-              <img
-            className="editprofile-profile-image"
+              <Link to="/edit-profile"><img
+           
             style={{marginRight:'8px',marginTop:'6px'}}
             width="18px"
             src={edit}
             alt="Profile"
-          />Edit</button>
+          /></Link>Edit</button>
+          
             </div>
+
           </div>
         </header>
     
@@ -41,7 +47,7 @@ const Profile = () => {
      </button>
      <div className="profile-pic">
      <img
-         className="editprofile-profile-image"
+       
          src={pdp}
          alt="Profile"
        />

@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn } from 'react-icons/fa';
 
 const FooterContainer = styled.footer`
-  background: linear-gradient(135deg, #8dc73f, #56ab2a);
+  background: #56ab2a;
   color: white;
   padding: 40px 20px;
   font-family: 'Poppins', sans-serif;
@@ -84,11 +84,17 @@ const NewsletterForm = styled.form`
   margin-top: 15px;
   display: flex;
   gap: 10px;
+            border-radius: 14px;
+
+
   input {
     padding: 8px;
     border: none;
-    border-radius: 4px;
+    border-radius: 14px;
     flex: 1;
+     background: white;
+     color:black
+
   }
   button {
     padding: 8px 16px;

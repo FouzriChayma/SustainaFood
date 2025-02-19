@@ -4,8 +4,8 @@
   box-sizing: border-box;
 }
 
-body {
-  position: relative; /* Required for pseudo-element positioning */
+.signup-body {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -13,40 +13,42 @@ body {
   font-family: 'Montserrat', sans-serif;
   height: 100vh;
   margin: 0;
-  overflow: hidden; /* Prevent scrolling */
+  overflow: hidden;
 }
 
-body::before {
-  content: ''; /* Required for pseudo-element */
-  background-image: url('../images/welcomeback.png'); /* Path to your image */
+.signup-body::before {
+  content: '';
+  background-image: url('../images/welcomeback.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  opacity: 0.2; /* Adjust transparency (0 = fully transparent, 1 = fully opaque) */
+  opacity: 0.2;
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: -1; /* Place it behind the content */
+  z-index: -1;
 }
-#root {
-  display: flex; /* Use flex to make sure it takes up all available space */
-  justify-content: center; /* Horizontally center the content */
-  align-items: center; /* Vertically center the content */
+
+.signup-root {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 100%;
   height: 100%;
 }
-h1 {
+
+.signup-h1 {
   font-weight: bold;
   margin: 0;
 }
 
-h2 {
+.signup-h2 {
   text-align: center;
 }
 
-p {
+.signup-p {
   font-size: 14px;
   font-weight: 100;
   line-height: 20px;
@@ -54,19 +56,19 @@ p {
   margin: 20px 0 30px;
 }
 
-span {
+.signup-span {
   font-size: 12px;
 }
 
-a {
+.signup-a {
   color: #333;
-  font-size: 14px;
+  font-size: 12px;
   text-decoration: none;
-  margin: 15px 0;
+  margin-left: 160px;
 }
 
-button {
-  border-radius: 20px;
+.signup-button {
+  border-radius: 2px;
   border: 1px solid #8dc73f;
   background-color: #8dc73f;
   color: #000000;
@@ -76,22 +78,24 @@ button {
   letter-spacing: 1px;
   text-transform: uppercase;
   transition: transform 80ms ease-in;
+  width: 440px;
+  margin-top: 20px;
 }
 
-button:active {
+.signup-button:active {
   transform: scale(0.95);
 }
 
-button:focus {
+.signup-button:focus {
   outline: none;
 }
 
-button.ghost {
+.signup-button .ghost {
   background-color: #FFFFFF;
   border-color: #FFFFFF;
 }
 
-form {
+.signup-form {
   background-color: #FFFFFF;
   display: flex;
   align-items: center;
@@ -102,7 +106,7 @@ form {
   text-align: center;
 }
 
-input {
+.signup-input {
   background-color: #eee;
   border: none;
   padding: 12px 15px;
@@ -110,7 +114,7 @@ input {
   width: 100%;
 }
 
-.container {
+.signup-container {
   background-color: #fff;
   border-radius: 10px;
   box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
@@ -119,55 +123,54 @@ input {
   width: 1088px;
   max-width: 100%;
   min-height: 650px;
-  display: flex;  /* Added to ensure proper flexbox behavior */
+  display: flex;
   justify-content: center;
-  align-items: center;  /* Center content vertically */
+  align-items: center;
 }
 
-.form-container {
+.signup-form-container {
   position: absolute;
   top: 0;
   height: 100%;
   transition: all 0.6s ease-in-out;
 }
 
-.sign-in-container {
+.signup-sign-in-container {
   left: 0;
   width: 50%;
   z-index: 2;
 }
 
-.container.right-panel-active .sign-in-container {
+.signup-container.right-panel-active .signup-sign-in-container {
   transform: translateX(100%);
 }
 
-.sign-up-container {
+.signup-sign-up-container {
   left: 0;
   width: 50%;
   opacity: 0;
   z-index: 1;
 }
 
-.container.right-panel-active .sign-up-container {
+.signup-container.right-panel-active .signup-sign-up-container {
   transform: translateX(100%);
   opacity: 1;
   z-index: 5;
-  animation: show 0.6s;
+  animation: signup-show 0.6s;
 }
 
-@keyframes show {
+@keyframes signup-show {
   0%, 49.99% {
     opacity: 0;
     z-index: 1;
   }
-
   50%, 100% {
     opacity: 1;
     z-index: 5;
   }
 }
 
-.overlay-container {
+.signup-overlay-container {
   position: absolute;
   top: 0;
   left: 50%;
@@ -178,11 +181,11 @@ input {
   z-index: 100;
 }
 
-.container.right-panel-active .overlay-container{
+.signup-container.right-panel-active .signup-overlay-container {
   transform: translateX(-100%);
 }
 
-.overlay {
+.signup-overlay {
   background: #79ba7d;
   background: -webkit-linear-gradient(to right, #8dc73f, #8eb73f);
   background: linear-gradient(to right, #8dc73f, #8eb73f);
@@ -198,11 +201,11 @@ input {
   transition: transform 0.6s ease-in-out;
 }
 
-.container.right-panel-active .overlay {
+.signup-container.right-panel-active .signup-overlay {
   transform: translateX(50%);
 }
 
-.overlay-panel {
+.signup-overlay-panel {
   position: absolute;
   display: flex;
   align-items: center;
@@ -217,33 +220,33 @@ input {
   transition: transform 0.6s ease-in-out;
 }
 
-.overlay-left {
+.signup-overlay-left {
   transform: translateX(-20%);
 }
 
-.container.right-panel-active .overlay-left {
+.signup-container.right-panel-active .signup-overlay-left {
   transform: translateX(0);
 }
 
-.logo {
+.signup-logo {
   max-width: 350px;
   margin-bottom: 5px;
 }
 
-.overlay-right {
+.signup-overlay-right {
   right: 0;
   transform: translateX(0);
 }
 
-.container.right-panel-active .overlay-right {
+.signup-container.right-panel-active .signup-overlay-right {
   transform: translateX(20%);
 }
 
-.social-container {
+.signup-social-container {
   margin: 20px 0;
 }
 
-.social-container a {
+.signup-social-container a {
   border: 1px solid #DDDDDD;
   border-radius: 50%;
   display: inline-flex;
@@ -253,9 +256,131 @@ input {
   height: 40px;
   width: 40px;
 }
-.social-container img {
-  width: 30px; /* Set the width of the image */
-  height: 30px; /* Set the height of the image */
-  object-fit: cover; /* Ensure the image covers the space without distortion */
-  border-radius: 50%; /* Make the image circular */
+
+.signup-social-container img {
+  width: 30px;
+  height: 30px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.aa{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+/* From Uiverse.io by kyle1dev */ 
+.checkbox-container {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 16px;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+.ios-checkbox {
+  --checkbox-size: 15px;
+  
+
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ios-checkbox input {
+  display: none;
+}
+
+.checkbox-wrapper {
+  position: relative;
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
+  border-radius: 8px;
+  transition: transform 0.2s ease;
+}
+
+.checkbox-bg {
+  position: absolute;
+  inset: 0;
+  
+  border-radius: 5px;
+  border: 2px solid var(--checkbox-border);
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.checkbox-icon {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 80%;
+  height: 80%;
+  color: white;
+  transform: scale(0);
+  transition: all 0.2s ease;
+}
+
+.check-path {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  transition: stroke-dashoffset 0.3s ease 0.1s;
+}
+
+/* Checked State */
+.ios-checkbox input:checked + .checkbox-wrapper .checkbox-bg {
+  background: var(--checkbox-color);
+  border-color: var(--checkbox-color);
+}
+
+.ios-checkbox input:checked + .checkbox-wrapper .checkbox-icon {
+  transform: scale(1);
+}
+
+.ios-checkbox input:checked + .checkbox-wrapper .check-path {
+  stroke-dashoffset: 0;
+}
+
+/* Hover Effects */
+.ios-checkbox:hover .checkbox-wrapper {
+  transform: scale(1.05);
+}
+
+/* Active Animation */
+.ios-checkbox:active .checkbox-wrapper {
+  transform: scale(0.95);
+}
+
+/* Focus Styles */
+.ios-checkbox input:focus + .checkbox-wrapper .checkbox-bg {
+  box-shadow: 0 0 0 4px var(--checkbox-bg);
+}
+
+
+
+.ios-checkbox.green {
+  --checkbox-color: #8dc73f ;
+  --checkbox-bg: #d1fae5;
+  --checkbox-border: #8dc73f ;
+  margin-left: -10px;
+  
+}
+
+
+/* Animation */
+@keyframes bounce {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.ios-checkbox input:checked + .checkbox-wrapper {
+  animation: bounce 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }

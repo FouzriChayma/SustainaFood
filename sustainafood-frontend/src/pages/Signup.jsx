@@ -7,63 +7,63 @@ import gglimg from "../assets/images/ggl.jpg";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 
-const Log = () => {
+const signup = () => {
   const [isRightPanelActive, setIsRightPanelActive] = useState(false);
 
   const togglePanel = () => {
+    console.log('togglePanel');
     setIsRightPanelActive(!isRightPanelActive);
   };
 
   return (
     <div className="aa">
-      <div className={`container ${isRightPanelActive ? 'right-panel-active' : ''}`} id="container">
-        <div className="form-container sign-up-container">
-          <form action="#">
-          <h1>Sign Up</h1>
-          <div className="social-container">
-            <a href="#" className="social">
+<div className={`signup-container ${isRightPanelActive ? 'right-panel-active' : ''}`} id="container">
+<div className="signup-form-container signup-sign-up-container">
+          <form className='signup-form' action="#">
+          <h1 className='signup-h1'>Sign Up</h1>
+          <div className="signup-social-container">
+            <a  href="#" className="signup-social">
                 <img src={fbimg}  alt="Facebook" /> 
             </a>
-            <a href="#" className="social">
+            <a href="#" className="signup-social">
                 <img src={gglimg} alt="Google" /> 
             </a>
            </div>
             <span>or use your account</span>
-            <input type="email" placeholder="Email" />
-            <input type="password" placeholder="Password" />
-            <input type="password" placeholder="Confirm Password" />
-            <input type="number" placeholder="Phone Number" />
-            <a href="#">Forgot your password?</a>
-            <button>Sign Up</button>
+            <input className='signup-input' type="email" placeholder="Email" />
+            <input className='signup-input' type="password" placeholder="Password" />
+            <input className='signup-input' type="password" placeholder="Confirm Password" />
+            <input className='signup-input' type="number" placeholder="Phone Number" />
+            <button className='signup-button'>Sign Up</button>
+            <div><span style={{fontSize: '14px',marginLeft: '-230px'}}>Already have an account ?<a href="/login"> Sign In</a></span></div>
+
           </form>
         </div>
-        <div className="form-container sign-in-container">
-          <form action="#">
-            <img src={logo} alt="Logo" className="logo" /> 
-            <p>Be a part of a movement to make the world a better place by redistributing surplus food to those who need it. </p>
+        <div className="signup-form-container signup-sign-in-container">
+          <form className='signup-form' action="#">
+            <img src={logo} alt="Logo" className="signup-logo" /> 
+            <p className='signup-p'>Be a part of a movement to make the world a better place by redistributing surplus food to those who need it. </p>
           </form>
         </div>
-        <div className="overlay-container">
-          <div className="overlay">
-            <div className="overlay-panel overlay-left">
-            <img src={loginImg} alt="Logo" className="logo" /> 
+        <div className="signup-overlay-container">
+          <div className="signup-overlay">
+            <div className="signup-overlay-panel signup-overlay-left">
+            <img src={loginImg} alt="Logo" className="signup-logo" /> 
             
             <button className="ghost" onClick={togglePanel}>
             <FontAwesomeIcon icon={faArrowLeft} />
             </button>           
             </div>
-            <div className="overlay-panel overlay-right">
-            <h1>Join Us Today!</h1>
-            <p>Sign up to help us reduce food waste and support your community!</p>
+            <div className="signup-overlay-panel signup-overlay-right">
+            <h1 className='signup-h1'>Join Us Today!</h1>
+            <p className='signup-p'>Sign up to help us reduce food waste and support your community!</p>
             <button className="ghost" onClick={togglePanel}>Sign Up</button>
             </div>
           </div>
         </div>
       </div>
-
-      
     </div>
   );
 };
 
-export default Log;
+export default signup;

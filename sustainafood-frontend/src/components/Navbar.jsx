@@ -106,7 +106,7 @@ const Navbar = () => {
         <Link to="/"> <NavLink>Home</NavLink>          </Link>
 
           <NavLink>About</NavLink>
-          <NavLink>Contact</NavLink>
+          <Link to="/Contact"><NavLink>Contact</NavLink></Link>
 
           {/* Donations Dropdown */}
           <Dropdown label="Donations" items={['My Donations', 'My Requests', 'List of Donations']} />

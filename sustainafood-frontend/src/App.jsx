@@ -7,6 +7,7 @@ import Profile from './pages/Profile'; // Your profile page
 
 const App = () => {
   return (
+
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />

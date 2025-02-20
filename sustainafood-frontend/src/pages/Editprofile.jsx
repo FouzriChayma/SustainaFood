@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import pdp from '../assets/images/pdp1.png';
-import './EditProfile.css';
+import '../assets/styles/EditProfile.css';
 import upload from '../assets/images/upload.png';
 import Footer from '../components/Footer';
 import { Link } from 'react-router-dom';

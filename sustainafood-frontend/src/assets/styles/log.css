@@ -41,7 +41,6 @@
 
 .signup-h1 {
   font-weight: bold;
-  margin: 0;
 }
 
 .signup-h2 {
@@ -78,8 +77,8 @@
   letter-spacing: 1px;
   text-transform: uppercase;
   transition: transform 80ms ease-in;
-  width: 440px;
-  margin-top: 20px;
+  width: 100%;
+  margin-top: 10px;
 }
 
 .signup-button:active {
@@ -105,12 +104,18 @@
   height: 100%;
   text-align: center;
 }
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
 
 .signup-input {
   background-color: #eee;
   border: none;
+  color: black;
   padding: 12px 15px;
-  margin: 8px 0;
+  margin: 4px 0;
   width: 100%;
 }
 
@@ -243,7 +248,7 @@
 }
 
 .signup-social-container {
-  margin: 20px 0;
+  margin: 10px 0;
 }
 
 .signup-social-container a {

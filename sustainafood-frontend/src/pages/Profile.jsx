@@ -12,18 +12,22 @@ import { getUserById } from "../api/userService"; // Vérifiez le bon chemin
 
 const Profile = () => {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
   const userId = localStorage.getItem('iduser'); // Get the user ID from local storage
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    console.log("🔍 Vérification du localStorage...");
-    console.log("LocalStorage userId:", localStorage.getItem("userId"));
-    
+    console.log("🔍 Vérification du localStorage...");    
     console.log("🌍 Tous les éléments dans localStorage :", localStorage);
     console.log("🔍 Lecture directe de iduser :", localStorage.getItem("iduser"));
-    
+  const token = localStorage.getItem('token');
+
+ // if (!isTokenValid(token)) {
+  if (token==null) {
+
+    // Redirigez l'utilisateur vers la page de connexion s'il n'est pas valide
+    navigate('/login');
+  }
     const fetchUser = async () => {
         try {
             if (!userId) {

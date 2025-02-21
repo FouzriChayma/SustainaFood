@@ -1,6 +1,6 @@
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
-import "../assets/styles/studentList.css";
+import Sidebar from "../../components/backoffcom/Sidebar";
+import Navbar from "../../components/backoffcom/Navbar";
+import "/src/assets/styles/backoffcss/studentList.css";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 

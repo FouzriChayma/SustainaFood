@@ -6,7 +6,7 @@ import {
     FaHandsHelping, FaFileAlt, FaLock, FaQuestionCircle 
   } from "react-icons/fa";
   
-import "../assets/styles/sidebar.css";
+import "/src/assets/styles/backoffcss/sidebar.css";
 
 const Sidebar = () => {
   const [showUserManagement, setShowUserManagement] = useState(false);

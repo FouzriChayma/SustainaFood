@@ -1,5 +1,5 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
-import "../assets/styles/chart.css";
+import "/src/assets/styles/backoffcss/chart.css";
 
 const lineData = [
   { name: "Jan", sales: 4000 },

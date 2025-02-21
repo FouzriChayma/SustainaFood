@@ -1,10 +1,10 @@
-import "../assets/styles/projectStatus.css";
+import "/src/assets/styles/backoffcss/donationStatus.css";
 import { FaApple, FaFacebook, FaPaypal, FaGithub } from "react-icons/fa";
 import { SiFigma } from "react-icons/si";
 
 import { FaStore, FaCarrot, FaHandsHelping, FaUtensils, FaTruck } from "react-icons/fa";
 
-const projects = [
+const donations = [
   { name: "Monoprix", category: "Supermarket Donations", progress: 54, icon: <FaStore size={16} color="red" /> },
   { name: "Supermarket", category: "Fresh Produce", progress: 86, icon: <FaCarrot size={16} color="orange" /> },
   { name: "Ha Food", category: "Charity Support", progress: 90, icon: <FaHandsHelping size={16} color="green" /> },
@@ -13,23 +13,23 @@ const projects = [
 ];
 
 
-const ProjectStatus = () => {
+const DonationStatus = () => {
   return (
-    <div className="project-status">
+    <div className="donation-status">
       <h3>Donation Status</h3>
-      {projects.map((project, index) => (
-        <div key={index} className="project-item">
-          <div className="project-info">
-            {project.icon}
+      {donations.map((donation, index) => (
+        <div key={index} className="donation-item">
+          <div className="donation-info">
+            {donation.icon}
             <div>
-              <p className="project-name">{project.name}</p>
-              <p className="project-category">{project.category}</p>
+              <p className="donation-name">{donation.name}</p>
+              <p className="donation-category">{donation.category}</p>
             </div>
           </div>
           <div className="progress-container">
-            <div className="progress-bar" style={{ width: `${project.progress}%`, backgroundColor: project.icon.props.color }}></div>
+            <div className="progress-bar" style={{ width: `${donation.progress}%`, backgroundColor: donation.icon.props.color }}></div>
           </div>
-          <p className="progress-text">{project.progress}%</p>
+          <p className="progress-text">{donation.progress}%</p>
         </div>
       ))}
     </div>
@@ -37,4 +37,4 @@ const ProjectStatus = () => {
 };
 
 
-export default ProjectStatus;
+export default DonationStatus;

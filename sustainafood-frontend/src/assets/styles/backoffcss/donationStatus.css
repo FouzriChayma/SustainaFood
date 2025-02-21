@@ -1,28 +1,28 @@
-.project-status {
+.donation-status {
     background: white;
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.project-item {
+.donation-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 15px;
 }
 
-.project-info {
+.donation-info {
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.project-info svg {
+.donation-info svg {
     font-size: 24px;
 }
 
-.project-name {
+.donation-name {
     font-weight: bold;
 }
 

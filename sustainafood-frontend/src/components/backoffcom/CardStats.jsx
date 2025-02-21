@@ -8,7 +8,7 @@ import {
     FaChartLine, 
     FaHandHoldingHeart 
   } from "react-icons/fa";
-  import "../assets/styles/card.css";
+  import "/src/assets/styles/backoffcss/card.css";
   
   const CardStats = ({ title, value, percentage, icon, color, progress }) => {
     const icons = {

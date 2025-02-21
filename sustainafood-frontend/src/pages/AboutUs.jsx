@@ -1,4 +1,5 @@
 import React from "react";
+import { FaUtensils, FaLink, FaBox, FaGlobe } from "react-icons/fa";
 
 const AboutUs = () => {
   return (
@@ -9,149 +10,137 @@ const AboutUs = () => {
           margin: 0;
           padding: 0;
           box-sizing: border-box;
+          font-family: 'Arial', sans-serif;
         }
         .about-container {
-          background-color: #f9f6ef;
+          background-color: #f1f9f1;
           min-height: 100vh;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          padding: 40px;
-          width: 100vw;
-        }
-        .about-content {
-          max-width: 800px;
-          text-align: center;
-        }
-        .about-subtitle {
-          font-size: 14px;
-          color: #666;
-          text-transform: uppercase;
-          letter-spacing: 2px;
-        }
-        .about-title {
-          font-size: 32px;
-          font-weight: bold;
-          color: #222;
-          margin-top: 10px;
-          line-height: 1.4;
-        }
-        .about-description {
-          color: #555;
-          font-size: 16px;
-          margin-top: 20px;
-          line-height: 1.6;
-        }
-        .about-values {
-          background-color: #0d4729;
-          color: white;
-          border-radius: 10px;
-          padding: 20px;
-          margin-top: 30px;
-          display: flex;
-          justify-content: space-around;
-          align-items: center;
-          gap: 40px;
-          text-align: center;
-          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-          width: 100%;
-        }
-        .value-item {
           display: flex;
           flex-direction: column;
           align-items: center;
-          font-size: 18px;
-          width: 20%;
+          justify-content: center;
+          padding: 60px 20px;
+          text-align: center;
         }
-        .value-icon {
-          font-size: 30px;
-          margin-bottom: 10px;
+        .about-title {
+          font-size: 36px;
+          font-weight: bold;
+          color: #4CAF50;
+          margin-bottom: 15px;
+        }
+        .about-description {
+          color: #333;
+          font-size: 18px;
+          max-width: 800px;
+          margin-bottom: 30px;
+          line-height: 1.6;
+        }
+        .about-values {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 20px;
+          width: 100%;
+          max-width: 900px;
+          margin-bottom: 40px;
+        }
+        .value-item {
+          background-color: #fff;
+          border-radius: 10px;
+          padding: 20px;
+          width: 200px;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+          text-align: center;
+          transition: transform 0.3s;
+        }
+        .value-item:hover {
+          transform: translateY(-5px);
         }
         .about-section {
           background-color: white;
           border-radius: 10px;
           padding: 30px;
-          margin-top: 30px;
           display: flex;
+          flex-wrap: wrap;
           justify-content: space-between;
           box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+          max-width: 900px;
           width: 100%;
+          margin-bottom: 40px;
         }
         .about-card {
           width: 45%;
           text-align: left;
         }
         .about-card-title {
-          font-size: 20px;
+          font-size: 22px;
           font-weight: bold;
-          color: #0d4729;
-          display: flex;
-          align-items: center;
+          color: #4CAF50;
+          margin-bottom: 10px;
         }
         .about-card-text {
           color: #555;
           font-size: 16px;
-          margin-top: 10px;
           line-height: 1.6;
         }
         .about-button {
-          margin-top: 30px;
-          background-color: #0d4729;
+          display: inline-block;
+          margin: 10px auto;
+          background-color: #4CAF50;
           color: white;
-          padding: 12px 24px;
+          padding: 12px 30px;
           border: none;
-          border-radius: 5px;
+          border-radius: 50px;
           font-size: 18px;
           cursor: pointer;
-          transition: background 0.3s ease-in-out;
+          transition: background 0.3s;
+          text-align: center;
+          white-space: nowrap;
         }
         .about-button:hover {
-          background-color: #0b3a1e;
+          background-color: #388E3C;
         }
         `}
       </style>
       <div className="about-container">
-        <div className="about-content">
-          <h3 className="about-subtitle">ABOUT US</h3>
-          <h2 className="about-title">
-            Empowering Sustainability, <br /> Less Waste
-          </h2>
-          <p className="about-description">
-            We are committed to reducing food waste by redistributing surplus food . Our platform connects businesses and communities to create a sustainable food ecosystem.
-          </p>
+        <h2 className="about-title">Welcome to SustainaFood</h2>
+        <p className="about-description">
+        Connecting donors, recipients, and transporters to minimize food waste and optimize distribution.        </p>
 
-          <div className="about-values">
-            <div className="value-item">
-              <span className="value-icon">🍽️</span> <p>Less Waste</p>
-            </div>
-            <div className="value-item">
-              <span className="value-icon">🔗</span> <p>Stronger Links</p>
-            </div>
-            <div className="value-item">
-              <span className="value-icon">📦</span> <p>Smart Sharing</p>
-            </div>
-            <div className="value-item">
-              <span className="value-icon">🌍</span> <p>Green Future</p>
-            </div>
+        <div className="about-values">
+          <div className="value-item">
+            <FaUtensils size={40} color="#4CAF50" />
+            <p>Less Waste</p>
           </div>
-
-          <div className="about-section">
-            <div className="about-card">
-              <h3 className="about-card-title">🌍 Our Vision</h3>
-              <p className="about-card-text">
-                To build a world where food surplus is efficiently redistributed, minimizing waste .
-              </p>
-            </div>
-            <div className="about-card">
-              <h3 className="about-card-title">🚀 Our Mission</h3>
-              <p className="about-card-text">
-                To provide an intelligent platform that optimizes food distribution, fosters community engagement, and promotes environmental sustainability.
-              </p>
-            </div>
+          <div className="value-item">
+            <FaLink size={40} color="#4CAF50" />
+            <p>Stronger Links</p>
           </div>
-
-          <button className="about-button">Know More About Us</button>
+          <div className="value-item">
+            <FaBox size={40} color="#4CAF50" />
+            <p>Smart Sharing</p>
+          </div>
+          <div className="value-item">
+            <FaGlobe size={40} color="#4CAF50" />
+            <p>Green Future</p>
+          </div>
         </div>
+
+        <div className="about-section">
+          <div className="about-card">
+            <h3 className="about-card-title">🌍 Our Vision</h3>
+            <p className="about-card-text">
+              To build a world where food surplus is efficiently redistributed, minimizing waste.
+            </p>
+          </div>
+          <div className="about-card">
+            <h3 className="about-card-title">🚀 Our Mission</h3>
+            <p className="about-card-text">
+              To provide an intelligent platform that optimizes food distribution, fosters community engagement, and promotes environmental sustainability.
+            </p>
+          </div>
+        </div>
+
       </div>
     </div>
   );

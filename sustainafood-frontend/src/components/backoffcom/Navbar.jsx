@@ -1,5 +1,5 @@
 import { FaSearch, FaGlobe, FaMoon, FaBell, FaUserCircle } from "react-icons/fa";
-import "../assets/styles/navbar.css";
+import "/src/assets/styles/backoffcss/navbar.css";
 
 const Navbar = () => {
   return (

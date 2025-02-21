@@ -1,6 +1,6 @@
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
-import "../assets/styles/ngoList.css";
+import Sidebar from "../../components/backoffcom/Sidebar";
+import Navbar from "../../components/backoffcom/Navbar";
+import "/src/assets/styles/backoffcss/ngoList.css";
 
 const ngoData = [
   {

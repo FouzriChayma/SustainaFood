@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 // Create the context
 export const AuthContext = createContext();
@@ -20,6 +21,10 @@ export const AuthProvider = ({ children }) => {
     const storedToken = localStorage.getItem("token");
     return storedToken && storedToken !== "undefined" ? storedToken : null;
   });
+  // State for password reset
+  const [resetStatus, setResetStatus] = useState(""); // Track reset status
+  const [error, setError] = useState(""); // Track error messages
+  const [loading, setLoading] = useState(false); // Track loading state
 
   // Login function
   const login = (userData, token) => {
@@ -41,9 +46,55 @@ export const AuthProvider = ({ children }) => {
 
   // Check if the user is authenticated
   const isAuthenticated = () => !!token;
+// Send password reset code
+const sendResetCode = async (email) => {
+  setLoading(true);
+  try {
+    const response = await axios.post("/api/auth/send-reset-code", { email });
+    setResetStatus("Reset code sent successfully.");
+    setLoading(false);
+  } catch (err) {
+    setError("Error sending reset code.");
+    setLoading(false);
+  }
+};
+// Validate the password reset code
+const validateResetCode = async (email, resetCode) => {
+  setLoading(true);
+  try {
+    const response = await axios.post("/api/auth/validate-reset-code", { email, resetCode });
+    setResetStatus("Reset code validated successfully.");
+    setLoading(false);
+  } catch (err) {
+    setError("Invalid or expired reset code.");
+    setLoading(false);
+  }
+};
 
+// Reset password
+const resetPassword = async (email, newPassword) => {
+  setLoading(true);
+  try {
+    const response = await axios.post("/api/auth/reset-password", { email, newPassword });
+    setResetStatus("Password successfully reset.");
+    setLoading(false);
+  } catch (err) {
+    setError("Error resetting password.");
+    setLoading(false);
+  }
+};
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{ user,
+      token,
+      login,
+      logout,
+      isAuthenticated,
+      sendResetCode,
+      validateResetCode,
+      resetPassword,
+      resetStatus,
+      error,
+      loading, }}>
       {children}
     </AuthContext.Provider>
   );

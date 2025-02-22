@@ -59,7 +59,9 @@ const userSchema = new Schema({
   type: { type: String, enum: Object.values(OngType)},
   vehiculeType: { type: String, enum: Object.values(VehiculeType)},
   taxR: { type: String },
-  isBlocked: { type: Boolean, default: false }
+  isBlocked: { type: Boolean, default: false },
+  resetCode: { type: String },  
+  resetCodeExpires: { type: Date } 
 });
 
 // Pre-save hook to automatically increment the `id` field before saving a user

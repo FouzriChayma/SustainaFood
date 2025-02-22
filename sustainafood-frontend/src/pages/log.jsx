@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import '../assets/styles/log.css'; // Import du CSS
 import logo from "../assets/images/LogoCh.png"; // Import du logo
@@ -114,7 +114,7 @@ const Login = () => {
 
             <button type="submit" className='signup-button'>Sign In</button>
             <div>
-              <span style={{ fontSize: '14px' }}>Don't have an account?
+              <span style={{ fontSize: '14px' }}>Dont have an account?
                 <a href="/signup"> Sign Up</a>
               </span>
             </div>

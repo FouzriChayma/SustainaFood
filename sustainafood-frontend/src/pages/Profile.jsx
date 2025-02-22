@@ -1,15 +1,51 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react'; // Added useEffect here
 import styled from 'styled-components';
-import './Profile.css';
+import '../assets/styles/Profile.css';
 import pdp from '../assets/images/pdp.png';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import edit from '../assets/images/edit.png';
 import dhiaphoto from '../assets/images/dhiaphoto.png';
 import assilphoto from '../assets/images/assilphoto.png';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { getUserById } from "../api/userService"; // Vérifiez le bon chemin
 
 const Profile = () => {
+  const navigate = useNavigate();
+  const userId = localStorage.getItem('iduser'); // Get the user ID from local storage
+  const [user, setUser] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    console.log("🔍 Vérification du localStorage...");    
+    console.log("🌍 Tous les éléments dans localStorage :", localStorage);
+    console.log("🔍 Lecture directe de iduser :", localStorage.getItem("iduser"));
+  const token = localStorage.getItem('token');
+
+ // if (!isTokenValid(token)) {
+  if (token==null) {
+
+    // Redirigez l'utilisateur vers la page de connexion s'il n'est pas valide
+    navigate('/login');
+  }
+    const fetchUser = async () => {
+        try {
+            if (!userId) {
+                console.error("⛔ userId est indéfini !");
+                return;
+            }
+            const response = await getUserById(userId);
+            setUser(response.data);
+        } catch (error) {
+            console.error("❌ Backend Error:", error);
+        }
+    };
+
+    if (userId) {
+        fetchUser();
+    }
+}, []);
+
   return (
     <>
     <Navbar />
@@ -58,7 +94,7 @@ const Profile = () => {
          <span className="about-me">Lorem ipsum dolor sit amet consectetur adipisicinFcls Lorem ipsum dolor sit amet consectetur adipisicinFcls </span>
        </div>
        <div className="bottom-bottom">
-         <h1 style={{color:'white',fontSize:'40px',fontStyle: 'oblique'}}>Donner</h1>
+         <h1 style={{color:'white',fontSize:'40px',fontStyle: 'oblique'}}>{user?.role || 'Loading...'}</h1>
          <button className="button">Contact Me</button>
        </div>
      </div>
@@ -68,10 +104,10 @@ const Profile = () => {
             <div className="detailed-info">
               <h3>Detailed Information</h3>
               <ul>
-                <li><strong>Name:</strong> BEN REBAH Mouna</li>
-                <li><strong>Email Address:</strong> mouna-mbr@gmail.com</li>
-                <li><strong>Phone:</strong> +216 55447395</li>
-                <li><strong>Address:</strong> 1234 Street Name, City</li>
+                <li><strong>Name:</strong> {user?.name || 'Loading...'}</li>
+                <li><strong>Email Address:</strong>{user?.email || 'Loading...'}</li>
+                <li><strong>Phone:</strong>{user?.phone || 'Loading...'}</li>
+                <li><strong>Address:</strong> {user?.address || 'Loading...'}</li>
               </ul>
             </div>
           </div>
@@ -212,7 +248,7 @@ const Profile = () => {
         fill="#8a8a8a"
       ></path>
     </svg>
-    <p className="winner-userName">Jessie Ben</p>
+    <p className="winner-userName">{user?.name || 'Loading...'}</p>
   </div>
   <div className="winner-detailPage">
     <svg

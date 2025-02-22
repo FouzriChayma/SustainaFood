@@ -10,12 +10,21 @@ const Sexe = Object.freeze({
   FEMALE: 'female',
   OTHER: 'other'
 });
-
 const OngType = Object.freeze({
-  CHARITY: 'charity',
-  NGO: 'ngo',
-  FOUNDATION: 'foundation'
+  ADVOCACY: 'advocacy',
+  OPERATIONAL: 'operational',
+  CHARITABLE: 'charitable',
+  DEVELOPMENT: 'development',
+  ENVIRONMENTAL: 'environmental',
+  HUMAN_RIGHTS: 'human-rights',
+  RELIEF: 'relief',
+  RESEARCH: 'research',
+  PHILANTHROPIC: 'philanthropic',
+  SOCIAL_WELFARE: 'social_welfare',
+  CULTURAL: 'cultural',
+  FAITH_BASED: 'faith_based'
 });
+
 
 const VehiculeType = Object.freeze({
   CAR: 'car',
@@ -47,8 +56,8 @@ const userSchema = new Schema({
   image_carte_etudiant: { type: String },
   image_carte_identite: { type: String },
   id_fiscale: { type: String },
-  type: { type: String, enum: Object.values(OngType), required: true },
-  vehiculeType: { type: String, enum: Object.values(VehiculeType), required: true },
+  type: { type: String, enum: Object.values(OngType)},
+  vehiculeType: { type: String, enum: Object.values(VehiculeType)},
   taxR: { type: String },
   isBlocked: { type: Boolean, default: false }
 });

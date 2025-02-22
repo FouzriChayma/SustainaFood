@@ -2,6 +2,7 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL + "/users";
 
+
 // 🔹 Créer un utilisateur
 export const signupUser = async (userData) => {
     return await axios.post('http://localhost:3000/users/create', userData);
@@ -31,7 +32,7 @@ export const deleteUser = async (id) => {
 
 // 🔹 Connexion utilisateur
 export const loginUser = async (userData) => {
-    console.log("Données envoyées :", userData); // 🔹 Vérifie si les bonnes données sont envoyées
+   
   
     return await axios.post("http://localhost:3000/users/login", userData, {
       headers: {

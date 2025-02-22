@@ -6,7 +6,7 @@ async function addUser(req, res) {
     try {
         const { email, password, confirmPassword, phone, name, address, role } = req.body;
 
-        // Vérifier si tous les champs sont remplis
+        // Vérifier si tous les champs obligatoires sont remplis
         if (!email || !password || !confirmPassword || !phone || !name || !address || !role) {
             return res.status(400).json({ error: "Veuillez remplir tous les champs." });
         }
@@ -16,22 +16,31 @@ async function addUser(req, res) {
             return res.status(400).json({ error: "Passwords do not match" });
         }
 
-        // Vous pouvez également ajouter une validation de l'e-mail ici
-        // Par exemple, vérifier que l'e-mail n'est pas déjà utilisé
+        // Vérifier si l'email est déjà utilisé
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ error: "Email already in use" });
+        }
 
         // Hacher le mot de passe avant de le stocker
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Créer l'utilisateur avec le mot de passe haché
-        const user = new User({ ...req.body, password: hashedPassword });
+        // Création de l'utilisateur sans stocker confirmPassword
+        const user = new User({
+            email,
+            password: hashedPassword,
+            phone,
+            name,
+            address,
+            role
+        });
 
         await user.save();
-        res.status(201).json(user);
+        res.status(201).json({ message: "User created successfully", user });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
 }
-
 // Get all users
 async function getUsers(req, res) {
     try {

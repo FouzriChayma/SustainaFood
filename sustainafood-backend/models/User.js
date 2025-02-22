@@ -38,6 +38,7 @@ const role = Object.freeze({
   RESTAUTANT: 'restaurant',
   SUPERMARKET: 'supermarket',
   STUDENT: 'student',
+  TRANSPORTER : 'transporter'
 });
 
 // User schema definition
@@ -45,7 +46,6 @@ const userSchema = new Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  confirmPassword: { type: String, required: true },
   role: { type: String, enum: Object.values(role), required: true },
   id: { type: Number },  // Custom id that will be auto-incremented
   phone: { type: Number, required: true },

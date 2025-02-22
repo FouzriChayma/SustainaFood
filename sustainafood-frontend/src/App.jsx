@@ -16,7 +16,7 @@ import About from "./pages/About";
 const App = () => {
   return (
 
-    <Router>
+   
       <Routes>
       <Route path="/login" element={<Login />} />
         <Route path="/" element={<Home />} />
@@ -32,7 +32,7 @@ const App = () => {
         <Route path="/About" element={<About />} />
 
       </Routes>
-    </Router>
+    
   );
 };
 

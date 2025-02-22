@@ -42,8 +42,13 @@ export const AuthProvider = ({ children }) => {
   // Check if the user is authenticated
   const isAuthenticated = () => !!token;
 
+   // Method to get the role of the current user
+   const getRole = () => {
+    return user?.role || null;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated, getRole }}>
       {children}
     </AuthContext.Provider>
   );

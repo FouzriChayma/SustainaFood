@@ -87,20 +87,44 @@ async function getUserByEmailAndPassword(req, res) {
     }
 }
 // Update a user
-async function updateUser(req, res) {
+const updateUser = async (req, res) => {
     try {
-        const { name, address, sexe, photo, phone, vehiculeType, image_carte_etudiant } = req.body;
-        const updateData = { name, address, sexe, photo, phone, vehiculeType, image_carte_etudiant };
+        const { name, email, phone, address, photo, age, sexe, image_carte_etudiant, 
+                image_carte_identite, id_fiscale, type, vehiculeType, taxR, isBlocked } = req.body;
 
-        const user = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        // Filtrage des attributs autorisés pour éviter des mises à jour indésirables
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (email) updateData.email = email;
+        if (phone) updateData.phone = phone;
+        if (address) updateData.address = address;
+        if (photo) updateData.photo = photo;
+        if (age) updateData.age = age;
+        if (sexe) updateData.sexe = sexe;
+        if (image_carte_etudiant) updateData.image_carte_etudiant = image_carte_etudiant;
+        if (image_carte_identite) updateData.image_carte_identite = image_carte_identite;
+        if (id_fiscale) updateData.id_fiscale = id_fiscale;
+        if (type) updateData.type = type;
+        if (vehiculeType) updateData.vehiculeType = vehiculeType;
+        if (taxR) updateData.taxR = taxR;
+        if (typeof isBlocked === 'boolean') updateData.isBlocked = isBlocked; // Vérification explicite pour éviter de mal interpréter une valeur vide
+
+        // Vérifier si l'utilisateur existe
+        const user = await User.findById(req.params.id);
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
-        res.status(200).json(user);
+
+        // Mise à jour de l'utilisateur
+        const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+        res.status(200).json(updatedUser);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-}
+};
+
+
 
 // Delete a user
 async function deleteUser(req, res) {

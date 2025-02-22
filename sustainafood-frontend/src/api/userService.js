@@ -12,22 +12,22 @@ export const userwinthemailandpss = async (userData) => {
 }
 // 🔹 Récupérer tous les utilisateurs
 export const getUsers = async () => {
-  return axios.get(`${API_URL}/list`);
+  return axios.get(`http://localhost:3000/users/list`);
 };
 
 // 🔹 Récupérer un utilisateur par ID
 export const getUserById = async (id) => {
-  return axios.get(`${API_URL}/details/${id}`);
+  return axios.get(`http://localhost:3000/users/details/${id}`);
 };
 
 // 🔹 Mettre à jour un utilisateur
 export const updateUser = async (id, userData) => {
-  return axios.put(`${API_URL}/update/${id}`, userData);
+  return axios.put(`http://localhost:3000/users/update/${id}`, userData);
 };
 
 // 🔹 Supprimer un utilisateur
 export const deleteUser = async (id) => {
-  return axios.delete(`${API_URL}/delete/${id}`);
+  return axios.delete(`http://localhost:3000/users/delete/${id}`);
 };
 
 // 🔹 Connexion utilisateur

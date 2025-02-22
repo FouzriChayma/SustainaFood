@@ -135,7 +135,7 @@ const Navbar = () => {
       <NavLinks>
         <LogoContainer>
         <Link to="/"> <NavLink>Home</NavLink></Link>
-          <NavLink>About</NavLink>
+        <Link to="/About"><NavLink>About</NavLink></Link>
           <Link to="/Contact"><NavLink>Contact</NavLink></Link>
           {isAuthenticated && (
           <>

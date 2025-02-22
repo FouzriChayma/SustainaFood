@@ -1,8 +1,12 @@
 import React from "react";
 import { FaUtensils, FaLink, FaBox, FaGlobe } from "react-icons/fa";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
-const AboutUs = () => {
+const About = () => {
   return (
+    <>
+    <Navbar/>
     <div>
       <style>
         {`
@@ -143,7 +147,9 @@ const AboutUs = () => {
 
       </div>
     </div>
+    <Footer/>
+    </>
   );
 };
 
-export default AboutUs;
+export default About;

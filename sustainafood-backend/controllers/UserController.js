@@ -4,17 +4,25 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 async function addUser(req, res) {
     try {
-        const { password, confirmPassword } = req.body;
+        const { email, password, confirmPassword, phone, name, address, role } = req.body;
 
-        // Check if passwords match
+        // Vérifier si tous les champs sont remplis
+        if (!email || !password || !confirmPassword || !phone || !name || !address || !role) {
+            return res.status(400).json({ error: "Veuillez remplir tous les champs." });
+        }
+
+        // Vérifier si les mots de passe correspondent
         if (password !== confirmPassword) {
             return res.status(400).json({ error: "Passwords do not match" });
         }
 
-        // Hash the password before storing it
+        // Vous pouvez également ajouter une validation de l'e-mail ici
+        // Par exemple, vérifier que l'e-mail n'est pas déjà utilisé
+
+        // Hacher le mot de passe avant de le stocker
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create user with the hashed password
+        // Créer l'utilisateur avec le mot de passe haché
         const user = new User({ ...req.body, password: hashedPassword });
 
         await user.save();
@@ -47,6 +55,28 @@ async function getUserById(req, res) {
     }
 }
 
+async function getUserByEmailAndPassword(req, res) {
+    const { email, password } = req.body; // Récupérer l'email et le mot de passe depuis le corps de la requête
+
+    try {
+        // Trouver l'utilisateur par email
+        const user = await User.findOne({ email: email });
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Vérifier le mot de passe
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ error: "Invalid password" });
+        }
+
+        // Si l'utilisateur est trouvé et le mot de passe est correct, renvoyer les détails de l'utilisateur
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
 // Update a user
 async function updateUser(req, res) {
     try {
@@ -78,9 +108,15 @@ async function deleteUser(req, res) {
 
 // Signin (generate JWT token)
 async function user_signin(req, res) {
+    console.log("Requête reçue :", req.body); // 🔹 LOG DES DONNÉES REÇUES
+
     const { email, password } = req.body;
 
     try {
+        if (!email || !password) {
+            return res.status(400).json({ error: "Email and password are required" });
+        }
+
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(400).json({ error: "Invalid credentials" });
@@ -98,11 +134,12 @@ async function user_signin(req, res) {
 
         const token = jwt.sign(payload, "your_jwt_secret", { expiresIn: "1h" });
 
-        res.status(200).json({ token });
+        res.status(200).json({ token, role: user.role, id: user._id });
     } catch (error) {
-        console.error(error);
+        console.error("Erreur serveur :", error);
         res.status(500).json({ error: "Server error" });
     }
 }
 
-module.exports = { addUser, getUsers, getUserById, updateUser, deleteUser, user_signin };
+
+module.exports = { addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,getUserByEmailAndPassword };

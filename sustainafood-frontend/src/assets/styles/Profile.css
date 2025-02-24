@@ -338,11 +338,12 @@ body{
     display: flex;
     align-items: center;
     gap: 15px;
+
   }
   
   .profile-pic {
-    width: 80px;
-    height: 80px;
+    width: 180px;
+    height: 180px;
     border-radius: 50%;
     object-fit: cover;
   }
@@ -664,7 +665,7 @@ body{
   color: #6b7578;
   left: -75px;
   font-size: 18px;
-  top: -2px;
+  margin-top: 15px;
 }
 
 .winner-medals {

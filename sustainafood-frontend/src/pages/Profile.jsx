@@ -8,6 +8,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getUserById } from "../api/userService";
 import { useAuth } from "../contexts/AuthContext";
 import RoleSpecificProfile from '../components/RoleSpecificProfile';
+import dhiaphoto from '../assets/images/dhiaphoto.png';
+import assilphoto from '../assets/images/assilphoto.png';
 const Profile = () => {
   const navigate = useNavigate();
   const { user: authUser, token } = useAuth();

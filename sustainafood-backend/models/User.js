@@ -54,7 +54,7 @@ const userSchema = new Schema({
   age: { type: Number },
   sexe: { type: String, enum: Object.values(Sexe) },
   image_carte_etudiant: { type: String },
-  image_carte_identite: { type: String },
+  num: { type: String },
   id_fiscale: { type: String },
   type: { type: String, enum: Object.values(OngType)},
   vehiculeType: { type: String, enum: Object.values(VehiculeType)},

@@ -62,10 +62,10 @@ const Profile = () => {
             <div className="profile-card">
               <div className="card-white ">
                 <button className="mail">
-                  <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                   {/*  <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                     <rect width={20} height={16} x={2} y={4} rx={2} />
                     <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                  </svg>
+                  </svg>*/}
                 </button>
                 <div className="profile-pic">
                   <img src={pdp} alt="Profile" />
@@ -81,7 +81,7 @@ const Profile = () => {
                     <h1 style={{ color:'white', fontSize:'40px', fontStyle: 'oblique' }}>
                       {user?.role || 'Loading...'}
                     </h1>
-                    <button className="button">Contact Me</button>
+                  {/* <button className="button">Contact Me</button> */} 
                   </div>
                 </div>
               </div>

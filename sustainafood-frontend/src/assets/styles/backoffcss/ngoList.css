@@ -1,4 +1,4 @@
-/* Style de la page ONG */
+/* Style de la page ngos */
 .ngo-list {
     background: white;
     padding: 15px;
@@ -28,7 +28,7 @@ th, td {
     border-bottom: 1px solid #ddd;
 }
 
-/* Photo des ONG */
+/* Photo des ngos */
 .ngo-photo {
     width: 40px;
     height: 40px;

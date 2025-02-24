@@ -15,6 +15,9 @@ import SupermarketList from "./pages/backoffice/SupermarketList";
 import StudentList from "./pages/backoffice/StudentList";
 import TransporterList from "./pages/backoffice/TransporterList";
 import About from "./pages/About";
+import RestaurantList from './pages/backoffice/RestaurantList';
+import AdminProfile from './pages/backoffice/AdminProfile';
+
 const App = () => {
   return (
 
@@ -29,9 +32,12 @@ const App = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/recipients/ngos" element={<NGOList />} />
         <Route path="/donors/supermarkets" element={<SupermarketList />} />
+        <Route path="/donors/restaurants" element={<RestaurantList />} />
         <Route path="/recipients/students" element={<StudentList />} />
         <Route path="/transporters" element={<TransporterList />} />
         <Route path="/About" element={<About />} />
+        <Route path="/admin-profile" element={<AdminProfile />} />
+
       </Routes>
     </Router>
   );

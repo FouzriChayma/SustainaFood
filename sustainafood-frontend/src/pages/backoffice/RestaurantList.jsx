@@ -2,32 +2,32 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
-import "/src/assets/styles/backoffcss/supermarketList.css";
+import "/src/assets/styles/backoffcss/restaurantList.css";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
-const SupermarketList = () => {
-    const [supermarkets, setSupermarkets] = useState([]); // Stores fetched supermarkets
+const RestaurantList = () => {
+    const [restaurants, setRestaurants] = useState([]); // Stores fetched restaurants
 
-    // Fetch supermarkets from the backend
+    // Fetch restaurants from the backend
     useEffect(() => {
         axios.get("http://localhost:3000/users/list")
             .then(response => {
-                const supermarketUsers = response.data.filter(user => user.role === "supermarket");
-                setSupermarkets(supermarketUsers);
+                const restaurantUsers = response.data.filter(user => user.role === "restaurant");
+                setRestaurants(restaurantUsers);
             })
-            .catch(error => console.error("Error fetching supermarkets:", error));
+            .catch(error => console.error("Error fetching restaurants:", error));
     }, []);
 
-    // Function to delete a supermarket
-    const deleteSupermarket = async (supermarketId) => {
-        if (!window.confirm("Are you sure you want to delete this supermarket?")) return;
+    // Function to delete a restaurant
+    const deleteRestaurant = async (restaurantId) => {
+        if (!window.confirm("Are you sure you want to delete this restaurant?")) return;
 
         try {
-            await axios.delete(`http://localhost:3000/users/delete/${supermarketId}`);
-            alert("Supermarket deleted!");
-            setSupermarkets(supermarkets.filter(supermarket => supermarket._id !== supermarketId)); // Update the list
+            await axios.delete(`http://localhost:3000/users/delete/${restaurantId}`);
+            alert("Restaurant deleted!");
+            setRestaurants(restaurants.filter(restaurant => restaurant._id !== restaurantId)); // Update the list
         } catch (error) {
-            console.error("Error deleting supermarket:", error);
+            console.error("Error deleting restaurant:", error);
         }
     };
 
@@ -37,8 +37,8 @@ const SupermarketList = () => {
             <div className="content">
                 <Navbar />
 
-                <div className="supermarket-list">
-                    <h3>Supermarket Management</h3>
+                <div className="restaurant-list">
+                    <h3>Restaurant Management</h3>
                     <table>
                         <thead>
                             <tr>
@@ -52,21 +52,21 @@ const SupermarketList = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {supermarkets.map((supermarket, index) => (
-                                <tr key={supermarket._id}>
+                            {restaurants.map((restaurant, index) => (
+                                <tr key={restaurant._id}>
                                     <td>{index + 1}</td>
                                     <td>
-                                        <img src={supermarket.photo || "/src/assets/User_icon_2.svg.png"} 
-                                            alt="Supermarket" className="supermarket-photo" />
+                                        <img src={restaurant.photo || "/src/assets/User_icon_2.svg.png"} 
+                                            alt="Restaurant" className="restaurant-photo" />
                                     </td>
-                                    <td>{supermarket.name}</td>
-                                    <td>{supermarket.email}</td>
-                                    <td>{supermarket.phone}</td>
-                                    <td>{supermarket.taxR || "N/A"}</td>
+                                    <td>{restaurant.name}</td>
+                                    <td>{restaurant.email}</td>
+                                    <td>{restaurant.phone}</td>
+                                    <td>{restaurant.taxR || "N/A"}</td>
                                     <td className="action-buttons">
                                         <button className="view-btn"><FaEye /></button>
                                         <button className="edit-btn"><FaEdit /></button>
-                                        <button className="delete-btn" onClick={() => deleteSupermarket(supermarket._id)}>
+                                        <button className="delete-btn" onClick={() => deleteRestaurant(restaurant._id)}>
                                             <FaTrash />
                                         </button>
                                     </td>
@@ -80,4 +80,4 @@ const SupermarketList = () => {
     );
 };
 
-export default SupermarketList;
+export default RestaurantList;

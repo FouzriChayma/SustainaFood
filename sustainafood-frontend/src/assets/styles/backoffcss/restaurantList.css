@@ -1,5 +1,5 @@
-/* Style de la page Student */
-.student-list {
+/* Style de la page restaurant */
+.restaurant-list {
     background: white;
     padding: 15px;
     border-radius: 10px;
@@ -10,7 +10,7 @@
 }
 
 /* Titre */
-.student-list h3 {
+.restaurant-list h3 {
     font-size: 18px;
     font-weight: bold;
     margin-bottom: 15px;
@@ -28,8 +28,8 @@ th, td {
     border-bottom: 1px solid #ddd;
 }
 
-/* Photo des Students */
-.student-photo {
+/* Photo des restaurants */
+.restaurant-photo {
     width: 40px;
     height: 40px;
     border-radius: 50%;

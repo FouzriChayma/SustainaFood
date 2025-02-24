@@ -52,7 +52,7 @@ const Sidebar = () => {
               {showDonors && (
                 <div className="sub-dropdown-content">
                   <Link to="/donors/supermarkets">Supermarkets</Link>
-                  <Link to="/donors/restaurants">Restaurents</Link>
+                  <Link to="/donors/restaurants">Restaurants</Link>
                 </div>
               )}
 

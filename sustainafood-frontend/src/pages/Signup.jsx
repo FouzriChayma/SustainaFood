@@ -125,14 +125,14 @@ const Signup = () => {
           <div className="signup-overlay">
             <div className="signup-overlay-panel signup-overlay-left">
               <img src={loginImg} alt="Logo" className="signup-logo" />
-              <button className="ghost" onClick={togglePanel}>
+              <button className="signbtn" onClick={togglePanel}>
                 <FontAwesomeIcon icon={faArrowLeft} />
               </button>
             </div>
             <div className="signup-overlay-panel signup-overlay-right">
               <h1 className="signup-h1">Join Us Today!</h1>
               <p className="signup-p">Sign up to help us reduce food waste and support your community!</p>
-              <button className="ghost" onClick={togglePanel}>Sign Up</button>
+              <button className="signbtn" onClick={togglePanel}>Sign Up</button>
             </div>
           </div>
         </div>

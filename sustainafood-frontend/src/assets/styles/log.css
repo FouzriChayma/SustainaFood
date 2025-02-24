@@ -91,7 +91,7 @@
 
 .signup-button .ghost {
   background-color: #FFFFFF;
-  border-color: #FFFFFF;
+  border-color: black;
 }
 
 .signup-form {
@@ -388,4 +388,16 @@
 
 .ios-checkbox input:checked + .checkbox-wrapper {
   animation: bounce 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.signbtn{
+  margin-top: 10px;
+  font-size: 12px;
+  padding:  5px 10px; 
+  background-color: black;
+  color: white;
+  border-radius: 5px;
+  border: none;
+  width: 100px;
+  height: 40px;
+  font-size: 15px;
 }

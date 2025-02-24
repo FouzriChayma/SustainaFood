@@ -29,7 +29,7 @@ const TransporterList = () => {
   return (
     <div className="dashboard-container">
       <Sidebar />
-      <div className="content">
+      <div className="dashboard-content">
         <Navbar />
 
         <div className="transporter-list">

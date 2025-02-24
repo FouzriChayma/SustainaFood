@@ -151,14 +151,14 @@ const Login = () => {
           <div className="signup-overlay">
             <div className="signup-overlay-panel signup-overlay-left">
               <img src={loginImg} alt="Login" className="signup-logo" />
-              <button className="ghost" onClick={togglePanel}>
+              <button className="signbtn" onClick={togglePanel}>
                 <FontAwesomeIcon icon={faArrowLeft} />
               </button>
             </div>
             <div className="signup-overlay-panel signup-overlay-right">
               <h1>Welcome Back!</h1>
               <p>To keep connected with us please login with your personal info</p>
-              <button className="ghost" onClick={togglePanel}>Sign In</button>
+              <button className="signbtn" onClick={togglePanel}>Sign In</button>
             </div>
           </div>
         </div>

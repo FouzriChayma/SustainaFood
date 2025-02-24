@@ -843,5 +843,10 @@ body{
     margin-left: 340px;
     margin-top: 10px;
     font-size: 12px;
+    padding:  5px 10px; 
+    background-color: black;
+    color: white;
+    border-radius: 5px;
+    border: none;
   }
   

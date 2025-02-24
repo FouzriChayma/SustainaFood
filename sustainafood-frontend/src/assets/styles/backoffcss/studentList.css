@@ -1,9 +1,12 @@
 /* ✅ Assure que le tableau reste bien centré et ajusté */
 .student-list {
-    max-width: 90%; /* Ajuste la largeur */
-    margin: 20px auto; /* Centre horizontalement */
-    overflow-x: auto; /* Permet le scroll horizontal si besoin */
-    padding: 20px;
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 1200px;
+    margin: 20px auto;
 }
 
 /* ✅ Corrige l'affichage général du tableau */
@@ -14,6 +17,7 @@ table {
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 15px;
 }
 
 /* ✅ Ajuste l'alignement des cellules */
@@ -57,18 +61,6 @@ td {
     gap: 8px;
 }
 
-/* ✅ Style des boutons */
-button {
-    width: 40px;
-    height: 40px;
-    border: none;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    transition: transform 0.2s ease-in-out;
-}
 
 /* ✅ Couleurs fixes des boutons */
 .view-btn {
@@ -90,7 +82,7 @@ button {
         height: 35px;
     }
     
-    button {
+    .student-button {
         width: 35px;
         height: 35px;
         font-size: 16px;

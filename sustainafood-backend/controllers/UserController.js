@@ -181,29 +181,42 @@ async function getUserByEmailAndPassword(req, res) {
 const updateUser = async (req, res) => {
     try {
         const { name, email, phone, address, photo, age, sexe, image_carte_etudiant, 
-                image_carte_identite, id_fiscale, type, vehiculeType, taxR, isBlocked } = req.body;
+                num_cin, id_fiscale, type, vehiculeType, taxR, isBlocked, resetCode, resetCodeExpires } = req.body;
 
         // Filtrage des attributs autorisés pour éviter des mises à jour indésirables
         const updateData = {};
         if (name) updateData.name = name;
         if (email) updateData.email = email;
-        if (phone) updateData.phone = phone;
+        if (phone && !isNaN(phone)) updateData.phone = phone;
         if (address) updateData.address = address;
         if (photo) updateData.photo = photo;
-        if (age) updateData.age = age;
+        if (age && !isNaN(age)) updateData.age = age;
         if (sexe) updateData.sexe = sexe;
         if (image_carte_etudiant) updateData.image_carte_etudiant = image_carte_etudiant;
-        if (image_carte_identite) updateData.image_carte_identite = image_carte_identite;
+        if (num_cin) updateData.num_cin = num_cin;
         if (id_fiscale) updateData.id_fiscale = id_fiscale;
         if (type) updateData.type = type;
         if (vehiculeType) updateData.vehiculeType = vehiculeType;
         if (taxR) updateData.taxR = taxR;
-        if (typeof isBlocked === 'boolean') updateData.isBlocked = isBlocked; // Vérification explicite pour éviter de mal interpréter une valeur vide
+        if (typeof isBlocked === 'boolean') updateData.isBlocked = isBlocked;
+        if (resetCode) updateData.resetCode = resetCode;
+        if (resetCodeExpires) updateData.resetCodeExpires = resetCodeExpires;
 
         // Vérifier si l'utilisateur existe
         const user = await User.findById(req.params.id);
         if (!user) {
             return res.status(404).json({ error: "User not found" });
+        }
+
+        // Vérification supplémentaire pour empêcher la modification du rôle par un utilisateur non autorisé
+        if (req.body.role && req.user.role !== 'admin') {
+            return res.status(403).json({ error: "Unauthorized to update role" });
+        }
+        if (req.body.role) updateData.role = req.body.role;
+
+        // Ne pas permettre la modification du mot de passe via cette méthode
+        if (req.body.password) {
+            return res.status(400).json({ error: "Password cannot be updated this way" });
         }
 
         // Mise à jour de l'utilisateur
@@ -214,6 +227,7 @@ const updateUser = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
 
 
 

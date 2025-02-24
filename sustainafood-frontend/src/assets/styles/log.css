@@ -127,7 +127,7 @@
   overflow: hidden;
   width: 1088px;
   max-width: 100%;
-  min-height: 650px;
+  height: 800px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -272,6 +272,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  height: 110%;
+  margin: 40px;
 }
 /* From Uiverse.io by kyle1dev */ 
 .checkbox-container {

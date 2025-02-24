@@ -21,9 +21,25 @@ const Signup = () => {
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
-  const [role, setRole] = useState("ADMIN");
+  const [role, setRole] = useState("admin");
   const [error, setError] = useState("");
+  const [id_fiscale, setId_fiscale] = useState("");
+  const [num_cin, setNum_cin] = useState("");
+  const [sexe, setSexe] = useState("male");
+  const [age, setAge] = useState("");
+  const [taxR, setTaxR] = useState("");
+  const [VehiculeType, setVehiculeType] = useState("car");
+  const [type, setType] = useState("charitable");
+
+
   
+  const isOng = role === "ong";
+  const isstudent = role === "student";
+  const istransporter = role === "transporter";
+
+  const isDonor = role === "supermarket"&& role === "restaurant";
+
+
   // ✅ State for CAPTCHA
   const [captchaValue, setCaptchaValue] = useState(null);
 
@@ -59,6 +75,7 @@ const Signup = () => {
     } catch (err) {
         setError(err.response?.data?.error || "Erreur d'inscription.");
     }
+    
 };
 
 
@@ -91,12 +108,59 @@ const Signup = () => {
               <option value="supermarket">Supermarket</option>
               <option value="student">Student</option>
             </select>
+            {isstudent && (
+              <>
+            <select className="signup-input" value={sexe} onChange={(e) => setSexe(e.target.value)} required>
+              <option value="male">Men</option>
+              <option value="female">women</option>
+              <option value="other">OTHER</option>
+              
+            </select>
+            <input className="signup-input" type="number" placeholder="Age" value={age} onChange={(e) => setAge(e.target.value)} required />
+            <input className="signup-input" type="text" placeholder="Cin number" value={num_cin} onChange={(e) => setNum_cin(e.target.value)} required />
 
+            </>
+            )}
+            {isOng && (
+              <>
+               <input className="signup-input" type="text" placeholder="Fiscale id" value={id_fiscale} onChange={(e) => setId_fiscale(e.target.value)} required />
+               
+               <select className="signup-input" value={type} onChange={(e) => setType(e.target.value)} required>
+               <option value="advocacy">Advocacy</option>
+               <option value="operational">Operational</option>
+               <option value="charitable">Charitable</option>
+               <option value="development">Development</option>
+               <option value="environmental">Environmental</option>
+               <option value="human-rights">Human-rights</option>
+               <option value="relief">Relief</option>
+               <option value="research">Research</option>
+               <option value="philanthropic">Philanthropic</option>
+               <option value="social_welfare">Social_welfare</option>
+               <option value="cultural">Cultural</option>
+               <option value="faith_based">Faith_based</option>
+
+             </select>
+             </>
+            )}
+            {istransporter && (
+              <>
+            
+             <select className="signup-input" value={VehiculeType} onChange={(e) => setVehiculeType(e.target.value)} required>
+              <option value="car">CAR</option>
+              <option value="motorbike">MOTORBIKE</option>
+              <option value="bicycle">BICYCLE</option>
+              
+            </select>
+            </>)}
+            {isDonor && (
+              <>
+            <input className="signup-input" type="text" placeholder="Tax reference" value={taxR} onChange={(e) => setTaxR(e.target.value)} required />
+            </>)}
             <input className="signup-input" type="text" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} required />
             <input className="signup-input" type="number" placeholder="Phone Number" value={phone} onChange={(e) => setPhone(e.target.value)} required />
 
             {/* ✅ Google reCAPTCHA */}
-            <ReCAPTCHA
+            <ReCAPTCHA 
               sitekey="6LeXoN8qAAAAAHnZcOwetBZ9TfyOl8K_wg7j97hq" // Your reCAPTCHA key
               onChange={(value) => setCaptchaValue(value)} // Save CAPTCHA response
             />

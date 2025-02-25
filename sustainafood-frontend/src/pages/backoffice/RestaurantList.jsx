@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import "/src/assets/styles/backoffcss/restaurantList.css";
-import { FaEye, FaTrash } from "react-icons/fa"; // Suppression de FaEdit
+import { FaEye, FaTrash, FaBan, FaUnlock } from "react-icons/fa";
 import ReactPaginate from "react-paginate";
 
 const RestaurantList = () => {
@@ -20,6 +21,28 @@ const RestaurantList = () => {
             })
             .catch(error => console.error("Error fetching restaurants:", error));
     }, []);
+
+    // Fonction pour bloquer/débloquer un restaurant    
+    const handleBlockRestaurant = async (restaurantId, isBlocked) => {
+        try {
+            const response = await axios.put(`http://localhost:3000/users/toggle-block/${restaurantId}`, {
+                isBlocked: !isBlocked
+            });
+
+            if (response.status === 200) {
+                alert(`Restaurant has been ${response.data.isBlocked ? "blocked" : "unblocked"} successfully.`);
+                // Update the UI after blocking/unblocking
+                setRestaurants(restaurants.map(restaurant =>
+                    restaurant._id === restaurantId ? { ...restaurant, isBlocked: response.data.isBlocked } : restaurant
+                ));
+            } else {
+                alert(response.data.error || "Error toggling block status.");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Failed to update block status.");
+        }
+    };
 
     // Fonction pour supprimer un restaurant
     const deleteRestaurant = async (restaurantId) => {
@@ -47,58 +70,66 @@ const RestaurantList = () => {
     return (
         <div className="dashboard-container">
             <Sidebar />
-            <div className="content">
+            <div className="dashboard-content">
                 <Navbar />
-                <div className="restaurant-list">
-                    <h3>Restaurant Management</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Photo</th>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Phone</th>
-                                <th>TaxR</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {displayRestaurants.map((restaurant, index) => (
-                                <tr key={restaurant._id}>
-                                    <td>{pagesVisited + index + 1}</td>
-                                    <td>
-                                        <img src={restaurant.photo || "/src/assets/User_icon_2.svg.png"} 
-                                            alt="Restaurant" className="restaurant-photo" />
-                                    </td>
-                                    <td>{restaurant.name}</td>
-                                    <td>{restaurant.email}</td>
-                                    <td>{restaurant.phone}</td>
-                                    <td>{restaurant.taxR || "N/A"}</td>
-                                    <td className="action-buttons">
-                                        <button className="view-btn"><FaEye /></button>
-                                        <button className="delete-btn" onClick={() => deleteRestaurant(restaurant._id)}>
-                                            <FaTrash />
-                                        </button>
-                                    </td>
+                    <div className="restaurant-list">
+                        <h3>Restaurant Management</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Photo</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>TaxR</th>
+                                    <th>Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {displayRestaurants.map((restaurant, index) => (
+                                    <tr key={restaurant._id}>
+                                        <td>{pagesVisited + index + 1}</td>
+                                        <td>
+                                            <img src={restaurant.photo || "/src/assets/User_icon_2.svg.png"} 
+                                                alt="Restaurant" className="restaurant-photo" />
+                                        </td>
+                                        <td>{restaurant.name}</td>
+                                        <td>{restaurant.email}</td>
+                                        <td>{restaurant.phone}</td>
+                                        <td>{restaurant.taxR || "N/A"}</td>
+                                        <td className="action-buttons">
+                                            <button className="view-btn">
+                                            <Link to={`/restaurants/view/${restaurant._id}`} className="view-btn"><FaEye /></Link></button>
+                                            <button
+                                                className="block-btn"
+                                                onClick={() => handleBlockRestaurant(restaurant._id, restaurant.isBlocked)}
+                                                style={{ color: restaurant.isBlocked ? "green" : "red" }}
+                                            >
+                                                {restaurant.isBlocked ? <FaUnlock /> : <FaBan />}
+                                            </button>
+                                            <button className="delete-btn" onClick={() => deleteRestaurant(restaurant._id)}>
+                                                <FaTrash />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
 
-                    {/* Pagination */}
-                    <ReactPaginate
-                        previousLabel={"Previous"}
-                        nextLabel={"Next"}
-                        pageCount={pageCount}
-                        onPageChange={changePage}
-                        containerClassName={"pagination"}
-                        previousLinkClassName={"previousBttn"}
-                        nextLinkClassName={"nextBttn"}
-                        disabledClassName={"paginationDisabled"}
-                        activeClassName={"paginationActive"}
-                    />
-                </div>
+                        {/* Pagination */}
+                        <ReactPaginate
+                            previousLabel={"Previous"}
+                            nextLabel={"Next"}
+                            pageCount={pageCount}
+                            onPageChange={changePage}
+                            containerClassName={"pagination"}
+                            previousLinkClassName={"previousBttn"}
+                            nextLinkClassName={"nextBttn"}
+                            disabledClassName={"paginationDisabled"}
+                            activeClassName={"paginationActive"}
+                        />
+                    </div>
             </div>
         </div>
     );

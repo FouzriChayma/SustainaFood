@@ -48,7 +48,7 @@
 }
 
 /* Dropdown menu */
-.dropdown-content {
+.dropdown-content-dashboard {
     display: flex;
     flex-direction: column;
     padding-left: 25px;

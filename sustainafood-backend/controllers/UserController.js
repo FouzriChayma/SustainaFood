@@ -278,6 +278,26 @@ const updateUser = async (req, res) => {
   
 
 
+// 🚀 Block or Unblock User
+async function toggleBlockUser(req, res) {
+    try {
+        const { id } = req.params; // Get user ID from request parameters
+
+        // Find the user by ID
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Toggle the isBlocked field
+        user.isBlocked = !user.isBlocked;
+        await user.save();
+
+        res.status(200).json({ message: `User ${user.isBlocked ? "blocked" : "unblocked"} successfully`, isBlocked: user.isBlocked });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
 
 
 // Delete a user
@@ -327,6 +347,110 @@ async function user_signin(req, res) {
         res.status(500).json({ error: "Server error" });
     }
 }
+// 🚀 View Student by ID
+async function viewStudent(req, res) {
+    try {
+        // Retrieve student ID from request parameters
+        const studentId = req.params.id;
 
+        // Find the student by ID
+        const student = await User.findById(studentId); // Assuming you're storing student data in the User model
+        if (!student) {
+            return res.status(404).json({ error: "Student not found" });
+        }
 
-module.exports = { addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode };
+        // Send the student details in the response
+        res.status(200).json(student);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+}
+
+async function viewRestaurant(req, res) {
+    try {
+        // Retrieve restaurant ID from request parameters
+        const restaurantId = req.params.id;
+
+        // Find the restaurant by ID (assuming you're storing restaurant data in the User model)
+        const restaurant = await User.findById(restaurantId);
+        
+        // Check if the restaurant exists
+        if (!restaurant) {
+            return res.status(404).json({ error: "Restaurant not found" });
+        }
+
+        // Send the restaurant details in the response
+        res.status(200).json(restaurant);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+}
+async function viewSupermarket(req, res) {
+    try {
+        // Retrieve supermarket ID from request parameters
+        const supermarketId = req.params.id;
+
+        // Find the supermarket by ID (assuming you're storing supermarket data in the User model)
+        const supermarket = await User.findById(supermarketId);
+        
+        // Check if the supermarket exists
+        if (!supermarket) {
+            return res.status(404).json({ error: "Supermarket not found" });
+        }
+
+        // Send the supermarket details in the response
+        res.status(200).json(supermarket);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+}
+async function viewNGO(req, res) {
+    try {
+        // Récupérer l'ID de l'ONG depuis les paramètres de la requête
+        const ongId = req.params.id;
+
+        // Trouver l'ONG par ID (en supposant que les ONG sont stockées dans le modèle User)
+        const ong = await User.findById(ongId);
+        
+        // Vérifier si l'ONG existe
+        if (!ong) {
+            return res.status(404).json({ error: "ONG not found" });
+        }
+
+        // Envoyer les détails de l'ONG dans la réponse
+        res.status(200).json(ong);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+}
+
+async function viewTransporter(req, res) {
+    try {
+        // Récupérer l'ID du transporteur depuis les paramètres de la requête
+        const transporterId = req.params.id;
+
+        // Trouver le transporteur par ID (en supposant que les transporteurs sont stockés dans le modèle User)
+        const transporter = await User.findById(transporterId);
+        
+        // Vérifier si le transporteur existe
+        if (!transporter) {
+            return res.status(404).json({ error: "Transporter not found" });
+        }
+
+        // Envoyer les détails du transporteur dans la réponse
+        res.status(200).json(transporter);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+}
+module.exports = { addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter};

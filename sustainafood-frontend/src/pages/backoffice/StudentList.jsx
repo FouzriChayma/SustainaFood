@@ -3,8 +3,9 @@ import axios from "axios";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import "/src/assets/styles/backoffcss/studentList.css";
-import { FaEye, FaTrash } from "react-icons/fa"; // Suppression de FaEdit
+import { FaEye, FaTrash, FaBan, FaUnlock } from "react-icons/fa"; // Suppression de FaEdit
 import ReactPaginate from "react-paginate";
+import { Link } from "react-router-dom";
 
 const StudentList = () => {
     const [students, setStudents] = useState([]); // Liste complète des étudiants
@@ -20,6 +21,27 @@ const StudentList = () => {
             })
             .catch(error => console.error("Error fetching students:", error));
     }, []);
+// Fonction pour bloquer/débloquer un étudiant    
+const handleBlockUser = async (userId, isBlocked) => {
+    try {
+        const response = await axios.put(`http://localhost:3000/users/toggle-block/${userId}`, {
+            isBlocked: !isBlocked
+        });
+
+        if (response.status === 200) {
+            alert(`User has been ${response.data.isBlocked ? "blocked" : "unblocked"} successfully.`);
+            // Update the UI after blocking/unblocking
+            setStudents(students.map(student =>
+                student._id === userId ? { ...student, isBlocked: response.data.isBlocked } : student
+            ));
+        } else {
+            alert(response.data.error || "Error toggling block status.");
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Failed to update block status.");
+    }
+};
 
     // Fonction pour supprimer un étudiant
     const deleteUser = async (userId) => {
@@ -47,8 +69,9 @@ const StudentList = () => {
     return (
         <div className="dashboard-container">
             <Sidebar />
-            <div className="dashboardcontent">
+            <div className="dashboard-content">
                 <Navbar />
+                
                 <div className="student-list">
                     <h3>Student Management</h3>
                     <table>
@@ -80,7 +103,18 @@ const StudentList = () => {
                                     <td>{student.age || "N/A"}</td>
                                     <td>{student.sexe}</td>
                                     <td className="action-buttons">
-                                        <button className="view-btn"><FaEye /></button>
+                                        <button className="view-btn">
+                                            <Link to={`/students/view/${student._id}`}>
+                                                <FaEye />
+                                            </Link>
+                                        </button>
+                                        <button
+                                            className="block-btn"
+                                            onClick={() => handleBlockUser(student._id, student.isBlocked)}
+                                            style={{ color: student.isBlocked ? "green" : "red" }}
+                                        >
+                                            {student.isBlocked ? <FaUnlock /> : <FaBan />}
+                                        </button>
                                         <button className="delete-btn" onClick={() => deleteUser(student._id)}>
                                             <FaTrash />
                                         </button>

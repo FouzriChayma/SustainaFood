@@ -3,8 +3,9 @@ import axios from "axios";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import "/src/assets/styles/backoffcss/transporterList.css";
-import { FaEye, FaTrash } from "react-icons/fa"; // Suppression de FaEdit
+import { FaEye, FaTrash , FaBan, FaUnlock } from "react-icons/fa"; // Suppression de FaEdit
 import ReactPaginate from "react-paginate";
+import { Link } from "react-router-dom";
 
 const TransporterList = () => {
     const [transporters, setTransporters] = useState([]); // Liste complète des transporteurs
@@ -21,6 +22,26 @@ const TransporterList = () => {
             .catch(error => console.error("Error fetching transporters:", error));
     }, []);
 
+    const handleBlockUser = async (userId, isBlocked) => {
+        try {
+            const response = await axios.put(`http://localhost:3000/users/toggle-block/${userId}`, {
+                isBlocked: !isBlocked
+            });
+
+            if (response.status === 200) {
+                alert(`User has been ${response.data.isBlocked ? "blocked" : "unblocked"} successfully.`);
+                // Update the UI after blocking/unblocking
+                setTransporters(transporters.map(transporter =>
+                    transporter._id === userId ? { ...transporter, isBlocked: response.data.isBlocked } : transporter
+                ));
+            } else {
+                alert(response.data.error || "Error toggling block status.");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Failed to update block status.");
+        }
+    };
     // Fonction pour supprimer un transporteur
     const deleteTransporter = async (transporterId) => {
         if (!window.confirm("Are you sure you want to delete this transporter?")) return;
@@ -76,7 +97,16 @@ const TransporterList = () => {
                                     <td>{transporter.phone}</td>
                                     <td>{transporter.vehiculeType || "N/A"}</td>
                                     <td className="action-buttons">
-                                        <button className="view-btn"><FaEye /></button>
+                                        <button className="view-btn"><Link to={`/transporters/view/${transporter._id}`}>
+                                                <FaEye />
+                                            </Link></button>
+                                        <button
+                                            className="block-btn"
+                                            onClick={() => handleBlockUser(transporter._id, transporter.isBlocked)}
+                                            style={{ color: transporter.isBlocked ? "green" : "red" }}
+                                        >
+                                            {transporter.isBlocked ? <FaUnlock /> : <FaBan />}
+                                        </button>                                        
                                         <button className="delete-btn" onClick={() => deleteTransporter(transporter._id)}>
                                             <FaTrash />
                                         </button>

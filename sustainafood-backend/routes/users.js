@@ -4,7 +4,15 @@ const userController=require('../controllers/UserController');
 // Import de votre config Multer
 const upload = require("../Middleware/Upload");
 
-router.post('/create',userController.addUser);
+// Use Multer to handle file uploads for both "photo" and "image_carte_etudiant"
+router.post(
+  '/create',
+  upload.fields([
+    { name: "photo", maxCount: 1 },
+    { name: "image_carte_etudiant", maxCount: 1 }
+  ]),
+  userController.addUser
+);
 router.get('/list', userController.getUsers);
 router.get('/details/:id', userController.getUserById);
 router.delete('/delete/:id', userController.deleteUser);

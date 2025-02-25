@@ -108,33 +108,45 @@ async function resetPassword(req, res) {
 
 async function addUser(req, res) {
     try {
-        const { email, password, confirmPassword, phone, name, address, role } = req.body;
-
-        // Vérifier si tous les champs sont remplis
-        if (!email || !password || !confirmPassword || !phone || !name || !address || !role) {
-            return res.status(400).json({ error: "Veuillez remplir tous les champs." });
+      const { email, password, confirmPassword, phone, name, address, role } = req.body;
+  
+      // Vérifier si tous les champs sont remplis
+      if (!email || !password || !confirmPassword || !phone || !name || !address || !role) {
+        return res.status(400).json({ error: "Veuillez remplir tous les champs." });
+      }
+  
+      // Vérifier si les mots de passe correspondent
+      if (password !== confirmPassword) {
+        return res.status(400).json({ error: "Passwords do not match" });
+      }
+  
+      // Hacher le mot de passe avant de le stocker
+      const hashedPassword = await bcrypt.hash(password, 10);
+  
+      // Construire l'objet utilisateur à partir de req.body
+      const userData = { ...req.body, password: hashedPassword };
+  
+      // Si un fichier "photo" est uploadé, utilisez le chemin fourni par Multer
+      if (req.files && req.files.photo && req.files.photo[0]) {
+        userData.photo = req.files.photo[0].path;
+      }
+  
+      // Si l'utilisateur est un étudiant et qu'un fichier "image_carte_etudiant" est uploadé, ajoutez-le
+      if (role === 'student') {
+        if (req.files && req.files.image_carte_etudiant && req.files.image_carte_etudiant[0]) {
+          userData.image_carte_etudiant = req.files.image_carte_etudiant[0].path;
         }
-
-        // Vérifier si les mots de passe correspondent
-        if (password !== confirmPassword) {
-            return res.status(400).json({ error: "Passwords do not match" });
-        }
-
-        // Vous pouvez également ajouter une validation de l'e-mail ici
-        // Par exemple, vérifier que l'e-mail n'est pas déjà utilisé
-
-        // Hacher le mot de passe avant de le stocker
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Créer l'utilisateur avec le mot de passe haché
-        const user = new User({ ...req.body, password: hashedPassword });
-
-        await user.save();
-        res.status(201).json(user);
+      }
+  
+      // Créer l'utilisateur avec les données et le mot de passe haché
+      const user = new User(userData);
+      await user.save();
+      res.status(201).json(user);
     } catch (error) {
-        res.status(400).json({ error: error.message });
+      res.status(400).json({ error: error.message });
     }
-}
+  }
+  
 
 // Get all users
 async function getUsers(req, res) {

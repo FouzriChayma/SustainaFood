@@ -4,8 +4,13 @@ const API_URL = import.meta.env.VITE_API_URL + "/users";
 
 // 🔹 Créer un utilisateur
 export const signupUser = async (userData) => {
-    return await axios.post('http://localhost:3000/users/create', userData);
+  return await axios.post('http://localhost:3000/users/create', userData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 };
+
 export const userwinthemailandpss = async (userData) => {
     return await axios.post('http://localhost:3000/users/userwinthemailandpss', userData);
 }

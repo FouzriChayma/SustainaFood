@@ -9,24 +9,24 @@ import gglimg from "../assets/images/ggl.jpg";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { signupUser } from "../api/userService";
-import { FaEye, FaEyeSlash } from "react-icons/fa"; // Import icons for password visibility
-import styled, { createGlobalStyle, keyframes } from 'styled-components';
+import { FaEye, FaEyeSlash } from "react-icons/fa"; // Icons for password visibility
+import { FaCamera } from "react-icons/fa"; // For the profile photo icon
+import styled from "styled-components";
 
-const All=styled.div`
- background-color: #eee;
+const All = styled.div`
+  background-color: #eee;
   border: none;
   color: black;
   padding: 3px 15px;
   margin: 4px 0;
-  width: 100%;`
-const StyledWrapper = styled.div`
-  /* Note that you only needs to edit the config to customize the button! */
+  width: 100%;
+`;
 
+const StyledWrapper = styled.div`
+  /* Button styling for the plus button */
   .plusButton {
-    /* Config start */
     --plus_sideLength: 2.5rem;
     --plus_topRightTriangleSideLength: 0.9rem;
-    /* Config end */
     position: relative;
     display: flex;
     justify-content: center;
@@ -36,9 +36,7 @@ const StyledWrapper = styled.div`
     height: var(--plus_sideLength);
     background-color: #8dc73f;
     overflow: hidden;
-    
   }
-
   .plusButton::before {
     position: absolute;
     content: "";
@@ -52,20 +50,16 @@ const StyledWrapper = styled.div`
     transition-timing-function: ease-in-out;
     transition-duration: 0.2s;
   }
-
   .plusButton:hover {
     cursor: pointer;
   }
-
   .plusButton:hover::before {
     --plus_topRightTriangleSideLength: calc(var(--plus_sideLength) * 2);
   }
-
   .plusButton:focus-visible::before {
     --plus_topRightTriangleSideLength: calc(var(--plus_sideLength) * 2);
   }
-
-  .plusButton>.plusIcon {
+  .plusButton > .plusIcon {
     fill: white;
     width: calc(var(--plus_sideLength) * 0.5);
     height: calc(var(--plus_sideLength) * 0.5);
@@ -73,19 +67,20 @@ const StyledWrapper = styled.div`
     transition-timing-function: ease-in-out;
     transition-duration: 0.2s;
   }
-
-  .plusButton:hover>.plusIcon {
+  .plusButton:hover > .plusIcon {
     fill: black;
     transform: rotate(180deg);
   }
-
-  .plusButton:focus-visible>.plusIcon {
+  .plusButton:focus-visible > .plusIcon {
     fill: black;
     transform: rotate(180deg);
-  }`;
-  const HiddenFileInput = styled.input`
+  }
+`;
+
+const HiddenFileInput = styled.input`
   display: none;
 `;
+
 const ImagePreview = styled.img`
   width: 30px;
   height: 30px;
@@ -93,14 +88,18 @@ const ImagePreview = styled.img`
   object-fit: cover;
   margin-left: 10px;
 `;
+
 const Signup = () => {
   const [fileName, setFileName] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
+  // NEW: State to store the actual profile photo file
+  const [profilePhotoFile, setProfilePhotoFile] = useState(null);
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
       setFileName(file.name);
+      setProfilePhotoFile(file); // Save the actual file for uploading
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target.result);
@@ -108,11 +107,11 @@ const Signup = () => {
       reader.readAsDataURL(file);
     }
   };
+
   const navigate = useNavigate();
   const [isRightPanelActive, setIsRightPanelActive] = useState(false);
 
-  // State for input fields
-
+  // Input fields state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -126,20 +125,17 @@ const Signup = () => {
   const [sexe, setSexe] = useState("male");
   const [age, setAge] = useState("");
   const [taxR, setTaxR] = useState("");
-  const [VehiculeType, setVehiculeType] = useState("car");
+  const [vehiculeType, setVehiculeType] = useState("car");
   const [type, setType] = useState("charitable");
-  const [showPassword, setShowPassword] = useState(false); // Define state for password visibility
+  const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  
   const isOng = role === "ong";
   const isstudent = role === "student";
   const istransporter = role === "transporter";
+  const isDonor = role === "supermarket" || role === "restaurant";
 
-  const isDonor = role === "supermarket"|| role === "restaurant";
-
-
-  // ✅ State for CAPTCHA
+  // State for CAPTCHA
   const [captchaValue, setCaptchaValue] = useState(null);
 
   const togglePanel = () => {
@@ -151,32 +147,56 @@ const Signup = () => {
     setError("");
 
     if (!captchaValue) {
-        setError("Veuillez valider le reCAPTCHA.");
-        return;
+      setError("Veuillez valider le reCAPTCHA.");
+      return;
     }
-
     if (!email || !password || !confirmPassword || !phone || !name || !address) {
-        setError("Veuillez remplir tous les champs.");
-        return;
+      setError("Veuillez remplir tous les champs.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Les mots de passe ne correspondent pas.");
+      return;
     }
 
-    if (password !== confirmPassword) {
-        setError("Les mots de passe ne correspondent pas.");
-        return;
+    // Create a FormData object and append all fields
+    const data = new FormData();
+    data.append("email", email);
+    data.append("password", password);
+    data.append("confirmPassword", confirmPassword);
+    data.append("phone", phone);
+    data.append("name", name);
+    data.append("address", address);
+    data.append("role", role);
+    if (isOng) {
+      data.append("id_fiscale", id_fiscale);
+      data.append("type", type);
+    }
+    if (isstudent) {
+      data.append("sexe", sexe);
+      data.append("age", age);
+      data.append("num_cin", num_cin);
+    }
+    if (istransporter) {
+      data.append("vehiculeType", vehiculeType);
+    }
+    if (isDonor) {
+      data.append("taxR", taxR);
+    }
+    // Append profile photo file if exists
+    if (profilePhotoFile) {
+      data.append("photo", profilePhotoFile);
     }
 
     try {
-        const userData = { email, password, confirmPassword, phone, name, address, role }; // ✅ Fix here
-        console.log("Sending user data:", userData); // Debugging log
-        const response = await signupUser(userData);
-        console.log("Inscription réussie :", response.data);
-        navigate("/profile");
+      console.log("Sending user data:", data);
+      const response = await signupUser(data);
+      console.log("Inscription réussie :", response.data);
+      navigate("/profile");
     } catch (err) {
-        setError(err.response?.data?.error || "Erreur d'inscription.");
+      setError(err.response?.data?.error || "Erreur d'inscription.");
     }
-    
-};
-
+  };
 
   return (
     <div className="aa">
@@ -197,102 +217,109 @@ const Signup = () => {
             {/* Input Fields */}
             <input className="signup-input" type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
             <input className="signup-input" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <input className="signup-input"  type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            <span style={{marginBottom:"10px"}} className="auth-eye-icon" onClick={() => setShowPassword(!showPassword)}>
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </span>
-
+            <input className="signup-input" type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <span style={{ marginBottom: "10px" }} className="auth-eye-icon" onClick={() => setShowPassword(!showPassword)}>
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </span>
             <input className="signup-input" type={showConfirmPassword ? "text" : "password"} placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-            <span style={{marginBottom:"10px"}} className="auth-eye-icon" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-              </span>
-              
+            <span style={{ marginBottom: "10px" }} className="auth-eye-icon" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+              {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+            </span>
+
             <select className="signup-input" value={role} onChange={(e) => setRole(e.target.value)} required>
               <option value="admin">Admin</option>
               <option value="ong">ONG</option>
               <option value="restaurant">Restaurant</option>
               <option value="supermarket">Supermarket</option>
               <option value="student">Student</option>
+              <option value="transporter">Transporter</option>
             </select>
+
+            {/* Profil Photo Upload Section */}
             <All>
-              <div style={{display:"flex"}}>
-              <HiddenFileInput
-        id="file"
-        type="file"
-        onChange={handleFileChange}
-      />            <div style={{marginBottom:"9px"}}><span>Profil photo</span></div><br/>
-            {imagePreview && <ImagePreview src={imagePreview} alt="Profil" />}
-            {fileName && <p>📂 {fileName}</p>} {/* Displays file name after selection */}
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <HiddenFileInput
+                  id="file"
+                  type="file"
+                  onChange={handleFileChange}
+                />
+                <div style={{ marginBottom: "9px" }}>
+                  <span>Profil photo</span>
+                </div>
+                <br />
+                {imagePreview && <ImagePreview src={imagePreview} alt="Profil" />}
+                {fileName && <p>📂 {fileName}</p>}
+              </div>
+              <StyledWrapper>
+                <div
+                  tabIndex={0}
+                  className="plusButton"
+                  style={{ marginLeft: "380px", marginTop: "-21px" }}
+                  onClick={() => document.getElementById("file").click()}
+                >
+                  <svg className="plusIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30">
+                    <g mask="url(#mask0_21_345)">
+                      <path d="M13.75 23.75V16.25H6.25V13.75H13.75V6.25H16.25V13.75H23.75V16.25H16.25V23.75H13.75Z" />
+                    </g>
+                  </svg>
+                </div>
+              </StyledWrapper>
+            </All>
 
-            </div>
-            <StyledWrapper>
-      <div tabIndex={0} className="plusButton "   style={{marginLeft:"380px",marginTop:"-21px"}}
-          onClick={() => document.getElementById("file").click()} // 👈 Liaison avec l'input file
-      > 
-        <svg className="plusIcon " xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30">
-          <g mask="url(#mask0_21_345)">
-            <path d="M13.75 23.75V16.25H6.25V13.75H13.75V6.25H16.25V13.75H23.75V16.25H16.25V23.75H13.75Z" />
-          </g>
-        </svg>
-      </div>
-    </StyledWrapper>
-
-    </All>
             {isstudent && (
               <>
-            <select className="signup-input" value={sexe} onChange={(e) => setSexe(e.target.value)} required>
-              <option value="male">Men</option>
-              <option value="female">women</option>
-              <option value="other">OTHER</option>
-              
-            </select>
-            <input className="signup-input" type="number" placeholder="Age" value={age} onChange={(e) => setAge(e.target.value)} required />
-            <input className="signup-input" type="text" placeholder="Cin number" value={num_cin} onChange={(e) => setNum_cin(e.target.value)} required />
-
-            </>
+                <select className="signup-input" value={sexe} onChange={(e) => setSexe(e.target.value)} required>
+                  <option value="male">Men</option>
+                  <option value="female">Women</option>
+                  <option value="other">OTHER</option>
+                </select>
+                <input className="signup-input" type="number" placeholder="Age" value={age} onChange={(e) => setAge(e.target.value)} required />
+                <input className="signup-input" type="text" placeholder="Cin number" value={num_cin} onChange={(e) => setNum_cin(e.target.value)} required />
+              </>
             )}
             {isOng && (
               <>
-               <input className="signup-input" type="text" placeholder="Fiscale id" value={id_fiscale} onChange={(e) => setId_fiscale(e.target.value)} required />
-               
-               <select className="signup-input" value={type} onChange={(e) => setType(e.target.value)} required>
-               <option value="advocacy">Advocacy</option>
-               <option value="operational">Operational</option>
-               <option value="charitable">Charitable</option>
-               <option value="development">Development</option>
-               <option value="environmental">Environmental</option>
-               <option value="human-rights">Human-rights</option>
-               <option value="relief">Relief</option>
-               <option value="research">Research</option>
-               <option value="philanthropic">Philanthropic</option>
-               <option value="social_welfare">Social_welfare</option>
-               <option value="cultural">Cultural</option>
-               <option value="faith_based">Faith_based</option>
-
-             </select>
-             </>
+                <input className="signup-input" type="text" placeholder="Fiscale id" value={id_fiscale} onChange={(e) => setId_fiscale(e.target.value)} required />
+                <select className="signup-input" value={type} onChange={(e) => setType(e.target.value)} required>
+                  <option value="advocacy">Advocacy</option>
+                  <option value="operational">Operational</option>
+                  <option value="charitable">Charitable</option>
+                  <option value="development">Development</option>
+                  <option value="environmental">Environmental</option>
+                  <option value="human-rights">Human-rights</option>
+                  <option value="relief">Relief</option>
+                  <option value="research">Research</option>
+                  <option value="philanthropic">Philanthropic</option>
+                  <option value="social_welfare">Social_welfare</option>
+                  <option value="cultural">Cultural</option>
+                  <option value="faith_based">Faith_based</option>
+                </select>
+              </>
             )}
             {istransporter && (
               <>
-            
-             <select className="signup-input" value={VehiculeType} onChange={(e) => setVehiculeType(e.target.value)} required>
-              <option value="car">CAR</option>
-              <option value="motorbike">MOTORBIKE</option>
-              <option value="bicycle">BICYCLE</option>
-              
-            </select>
-            </>)}
+                <select className="signup-input" value={vehiculeType} onChange={(e) => setVehiculeType(e.target.value)} required>
+                  <option value="car">CAR</option>
+                  <option value="motorbike">MOTORBIKE</option>
+                  <option value="bicycle">BICYCLE</option>
+                  <option value="van">VAN</option>
+                  <option value="truck">TRUCK</option>
+                  <option value="scooter">SCOOTER</option>
+                </select>
+              </>
+            )}
             {isDonor && (
               <>
-            <input className="signup-input" type="text" placeholder="Tax reference" value={taxR} onChange={(e) => setTaxR(e.target.value)} required />
-            </>)}
+                <input className="signup-input" type="text" placeholder="Tax reference" value={taxR} onChange={(e) => setTaxR(e.target.value)} required />
+              </>
+            )}
             <input className="signup-input" type="text" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} required />
             <input className="signup-input" type="number" placeholder="Phone Number" value={phone} onChange={(e) => setPhone(e.target.value)} required />
 
             {/* ✅ Google reCAPTCHA */}
             <ReCAPTCHA 
-              sitekey="6LeXoN8qAAAAAHnZcOwetBZ9TfyOl8K_wg7j97hq" // Your reCAPTCHA key
-              onChange={(value) => setCaptchaValue(value)} // Save CAPTCHA response
+              sitekey="6LeXoN8qAAAAAHnZcOwetBZ9TfyOl8K_wg7j97hq"
+              onChange={(value) => setCaptchaValue(value)}
             />
 
             {/* Display Errors */}

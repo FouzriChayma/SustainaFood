@@ -47,7 +47,7 @@ const NGOList = () => {
     return (
         <div className="dashboard-container">
             <Sidebar />
-            <div className="content">
+            <div className="dashboard-content">
                 <Navbar />
                 <div className="ngo-list">
                     <h3>NGO Management</h3>

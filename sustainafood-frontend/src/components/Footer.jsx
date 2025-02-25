@@ -136,7 +136,7 @@ const Footer = () => {
           <ColumnTitle>Quick Links</ColumnTitle>
           <FooterLinks>
             <li><a href="#">About Us</a></li>
-            <li><a href="#">Contact</a></li>
+            <li><a href="/Contact">Contact</a></li>
             <li><a href="#">Privacy Policy</a></li>
             <li><a href="#">Terms & Conditions</a></li>
           </FooterLinks>

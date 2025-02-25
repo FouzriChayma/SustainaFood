@@ -4,7 +4,7 @@
 }
 
 /* Espace autour du contenu */
-.content {
+.dashboard-content {
     flex-grow: 1;
     padding: 20px; /* ✅ Augmenter l'espacement */
 }
@@ -19,7 +19,7 @@
 }
 
 /* Taille des cartes */
-.card {
+.card-dashbord {
     width: 200px;
     height: 120px;
     padding: 12px;

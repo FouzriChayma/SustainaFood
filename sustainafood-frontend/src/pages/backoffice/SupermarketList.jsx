@@ -47,7 +47,7 @@ const SupermarketList = () => {
     return (
         <div className="dashboard-container">
             <Sidebar />
-            <div className="content">
+            <div className="dashboard-content">
                 <Navbar />
                 <div className="supermarket-list">
                     <h3>Supermarket Management</h3>

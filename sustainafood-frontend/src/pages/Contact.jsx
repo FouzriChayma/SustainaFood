@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import './Contact.css';
-import { BsFillTelephoneFill } from "react-icons/bs";
-import { GiPositionMarker } from "react-icons/gi";
+import '../assets/styles/Contact.css';
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaClock } from 'react-icons/fa';  // Importation des icônes
 
 
@@ -12,7 +10,6 @@ const Contact = () => {
   const [feedback, setFeedback] = useState({
     name: '',
     email: '',
-    rating: '',
     comment: '',
   });
 
@@ -25,7 +22,7 @@ const Contact = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!feedback.name || !feedback.email || !feedback.rating || !feedback.comment) {
+    if (!feedback.name || !feedback.email  || !feedback.comment) {
       alert('Please fill in all fields before submitting!');
       return;
     }
@@ -36,35 +33,37 @@ const Contact = () => {
     <>
       <Navbar />
       <div className="contact-page">
-        <h2 className="contact-title">Contact Us</h2>
+        <h2 className="contact-title">Get In Touch</h2>
+        <a className='contact-message'> Have a question, a suggestion, or need assistance? We’re here to help! Whether you're looking for support, 
+        partnership opportunities, or more information about our services, feel free to reach out. Our team will respond as soon as possible.</a>
         <div className="contact-container">
+          
           <div className="contact-info">
             <div className="contact-box">
-              {/* <div className="icon">📍</div> */}
-              <FaMapMarkerAlt size={30} color="#4CAF50" />  {/* Icône localisation */}
+              <FaMapMarkerAlt size={30} color="#8dc73f" />  {/* Icône localisation */}
 
               <div className="content">
                 <h4>Address</h4>
-                <p>123 Main Street, City, Country</p>
+                <p>Pôle Technologique El Ghazela , Ariana Tunis</p>
               </div>
             </div>
             <div className="contact-box">
-              <FaPhone size={30} color="#4CAF50" />  {/* Icône téléphone */}
+              <FaPhone size={30} color="#8dc73f" />  {/* Icône téléphone */}
 
               <div className="content">
                 <h4>Phone</h4>
-                <p>+123 456 789</p>
+                <p>+216 123 456 789</p>
               </div>
             </div>
             <div className="contact-box">
-            <FaEnvelope size={30} color="#4CAF50" />  {/* Icône e-mail */}
+            <FaEnvelope size={30} color="#8dc73f" />  {/* Icône e-mail */}
             <div className="content">
                 <h4>Email</h4>
-                <p>contact@company.com</p>
+                <p>info@sustainafood.com</p>
               </div>
             </div>
             <div className="contact-box">
-            <FaClock size={30} color="#4CAF50" />  {/* Icône heure */}
+            <FaClock size={30} color="#8dc73f" />  {/* Icône heure */}
             <div className="content">
                 <h4>Working Hours</h4>
                 <p>Mon - Fri: 9 AM - 6 PM</p>
@@ -72,20 +71,13 @@ const Contact = () => {
             </div>
           </div>
           <div className="feedback-form-container">
-            <h3>Leave Feedback</h3>
+            <h3>Leave a message</h3>
             <form onSubmit={handleSubmit} className="feedback-form">
               <input type="text" name="name" placeholder="Your Name" value={feedback.name} onChange={handleChange} required />
               <input type="email" name="email" placeholder="Your Email" value={feedback.email} onChange={handleChange} required />
-              <select name="rating" value={feedback.rating} onChange={handleChange} required>
-                <option value="">Select Rating</option>
-                <option value="1">1 - Poor</option>
-                <option value="2">2 - Fair</option>
-                <option value="3">3 - Good</option>
-                <option value="4">4 - Very Good</option>
-                <option value="5">5 - Excellent</option>
-              </select>
-              <textarea name="comment" placeholder="Your Feedback" value={feedback.comment} onChange={handleChange} required />
-              <button type="submit">Submit Feedback</button>
+              
+              <textarea name="comment" placeholder="Your Message" value={feedback.comment} onChange={handleChange} required />
+              <button className="feedback-success" type="submit">Send</button>
             </form>
             {submitted && (
               <div className="feedback-success">
@@ -96,15 +88,16 @@ const Contact = () => {
           </div>
         </div>
         <div className="contact-map">
-          <iframe 
-            src="https://www.google.com/maps/embed?..." 
-            width="100%" 
-            height="400" 
-            style={{ border: 0 }} 
-            allowFullScreen="" 
-            loading="lazy" 
-            referrerPolicy="no-referrer-when-downgrade"
-          ></iframe>
+        <iframe 
+  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3164.329763530718!2d10.1772!3d36.8760!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x12d347f3d5b8d4d5%3A0x3a8d6db8ed2f31b0!2sAriana+Soghra!5e0!3m2!1sen!2stn!4v1622064481553" 
+  width="100%" 
+  height="400" 
+  style={{ border: 0 }} 
+  allowFullScreen="" 
+  loading="lazy" 
+  referrerPolicy="no-referrer-when-downgrade"
+/>
+
         </div>
       </div>
       <Footer />

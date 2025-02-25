@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import '../assets/styles/Profile.css';
 import pdp from '../assets/images/pdp.png';
 import Navbar from '../components/Navbar';
@@ -39,10 +39,11 @@ const Profile = () => {
     }
   }, [authUser, token, navigate]);
 
+  
   return (
     <>
       <Navbar />
-      <div className="container">
+      <div className="container-profile">
         <header>
           <div className="profile-header">
             <h1>My Profile</h1>
@@ -56,7 +57,7 @@ const Profile = () => {
             </div>
           </div>
         </header>
-    
+
         <div className="main">
           <div className="left-column">
             <div className="profile-card">
@@ -86,7 +87,7 @@ const Profile = () => {
                 </div>
               </div>
             </div>
-    
+
             <div className="detailed-info">
               <h3>Detailed Information</h3>
               <ul>
@@ -97,12 +98,12 @@ const Profile = () => {
               </ul>
             </div>
           </div>
-          
+
           <div className="center-column">
             {/* Affichage personnalisé en fonction du rôle */}
             <RoleSpecificProfile user={user} />
           </div>
-          
+
           <div className="right-column">
 
 <div >

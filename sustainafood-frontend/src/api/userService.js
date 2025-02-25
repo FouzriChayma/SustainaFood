@@ -21,8 +21,13 @@ export const getUserById = async (id) => {
 
 // 🔹 Mettre à jour un utilisateur
 export const updateUser = async (id, userData) => {
-  return axios.put(`http://localhost:3000/users/update/${id}`, userData);
+  return axios.put(`http://localhost:3000/users/update/${id}`, userData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 };
+
 
 // 🔹 Supprimer un utilisateur
 export const deleteUser = async (id) => {

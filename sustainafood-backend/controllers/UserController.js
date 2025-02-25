@@ -420,5 +420,25 @@ async function viewNGO(req, res) {
     }
 }
 
+async function viewTransporter(req, res) {
+    try {
+        // Récupérer l'ID du transporteur depuis les paramètres de la requête
+        const transporterId = req.params.id;
 
-module.exports = { addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO};
+        // Trouver le transporteur par ID (en supposant que les transporteurs sont stockés dans le modèle User)
+        const transporter = await User.findById(transporterId);
+        
+        // Vérifier si le transporteur existe
+        if (!transporter) {
+            return res.status(404).json({ error: "Transporter not found" });
+        }
+
+        // Envoyer les détails du transporteur dans la réponse
+        res.status(200).json(transporter);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+}
+module.exports = { addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter};

@@ -46,6 +46,7 @@ const Profile = () => {
     }
   }, []);
 
+  
   return (
     <>
       <Navbar />

@@ -7,18 +7,20 @@ import Signup from './pages/Signup'; // Your signup page
 import Contact from './pages/Contact'
 import Login from './pages/log'; // Your login page
 import Dashboard from "./pages/backoffice/Dashboard";
-import NGOList from "./pages/backoffice/NGOList";
+import NGOList from "./pages/backoffice/ONGList.jsx";
 import SupermarketList from "./pages/backoffice/SupermarketList";
 import StudentList from "./pages/backoffice/StudentList";
 import TransporterList from "./pages/backoffice/TransporterList";
 import About from "./pages/About";
 import RestaurantList from './pages/backoffice/RestaurantList';
 import AdminProfile from './pages/backoffice/AdminProfile';
-
 import ForgetPass from "./pages/ForgetPass";
 import ResetCode from "./pages/ResetCode";
 import ResetPassword from "./pages/ResetPassword";
-
+import ViewStudent from './pages/backoffice/view-student';
+import ViewRestaurant from './pages/backoffice/view-restaurant';
+import ViewSupermarket from './pages/backoffice/view-supermarket';
+import ViewNGO from './pages/backoffice/view-ngo.jsx';
 const App = () => {
   return (
 
@@ -38,11 +40,13 @@ const App = () => {
         <Route path="/transporters" element={<TransporterList />} />
         <Route path="/About" element={<About />} />
         <Route path="/admin-profile" element={<AdminProfile />} />
-
+        <Route path="/students/view/:id" element={<ViewStudent />} />
+        <Route path="/restaurants/view/:id" element={<ViewRestaurant />} />
+        <Route path="/supermarkets/view/:id" element={<ViewSupermarket />} />
+        <Route path="/ongs/view/:id" element={<ViewNGO />} />
         <Route path="/forget-password" element={<ForgetPass />} />
         <Route path="/reset-code" element={<ResetCode />} />  
         <Route path="/reset-password" element={<ResetPassword />} />
-
       </Routes>
     
   );

@@ -1,5 +1,5 @@
-/* Style de la page ngos */
-.ngo-list {
+/* Style de la page ongs */
+.ong-list {
     background: white;
     padding: 15px;
     border-radius: 10px;
@@ -7,10 +7,12 @@
     width: 100%;
     max-width: 1200px;
     margin: 20px auto;
+    margin-top: 50px;
+
 }
 
 /* Titre */
-.ngo-list h3 {
+.ong-list h3 {
     font-size: 18px;
     font-weight: bold;
     margin-bottom: 15px;
@@ -28,8 +30,8 @@ th, td {
     border-bottom: 1px solid #ddd;
 }
 
-/* Photo des ngos */
-.ngo-photo {
+/* Photo des ongs */
+.ong-photo {
     width: 40px;
     height: 40px;
     border-radius: 50%;

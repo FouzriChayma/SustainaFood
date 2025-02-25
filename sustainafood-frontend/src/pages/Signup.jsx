@@ -10,8 +10,104 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { signupUser } from "../api/userService";
 import { FaEye, FaEyeSlash } from "react-icons/fa"; // Import icons for password visibility
+import styled, { createGlobalStyle, keyframes } from 'styled-components';
 
+const All=styled.div`
+ background-color: #eee;
+  border: none;
+  color: black;
+  padding: 3px 15px;
+  margin: 4px 0;
+  width: 100%;`
+const StyledWrapper = styled.div`
+  /* Note that you only needs to edit the config to customize the button! */
+
+  .plusButton {
+    /* Config start */
+    --plus_sideLength: 2.5rem;
+    --plus_topRightTriangleSideLength: 0.9rem;
+    /* Config end */
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid white;
+    width: var(--plus_sideLength);
+    height: var(--plus_sideLength);
+    background-color: #8dc73f;
+    overflow: hidden;
+    
+  }
+
+  .plusButton::before {
+    position: absolute;
+    content: "";
+    top: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-width: 0 var(--plus_topRightTriangleSideLength) var(--plus_topRightTriangleSideLength) 0;
+    border-style: solid;
+    border-color: transparent white transparent transparent;
+    transition-timing-function: ease-in-out;
+    transition-duration: 0.2s;
+  }
+
+  .plusButton:hover {
+    cursor: pointer;
+  }
+
+  .plusButton:hover::before {
+    --plus_topRightTriangleSideLength: calc(var(--plus_sideLength) * 2);
+  }
+
+  .plusButton:focus-visible::before {
+    --plus_topRightTriangleSideLength: calc(var(--plus_sideLength) * 2);
+  }
+
+  .plusButton>.plusIcon {
+    fill: white;
+    width: calc(var(--plus_sideLength) * 0.5);
+    height: calc(var(--plus_sideLength) * 0.5);
+    z-index: 1;
+    transition-timing-function: ease-in-out;
+    transition-duration: 0.2s;
+  }
+
+  .plusButton:hover>.plusIcon {
+    fill: black;
+    transform: rotate(180deg);
+  }
+
+  .plusButton:focus-visible>.plusIcon {
+    fill: black;
+    transform: rotate(180deg);
+  }`;
+  const HiddenFileInput = styled.input`
+  display: none;
+`;
+const ImagePreview = styled.img`
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-left: 10px;
+`;
 const Signup = () => {
+  const [fileName, setFileName] = useState("");
+  const [imagePreview, setImagePreview] = useState(null);
+
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setFileName(file.name);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   const navigate = useNavigate();
   const [isRightPanelActive, setIsRightPanelActive] = useState(false);
 
@@ -118,8 +214,30 @@ const Signup = () => {
               <option value="supermarket">Supermarket</option>
               <option value="student">Student</option>
             </select>
-            <input className="signup-input" id="file" type="file"  alt="Envoyer"/>
+            <All>
+              <div style={{display:"flex"}}>
+              <HiddenFileInput
+        id="file"
+        type="file"
+        onChange={handleFileChange}
+      />            <div style={{marginBottom:"9px"}}><span>Profil photo</span></div><br/>
+            {imagePreview && <ImagePreview src={imagePreview} alt="Profil" />}
+            {fileName && <p>📂 {fileName}</p>} {/* Displays file name after selection */}
 
+            </div>
+            <StyledWrapper>
+      <div tabIndex={0} className="plusButton "   style={{marginLeft:"380px",marginTop:"-21px"}}
+          onClick={() => document.getElementById("file").click()} // 👈 Liaison avec l'input file
+      > 
+        <svg className="plusIcon " xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30">
+          <g mask="url(#mask0_21_345)">
+            <path d="M13.75 23.75V16.25H6.25V13.75H13.75V6.25H16.25V13.75H23.75V16.25H16.25V23.75H13.75Z" />
+          </g>
+        </svg>
+      </div>
+    </StyledWrapper>
+
+    </All>
             {isstudent && (
               <>
             <select className="signup-input" value={sexe} onChange={(e) => setSexe(e.target.value)} required>

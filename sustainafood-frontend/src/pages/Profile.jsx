@@ -43,7 +43,7 @@ const Profile = () => {
   return (
     <>
       <Navbar />
-      <div className="container">
+      <div className="container-profile">
         <header>
           <div className="profile-header">
             <h1>My Profile</h1>

@@ -41,7 +41,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="navbar">
+    <nav className="navbarfront">
       <div className="logo-container">
         <img src={logo} alt="SustainaFood Logo" className="logo" />
         <h1 className="title">SustainaFood</h1>

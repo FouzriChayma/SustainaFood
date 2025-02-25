@@ -17,34 +17,27 @@ const Profile = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    console.log("🔍 Vérification du localStorage...");
-    console.log("🌍 Tous les éléments dans localStorage :", localStorage);
-    console.log("🔍 Lecture directe de iduser :", localStorage.getItem("iduser"));
-    const token = localStorage.getItem('token');
-
-    // if (!isTokenValid(token)) {
-    if (token == null) {
-
-      // Redirigez l'utilisateur vers la page de connexion s'il n'est pas valide
+    if (!token) {
       navigate('/login');
+      return;
     }
     const fetchUser = async () => {
       try {
-        if (!userId) {
-          console.error("⛔ userId est indéfini !");
+        if (!authUser || !authUser.id) {
+          console.error("⛔ authUser id is undefined!");
           return;
         }
-        const response = await getUserById(userId);
+        const response = await getUserById(authUser.id);
         setUser(response.data);
       } catch (error) {
         console.error("❌ Backend Error:", error);
+        setError("Failed to fetch user data");
       }
     };
-
-    if (userId) {
+    if (authUser && authUser.id) {
       fetchUser();
     }
-  }, []);
+  }, [authUser, token, navigate]);
 
   
   return (
@@ -55,46 +48,41 @@ const Profile = () => {
           <div className="profile-header">
             <h1>My Profile</h1>
             <div className="date-switcher">
-
-
               <button className='btnProfile'>
-                <Link to="/edit-profile"><img
-
-                  style={{ marginRight: '8px', marginTop: '6px' }}
-                  width="18px"
-                  src={edit}
-                  alt="Profile"
-                /></Link>Edit</button>
-
+                <Link to="/edit-profile">
+                  <img style={{ marginRight:'8px', marginTop:'6px' }} width="18px" src={edit} alt="Edit Profile" />
+                </Link>
+                Edit
+              </button>
             </div>
           </div>
         </header>
 
         <div className="main">
-
           <div className="left-column">
-
             <div className="profile-card">
-              <div className="card">
-
+              <div className="card-white ">
                 <button className="mail">
-                  <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-mail"><rect width={20} height={16} x={2} y={4} rx={2} /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>
+                   {/*  <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <rect width={20} height={16} x={2} y={4} rx={2} />
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                  </svg>*/}
                 </button>
                 <div className="profile-pic">
-                  <img
-
-                    src={pdp}
-                    alt="Profile"
-                  />
+                  <img src={pdp} alt="Profile" />
                 </div>
                 <div className="bottom">
                   <div className="content">
                     <span className="name">Description</span>
-                    <span className="about-me">Lorem ipsum dolor sit amet consectetur adipisicinFcls Lorem ipsum dolor sit amet consectetur adipisicinFcls </span>
+                    <span className="about-me">
+                      Lorem ipsum dolor sit amet consectetur adipisicinFcls Lorem ipsum dolor sit amet consectetur adipisicinFcls
+                    </span>
                   </div>
                   <div className="bottom-bottom">
-                    <h1 style={{ color: 'white', fontSize: '40px', fontStyle: 'oblique' }}>{user?.role || 'Loading...'}</h1>
-                    <button className="button">Contact Me</button>
+                    <h1 style={{ color:'white', fontSize:'40px', fontStyle: 'oblique' }}>
+                      {user?.role || 'Loading...'}
+                    </h1>
+                  {/* <button className="button">Contact Me</button> */} 
                   </div>
                 </div>
               </div>

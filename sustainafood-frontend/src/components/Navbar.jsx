@@ -125,7 +125,7 @@ const Navbar = () => {
                 <hr />
                 <button onClick={() => navigate("/profile")} className="menu-item">Profil and visibility</button>
                 <button className="menu-item">Change account</button>
-                <button className="menu-item">Generate account</button>
+                <button className="menu-item" to="/edit-profile">Generate account</button>
                 <hr />
                 <button onClick={handleLogout} className="menu-item logout">
                   <FaSignOutAlt /> LogOut

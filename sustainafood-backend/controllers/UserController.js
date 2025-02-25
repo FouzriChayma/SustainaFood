@@ -51,18 +51,38 @@ async function getUsers(req, res) {
     }
 }
 
-// Get a user by ID
+//Get a user by ID hedhy ta3 MOUNA 
+// async function getUserById(req, res) {
+//     try {
+//         const user = await User.findById(req.params.id);
+//         if (!user) {
+//             return res.status(404).json({ error: "User not found" });
+//         }
+//         res.status(200).json(user);
+//     } catch (error) {
+//         res.status(500).json({ error: error.message });
+//     }
+// }
+//hedhy ta3 walloula bech nsal7 erreur serveur 
 async function getUserById(req, res) {
     try {
+        console.log("ID reçu :", req.params.id); // 🔍 Vérifier l'ID reçu
+        
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ error: "Invalid ID format" });
+        }
+        
         const user = await User.findById(req.params.id);
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
         res.status(200).json(user);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Erreur dans getUserById :", error);
+        res.status(500).json({ error: "Server error" });
     }
 }
+
 
 async function getUserByEmailAndPassword(req, res) {
     const { email, password } = req.body; // Récupérer l'email et le mot de passe depuis le corps de la requête

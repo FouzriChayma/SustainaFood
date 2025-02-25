@@ -1,11 +1,11 @@
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import './App.css';
-import Home from './pages/Home'; // Your home page
-import EditProfile from './pages/Editprofile'; // Your edit profile page
-import Profile from './pages/Profile'; // Your profile page
-import Signup from './pages/Signup'; // Your signup page
-import Contact from './pages/Contact'
-import Login from './pages/log'; // Your login page
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import Home from './pages/Home';
+import EditProfile from './pages/Editprofile';
+import Profile from './pages/Profile';
+import Signup from './pages/Signup';
+import Contact from './pages/Contact';
+import Login from './pages/log';
 import Dashboard from "./pages/backoffice/Dashboard";
 import NGOList from "./pages/backoffice/NGOList";
 import SupermarketList from "./pages/backoffice/SupermarketList";
@@ -15,24 +15,20 @@ import About from "./pages/About";
 
 const App = () => {
   return (
-
-   
-      <Routes>
+    <Routes>
+      <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Home />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/edit-profile" element={<EditProfile />} />
-        <Route path="/Contact" element={<Contact />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/recipients/ngos" element={<NGOList />} />
-        <Route path="/donors/supermarkets" element={<SupermarketList />} />
-        <Route path="/recipients/students" element={<StudentList />} />
-        <Route path="/transporters" element={<TransporterList />} />
-        <Route path="/About" element={<About />} />
-
-      </Routes>
-    
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/edit-profile" element={<EditProfile />} />
+      <Route path="/Contact" element={<Contact />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/recipients/ngos" element={<NGOList />} />
+      <Route path="/donors/supermarkets" element={<SupermarketList />} />
+      <Route path="/recipients/students" element={<StudentList />} />
+      <Route path="/transporters" element={<TransporterList />} />
+      <Route path="/About" element={<About />} />
+    </Routes>
   );
 };
 

@@ -8,8 +8,10 @@ var mongoose = require('mongoose');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var authRouter = require('./routes/authRoutes'); // 🔹 Ajouter la route auth
 
 var app = express();
+// var passport = require("passport"); // ✅ Importer Passport
 
 // View engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -27,6 +29,7 @@ app.use(cors());
 // Routes
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/auth', authRouter); // 🔹 Ajouter la route d'authentification
 
 // Database Connection
 var mongoConfig = require('./config/database.json');
@@ -38,7 +41,10 @@ mongoose.connect(mongoConfig.url)
 mongoose.connection.once('open', () => {
   console.log(" MongoDB connection established successfully");
 });
-
+////////////////////////////////////////////////////////////////
+require("./config/passportConfig"); // Charger la config de Passport
+// app.use(passport.initialize());
+////////////////////////////////////////////
 // Catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));

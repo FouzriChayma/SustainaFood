@@ -353,7 +353,7 @@ body{
     font-size: 18px;
   }
   
-  .profile-info p {
+  .profile-info .profile-p {
     margin-bottom: 10px;
     font-size: 14px;
     color: #777;
@@ -665,7 +665,7 @@ body{
   color: #6b7578;
   left: -75px;
   font-size: 18px;
-  margin-top: 50px;
+  margin-top: 10px;
 }
 
 .winner-medals {

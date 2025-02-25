@@ -119,6 +119,15 @@
   width: 100%;
 }
 
+.auth-eye-icon {
+  transform: translateX(-50%);
+  cursor: pointer;
+  font-size: 18px;
+  margin-left: 400px;
+  margin-top: -33px;
+}
+
+
 .signup-container {
   background-color: #fff;
   border-radius: 10px;
@@ -324,6 +333,7 @@
   position: absolute;
   inset: 0;
   margin: auto;
+  
   width: 80%;
   height: 80%;
   color: white;

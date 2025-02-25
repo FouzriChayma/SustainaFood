@@ -4,11 +4,12 @@ import { AuthContext } from "../contexts/AuthContext"; // Import AuthContext
 import { loginUser } from "../api/userService";
 import "../assets/styles/log.css"; // Import CSS
 import logo from "../assets/images/LogoCh.png"; // Import logo
-import loginImg from "../assets/images/Login-PNG-HD-Image.png"; 
+import loginImg from "../assets/images/Login-PNG-HD-Image.png";
 import fbimg from "../assets/images/fb.png";
 import gglimg from "../assets/images/ggl.jpg";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { FaEye, FaEyeSlash } from "react-icons/fa"; // Import icons for password visibility
 
 const Login = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isRightPanelActive, setIsRightPanelActive] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // Define state for password visibility
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -39,7 +41,6 @@ const Login = () => {
           id: response.data.id,
           role: response.data.role,
           email, // Optionally include the email used for login
-          // add any other properties returned by your API if needed
         };
 
         // Call AuthContext login function with the constructed user object and token
@@ -57,6 +58,7 @@ const Login = () => {
       setError(err.response?.data?.error || "Erreur de connexion.");
     }
   };
+
   const handleForgotPassword = () => {
     navigate("/forget-password"); // Navigate to the ForgetPass page
   };
@@ -91,20 +93,24 @@ const Login = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            <input
-              className="signup-input"
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
 
+              <input
+                className="signup-input"
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                name="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <span className="auth-eye-icon" onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </span>
             {/* Error Handling */}
             {error && <p className="error-message">{error}</p>}
 
             {/* Checkbox and Forgot Password */}
-            <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center",marginTop:"10px" }}>
               <label className="ios-checkbox green">
                 <input type="checkbox" />
                 <div className="checkbox-wrapper">
@@ -122,12 +128,14 @@ const Login = () => {
                 </div>
               </label>
               <span style={{ fontSize: "14px", marginLeft: "5px" }}>Remember me</span>
-              <a className="signup-a" onClick={handleForgotPassword} style={{ marginLeft: "auto" }}>
+              <a href="#" className="signup-a" onClick={handleForgotPassword} style={{ marginLeft: "190px" }}>
                 Forgot your password?
               </a>
             </div>
 
-            <button type="submit" className="signup-button">Sign In</button>
+            <button type="submit" className="signup-button">
+              Sign In
+            </button>
             <div>
               <span style={{ fontSize: "14px" }}>
                 Don't have an account? <a href="/signup"> Sign Up</a>
@@ -158,7 +166,9 @@ const Login = () => {
             <div className="signup-overlay-panel signup-overlay-right">
               <h1>Welcome Back!</h1>
               <p>To keep connected with us please login with your personal info</p>
-              <button className="signbtn" onClick={togglePanel}>Sign In</button>
+              <button className="signbtn" onClick={togglePanel}>
+                Sign In
+              </button>
             </div>
           </div>
         </div>

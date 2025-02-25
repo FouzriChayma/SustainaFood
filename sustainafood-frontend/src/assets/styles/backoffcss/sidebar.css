@@ -1,0 +1,109 @@
+/* Style de base de la sidebar */
+.sidebar {
+    background: #8dc73f;
+    color: white;
+    width: 250px;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* Titre de la sidebar */
+.sidebar h2 {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+/* Liens de la sidebar */
+.sidebar nav {
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar a, .sidebar .dropdown button {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* ✅ Espacement entre l’icône et le texte */
+    padding: 10px;
+    font-size: 14px;
+    text-decoration: none;
+    color: white;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+/* Hover effect */
+.sidebar a:hover, .sidebar .dropdown button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+}
+
+/* Icônes de la sidebar */
+.sidebar .icon {
+    font-size: 18px;
+}
+
+/* Dropdown menu */
+.dropdown-content {
+    display: flex;
+    flex-direction: column;
+    padding-left: 25px;
+}
+
+/* Sous-menu Recipients & Donors */
+.sub-dropdown {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 14px;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.sub-dropdown:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+}
+
+/* Contenu du sous-menu Recipients & Donors */
+.sub-dropdown-content {
+    display: flex;
+    flex-direction: column;
+    padding-left: 25px;
+}
+
+.sub-dropdown-content a {
+    padding: 5px 10px;
+    font-size: 13px;
+    color: #ddd;
+}
+
+.sub-dropdown-content a:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+/* Style pour aligner le logo et le texte */
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;  /* Espace entre le logo et le texte */
+    padding: 15px;
+}
+
+/* Appliquer un cercle au logo */
+.logo {
+    width: 50px;  /* Ajuste la taille selon ton logo */
+    height: 50px;
+    border-radius: 50%;  /* Rend l'image circulaire */
+    object-fit: cover;  /* Évite la déformation */
+    border: 2px solid white;  /* Ajoute un contour blanc */
+}

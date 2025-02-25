@@ -1,0 +1,63 @@
+/* Style de base des cartes */
+.card {
+    background: white;
+    padding: 10px; /* Réduction de l’espace interne */
+    border-radius: 8px;
+    width: 180px; /* Réduction de la largeur */
+    height: 110px; /* Réduction de la hauteur */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Effet au survol */
+.card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Ajuster l'icône */
+.card .icon {
+    font-size: 20px; /* Réduction de la taille de l’icône */
+    margin-bottom: 5px;
+}
+
+/* Style du titre */
+.card h3 {
+    font-size: 14px;
+    font-weight: bold;
+    margin: 0;
+}
+
+/* Valeur principale */
+.card .value {
+    font-size: 14px;
+    font-weight: bold;
+    margin: 3px 0;
+}
+
+/* Pourcentage en couleur */
+.card .percentage {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.progress-bar {
+    width: 100%; /* Toutes les barres ont la même largeur */
+    height: 10px; /* Hauteur uniforme */
+    background-color: #e0e0e0; /* Couleur de fond */
+    border-radius: 5px; /* Coins arrondis */
+    overflow: hidden; /* Empêche le dépassement */
+    display: flex; /* Assure l'alignement correct */
+}
+
+.progress {
+    height: 100%; /* Remplit toute la hauteur */
+    border-radius: 5px; /* Arrondi les bords */
+    transition: width 0.5s ease-in-out; /* Animation fluide */
+}
+
+

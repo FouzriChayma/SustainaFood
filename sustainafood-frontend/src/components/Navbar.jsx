@@ -38,17 +38,19 @@ const NavLinks = styled.ul`
   gap: 1.5rem;
 `;
 
-const NavLink = styled.li`
-        color:black;
-
+const NavLink = styled(Link)`
+  text-decoration: none !important;
+  color: black;
   font-size: 1rem;
   cursor: pointer;
-  &:hover {
-    color:#8dc73f;
-      font-weight: bold;
 
+  &:hover {
+    color: #8dc73f;
+    font-weight: bold;
   }
 `;
+
+
 
 const DropdownContainer = styled.div`
   position: relative;
@@ -134,9 +136,11 @@ const Navbar = () => {
       </LogoContainer>
       <NavLinks>
         <LogoContainer>
-        <Link to="/"> <NavLink>Home</NavLink></Link>
-          <NavLink>About</NavLink>
-          <Link to="/Contact"><NavLink>Contact</NavLink></Link>
+        <NavLink to="/">Home</NavLink>
+<NavLink to="/About">About</NavLink>
+<NavLink to="/Contact">Contact</NavLink>
+
+
           {isAuthenticated && (
           <>
           {/* Donations Dropdown */}

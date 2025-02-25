@@ -47,7 +47,7 @@ const StudentList = () => {
     return (
         <div className="dashboard-container">
             <Sidebar />
-            <div className="content">
+            <div className="dashboardcontent">
                 <Navbar />
                 <div className="student-list">
                     <h3>Student Management</h3>

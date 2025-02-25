@@ -180,53 +180,86 @@ async function getUserByEmailAndPassword(req, res) {
 // Update a user
 const updateUser = async (req, res) => {
     try {
-        const { name, email, phone, address, photo, age, sexe, image_carte_etudiant, 
-                num_cin, id_fiscale, type, vehiculeType, taxR, isBlocked, resetCode, resetCodeExpires } = req.body;
-
-        // Filtrage des attributs autorisés pour éviter des mises à jour indésirables
-        const updateData = {};
-        if (name) updateData.name = name;
-        if (email) updateData.email = email;
-        if (phone && !isNaN(phone)) updateData.phone = phone;
-        if (address) updateData.address = address;
-        if (photo) updateData.photo = photo;
-        if (age && !isNaN(age)) updateData.age = age;
-        if (sexe) updateData.sexe = sexe;
-        if (image_carte_etudiant) updateData.image_carte_etudiant = image_carte_etudiant;
-        if (num_cin) updateData.num_cin = num_cin;
-        if (id_fiscale) updateData.id_fiscale = id_fiscale;
-        if (type) updateData.type = type;
-        if (vehiculeType) updateData.vehiculeType = vehiculeType;
-        if (taxR) updateData.taxR = taxR;
-        if (typeof isBlocked === 'boolean') updateData.isBlocked = isBlocked;
-        if (resetCode) updateData.resetCode = resetCode;
-        if (resetCodeExpires) updateData.resetCodeExpires = resetCodeExpires;
-
-        // Vérifier si l'utilisateur existe
-        const user = await User.findById(req.params.id);
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
-        }
-
-        // Vérification supplémentaire pour empêcher la modification du rôle par un utilisateur non autorisé
-        if (req.body.role && req.user.role !== 'admin') {
-            return res.status(403).json({ error: "Unauthorized to update role" });
-        }
-        if (req.body.role) updateData.role = req.body.role;
-
-        // Ne pas permettre la modification du mot de passe via cette méthode
-        if (req.body.password) {
-            return res.status(400).json({ error: "Password cannot be updated this way" });
-        }
-
-        // Mise à jour de l'utilisateur
-        const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
-
-        res.status(200).json(updatedUser);
+      // Récupération des champs texte depuis le corps de la requête
+      const {
+        name,
+        email,
+        phone,
+        address,
+        photo, // optionnel si aucun fichier n'est envoyé
+        age,
+        sexe,
+        image_carte_etudiant, // optionnel si aucun fichier n'est envoyé
+        num_cin,
+        id_fiscale,
+        type,
+        vehiculeType,
+        taxR,
+        isBlocked,
+        resetCode,
+        resetCodeExpires
+      } = req.body;
+  
+      // Construction de l'objet de mise à jour
+      const updateData = {};
+  
+      if (name) updateData.name = name;
+      if (email) updateData.email = email;
+      if (phone && !isNaN(phone)) updateData.phone = phone;
+      if (address) updateData.address = address;
+  
+      // Si un fichier "photo" est uploadé, on utilise le chemin fourni par Multer,
+      // sinon, on garde la valeur provenant du corps de la requête (si présente)
+      if (req.files && req.files.photo && req.files.photo[0]) {
+        updateData.photo = req.files.photo[0].path;
+      } else if (photo) {
+        updateData.photo = photo;
+      }
+  
+      if (age && !isNaN(age)) updateData.age = age;
+      if (sexe) updateData.sexe = sexe;
+  
+      // Pour "image_carte_etudiant" : priorité au fichier uploadé par Multer
+      if (req.files && req.files.image_carte_etudiant && req.files.image_carte_etudiant[0]) {
+        updateData.image_carte_etudiant = req.files.image_carte_etudiant[0].path;
+      } else if (image_carte_etudiant) {
+        updateData.image_carte_etudiant = image_carte_etudiant;
+      }
+  
+      if (num_cin) updateData.num_cin = num_cin;
+      if (id_fiscale) updateData.id_fiscale = id_fiscale;
+      if (type) updateData.type = type;
+      if (vehiculeType) updateData.vehiculeType = vehiculeType;
+      if (taxR) updateData.taxR = taxR;
+      if (typeof isBlocked === "boolean") updateData.isBlocked = isBlocked;
+      if (resetCode) updateData.resetCode = resetCode;
+      if (resetCodeExpires) updateData.resetCodeExpires = resetCodeExpires;
+  
+      // Vérifier si l'utilisateur existe
+      const user = await User.findById(req.params.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+  
+      // Vérification pour empêcher la modification du rôle par un utilisateur non autorisé
+      if (req.body.role && req.user.role !== "admin") {
+        return res.status(403).json({ error: "Unauthorized to update role" });
+      }
+      if (req.body.role) updateData.role = req.body.role;
+  
+      // Ne pas permettre la modification du mot de passe via cette méthode
+      if (req.body.password) {
+        return res.status(400).json({ error: "Password cannot be updated this way" });
+      }
+  
+      // Mise à jour de l'utilisateur en BDD
+      const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
+      res.status(200).json(updatedUser);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message });
     }
-};
+  };
+  
 
 
 

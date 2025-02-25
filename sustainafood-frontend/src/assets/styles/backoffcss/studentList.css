@@ -1,4 +1,4 @@
-/* ✅ Assure que le tableau reste bien centré et ajusté */
+/* Style de la page Student */
 .student-list {
     background: white;
     padding: 15px;
@@ -9,82 +9,80 @@
     margin: 20px auto;
 }
 
-/* ✅ Corrige l'affichage général du tableau */
+/* Titre */
+.student-list h3 {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+/* Tableau */
 table {
     width: 100%;
     border-collapse: collapse;
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    margin-top: 15px;
 }
 
-/* ✅ Ajuste l'alignement des cellules */
 th, td {
-    padding: 12px 15px;
-    text-align: center; /* Centre le texte */
-    vertical-align: middle; /* Aligne verticalement */
-    white-space: nowrap; /* Évite le retour à la ligne */
-}
-
-/* ✅ Ajoute des bordures aux lignes du tableau */
-th {
-    background-color: #f8f9fa;
-    font-weight: bold;
-    text-transform: uppercase;
-}
-
-td {
+    padding: 10px;
+    text-align: left;
     border-bottom: 1px solid #ddd;
 }
 
-/* ✅ Ajuste la taille et l'alignement des images */
-.student-photo, .student-card {
+/* Photo des Students */
+.student-photo {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    object-fit: cover;
-    display: block;
-    margin: 0 auto; /* Centre les images */
 }
 
-.student-card {
-    border-radius: 8px;
+/* Boutons actions */
+.view-btn, .delete-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 16px;
+    margin-right: 8px;
 }
 
-/* ✅ Corrige l'alignement des boutons d'action */
-.action-buttons {
+.view-btn:hover {
+    color: blue;
+}
+
+
+
+.delete-btn:hover {
+    color: red;
+}
+.pagination {
     display: flex;
     justify-content: center;
-    align-items: center;
-    gap: 8px;
+    list-style: none;
+    padding: 10px;
 }
 
-
-/* ✅ Couleurs fixes des boutons */
-.view-btn {
-    background-color: #3498db; /* Bleu */
+.pagination li {
+    margin: 0 5px;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    background-color: white;
+    border-radius: 5px;
 }
 
-.edit-btn {
-    background-color: #2ecc71; /* Vert */
+.paginationActive {
+    font-weight: bold;
+    background-color: #007bff;
+    color: white;
+    border: none;
 }
 
-.delete-btn {
-    background-color: #e74c3c; /* Rouge */
+.previousBttn, .nextBttn {
+    margin: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
 }
 
-
-
-    .student-photo, .student-card {
-        width: 35px;
-        height: 35px;
-    }
-    
-    .student-button {
-        width: 35px;
-        height: 35px;
-        font-size: 16px;
-    }
-
+.paginationDisabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

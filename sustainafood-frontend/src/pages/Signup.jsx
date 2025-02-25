@@ -9,12 +9,14 @@ import gglimg from "../assets/images/ggl.jpg";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { signupUser } from "../api/userService";
+import { FaEye, FaEyeSlash } from "react-icons/fa"; // Import icons for password visibility
 
 const Signup = () => {
   const navigate = useNavigate();
   const [isRightPanelActive, setIsRightPanelActive] = useState(false);
 
   // State for input fields
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -30,7 +32,8 @@ const Signup = () => {
   const [taxR, setTaxR] = useState("");
   const [VehiculeType, setVehiculeType] = useState("car");
   const [type, setType] = useState("charitable");
-
+  const [showPassword, setShowPassword] = useState(false); // Define state for password visibility
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   
   const isOng = role === "ong";
@@ -98,9 +101,16 @@ const Signup = () => {
             {/* Input Fields */}
             <input className="signup-input" type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
             <input className="signup-input" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <input className="signup-input" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            <input className="signup-input" type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-            
+            <input className="signup-input"  type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <span style={{marginBottom:"10px"}} className="auth-eye-icon" onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </span>
+
+            <input className="signup-input" type={showConfirmPassword ? "text" : "password"} placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+            <span style={{marginBottom:"10px"}} className="auth-eye-icon" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+              </span>
+              
             <select className="signup-input" value={role} onChange={(e) => setRole(e.target.value)} required>
               <option value="admin">Admin</option>
               <option value="ong">ONG</option>
@@ -108,6 +118,8 @@ const Signup = () => {
               <option value="supermarket">Supermarket</option>
               <option value="student">Student</option>
             </select>
+            <input className="signup-input" id="file" type="file"  alt="Envoyer"/>
+
             {isstudent && (
               <>
             <select className="signup-input" value={sexe} onChange={(e) => setSexe(e.target.value)} required>

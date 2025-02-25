@@ -1,11 +1,24 @@
 /* Style général de la navbar */
 .navbar {
+    width: calc(100% - 270px); /* Adjust based on sidebar width */
+    height: 60px;
+    position: fixed;
+    top: 0;
+    left: 270px; /* Sidebar width */
+    background: white;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: white;
     padding: 10px 20px;
     box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Ajustement si la sidebar est réduite */
+.sidebar-collapsed .navbar {
+    width: calc(100% - 80px);
+    left: 80px;
 }
 
 /* Barre de recherche */
@@ -13,7 +26,7 @@
     display: flex;
     align-items: center;
     border: 1px solid #ddd;
-    border-radius: 5px;
+    border-radius: 20px;
     padding: 5px 10px;
     background: #f9f9f9;
 }
@@ -70,4 +83,10 @@
     font-size: 12px;
     padding: 3px 6px;
     border-radius: 50%;
+}
+
+/* Assure que le contenu sous la navbar n'est pas caché */
+.content-container {
+    margin-top: 80px; /* Ajoute un espace sous la navbar */
+    padding: 20px;
 }

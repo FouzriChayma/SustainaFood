@@ -1,5 +1,5 @@
-/* Transporter Management Page */
-.transporter-list {
+/* Style de la page restaurant */
+.restaurant-list {
     background: white;
     padding: 15px;
     border-radius: 10px;
@@ -9,14 +9,14 @@
     margin: 20px auto;
 }
 
-/* Title */
-.transporter-list h3 {
+/* Titre */
+.restaurant-list h3 {
     font-size: 18px;
     font-weight: bold;
     margin-bottom: 15px;
 }
 
-/* Table */
+/* Tableau */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -28,14 +28,14 @@ th, td {
     border-bottom: 1px solid #ddd;
 }
 
-/* Transporter photo */
-.transporter-photo {
+/* Photo des restaurants */
+.restaurant-photo {
     width: 40px;
     height: 40px;
     border-radius: 50%;
 }
 
-/* Action Buttons */
+/* Boutons actions */
 .view-btn, .delete-btn {
     border: none;
     background: none;

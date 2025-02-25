@@ -3,16 +3,18 @@ import axios from "axios";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import "/src/assets/styles/backoffcss/studentList.css";
-import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { FaEye, FaTrash } from "react-icons/fa"; // Suppression de FaEdit
+import ReactPaginate from "react-paginate";
 
 const StudentList = () => {
-    const [students, setStudents] = useState([]); // Stocke les étudiants récupérés
+    const [students, setStudents] = useState([]); // Liste complète des étudiants
+    const [currentPage, setCurrentPage] = useState(0);
+    const studentsPerPage = 3; // Nombre d'étudiants par page
 
-    // Fonction pour récupérer les étudiants depuis le backend
+    // Récupération des étudiants depuis le backend
     useEffect(() => {
-        axios.get("http://localhost:3000/users/list") // Assure-toi que ton backend tourne sur ce port
+        axios.get("http://localhost:3000/users/list")
             .then(response => {
-                // Filtrer uniquement les étudiants
                 const studentUsers = response.data.filter(user => user.role === "student");
                 setStudents(studentUsers);
             })
@@ -26,10 +28,20 @@ const StudentList = () => {
         try {
             await axios.delete(`http://localhost:3000/users/delete/${userId}`);
             alert("Student deleted!");
-            setStudents(students.filter(user => user._id !== userId)); // Mettre à jour la liste
+            setStudents(students.filter(user => user._id !== userId));
         } catch (error) {
             console.error("Error deleting student:", error);
         }
+    };
+
+    // Pagination
+    const pagesVisited = currentPage * studentsPerPage;
+    const displayStudents = students.slice(pagesVisited, pagesVisited + studentsPerPage);
+
+    const pageCount = Math.ceil(students.length / studentsPerPage);
+
+    const changePage = ({ selected }) => {
+        setCurrentPage(selected);
     };
 
     return (
@@ -54,9 +66,9 @@ const StudentList = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {students.map((student, index) => (
+                            {displayStudents.map((student, index) => (
                                 <tr key={student._id}>
-                                    <td>{index + 1}</td>
+                                    <td>{pagesVisited + index + 1}</td>
                                     <td>
                                         <img src={student.photo || "/src/assets/User_icon_2.svg.png"} 
                                             alt="Student" className="student-photo" />
@@ -69,7 +81,6 @@ const StudentList = () => {
                                     <td>{student.sexe}</td>
                                     <td className="action-buttons">
                                         <button className="view-btn"><FaEye /></button>
-                                        <button className="edit-btn"><FaEdit /></button>
                                         <button className="delete-btn" onClick={() => deleteUser(student._id)}>
                                             <FaTrash />
                                         </button>
@@ -78,6 +89,19 @@ const StudentList = () => {
                             ))}
                         </tbody>
                     </table>
+
+                    {/* Pagination */}
+                    <ReactPaginate
+                        previousLabel={"Previous"}
+                        nextLabel={"Next"}
+                        pageCount={pageCount}
+                        onPageChange={changePage}
+                        containerClassName={"pagination"}
+                        previousLinkClassName={"previousBttn"}
+                        nextLinkClassName={"nextBttn"}
+                        disabledClassName={"paginationDisabled"}
+                        activeClassName={"paginationActive"}
+                    />
                 </div>
             </div>
         </div>

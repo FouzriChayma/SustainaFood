@@ -3,12 +3,15 @@ import axios from "axios";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import "/src/assets/styles/backoffcss/restaurantList.css";
-import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { FaEye, FaTrash } from "react-icons/fa"; // Suppression de FaEdit
+import ReactPaginate from "react-paginate";
 
 const RestaurantList = () => {
-    const [restaurants, setRestaurants] = useState([]); // Stores fetched restaurants
+    const [restaurants, setRestaurants] = useState([]); // Liste complète des restaurants
+    const [currentPage, setCurrentPage] = useState(0);
+    const restaurantsPerPage = 5; // Nombre de restaurants par page
 
-    // Fetch restaurants from the backend
+    // Récupération des restaurants depuis le backend
     useEffect(() => {
         axios.get("http://localhost:3000/users/list")
             .then(response => {
@@ -18,17 +21,27 @@ const RestaurantList = () => {
             .catch(error => console.error("Error fetching restaurants:", error));
     }, []);
 
-    // Function to delete a restaurant
+    // Fonction pour supprimer un restaurant
     const deleteRestaurant = async (restaurantId) => {
         if (!window.confirm("Are you sure you want to delete this restaurant?")) return;
 
         try {
             await axios.delete(`http://localhost:3000/users/delete/${restaurantId}`);
             alert("Restaurant deleted!");
-            setRestaurants(restaurants.filter(restaurant => restaurant._id !== restaurantId)); // Update the list
+            setRestaurants(restaurants.filter(restaurant => restaurant._id !== restaurantId));
         } catch (error) {
             console.error("Error deleting restaurant:", error);
         }
+    };
+
+    // Pagination
+    const pagesVisited = currentPage * restaurantsPerPage;
+    const displayRestaurants = restaurants.slice(pagesVisited, pagesVisited + restaurantsPerPage);
+
+    const pageCount = Math.ceil(restaurants.length / restaurantsPerPage);
+
+    const changePage = ({ selected }) => {
+        setCurrentPage(selected);
     };
 
     return (
@@ -36,7 +49,6 @@ const RestaurantList = () => {
             <Sidebar />
             <div className="content">
                 <Navbar />
-
                 <div className="restaurant-list">
                     <h3>Restaurant Management</h3>
                     <table>
@@ -52,9 +64,9 @@ const RestaurantList = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {restaurants.map((restaurant, index) => (
+                            {displayRestaurants.map((restaurant, index) => (
                                 <tr key={restaurant._id}>
-                                    <td>{index + 1}</td>
+                                    <td>{pagesVisited + index + 1}</td>
                                     <td>
                                         <img src={restaurant.photo || "/src/assets/User_icon_2.svg.png"} 
                                             alt="Restaurant" className="restaurant-photo" />
@@ -65,7 +77,6 @@ const RestaurantList = () => {
                                     <td>{restaurant.taxR || "N/A"}</td>
                                     <td className="action-buttons">
                                         <button className="view-btn"><FaEye /></button>
-                                        <button className="edit-btn"><FaEdit /></button>
                                         <button className="delete-btn" onClick={() => deleteRestaurant(restaurant._id)}>
                                             <FaTrash />
                                         </button>
@@ -74,6 +85,19 @@ const RestaurantList = () => {
                             ))}
                         </tbody>
                     </table>
+
+                    {/* Pagination */}
+                    <ReactPaginate
+                        previousLabel={"Previous"}
+                        nextLabel={"Next"}
+                        pageCount={pageCount}
+                        onPageChange={changePage}
+                        containerClassName={"pagination"}
+                        previousLinkClassName={"previousBttn"}
+                        nextLinkClassName={"nextBttn"}
+                        disabledClassName={"paginationDisabled"}
+                        activeClassName={"paginationActive"}
+                    />
                 </div>
             </div>
         </div>

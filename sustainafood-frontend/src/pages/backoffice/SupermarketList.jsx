@@ -3,12 +3,15 @@ import axios from "axios";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import "/src/assets/styles/backoffcss/supermarketList.css";
-import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { FaEye, FaTrash } from "react-icons/fa"; // Suppression de FaEdit
+import ReactPaginate from "react-paginate";
 
 const SupermarketList = () => {
-    const [supermarkets, setSupermarkets] = useState([]); // Stores fetched supermarkets
+    const [supermarkets, setSupermarkets] = useState([]); // Liste complète des supermarchés
+    const [currentPage, setCurrentPage] = useState(0);
+    const supermarketsPerPage = 5; // Nombre de supermarchés par page
 
-    // Fetch supermarkets from the backend
+    // Récupération des supermarchés depuis le backend
     useEffect(() => {
         axios.get("http://localhost:3000/users/list")
             .then(response => {
@@ -18,17 +21,27 @@ const SupermarketList = () => {
             .catch(error => console.error("Error fetching supermarkets:", error));
     }, []);
 
-    // Function to delete a supermarket
+    // Fonction pour supprimer un supermarché
     const deleteSupermarket = async (supermarketId) => {
         if (!window.confirm("Are you sure you want to delete this supermarket?")) return;
 
         try {
             await axios.delete(`http://localhost:3000/users/delete/${supermarketId}`);
             alert("Supermarket deleted!");
-            setSupermarkets(supermarkets.filter(supermarket => supermarket._id !== supermarketId)); // Update the list
+            setSupermarkets(supermarkets.filter(supermarket => supermarket._id !== supermarketId));
         } catch (error) {
             console.error("Error deleting supermarket:", error);
         }
+    };
+
+    // Pagination
+    const pagesVisited = currentPage * supermarketsPerPage;
+    const displaySupermarkets = supermarkets.slice(pagesVisited, pagesVisited + supermarketsPerPage);
+
+    const pageCount = Math.ceil(supermarkets.length / supermarketsPerPage);
+
+    const changePage = ({ selected }) => {
+        setCurrentPage(selected);
     };
 
     return (
@@ -36,7 +49,6 @@ const SupermarketList = () => {
             <Sidebar />
             <div className="content">
                 <Navbar />
-
                 <div className="supermarket-list">
                     <h3>Supermarket Management</h3>
                     <table>
@@ -52,9 +64,9 @@ const SupermarketList = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {supermarkets.map((supermarket, index) => (
+                            {displaySupermarkets.map((supermarket, index) => (
                                 <tr key={supermarket._id}>
-                                    <td>{index + 1}</td>
+                                    <td>{pagesVisited + index + 1}</td>
                                     <td>
                                         <img src={supermarket.photo || "/src/assets/User_icon_2.svg.png"} 
                                             alt="Supermarket" className="supermarket-photo" />
@@ -65,7 +77,6 @@ const SupermarketList = () => {
                                     <td>{supermarket.taxR || "N/A"}</td>
                                     <td className="action-buttons">
                                         <button className="view-btn"><FaEye /></button>
-                                        <button className="edit-btn"><FaEdit /></button>
                                         <button className="delete-btn" onClick={() => deleteSupermarket(supermarket._id)}>
                                             <FaTrash />
                                         </button>
@@ -74,6 +85,19 @@ const SupermarketList = () => {
                             ))}
                         </tbody>
                     </table>
+
+                    {/* Pagination */}
+                    <ReactPaginate
+                        previousLabel={"Previous"}
+                        nextLabel={"Next"}
+                        pageCount={pageCount}
+                        onPageChange={changePage}
+                        containerClassName={"pagination"}
+                        previousLinkClassName={"previousBttn"}
+                        nextLinkClassName={"nextBttn"}
+                        disabledClassName={"paginationDisabled"}
+                        activeClassName={"paginationActive"}
+                    />
                 </div>
             </div>
         </div>

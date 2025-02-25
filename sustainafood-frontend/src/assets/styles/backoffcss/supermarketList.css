@@ -36,7 +36,7 @@ th, td {
 }
 
 /* Boutons actions */
-.view-btn, .edit-btn, .delete-btn {
+.view-btn, .delete-btn {
     border: none;
     background: none;
     cursor: pointer;
@@ -48,10 +48,42 @@ th, td {
     color: blue;
 }
 
-.edit-btn:hover {
-    color: green;
-}
+
 
 .delete-btn:hover {
     color: red;
 }
+.pagination {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    padding: 10px;
+}
+
+.pagination li {
+    margin: 0 5px;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    background-color: white;
+    border-radius: 5px;
+}
+
+.paginationActive {
+    font-weight: bold;
+    background-color: #007bff;
+    color: white;
+    border: none;
+}
+
+.previousBttn, .nextBttn {
+    margin: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.paginationDisabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+

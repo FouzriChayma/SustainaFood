@@ -136,7 +136,7 @@ const Signup = () => {
   const isstudent = role === "student";
   const istransporter = role === "transporter";
 
-  const isDonor = role === "supermarket"&& role === "restaurant";
+  const isDonor = role === "supermarket"|| role === "restaurant";
 
 
   // ✅ State for CAPTCHA

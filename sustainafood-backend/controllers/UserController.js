@@ -210,7 +210,7 @@ const updateUser = async (req, res) => {
         id_fiscale,
         type,
         vehiculeType,
-        taxR,
+        taxReference,
         isBlocked,
         resetCode,
         resetCodeExpires
@@ -246,7 +246,7 @@ const updateUser = async (req, res) => {
       if (id_fiscale) updateData.id_fiscale = id_fiscale;
       if (type) updateData.type = type;
       if (vehiculeType) updateData.vehiculeType = vehiculeType;
-      if (taxR) updateData.taxR = taxR;
+      if (taxReference) updateData.taxReference = taxReference;
       if (typeof isBlocked === "boolean") updateData.isBlocked = isBlocked;
       if (resetCode) updateData.resetCode = resetCode;
       if (resetCodeExpires) updateData.resetCodeExpires = resetCodeExpires;

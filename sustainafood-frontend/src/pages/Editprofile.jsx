@@ -29,7 +29,7 @@ const EditProfile = () => {
     id_fiscale: '',
     type: '',
     // For restaurant/supermarket
-    taxR: '',
+    taxReference: '',
     // For transporter
     vehiculeType: ''
   });
@@ -55,7 +55,7 @@ const EditProfile = () => {
             id_fiscale: userData.id_fiscale || '',
             type: userData.type || '',
             // Restaurant / Supermarket
-            taxR: userData.taxR || '',
+            taxReference: userData.taxReference || '',
             // Transporter
             vehiculeType: userData.vehiculeType || ''
           });
@@ -106,7 +106,7 @@ const EditProfile = () => {
     data.append('num_cin', formData.num_cin);
     data.append('id_fiscale', formData.id_fiscale);
     data.append('type', formData.type);
-    data.append('taxR', formData.taxR);
+    data.append('taxReference', formData.taxReference);
     data.append('vehiculeType', formData.vehiculeType);
 
     if (formData.photo instanceof File) {
@@ -361,13 +361,13 @@ const EditProfile = () => {
                     <input
                       type="text"
                       className="login-input"
-                      name="taxR"
-                      value={formData.taxR}
+                      name="taxReference"
+                      value={formData.taxReference}
                       onChange={handleChange}
                       required
                       placeholder=" "
                     />
-                    <label className="login-label">Tax R</label>
+                    <label className="login-label">Tax Reference</label>
                   </div>
                 </div>
               </>

@@ -5,7 +5,7 @@ import {
     FaAppleAlt, FaChevronDown, FaChevronUp, FaUniversity, 
     FaHandsHelping, FaFileAlt, FaLock, FaQuestionCircle 
   } from "react-icons/fa";
-  
+import logo from '../../assets/images/logooo.png';
 import "/src/assets/styles/backoffcss/sidebar.css";
 
 const Sidebar = () => {
@@ -16,7 +16,7 @@ const Sidebar = () => {
   return (
     <div className="sidebar">
         <div className="sidebar-header">
-  <img src="\src\assets\logo.png" alt="Logo" className="logo" />
+  <img src={logo} alt="Logo" className="logo" />
   <h2>SustainaFood Admin</h2>
 </div>
       <nav>

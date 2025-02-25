@@ -37,7 +37,7 @@ const StudentList = () => {
   return (
     <div className="dashboard-container">
       <Sidebar />
-      <div className="content">
+      <div className="dashboard-content">
         <Navbar />
 
         <div className="student-list">
@@ -72,9 +72,9 @@ const StudentList = () => {
                   <td>{student.age}</td>
                   <td>{student.sexe}</td>
                   <td className="action-buttons">
-    <button className="view-btn"><FaEye /></button>
-    <button className="edit-btn"><FaEdit /></button>
-    <button className="delete-btn"><FaTrash /></button>
+                  <button className="view-btn">👁</button>
+                    <button className="edit-btn">✏</button>
+                    <button className="delete-btn">🗑</button>
 </td>
 
                 </tr>

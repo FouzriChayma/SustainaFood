@@ -54,12 +54,14 @@ const userSchema = new Schema({
   age: { type: Number },
   sexe: { type: String, enum: Object.values(Sexe) },
   image_carte_etudiant: { type: String },
-  image_carte_identite: { type: String },
+  num_cin: { type: String },
   id_fiscale: { type: String },
   type: { type: String, enum: Object.values(OngType)},
   vehiculeType: { type: String, enum: Object.values(VehiculeType)},
   taxR: { type: String },
-  isBlocked: { type: Boolean, default: false }
+  isBlocked: { type: Boolean, default: false },
+  resetCode: { type: String },  
+  resetCodeExpires: { type: Date } 
 });
 
 // Pre-save hook to automatically increment the `id` field before saving a user

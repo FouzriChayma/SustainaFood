@@ -2,11 +2,111 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const crypto = require("crypto"); // For generating random reset codes
+require("dotenv").config(); // Load environment variables
+
+// Generate a 6-digit reset code
+const generateResetCode = () => Math.floor(100000 + Math.random() * 900000).toString(); 
+
+// Function to generate a reset code and send it via email
+// 🚀 Send Reset Code (Forgot Password)
+async function sendResetCode(req, res) {
+    const { email } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        // Generate reset code
+        const resetCode = generateResetCode();
+
+        // Store reset code & expiration
+        user.resetCode = resetCode;
+        user.resetCodeExpires = Date.now() + 10 * 60 * 1000; // Expires in 10 minutes
+        await user.save();
+
+        // Configure email transporter
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                user: process.env.EMAIL_USER, 
+                pass: process.env.EMAIL_PASS, 
+            },
+        });
+
+        // Email details
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: "Password Reset Code",
+            text: `Your password reset code is: ${resetCode}. This code is valid for 10 minutes.`,
+        };
+
+        // Send email
+        await transporter.sendMail(mailOptions);
+
+        res.status(200).json({ message: "Reset code sent successfully" });
+
+    } catch (error) {
+        console.error("Error sending reset code:", error);
+        res.status(500).json({ error: "Error sending reset code" });
+    }
+}
+
+// 🚀 Validate Reset Code
+async function validateResetCode(req, res) {
+    const { email, resetCode } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+
+        if (!user || user.resetCode !== resetCode || user.resetCodeExpires < Date.now()) {
+            return res.status(400).json({ error: "Invalid or expired reset code" });
+        }
+
+        res.status(200).json({ message: "Reset code verified" });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+}
+
+// 🚀 Reset Password
+async function resetPassword(req, res) {
+    const { email, newPassword } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        // Hash the new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update user password & clear reset code
+        user.password = hashedPassword;
+        user.resetCode = undefined;
+        user.resetCodeExpires = undefined;
+        await user.save();
+
+        res.status(200).json({ message: "Password successfully reset" });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+}
+
+
+
+
+
 async function addUser(req, res) {
     try {
         const { email, password, confirmPassword, phone, name, address, role } = req.body;
 
-        // Vérifier si tous les champs obligatoires sont remplis
+        // Vérifier si tous les champs sont remplis
         if (!email || !password || !confirmPassword || !phone || !name || !address || !role) {
             return res.status(400).json({ error: "Veuillez remplir tous les champs." });
         }
@@ -16,31 +116,22 @@ async function addUser(req, res) {
             return res.status(400).json({ error: "Passwords do not match" });
         }
 
-        // Vérifier si l'email est déjà utilisé
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ error: "Email already in use" });
-        }
+        // Vous pouvez également ajouter une validation de l'e-mail ici
+        // Par exemple, vérifier que l'e-mail n'est pas déjà utilisé
 
         // Hacher le mot de passe avant de le stocker
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Création de l'utilisateur sans stocker confirmPassword
-        const user = new User({
-            email,
-            password: hashedPassword,
-            phone,
-            name,
-            address,
-            role
-        });
+        // Créer l'utilisateur avec le mot de passe haché
+        const user = new User({ ...req.body, password: hashedPassword });
 
         await user.save();
-        res.status(201).json({ message: "User created successfully", user });
+        res.status(201).json(user);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(400).json({ error: error.message });
     }
 }
+
 // Get all users
 async function getUsers(req, res) {
     try {
@@ -107,20 +198,58 @@ async function getUserByEmailAndPassword(req, res) {
     }
 }
 // Update a user
-async function updateUser(req, res) {
+const updateUser = async (req, res) => {
     try {
-        const { name, address, sexe, photo, phone, vehiculeType, image_carte_etudiant } = req.body;
-        const updateData = { name, address, sexe, photo, phone, vehiculeType, image_carte_etudiant };
+        const { name, email, phone, address, photo, age, sexe, image_carte_etudiant, 
+                num_cin, id_fiscale, type, vehiculeType, taxR, isBlocked, resetCode, resetCodeExpires } = req.body;
 
-        const user = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        // Filtrage des attributs autorisés pour éviter des mises à jour indésirables
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (email) updateData.email = email;
+        if (phone && !isNaN(phone)) updateData.phone = phone;
+        if (address) updateData.address = address;
+        if (photo) updateData.photo = photo;
+        if (age && !isNaN(age)) updateData.age = age;
+        if (sexe) updateData.sexe = sexe;
+        if (image_carte_etudiant) updateData.image_carte_etudiant = image_carte_etudiant;
+        if (num_cin) updateData.num_cin = num_cin;
+        if (id_fiscale) updateData.id_fiscale = id_fiscale;
+        if (type) updateData.type = type;
+        if (vehiculeType) updateData.vehiculeType = vehiculeType;
+        if (taxR) updateData.taxR = taxR;
+        if (typeof isBlocked === 'boolean') updateData.isBlocked = isBlocked;
+        if (resetCode) updateData.resetCode = resetCode;
+        if (resetCodeExpires) updateData.resetCodeExpires = resetCodeExpires;
+
+        // Vérifier si l'utilisateur existe
+        const user = await User.findById(req.params.id);
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
-        res.status(200).json(user);
+
+        // Vérification supplémentaire pour empêcher la modification du rôle par un utilisateur non autorisé
+        if (req.body.role && req.user.role !== 'admin') {
+            return res.status(403).json({ error: "Unauthorized to update role" });
+        }
+        if (req.body.role) updateData.role = req.body.role;
+
+        // Ne pas permettre la modification du mot de passe via cette méthode
+        if (req.body.password) {
+            return res.status(400).json({ error: "Password cannot be updated this way" });
+        }
+
+        // Mise à jour de l'utilisateur
+        const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+        res.status(200).json(updatedUser);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-}
+};
+
+
+
 
 // Delete a user
 async function deleteUser(req, res) {
@@ -171,4 +300,4 @@ async function user_signin(req, res) {
 }
 
 
-module.exports = { addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,getUserByEmailAndPassword };
+module.exports = { addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode };

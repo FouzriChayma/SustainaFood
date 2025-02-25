@@ -12,6 +12,9 @@ import SupermarketList from "./pages/backoffice/SupermarketList";
 import StudentList from "./pages/backoffice/StudentList";
 import TransporterList from "./pages/backoffice/TransporterList";
 import About from "./pages/About";
+import ForgetPass from "./pages/ForgetPass";
+import ResetCode from "./pages/ResetCode";
+import ResetPassword from "./pages/ResetPassword";
 
 const App = () => {
   return (
@@ -28,6 +31,9 @@ const App = () => {
       <Route path="/recipients/students" element={<StudentList />} />
       <Route path="/transporters" element={<TransporterList />} />
       <Route path="/About" element={<About />} />
+        <Route path="/forget-password" element={<ForgetPass />} />
+        <Route path="/reset-code" element={<ResetCode />} />  
+        <Route path="/reset-password" element={<ResetPassword />} />
     </Routes>
   );
 };

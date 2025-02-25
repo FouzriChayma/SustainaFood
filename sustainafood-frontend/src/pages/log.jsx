@@ -94,6 +94,9 @@ const Login = () => {
       setError("Connexion Google échouée.");
     },
   });
+  const handleForgotPassword = () => {
+    navigate("/forget-password"); // Navigate to the ForgetPass page
+  };
 
   const togglePanel = () => {
     setIsRightPanelActive(!isRightPanelActive);
@@ -138,6 +141,30 @@ const Login = () => {
             {/* Affichage des erreurs */}
             {error && <p className="error-message">{error}</p>}
 
+            {/* Checkbox and Forgot Password */}
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <label className="ios-checkbox green">
+                <input type="checkbox" />
+                <div className="checkbox-wrapper">
+                  <div className="checkbox-bg"></div>
+                  <svg fill="none" viewBox="0 0 24 24" className="checkbox-icon">
+                    <path
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                      strokeWidth="3"
+                      stroke="currentColor"
+                      d="M4 12L10 18L20 6"
+                      className="check-path"
+                    ></path>
+                  </svg>
+                </div>
+              </label>
+              <span style={{ fontSize: "14px", marginLeft: "5px" }}>Remember me</span>
+              <a className="signup-a" onClick={handleForgotPassword} style={{ marginLeft: "auto" }}>
+                Forgot your password?
+              </a>
+            </div>
+
             <button type="submit" className="signup-button">Sign In</button>
             <div>
               <span style={{ fontSize: "14px" }}>
@@ -162,14 +189,14 @@ const Login = () => {
           <div className="signup-overlay">
             <div className="signup-overlay-panel signup-overlay-left">
               <img src={loginImg} alt="Login" className="signup-logo" />
-              <button className="ghost" onClick={togglePanel}>
+              <button className="signbtn" onClick={togglePanel}>
                 <FontAwesomeIcon icon={faArrowLeft} />
               </button>
             </div>
             <div className="signup-overlay-panel signup-overlay-right">
               <h1>Welcome Back!</h1>
               <p>To keep connected with us please login with your personal info</p>
-              <button className="ghost" onClick={togglePanel}>Sign In</button>
+              <button className="signbtn" onClick={togglePanel}>Sign In</button>
             </div>
           </div>
         </div>

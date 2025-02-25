@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import '../assets/styles/Profile.css';
 import pdp from '../assets/images/pdp.png';
 import Navbar from '../components/Navbar';

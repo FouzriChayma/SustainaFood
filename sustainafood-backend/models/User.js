@@ -61,6 +61,7 @@ const userSchema = new Schema({
   isBlocked: { type: Boolean, default: false },
   resetCode: { type: String },
   resetCodeExpires: { type: Date }
+ 
 });
 
 // Pre-save hook to auto-increment `id` before saving a new user

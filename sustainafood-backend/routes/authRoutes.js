@@ -47,3 +47,4 @@ function generateJwtToken(userProfile) {
 }
 
 module.exports = router;
+

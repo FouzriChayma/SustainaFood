@@ -124,7 +124,7 @@ const Signup = () => {
   const [num_cin, setNum_cin] = useState("");
   const [sexe, setSexe] = useState("male");
   const [age, setAge] = useState("");
-  const [taxR, setTaxR] = useState("");
+  const [taxReference, setTaxReference] = useState("");
   const [vehiculeType, setVehiculeType] = useState("car");
   const [type, setType] = useState("charitable");
   const [showPassword, setShowPassword] = useState(false);
@@ -181,7 +181,7 @@ const Signup = () => {
       data.append("vehiculeType", vehiculeType);
     }
     if (isDonor) {
-      data.append("taxR", taxR);
+      data.append("taxReference", taxReference);
     }
     // Append profile photo file if exists
     if (profilePhotoFile) {
@@ -310,7 +310,7 @@ const Signup = () => {
             )}
             {isDonor && (
               <>
-                <input className="signup-input" type="text" placeholder="Tax reference" value={taxR} onChange={(e) => setTaxR(e.target.value)} required />
+                <input className="signup-input" type="text" placeholder="Tax reference" value={taxReference} onChange={(e) => setTaxReference(e.target.value)} required />
               </>
             )}
             <input className="signup-input" type="text" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} required />

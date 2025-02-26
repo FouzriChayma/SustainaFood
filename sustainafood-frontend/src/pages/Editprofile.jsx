@@ -10,10 +10,14 @@ import { getUserById, updateUser } from "../api/userService";
 import { FaCamera } from 'react-icons/fa';
 
 const EditProfile = () => {
+  const [fileName, setFileName] = useState("");
+  const [imagePreview, setImagePreview] = useState(null);
+
+  
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
-  const role = authUser?.role;
 
+  const role = authUser?.role;
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -29,7 +33,7 @@ const EditProfile = () => {
     id_fiscale: '',
     type: '',
     // For restaurant/supermarket
-    taxR: '',
+    taxReference: '',
     // For transporter
     vehiculeType: ''
   });
@@ -55,7 +59,7 @@ const EditProfile = () => {
             id_fiscale: userData.id_fiscale || '',
             type: userData.type || '',
             // Restaurant / Supermarket
-            taxR: userData.taxR || '',
+            taxReference: userData.taxReference || '',
             // Transporter
             vehiculeType: userData.vehiculeType || ''
           });
@@ -84,13 +88,19 @@ const EditProfile = () => {
   };
 
   // Update file input values
-  const handleFileChange = (e) => {
-    const { name, files } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: files && files.length > 0 ? files[0] : ''
-    }));
+  const handleFileChange = (event) => {
+    const { name, files } = event.target;
+    if (files && files.length > 0) {
+      const file = files[0];
+      setFormData(prev => ({ ...prev, [name]: file }));
+      setFileName(file.name);
+
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target.result);
+      reader.readAsDataURL(file);
+    }
   };
+
 
   // Submit the form using FormData
   const handleSubmit = async (e) => {
@@ -106,7 +116,7 @@ const EditProfile = () => {
     data.append('num_cin', formData.num_cin);
     data.append('id_fiscale', formData.id_fiscale);
     data.append('type', formData.type);
-    data.append('taxR', formData.taxR);
+    data.append('taxReference', formData.taxReference);
     data.append('vehiculeType', formData.vehiculeType);
 
     if (formData.photo instanceof File) {
@@ -124,6 +134,7 @@ const EditProfile = () => {
 
     try {
       await updateUser(authUser.id, data);
+      console.log(formData.taxReference);
       navigate("/profile");
     } catch (error) {
       console.error("Erreur lors de la mise à jour du profil :", error);
@@ -135,26 +146,22 @@ const EditProfile = () => {
     <>
       <Navbar />
       <div className="editprofile-container rounded bg-white mt-5 mb-5">
-        {/* Profile image container with overlay icon */}
         <div className="editprofile-profile-image-container text-center">
-          <img
-            className="editprofile-profile-image"
-            src={profilePhotoUrl}
-            alt="Profile"
+          <img 
+            src={imagePreview || profilePhotoUrl} 
+            className="editprofile-profile-image" 
+            alt="Profile Preview" 
           />
-          {/* Overlay icon in a white, semi-transparent circle */}
-          <label
-            htmlFor="file-upload-photo"
-            className="editprofile-photo-icon"
-            title="Change Photo"
-          >
+          <label htmlFor="file-upload-photo" className="editprofile-photo-icon" title="Change Photo">
             <FaCamera style={{ fontSize: "18px", color: "#333" }} />
           </label>
           <input
             id="file-upload-photo"
             type="file"
             name="photo"
+            accept="image/*"
             onChange={handleFileChange}
+            style={{ display: "none" }}
           />
 
           <br />
@@ -167,11 +174,11 @@ const EditProfile = () => {
           </span>
         </div>
 
-        <div className="p-3 py-5">
-          <h2 className="editprofile-text-right">Profile Settings</h2>
+        <div style={{ marginLeft: "100px" }}>
+          <h2 className="editprofile-text-right" style={{marginTop:"70px"}}>Profile Settings</h2>
           <form onSubmit={handleSubmit}>
             {/* Common fields: Name and Email */}
-            <div className="editprofile-row mt-2">
+            <div className="editprofile-row">
               <div className="col-md-6 login-input-block">
                 <input
                   type="text"
@@ -199,7 +206,7 @@ const EditProfile = () => {
             </div>
 
             {/* Common fields: Phone and Address */}
-            <div className="editprofile-row mt-3">
+            <div className="editprofile-row">
               <div className="col-md-6 login-input-block">
                 <input
                   type="number"
@@ -229,7 +236,7 @@ const EditProfile = () => {
             {/* Role-specific fields */}
             {role === 'student' && (
               <>
-                <div className="editprofile-row mt-3">
+                <div className="editprofile-row ">
                   <div className="col-md-6 login-input-block" style={{ width: '270px' }}>
                     <select
                       className="login-input"
@@ -258,7 +265,7 @@ const EditProfile = () => {
                     <label className="login-label">Age</label>
                   </div>
                 </div>
-                <div className="editprofile-row mt-3">
+                <div className="editprofile-row">
                   <div className="col-md-6 login-input-block">
                     <input
                       type="text"
@@ -273,7 +280,7 @@ const EditProfile = () => {
                   </div>
                 </div>
                 {/* Student Card Image Upload */}
-                <div className="row mt-3">
+                <div className="row3">
                   <div className="col-md-6 login-input-block">
                     <label htmlFor="file-upload-student" className="custom-file-upload">
                       <img 
@@ -313,7 +320,7 @@ const EditProfile = () => {
 
             {role === 'ong' && (
               <>
-                <div className="editprofile-row mt-3">
+                <div className="editprofile-row">
                   <div className="col-md-6 login-input-block">
                     <input
                       type="text"
@@ -356,18 +363,18 @@ const EditProfile = () => {
 
             {(role === 'restaurant' || role === 'supermarket') && (
               <>
-                <div className="editprofile-row mt-3">
+                <div className="editprofile-row ">
                   <div className="col-md-6 login-input-block">
                     <input
                       type="text"
                       className="login-input"
-                      name="taxR"
-                      value={formData.taxR}
+                      name="taxReference"
+                      value={formData.taxReference}
                       onChange={handleChange}
                       required
                       placeholder=" "
                     />
-                    <label className="login-label">Tax R</label>
+                    <label className="login-label">Tax Reference</label>
                   </div>
                 </div>
               </>
@@ -375,7 +382,7 @@ const EditProfile = () => {
 
             {role === 'transporter' && (
               <>
-                <div className="editprofile-row mt-3">
+                <div className="editprofile-row ">
                   <div className="col-md-6 login-input-block">
                     <select
                       className="login-input"
@@ -398,7 +405,7 @@ const EditProfile = () => {
               </>
             )}
 
-            <div className="mt-5 text-center">
+            <div className=" text-center">
               <button className="btn login-button" type="submit">
                 Save Profile
               </button>

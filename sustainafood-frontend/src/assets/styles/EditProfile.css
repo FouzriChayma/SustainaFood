@@ -5,8 +5,7 @@
   /* Remove align-items: center; so the heading doesn't overlap the image */
   /* align-items: center; */
   justify-content: center; /* Keep this if you want horizontal centering */
-  width: 820px;
-  height: 600px;
+  width: 1020px;
   max-width: 99%;
   position: relative;
   overflow-y: auto;
@@ -16,36 +15,35 @@
   box-shadow: 0px 0px 30px rgba(0, 0, 0, 0.42);
   border: 0.1px solid rgba(128, 128, 128, 0.178);
   margin-top: 30px;
-  margin-left: 300px;
+  margin-left: 277px;
 }
 
 .editprofile-profile-section {
   flex: 1;
-  max-width: 350px;
+  max-width: 4
+  50px;
 }
 
-.editprofile-profile-image-container {
-  text-align: center;
-}
+
 
 .editprofile-profile-image {
   border-radius: 50%;
   width: 150px;
   height: 150px;
   object-fit: cover;
-  margin-top: 20px;
+  margin-top: 186px;
 }
 
 .editprofile-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  margin-left: 20px;
+  
 }
 
 .editprofile-col-md-3,
 .editprofile-col-md-5,
 .editprofile-col-md-4 {
   padding: 20px;
+  width: 100%;
 }
 
 .editprofile-col-md-3 {
@@ -153,6 +151,7 @@ img.editprofile-rounded-circle {
 
 .login-input-block {
   position: relative;
+  width: 100%;
 }
 
 /* Transitions when input is focused or filled */
@@ -269,24 +268,39 @@ img.editprofile-rounded-circle {
   z-index: -1;
 }
 
-.login-input,
+.login-input{
+  background: rgba(253, 253, 253, 0);
+  outline: none;
+  border: 1px solid rgba(255, 0, 0, 0);
+  border-radius: 0.5rem;
+  padding: 10px;
+  margin: 10px 10px;
+  display: block;
+  color: #71a63fc8;
+  font-weight: 500;
+  font-size: 0.9em;
+  width: 473px;
+}
 .login-button {
   background: rgba(253, 253, 253, 0);
   outline: none;
   border: 1px solid rgba(255, 0, 0, 0);
   border-radius: 0.5rem;
   padding: 10px;
-  margin: 10px auto;
-  width: 80%;
+  margin: 10px 10px;
   display: block;
   color: #71a63fc8;
   font-weight: 500;
-  font-size: 1.1em;
+  font-size: 0.9em;
+  width: 473px;
+  margin-bottom: 30px;
+  left: 500px;
+  
 }
 
 .login-input-block {
   position: relative;
-  margin-top: 30px;
+  margin-top: 20px;
 }
 
 .login-label {
@@ -333,7 +347,8 @@ img.editprofile-rounded-circle {
   text-align: center;
   position: relative; /* crucial for absolute positioning of the icon */
   margin-top: 20px;
-  margin: 0 auto; /* center horizontally if you like */
+  margin-left: -18px;
+  
   width: 150px;   /* match the image width */
   height: 150px;  /* match the image height */
 }
@@ -350,7 +365,6 @@ img.editprofile-rounded-circle {
 .editprofile-photo-icon {
   position: absolute;
   bottom: 5px; /* a bit of spacing from the bottom edge */
-  right: 5px;  /* a bit of spacing from the right edge */
   width: 25px;
   height: 25px;
   background-color: rgba(255, 255, 255, 0.9);
@@ -360,6 +374,12 @@ img.editprofile-rounded-circle {
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+  top: 300px;
+  right: 5px;  /* a bit of spacing from the right edge */
+
+}
+.editprofile-text-right{
+  top:100px;
 }
 
 .editprofile-photo-icon i {

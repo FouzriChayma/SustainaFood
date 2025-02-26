@@ -13,6 +13,7 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(null);
   const navigate = useNavigate();
+  const profilePhotoUrll = user?.photo ? `http://localhost:3000/${user.photo}` : imgmouna;
 
   const isAuthenticated = !!token;
 
@@ -113,10 +114,10 @@ const Navbar = () => {
             </div>
 
             <div className="profile-menu" onClick={() => setMenuOpen(!menuOpen)}>
-              <img src={imgmouna} alt="Profile" className="profile-img" />
+              <img src={profilePhotoUrll} alt="Profile" className="profile-img" />
               <div className={`dropdown-menu ${menuOpen ? "active" : ""}`}>
                 <div className="profile-info">
-                  <img src={imgmouna} alt="Profile" className="dropdown-img" />
+                  <img src={profilePhotoUrll} alt="Profile" className="dropdown-img" />
                   <div>
                     <p className="user-name">{user?.name || 'Loading...'}</p>
                     <p className="user-email">{user?.email || 'Loading...'}</p>
@@ -125,7 +126,7 @@ const Navbar = () => {
                 <hr />
                 <button onClick={() => navigate("/profile")} className="menu-item">Profil and visibility</button>
                 <button className="menu-item">Change account</button>
-                <button className="menu-item" to="/edit-profile">Generate account</button>
+                <button className="menu-item" onClick={() => navigate("/edit-profile")}>Generate account</button>
                 <hr />
                 <button onClick={handleLogout} className="menu-item logout">
                   <FaSignOutAlt /> LogOut

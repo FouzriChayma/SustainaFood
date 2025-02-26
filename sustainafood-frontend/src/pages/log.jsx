@@ -27,27 +27,32 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-
+  
     if (!email || !password) {
       setError("Veuillez remplir tous les champs.");
       return;
     }
-
+  
     try {
       const response = await loginUser({ email, password });
-
+  
       if (response?.data?.token) {
         console.log("Connexion réussie :", response.data);
-
+  
         const userData = {
           id: response.data.id,
           role: response.data.role,
           email, // Optionally include the email used for login
         };
-
+  
         login(userData, response.data.token);
         console.log("✅ Utilisateur connecté :", userData);
-        navigate("/profile"); 
+  
+        if (userData.role === "admin") {
+          navigate("/dashboard");
+        } else {
+          navigate("/profile");
+        }
       } else {
         setError("Authentification échouée. Vérifiez vos identifiants.");
       }
@@ -56,7 +61,7 @@ const Login = () => {
       setError(err.response?.data?.error || "Erreur de connexion.");
     }
   };
-
+  
   // 🔥 Connexion avec Google (via bouton personnalisé)
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {

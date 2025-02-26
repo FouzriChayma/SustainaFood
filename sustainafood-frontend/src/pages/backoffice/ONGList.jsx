@@ -2,39 +2,39 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
-import "/src/assets/styles/backoffcss/supermarketList.css";
+import "/src/assets/styles/backoffcss/ngoList.css";
 import { FaEye, FaTrash, FaBan, FaUnlock } from "react-icons/fa";
 import ReactPaginate from "react-paginate";
 import { Link } from "react-router-dom";
 
-const SupermarketList = () => {
-    const [supermarkets, setSupermarkets] = useState([]); // Liste complète des supermarchés
+const ONGList = () => {
+    const [ongs, setONGs] = useState([]); // Liste complète des ONGs
     const [currentPage, setCurrentPage] = useState(0);
     const [searchQuery, setSearchQuery] = useState(""); // State to store the search query
-    const supermarketsPerPage = 5; // Nombre de supermarchés par page
+    const ongsPerPage = 5; // Nombre d'ONGs par page
 
-    // Récupération des supermarchés depuis le backend
+    // Récupération des ONGs depuis le backend
     useEffect(() => {
         axios.get("http://localhost:3000/users/list")
             .then(response => {
-                const supermarketUsers = response.data.filter(user => user.role === "supermarket");
-                setSupermarkets(supermarketUsers);
+                const ongUsers = response.data.filter(user => user.role === "ong");
+                setONGs(ongUsers);
             })
-            .catch(error => console.error("Error fetching supermarkets:", error));
+            .catch(error => console.error("Error fetching ONGs:", error));
     }, []);
 
-    // Fonction pour bloquer/débloquer un supermarché
-    const handleBlockUser = async (userId, isBlocked) => {
+    // Fonction pour bloquer/débloquer une ONG
+    const handleBlockONG = async (ongId, isBlocked) => {
         try {
-            const response = await axios.put(`http://localhost:3000/users/toggle-block/${userId}`, {
+            const response = await axios.put(`http://localhost:3000/users/toggle-block/${ongId}`, {
                 isBlocked: !isBlocked
             });
 
             if (response.status === 200) {
-                alert(`User has been ${response.data.isBlocked ? "blocked" : "unblocked"} successfully.`);
+                alert(`ONG has been ${response.data.isBlocked ? "blocked" : "unblocked"} successfully.`);
                 // Update the UI after blocking/unblocking
-                setSupermarkets(supermarkets.map(supermarket =>
-                    supermarket._id === userId ? { ...supermarket, isBlocked: response.data.isBlocked } : supermarket
+                setONGs(ongs.map(ong =>
+                    ong._id === ongId ? { ...ong, isBlocked: response.data.isBlocked } : ong
                 ));
             } else {
                 alert(response.data.error || "Error toggling block status.");
@@ -45,47 +45,47 @@ const SupermarketList = () => {
         }
     };
 
-    // Fonction pour supprimer un supermarché
-    const deleteSupermarket = async (supermarketId) => {
-        if (!window.confirm("Are you sure you want to delete this supermarket?")) return;
+    // Fonction pour supprimer une ONG
+    const deleteONG = async (ongId) => {
+        if (!window.confirm("Are you sure you want to delete this ONG?")) return;
 
         try {
-            await axios.delete(`http://localhost:3000/users/delete/${supermarketId}`);
-            alert("Supermarket deleted!");
-            setSupermarkets(supermarkets.filter(supermarket => supermarket._id !== supermarketId));
+            await axios.delete(`http://localhost:3000/users/delete/${ongId}`);
+            alert("ONG deleted!");
+            setONGs(ongs.filter(ong => ong._id !== ongId));
         } catch (error) {
-            console.error("Error deleting supermarket:", error);
+            console.error("Error deleting ONG:", error);
         }
     };
 
     // Pagination
-    const pagesVisited = currentPage * supermarketsPerPage;
-    const pageCount = Math.ceil(supermarkets.length / supermarketsPerPage);
+    const pagesVisited = currentPage * ongsPerPage;
+
+    // Filtering the ONGs based on the search query
+    const filteredONGs = ongs.filter(ong => {
+        const phoneString = ong.phone.toString(); // Convert phone number to string for searching
+        return (
+            ong.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            ong.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            phoneString.includes(searchQuery) // Search in the phone number as a string
+        );
+    });
+
+    const displayONGs = filteredONGs.slice(pagesVisited, pagesVisited + ongsPerPage);
+
+    const pageCount = Math.ceil(filteredONGs.length / ongsPerPage);
 
     const changePage = ({ selected }) => {
         setCurrentPage(selected);
     };
-
-    // Filtering the supermarkets based on the search query
-    const filteredSupermarkets = supermarkets.filter(supermarket =>  {
-        const phoneString = supermarket.phone.toString(); // Convert phone number to string for searching
-        return (
-            supermarket.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            supermarket.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            phoneString.includes(searchQuery) // Search in the phone number as a string
-        );
-    });
-    
-
-    const displaySupermarkets = filteredSupermarkets.slice(pagesVisited, pagesVisited + supermarketsPerPage);
 
     return (
         <div className="dashboard-container">
             <Sidebar />
             <div className="dashboard-content">
                 <Navbar setSearchQuery={setSearchQuery} /> {/* Pass search setter to Navbar */}
-                <div className="supermarket-list">
-                    <h3>Supermarket Management</h3>
+                <div className="ong-list">
+                    <h3>ONG Management</h3>
                     <table>
                         <thead>
                             <tr>
@@ -99,34 +99,34 @@ const SupermarketList = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {displaySupermarkets.map((supermarket, index) => (
-                                <tr key={supermarket._id}>
+                            {displayONGs.map((ong, index) => (
+                                <tr key={ong._id}>
                                     <td>{pagesVisited + index + 1}</td>
                                     <td>
                                     <img 
-                                            src={supermarket.photo ? `http://localhost:3000/${supermarket.photo}` : "/src/assets/User_icon_2.svg.png"} 
-                                            alt="supermarket" 
-                                            className="supermarket-photoList" 
+                                            src={ong.photo ? `http://localhost:3000/${ong.photo}` : "/src/assets/User_icon_2.svg.png"} 
+                                            alt="ong" 
+                                            className="ong-photoList" 
                                         />
                                     </td>
-                                    <td>{supermarket.name}</td>
-                                    <td>{supermarket.email}</td>
-                                    <td>{supermarket.phone}</td>
-                                    <td>{supermarket.taxR || "N/A"}</td>
+                                    <td>{ong.name}</td>
+                                    <td>{ong.email}</td>
+                                    <td>{ong.phone}</td>
+                                    <td>{ong.taxReference || "N/A"}</td>
                                     <td className="action-buttons">
                                         <button className="view-btn">
-                                            <Link to={`/supermarkets/view/${supermarket._id}`}>
+                                            <Link to={`/ongs/view/${ong._id}`}>
                                                 <FaEye />
                                             </Link>
                                         </button>
                                         <button
                                             className="block-btn"
-                                            onClick={() => handleBlockUser(supermarket._id, supermarket.isBlocked)}
-                                            style={{ color: supermarket.isBlocked ? "green" : "red" }}
+                                            onClick={() => handleBlockONG(ong._id, ong.isBlocked)}
+                                            style={{ color: ong.isBlocked ? "green" : "red" }}
                                         >
-                                            {supermarket.isBlocked ? <FaUnlock /> : <FaBan />}
+                                            {ong.isBlocked ? <FaUnlock /> : <FaBan />}
                                         </button>
-                                        <button className="delete-btn" onClick={() => deleteSupermarket(supermarket._id)}>
+                                        <button className="delete-btn" onClick={() => deleteONG(ong._id)}>
                                             <FaTrash />
                                         </button>
                                     </td>
@@ -153,4 +153,4 @@ const SupermarketList = () => {
     );
 };
 
-export default SupermarketList;
+export default ONGList;

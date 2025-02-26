@@ -1,12 +1,14 @@
 /* Transporter Management Page */
 .transporter-list {
     background: white;
-    padding: 15px;
+    padding: 20px;
     border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     width: 100%;
-    max-width: 1200px;
-    margin: 20px auto;
+    max-width: 1400px;
+    margin-top: 20px;
+    overflow-x: auto; /* Ensure table is scrollable on small screens */
+    margin-top: 50px;
 }
 
 /* Title */
@@ -29,7 +31,7 @@ th, td {
 }
 
 /* Transporter photo */
-.transporter-photo {
+.transporter-photoList {
     width: 40px;
     height: 40px;
     border-radius: 50%;

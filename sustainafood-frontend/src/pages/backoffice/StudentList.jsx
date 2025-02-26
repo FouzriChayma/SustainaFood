@@ -3,12 +3,14 @@ import axios from "axios";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import "/src/assets/styles/backoffcss/studentList.css";
-import { FaEye, FaTrash } from "react-icons/fa"; // Suppression de FaEdit
+import { FaEye, FaTrash, FaBan, FaUnlock } from "react-icons/fa";
 import ReactPaginate from "react-paginate";
+import { Link } from "react-router-dom";
 
 const StudentList = () => {
     const [students, setStudents] = useState([]); // Liste complète des étudiants
     const [currentPage, setCurrentPage] = useState(0);
+    const [searchQuery, setSearchQuery] = useState(""); // State to store the search query
     const studentsPerPage = 3; // Nombre d'étudiants par page
 
     // Récupération des étudiants depuis le backend
@@ -20,6 +22,28 @@ const StudentList = () => {
             })
             .catch(error => console.error("Error fetching students:", error));
     }, []);
+
+    // Fonction pour bloquer/débloquer un étudiant
+    const handleBlockUser = async (userId, isBlocked) => {
+        try {
+            const response = await axios.put(`http://localhost:3000/users/toggle-block/${userId}`, {
+                isBlocked: !isBlocked
+            });
+
+            if (response.status === 200) {
+                alert(`User has been ${response.data.isBlocked ? "blocked" : "unblocked"} successfully.`);
+                // Update the UI after blocking/unblocking
+                setStudents(students.map(student =>
+                    student._id === userId ? { ...student, isBlocked: response.data.isBlocked } : student
+                ));
+            } else {
+                alert(response.data.error || "Error toggling block status.");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Failed to update block status.");
+        }
+    };
 
     // Fonction pour supprimer un étudiant
     const deleteUser = async (userId) => {
@@ -36,9 +60,27 @@ const StudentList = () => {
 
     // Pagination
     const pagesVisited = currentPage * studentsPerPage;
-    const displayStudents = students.slice(pagesVisited, pagesVisited + studentsPerPage);
 
-    const pageCount = Math.ceil(students.length / studentsPerPage);
+    // Filtering the students based on the search query
+    const filteredStudents = students.filter(student => {
+        // Safely convert phone and age to strings, or use an empty string if they are null/undefined
+        const phoneString = student.phone ? student.phone.toString() : "";
+        const ageString = student.age ? student.age.toString() : "";
+        const numCinString = student.num_cin ? student.num_cin.toString() : "";
+        const sexeString = student.sexe ? student.sexe.toString().toLowerCase() : "";
+        return (
+            student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            student.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            phoneString.includes(searchQuery) || // Search in phone number
+            ageString.includes(searchQuery)|| 
+            numCinString.includes(searchQuery) ||
+            sexeString.includes(searchQuery)
+        );
+    });
+
+    const displayStudents = filteredStudents.slice(pagesVisited, pagesVisited + studentsPerPage);
+
+    const pageCount = Math.ceil(filteredStudents.length / studentsPerPage);
 
     const changePage = ({ selected }) => {
         setCurrentPage(selected);
@@ -47,8 +89,8 @@ const StudentList = () => {
     return (
         <div className="dashboard-container">
             <Sidebar />
-            <div className="dashboardcontent">
-                <Navbar />
+            <div className="dashboard-content">
+                <Navbar setSearchQuery={setSearchQuery} /> {/* Pass search setter to Navbar */}
                 <div className="student-list">
                     <h3>Student Management</h3>
                     <table>
@@ -70,8 +112,11 @@ const StudentList = () => {
                                 <tr key={student._id}>
                                     <td>{pagesVisited + index + 1}</td>
                                     <td>
-                                        <img src={student.photo || "/src/assets/User_icon_2.svg.png"} 
-                                            alt="Student" className="student-photo" />
+                                        <img 
+                                            src={student.photo ? `http://localhost:3000/${student.photo}` : "/src/assets/User_icon_2.svg.png"} 
+                                            alt="Student" 
+                                            className="student-photoList" 
+                                        />
                                     </td>
                                     <td>{student.name}</td>
                                     <td>{student.email}</td>
@@ -80,7 +125,18 @@ const StudentList = () => {
                                     <td>{student.age || "N/A"}</td>
                                     <td>{student.sexe}</td>
                                     <td className="action-buttons">
-                                        <button className="view-btn"><FaEye /></button>
+                                        <button className="view-btn">
+                                            <Link to={`/students/view/${student._id}`}>
+                                                <FaEye />
+                                            </Link>
+                                        </button>
+                                        <button
+                                            className="block-btn"
+                                            onClick={() => handleBlockUser(student._id, student.isBlocked)}
+                                            style={{ color: student.isBlocked ? "green" : "red" }}
+                                        >
+                                            {student.isBlocked ? <FaUnlock /> : <FaBan />}
+                                        </button>
                                         <button className="delete-btn" onClick={() => deleteUser(student._id)}>
                                             <FaTrash />
                                         </button>

@@ -28,8 +28,13 @@ const OngType = Object.freeze({
 const VehiculeType = Object.freeze({
   CAR: 'car',
   MOTORBIKE: 'motorbike',
-  BICYCLE: 'bicycle'
+  BICYCLE: 'bicycle',
+  VAN: 'van',
+  TRUCK: 'truck',
+  SCOOTER: 'scooter'
 });
+
+
 
 const Role = Object.freeze({
   ADMIN: 'admin',

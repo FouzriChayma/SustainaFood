@@ -33,7 +33,7 @@ const Sidebar = () => {
             <FaUsers className="icon" /> <span>User Management</span> {showUserManagement ? <FaChevronUp /> : <FaChevronDown />}
           </button>
           {showUserManagement && (
-            <div className="dropdown-content">
+            <div className="dropdown-content-dashboard">
               {/* Recipients sous-menu */}
               <button className="sub-dropdown" onClick={() => setShowRecipients(!showRecipients)}>
                 <FaHandsHelping className="icon" /> <span>Recipients</span> {showRecipients ? <FaChevronUp /> : <FaChevronDown />}

@@ -15,6 +15,7 @@ const Profile = () => {
   const { user: authUser, token } = useAuth();
   const [user, setUser] = useState(authUser);
   const [error, setError] = useState("");
+  const profilePhotoUrl = user?.photo ? `http://localhost:3000/${user.photo}` : pdp;
 
   useEffect(() => {
     if (!token) {
@@ -43,7 +44,7 @@ const Profile = () => {
   return (
     <>
       <Navbar />
-      <div className="container">
+      <div className="container-profile">
         <header>
           <div className="profile-header">
             <h1>My Profile</h1>
@@ -69,7 +70,7 @@ const Profile = () => {
                   </svg>*/}
                 </button>
                 <div className="profile-pic">
-                  <img src={pdp} alt="Profile" />
+                  <img   src={profilePhotoUrl}  alt="Profile" />
                 </div>
                 <div className="bottom">
                   <div className="content">

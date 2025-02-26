@@ -329,6 +329,11 @@ async function user_signin(req, res) {
             return res.status(400).json({ error: "Invalid credentials" });
         }
 
+        // Check if the user is blocked
+        if (user.isBlocked) {
+            return res.status(403).json({ error: "Your account is blocked. Please contact support." });
+        }
+
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ error: "Invalid credentials" });
@@ -347,6 +352,7 @@ async function user_signin(req, res) {
         res.status(500).json({ error: "Server error" });
     }
 }
+
 // 🚀 View Student by ID
 async function viewStudent(req, res) {
     try {

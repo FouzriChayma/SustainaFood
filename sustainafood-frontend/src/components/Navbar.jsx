@@ -15,7 +15,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const profilePhotoUrll = user?.photo ? `http://localhost:3000/${user.photo}` : imgmouna;
 
-  const isAuthenticated = !!token;
+  const isAuthenticated = !!authUser;
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -24,6 +24,7 @@ const Navbar = () => {
         return;
       }
       try {
+        console.log("ID utilisateur in nav :", authUser.id);
         const response = await getUserById(authUser.id);
         setUser(response.data);
       } catch (error) {

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
+import { AuthContext } from "../contexts/AuthContext"; 
 import { useNavigate } from "react-router-dom";
 import ReCAPTCHA from "react-google-recaptcha"; // ✅ Import ReCAPTCHA
 import "../assets/styles/log.css";
@@ -8,7 +9,7 @@ import fbimg from "../assets/images/fb.png";
 import gglimg from "../assets/images/ggl.jpg";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
-import { signupUser } from "../api/userService";
+import { getUserById, updateUserwithemail } from "../api/userService";
 import { FaEye, FaEyeSlash } from "react-icons/fa"; // Icons for password visibility
 import { FaCamera } from "react-icons/fa"; // For the profile photo icon
 import styled from "styled-components";
@@ -89,11 +90,35 @@ const ImagePreview = styled.img`
   margin-left: 10px;
 `;
 
-const Signup = () => {
+const Continueinfo = () => {
+  const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [error, setError] = useState(null);
   const [fileName, setFileName] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   // NEW: State to store the actual profile photo file
   const [profilePhotoFile, setProfilePhotoFile] = useState(null);
+  const [isRightPanelActive, setIsRightPanelActive] = useState(false);
+  // Input fields state
+  const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+  const [role, setRole] = useState("admin");
+  const [id_fiscale, setId_fiscale] = useState("");
+  const [num_cin, setNum_cin] = useState("");
+  const [sexe, setSexe] = useState("male");
+  const [age, setAge] = useState("");
+  const [taxReference, setTaxReference] = useState("");
+  const [vehiculeType, setVehiculeType] = useState("car");
+  const [type, setType] = useState("charitable");
+  // State for CAPTCHA
+  const [captchaValue, setCaptchaValue] = useState(null);
+
+  const isOng = role === "ong";
+  const isstudent = role === "student";
+  const istransporter = role === "transporter";
+  const isDonor = role === "supermarket" || role === "restaurant";
+
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -107,67 +132,43 @@ const Signup = () => {
       reader.readAsDataURL(file);
     }
   };
-
-  const navigate = useNavigate();
-  const [isRightPanelActive, setIsRightPanelActive] = useState(false);
-
-  // Input fields state
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [phone, setPhone] = useState("");
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-  const [role, setRole] = useState("admin");
-  const [error, setError] = useState("");
-  const [id_fiscale, setId_fiscale] = useState("");
-  const [num_cin, setNum_cin] = useState("");
-  const [sexe, setSexe] = useState("male");
-  const [age, setAge] = useState("");
-  const [taxReference, setTaxReference] = useState("");
-  const [vehiculeType, setVehiculeType] = useState("car");
-  const [type, setType] = useState("charitable");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const isOng = role === "ong";
-  const isstudent = role === "student";
-  const istransporter = role === "transporter";
-  const isDonor = role === "supermarket" || role === "restaurant";
-
-  // State for CAPTCHA
-  const [captchaValue, setCaptchaValue] = useState(null);
-
   const togglePanel = () => {
     setIsRightPanelActive(!isRightPanelActive);
   };
-
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
-
+  
+    // Vérification du reCAPTCHA
     if (!captchaValue) {
       setError("Veuillez valider le reCAPTCHA.");
       return;
     }
-    if (!email || !password || !confirmPassword || !phone || !name || !address) {
+  
+    // Vérification des champs obligatoires
+    if (!phone || !role || !address) {
       setError("Veuillez remplir tous les champs.");
       return;
     }
-    if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas.");
+  
+    // Récupération des infos de localStorage
+    const email = localStorage.getItem("email from google");
+    const id = localStorage.getItem("user_id");
+  
+    if (!id || !email) {
+      setError("Erreur : utilisateur non trouvé.");
       return;
     }
-
-    // Create a FormData object and append all fields
+  
+    console.log("ID utilisateur récupéré :", id);
+  
+    // Création de FormData
     const data = new FormData();
     data.append("email", email);
-    data.append("password", password);
-    data.append("confirmPassword", confirmPassword);
     data.append("phone", phone);
-    data.append("name", name);
     data.append("address", address);
     data.append("role", role);
+  
     if (isOng) {
       data.append("id_fiscale", id_fiscale);
       data.append("type", type);
@@ -183,20 +184,49 @@ const Signup = () => {
     if (isDonor) {
       data.append("taxReference", taxReference);
     }
-    // Append profile photo file if exists
     if (profilePhotoFile) {
       data.append("photo", profilePhotoFile);
     }
-
+  
     try {
-      console.log("Sending user data:", data);
-      const response = await signupUser(data);
-      console.log("Inscription réussie :", response.data);
-      navigate("/login");
+      console.log("🔄 Envoi des données...");
+      
+      // Mise à jour de l'utilisateur
+      const response = await updateUserwithemail(id, data);
+      console.log("✅ Inscription réussie :", response.data);
+  
+      // Récupération de l'utilisateur mis à jour
+      const userResponse = await getUserById(id);
+      const user = userResponse.data;
+  
+      if (!user) {
+        setError("Erreur : Données utilisateur non récupérées.");
+        return;
+      }
+  
+      login(user, response.data.token);
+  
+      // Stocker les nouvelles informations utilisateur
+      const authData = JSON.parse(localStorage.getItem("authData") || "{}");
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("authData", JSON.stringify({ ...authData, email: user.email }));
+  
+      console.log("Utilisateur mis à jour:", user);
+  
+      // Redirection après mise à jour
+      if (user.role === "admin") {
+        navigate("/dashboard");
+      } else {
+        navigate("/profile");
+      }
     } catch (err) {
+      console.error("❌ Erreur lors de l'inscription :", err);
       setError(err.response?.data?.error || "Erreur d'inscription.");
     }
   };
+   
+
+
 
   return (
     <div className="aa">
@@ -215,16 +245,8 @@ const Signup = () => {
             <span>or use your email</span>
 
             {/* Input Fields */}
-            <input className="signup-input" type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
-            <input className="signup-input" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <input className="signup-input" type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            <span style={{ marginBottom: "10px" }} className="auth-eye-icon" onClick={() => setShowPassword(!showPassword)}>
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
-            </span>
-            <input className="signup-input" type={showConfirmPassword ? "text" : "password"} placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-            <span style={{ marginBottom: "10px" }} className="auth-eye-icon" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-              {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-            </span>
+            
+           
 
             <select className="signup-input" value={role} onChange={(e) => setRole(e.target.value)} required>
               <option value="admin">Admin</option>
@@ -362,4 +384,4 @@ const Signup = () => {
   );
 };
 
-export default Signup;
+export default Continueinfo;

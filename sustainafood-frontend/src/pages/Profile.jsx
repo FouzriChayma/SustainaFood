@@ -18,17 +18,16 @@ const Profile = () => {
   const profilePhotoUrl = user?.photo ? `http://localhost:3000/${user.photo}` : pdp;
 
   useEffect(() => {
-    if (!token) {
-      navigate('/login');
-      return;
-    }
+  
     const fetchUser = async () => {
       try {
         if (!authUser || !authUser.id) {
           console.error("⛔ authUser id is undefined!");
           return;
         }
-        const response = await getUserById(authUser.id);
+        const id = authUser.id;
+        
+        const response = await getUserById(id);
         setUser(response.data);
       } catch (error) {
         console.error("❌ Backend Error:", error);

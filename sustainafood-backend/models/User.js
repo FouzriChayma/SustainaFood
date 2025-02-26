@@ -49,11 +49,11 @@ const Role = Object.freeze({
 const userSchema = new Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  role: { type: String, enum: Object.values(Role), required: true },
+  password: { type: String },
+  role: { type: String, enum: Object.values(Role) },
   id: { type: Number }, // Auto-incremented custom ID
-  phone: { type: Number, required: true },
-  address: { type: String, required: true },
+  phone: { type: Number },
+  address: { type: String },
   photo: { type: String },
   age: { type: Number },
   sexe: { type: String, enum: Object.values(Sexe), default: null },

@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import EditProfile from './pages/Editprofile';
 import Profile from './pages/Profile';
 import Signup from './pages/Signup';
+import Continueinfo from './pages/Continueinfo';
 import Contact from './pages/Contact';
 import Login from './pages/log';
 import Dashboard from "./pages/backoffice/Dashboard";
@@ -47,6 +48,7 @@ const App = () => {
         <Route path="/forget-password" element={<ForgetPass />} />
         <Route path="/reset-code" element={<ResetCode />} />  
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/Continueinfo" element={<Continueinfo />} />
     </Routes>
   );
 };

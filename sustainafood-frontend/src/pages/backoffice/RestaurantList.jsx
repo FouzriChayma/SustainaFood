@@ -10,6 +10,7 @@ import ReactPaginate from "react-paginate";
 const RestaurantList = () => {
     const [restaurants, setRestaurants] = useState([]); // Liste complète des restaurants
     const [currentPage, setCurrentPage] = useState(0);
+    const [searchQuery, setSearchQuery] = useState(""); // State to store the search query
     const restaurantsPerPage = 5; // Nombre de restaurants par page
 
     // Récupération des restaurants depuis le backend
@@ -59,9 +60,20 @@ const RestaurantList = () => {
 
     // Pagination
     const pagesVisited = currentPage * restaurantsPerPage;
-    const displayRestaurants = restaurants.slice(pagesVisited, pagesVisited + restaurantsPerPage);
 
-    const pageCount = Math.ceil(restaurants.length / restaurantsPerPage);
+    // Filtering the restaurants based on the search query
+    const filteredRestaurants = restaurants.filter(restaurant => {
+        const phoneString = restaurant.phone.toString(); // Convert phone number to string for searching
+        return (
+            restaurant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            restaurant.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            phoneString.includes(searchQuery) // Search in the phone number as a string
+        );
+    });
+
+    const displayRestaurants = filteredRestaurants.slice(pagesVisited, pagesVisited + restaurantsPerPage);
+
+    const pageCount = Math.ceil(filteredRestaurants.length / restaurantsPerPage);
 
     const changePage = ({ selected }) => {
         setCurrentPage(selected);
@@ -71,65 +83,71 @@ const RestaurantList = () => {
         <div className="dashboard-container">
             <Sidebar />
             <div className="dashboard-content">
-                <Navbar />
-                    <div className="restaurant-list">
-                        <h3>Restaurant Management</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Photo</th>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Phone</th>
-                                    <th>TaxR</th>
-                                    <th>Actions</th>
+                <Navbar setSearchQuery={setSearchQuery} /> {/* Pass search setter to Navbar */}
+                <div className="restaurant-list">
+                    <h3>Restaurant Management</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Photo</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>TaxR</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {displayRestaurants.map((restaurant, index) => (
+                                <tr key={restaurant._id}>
+                                    <td>{pagesVisited + index + 1}</td>
+                                    <td>
+                                    <img 
+                                            src={restaurant.photo ? `http://localhost:3000/${restaurant.photo}` : "/src/assets/User_icon_2.svg.png"} 
+                                            alt="restaurant" 
+                                            className="restaurant-photoList" 
+                                        />
+                                    </td>
+                                    <td>{restaurant.name}</td>
+                                    <td>{restaurant.email}</td>
+                                    <td>{restaurant.phone}</td>
+                                    <td>{restaurant.taxReference || "N/A"}</td>
+                                    <td className="action-buttons">
+                                        <button className="view-btn">
+                                            <Link to={`/restaurants/view/${restaurant._id}`} className="view-btn">
+                                                <FaEye />
+                                            </Link>
+                                        </button>
+                                        <button
+                                            className="block-btn"
+                                            onClick={() => handleBlockRestaurant(restaurant._id, restaurant.isBlocked)}
+                                            style={{ color: restaurant.isBlocked ? "green" : "red" }}
+                                        >
+                                            {restaurant.isBlocked ? <FaUnlock /> : <FaBan />}
+                                        </button>
+                                        <button className="delete-btn" onClick={() => deleteRestaurant(restaurant._id)}>
+                                            <FaTrash />
+                                        </button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {displayRestaurants.map((restaurant, index) => (
-                                    <tr key={restaurant._id}>
-                                        <td>{pagesVisited + index + 1}</td>
-                                        <td>
-                                            <img src={restaurant.photo || "/src/assets/User_icon_2.svg.png"} 
-                                                alt="Restaurant" className="restaurant-photo" />
-                                        </td>
-                                        <td>{restaurant.name}</td>
-                                        <td>{restaurant.email}</td>
-                                        <td>{restaurant.phone}</td>
-                                        <td>{restaurant.taxR || "N/A"}</td>
-                                        <td className="action-buttons">
-                                            <button className="view-btn">
-                                            <Link to={`/restaurants/view/${restaurant._id}`} className="view-btn"><FaEye /></Link></button>
-                                            <button
-                                                className="block-btn"
-                                                onClick={() => handleBlockRestaurant(restaurant._id, restaurant.isBlocked)}
-                                                style={{ color: restaurant.isBlocked ? "green" : "red" }}
-                                            >
-                                                {restaurant.isBlocked ? <FaUnlock /> : <FaBan />}
-                                            </button>
-                                            <button className="delete-btn" onClick={() => deleteRestaurant(restaurant._id)}>
-                                                <FaTrash />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                            ))}
+                        </tbody>
+                    </table>
 
-                        {/* Pagination */}
-                        <ReactPaginate
-                            previousLabel={"Previous"}
-                            nextLabel={"Next"}
-                            pageCount={pageCount}
-                            onPageChange={changePage}
-                            containerClassName={"pagination"}
-                            previousLinkClassName={"previousBttn"}
-                            nextLinkClassName={"nextBttn"}
-                            disabledClassName={"paginationDisabled"}
-                            activeClassName={"paginationActive"}
-                        />
-                    </div>
+                    {/* Pagination */}
+                    <ReactPaginate
+                        previousLabel={"Previous"}
+                        nextLabel={"Next"}
+                        pageCount={pageCount}
+                        onPageChange={changePage}
+                        containerClassName={"pagination"}
+                        previousLinkClassName={"previousBttn"}
+                        nextLinkClassName={"nextBttn"}
+                        disabledClassName={"paginationDisabled"}
+                        activeClassName={"paginationActive"}
+                    />
+                </div>
             </div>
         </div>
     );

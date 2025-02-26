@@ -49,11 +49,11 @@ const ViewSupermarket = () => {
                 <Navbar />
                 <div className="supermarket-card">
                     <div className="supermarket-header">
-                        <img 
-                            src={supermarket.photo || "/src/assets/User_icon_2.svg.png"} 
-                            alt="Supermarket" 
-                            className="supermarket-photo"
-                        />
+                    <img 
+                                            src={supermarket.photo ? `http://localhost:3000/${supermarket.photo}` : "/src/assets/User_icon_2.svg.png"} 
+                                            alt="supermarket" 
+                                            className="supermarket-photo" 
+                                        />
                         <div className="supermarket-info">
                             <h2>{supermarket.name}</h2>
                             <p className="email">{supermarket.email}</p>

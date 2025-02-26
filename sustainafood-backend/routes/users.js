@@ -38,4 +38,5 @@ router.get('/view/:id', userController.viewRestaurant);
 router.get('/view/:id', userController.viewSupermarket);
 router.get('/view/:id', userController.viewNGO);
 router.get('/view/:id', userController.viewTransporter);
+
 module.exports = router;

@@ -8,10 +8,12 @@ import ReactPaginate from "react-paginate";
 import { Link } from "react-router-dom";
 
 const ONGList = () => {
-    const [ongs, setONGs] = useState([]);
+    const [ongs, setONGs] = useState([]); // Liste complète des ONGs
     const [currentPage, setCurrentPage] = useState(0);
-    const ongsPerPage = 5;
+    const [searchQuery, setSearchQuery] = useState(""); // State to store the search query
+    const ongsPerPage = 5; // Nombre d'ONGs par page
 
+    // Récupération des ONGs depuis le backend
     useEffect(() => {
         axios.get("http://localhost:3000/users/list")
             .then(response => {
@@ -21,6 +23,7 @@ const ONGList = () => {
             .catch(error => console.error("Error fetching ONGs:", error));
     }, []);
 
+    // Fonction pour bloquer/débloquer une ONG
     const handleBlockONG = async (ongId, isBlocked) => {
         try {
             const response = await axios.put(`http://localhost:3000/users/toggle-block/${ongId}`, {
@@ -29,6 +32,7 @@ const ONGList = () => {
 
             if (response.status === 200) {
                 alert(`ONG has been ${response.data.isBlocked ? "blocked" : "unblocked"} successfully.`);
+                // Update the UI after blocking/unblocking
                 setONGs(ongs.map(ong =>
                     ong._id === ongId ? { ...ong, isBlocked: response.data.isBlocked } : ong
                 ));
@@ -41,6 +45,7 @@ const ONGList = () => {
         }
     };
 
+    // Fonction pour supprimer une ONG
     const deleteONG = async (ongId) => {
         if (!window.confirm("Are you sure you want to delete this ONG?")) return;
 
@@ -53,10 +58,22 @@ const ONGList = () => {
         }
     };
 
+    // Pagination
     const pagesVisited = currentPage * ongsPerPage;
-    const displayONGs = ongs.slice(pagesVisited, pagesVisited + ongsPerPage);
 
-    const pageCount = Math.ceil(ongs.length / ongsPerPage);
+    // Filtering the ONGs based on the search query
+    const filteredONGs = ongs.filter(ong => {
+        const phoneString = ong.phone.toString(); // Convert phone number to string for searching
+        return (
+            ong.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            ong.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            phoneString.includes(searchQuery) // Search in the phone number as a string
+        );
+    });
+
+    const displayONGs = filteredONGs.slice(pagesVisited, pagesVisited + ongsPerPage);
+
+    const pageCount = Math.ceil(filteredONGs.length / ongsPerPage);
 
     const changePage = ({ selected }) => {
         setCurrentPage(selected);
@@ -66,7 +83,7 @@ const ONGList = () => {
         <div className="dashboard-container">
             <Sidebar />
             <div className="dashboard-content">
-                <Navbar />
+                <Navbar setSearchQuery={setSearchQuery} /> {/* Pass search setter to Navbar */}
                 <div className="ong-list">
                     <h3>ONG Management</h3>
                     <table>
@@ -86,13 +103,16 @@ const ONGList = () => {
                                 <tr key={ong._id}>
                                     <td>{pagesVisited + index + 1}</td>
                                     <td>
-                                        <img src={ong.photo || "/src/assets/User_icon_2.svg.png"} 
-                                            alt="ONG" className="ong-photo" />
+                                    <img 
+                                            src={ong.photo ? `http://localhost:3000/${ong.photo}` : "/src/assets/User_icon_2.svg.png"} 
+                                            alt="ong" 
+                                            className="ong-photoList" 
+                                        />
                                     </td>
                                     <td>{ong.name}</td>
                                     <td>{ong.email}</td>
                                     <td>{ong.phone}</td>
-                                    <td>{ong.taxR || "N/A"}</td>
+                                    <td>{ong.taxReference || "N/A"}</td>
                                     <td className="action-buttons">
                                         <button className="view-btn">
                                             <Link to={`/ongs/view/${ong._id}`}>
@@ -115,6 +135,7 @@ const ONGList = () => {
                         </tbody>
                     </table>
 
+                    {/* Pagination */}
                     <ReactPaginate
                         previousLabel={"Previous"}
                         nextLabel={"Next"}

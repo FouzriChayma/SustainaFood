@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 const SupermarketList = () => {
     const [supermarkets, setSupermarkets] = useState([]); // Liste complète des supermarchés
     const [currentPage, setCurrentPage] = useState(0);
+    const [searchQuery, setSearchQuery] = useState(""); // State to store the search query
     const supermarketsPerPage = 5; // Nombre de supermarchés par page
 
     // Récupération des supermarchés depuis le backend
@@ -59,19 +60,30 @@ const SupermarketList = () => {
 
     // Pagination
     const pagesVisited = currentPage * supermarketsPerPage;
-    const displaySupermarkets = supermarkets.slice(pagesVisited, pagesVisited + supermarketsPerPage);
-
     const pageCount = Math.ceil(supermarkets.length / supermarketsPerPage);
 
     const changePage = ({ selected }) => {
         setCurrentPage(selected);
     };
 
+    // Filtering the supermarkets based on the search query
+    const filteredSupermarkets = supermarkets.filter(supermarket =>  {
+        const phoneString = supermarket.phone.toString(); // Convert phone number to string for searching
+        return (
+            supermarket.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            supermarket.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            phoneString.includes(searchQuery) // Search in the phone number as a string
+        );
+    });
+    
+
+    const displaySupermarkets = filteredSupermarkets.slice(pagesVisited, pagesVisited + supermarketsPerPage);
+
     return (
         <div className="dashboard-container">
             <Sidebar />
             <div className="dashboard-content">
-                <Navbar />
+                <Navbar setSearchQuery={setSearchQuery} /> {/* Pass search setter to Navbar */}
                 <div className="supermarket-list">
                     <h3>Supermarket Management</h3>
                     <table>
@@ -91,8 +103,11 @@ const SupermarketList = () => {
                                 <tr key={supermarket._id}>
                                     <td>{pagesVisited + index + 1}</td>
                                     <td>
-                                        <img src={supermarket.photo || "/src/assets/User_icon_2.svg.png"} 
-                                            alt="Supermarket" className="supermarket-photo" />
+                                    <img 
+                                            src={supermarket.photo ? `http://localhost:3000/${supermarket.photo}` : "/src/assets/User_icon_2.svg.png"} 
+                                            alt="supermarket" 
+                                            className="supermarket-photoList" 
+                                        />
                                     </td>
                                     <td>{supermarket.name}</td>
                                     <td>{supermarket.email}</td>

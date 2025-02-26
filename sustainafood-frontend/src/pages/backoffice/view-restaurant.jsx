@@ -49,11 +49,11 @@ const ViewRestaurant = () => {
                 <Navbar />
                 <div className="restaurant-card">
                     <div className="restaurant-header">
-                        <img 
-                            src={restaurant.photo || "/src/assets/restaurant_default.png"} 
-                            alt="Restaurant" 
-                            className="restaurant-photo"
-                        />
+                    <img 
+                                            src={restaurant.photo ? `http://localhost:3000/${restaurant.photo}` : "/src/assets/User_icon_2.svg.png"} 
+                                            alt="restaurant" 
+                                            className="restaurant-photo" 
+                                        />
                         <div className="restaurant-info">
                             <h2>{restaurant.name}</h2>
                             <p className="email">{restaurant.email}</p>

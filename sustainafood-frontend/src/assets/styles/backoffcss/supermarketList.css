@@ -45,9 +45,9 @@ th {
 }
 
 /* Photo des Supermarkets */
-.supermarket-photo {
-    width: 60px; /* Increase photo size */
-    height: 60px; /* Increase photo size */
+.supermarket-photoList {
+    width: 40px; /* Increase photo size */
+    height: 40px; /* Increase photo size */
     border-radius: 50%;
     object-fit: cover;
 }

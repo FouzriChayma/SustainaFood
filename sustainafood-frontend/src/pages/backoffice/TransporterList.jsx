@@ -3,13 +3,14 @@ import axios from "axios";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import "/src/assets/styles/backoffcss/transporterList.css";
-import { FaEye, FaTrash , FaBan, FaUnlock } from "react-icons/fa"; // Suppression de FaEdit
+import { FaEye, FaTrash, FaBan, FaUnlock } from "react-icons/fa";
 import ReactPaginate from "react-paginate";
 import { Link } from "react-router-dom";
 
 const TransporterList = () => {
     const [transporters, setTransporters] = useState([]); // Liste complète des transporteurs
     const [currentPage, setCurrentPage] = useState(0);
+    const [searchQuery, setSearchQuery] = useState(""); // State to store the search query
     const transportersPerPage = 5; // Nombre de transporteurs par page
 
     // Récupération des transporteurs depuis le backend
@@ -22,6 +23,7 @@ const TransporterList = () => {
             .catch(error => console.error("Error fetching transporters:", error));
     }, []);
 
+    // Fonction pour bloquer/débloquer un transporteur
     const handleBlockUser = async (userId, isBlocked) => {
         try {
             const response = await axios.put(`http://localhost:3000/users/toggle-block/${userId}`, {
@@ -42,6 +44,7 @@ const TransporterList = () => {
             alert("Failed to update block status.");
         }
     };
+
     // Fonction pour supprimer un transporteur
     const deleteTransporter = async (transporterId) => {
         if (!window.confirm("Are you sure you want to delete this transporter?")) return;
@@ -57,9 +60,20 @@ const TransporterList = () => {
 
     // Pagination
     const pagesVisited = currentPage * transportersPerPage;
-    const displayTransporters = transporters.slice(pagesVisited, pagesVisited + transportersPerPage);
 
-    const pageCount = Math.ceil(transporters.length / transportersPerPage);
+    // Filtering the transporters based on the search query
+    const filteredTransporters = transporters.filter(transporter =>  {
+        const phoneString = transporter.phone.toString(); // Convert phone number to string for searching
+        return (
+            transporter.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            transporter.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            phoneString.includes(searchQuery) // Search in the phone number as a string
+        );
+    });
+
+    const displayTransporters = filteredTransporters.slice(pagesVisited, pagesVisited + transportersPerPage);
+
+    const pageCount = Math.ceil(filteredTransporters.length / transportersPerPage);
 
     const changePage = ({ selected }) => {
         setCurrentPage(selected);
@@ -69,7 +83,7 @@ const TransporterList = () => {
         <div className="dashboard-container">
             <Sidebar />
             <div className="dashboard-content">
-                <Navbar />
+                <Navbar setSearchQuery={setSearchQuery} /> {/* Pass search setter to Navbar */}
                 <div className="transporter-list">
                     <h3>Transporter Management</h3>
                     <table>
@@ -89,24 +103,29 @@ const TransporterList = () => {
                                 <tr key={transporter._id}>
                                     <td>{pagesVisited + index + 1}</td>
                                     <td>
-                                        <img src={transporter.photo || "/src/assets/User_icon_2.svg.png"} 
-                                            alt="Transporter" className="transporter-photo" />
+                                    <img 
+                                            src={transporter.photo ? `http://localhost:3000/${transporter.photo}` : "/src/assets/User_icon_2.svg.png"} 
+                                            alt="transporter" 
+                                            className="transporter-photoList" 
+                                        />
                                     </td>
                                     <td>{transporter.name}</td>
                                     <td>{transporter.email}</td>
                                     <td>{transporter.phone}</td>
                                     <td>{transporter.vehiculeType || "N/A"}</td>
                                     <td className="action-buttons">
-                                        <button className="view-btn"><Link to={`/transporters/view/${transporter._id}`}>
+                                        <button className="view-btn">
+                                            <Link to={`/transporters/view/${transporter._id}`}>
                                                 <FaEye />
-                                            </Link></button>
+                                            </Link>
+                                        </button>
                                         <button
                                             className="block-btn"
                                             onClick={() => handleBlockUser(transporter._id, transporter.isBlocked)}
                                             style={{ color: transporter.isBlocked ? "green" : "red" }}
                                         >
                                             {transporter.isBlocked ? <FaUnlock /> : <FaBan />}
-                                        </button>                                        
+                                        </button>
                                         <button className="delete-btn" onClick={() => deleteTransporter(transporter._id)}>
                                             <FaTrash />
                                         </button>

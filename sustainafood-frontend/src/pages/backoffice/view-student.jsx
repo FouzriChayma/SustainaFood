@@ -49,11 +49,11 @@ const ViewStudent = () => {
                 <Navbar />
                 <div className="student-card">
                     <div className="student-header">
-                        <img 
-                            src={student.photo || "/src/assets/User_icon_2.svg.png"} 
-                            alt="Student" 
-                            className="student-photo"
-                        />
+                    <img 
+                                            src={student.photo ? `http://localhost:3000/${student.photo}` : "/src/assets/User_icon_2.svg.png"} 
+                                            alt="Student" 
+                                            className="student-photo" 
+                                        />
                         <div className="student-info">
                             <h2>{student.name}</h2>
                             <p className="email">{student.email}</p>
@@ -65,7 +65,7 @@ const ViewStudent = () => {
                                     style={{ color: student.isBlocked ? "green" : "red" }}
                                 >
                                     {student.isBlocked ? <FaUnlock /> : <FaBan />}
-                                    {student.isBlocked ? " Unblock" : " Block"}
+                                    
                                 </button>
                             </div>
                         </div>

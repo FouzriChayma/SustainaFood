@@ -45,9 +45,9 @@ th {
 }
 
 /* Restaurant Photo */
-.restaurant-photo {
-    width: 60px; /* Increase photo size */
-    height: 60px; /* Increase photo size */
+.restaurant-photoList {
+    width: 40px; /* Increase photo size */
+    height: 40px; /* Increase photo size */
     border-radius: 50%;
     object-fit: cover;
 }

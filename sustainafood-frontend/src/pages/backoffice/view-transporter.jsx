@@ -49,11 +49,11 @@ const ViewTransporter = () => {
                 <Navbar />
                 <div className="transporter-card">
                     <div className="transporter-header">
-                        <img 
-                            src={transporter.photo || "/src/assets/User_icon_2.svg.png"} 
-                            alt="Transporter" 
-                            className="transporter-photo"
-                        />
+                       <img 
+                                            src={transporter.photo ? `http://localhost:3000/${transporter.photo}` : "/src/assets/User_icon_2.svg.png"} 
+                                            alt="transporter" 
+                                            className="transporter-photo" 
+                                        />
                         <div className="transporter-info">
                             <h2>{transporter.name}</h2>
                             <p className="email">{transporter.email}</p>

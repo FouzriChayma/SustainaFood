@@ -101,15 +101,15 @@
 }
 
 .profile-info h2 {
-    font-weight: 500;
-    font-size: 20px;
-    color: #333;
+    margin-bottom: 10px; /* Marge après le titre */
 }
 
 .profile-info p {
-    margin: 3px 0;
-    color: #666;
-    font-size: 14px;
+    margin-bottom: 10px; /* Marge entre les paragraphes */
+}
+.profile-info h2, .profile-info p {
+    margin-bottom: 10px; /* Espace entre chaque élément */
+    line-height: 1.5; /* Espacement entre les lignes */
 }
 
 /* ✅ Sections Info */
@@ -150,7 +150,7 @@
 /* ✅ Disposition en grille */
 .info-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 15px;
 }
 
@@ -264,4 +264,24 @@
 .readonly-field {
     font-weight: bold;
     color: gray;
+}
+.save-image-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.save-icon {
+    font-size: 15px; /* Adjust the size */
+    color: #4CAF50; /* Green color for the icon */
+    transition: color 0.3s ease;
+}
+
+.save-icon:hover {
+    color: #45a049; /* Darker green on hover */
 }

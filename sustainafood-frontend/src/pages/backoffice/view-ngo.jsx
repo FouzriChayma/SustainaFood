@@ -49,11 +49,11 @@ const ViewNGO = () => {
                 <Navbar />
                 <div className="ngo-card">
                     <div className="ngo-header">
-                        <img 
-                            src={ngo.photo || "/src/assets/ngo_default.png"} 
-                            alt="NGO" 
-                            className="ngo-photo"
-                        />
+                    <img 
+                                            src={ong.photo ? `http://localhost:3000/${ong.photo}` : "/src/assets/User_icon_2.svg.png"} 
+                                            alt="ong" 
+                                            className="ong-photo" 
+                                        />
                         <div className="ngo-info">
                             <h2>{ngo.name}</h2>
                             <p className="email">{ngo.email}</p>

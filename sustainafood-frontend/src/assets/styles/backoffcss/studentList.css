@@ -45,9 +45,9 @@ th {
 }
 
 /* Photo des Students */
-.student-photo {
-    width: 60px; /* Increase photo size */
-    height: 60px; /* Increase photo size */
+.student-photoList {
+    width: 55px; /* Increase photo size */
+    height: 55px; /* Increase photo size */
     border-radius: 50%;
     object-fit: cover;
 }

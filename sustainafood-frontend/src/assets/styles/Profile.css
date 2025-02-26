@@ -647,7 +647,7 @@ body{
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   font-weight: 700;
   font-size: 80px;
-  left: -100px;
+  left: 10px;
   padding: 0;
   margin: 0;
   top: -5px;
@@ -669,9 +669,10 @@ body{
   position: relative;
   font-weight: 600;
   color: #6b7578;
-  left: -75px;
+  left: 75px;
   font-size: 18px;
   margin-top: 10px;
+
 }
 
 .winner-medals {

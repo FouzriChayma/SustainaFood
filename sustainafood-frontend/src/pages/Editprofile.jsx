@@ -146,7 +146,7 @@ const EditProfile = () => {
     <>
       <Navbar />
       <div className="editprofile-container rounded bg-white mt-5 mb-5">
-        <div className="editprofile-profile-image-container text-center">
+        <div className="editprofile-profile-image-container ">
           <img 
             src={imagePreview || profilePhotoUrl} 
             className="editprofile-profile-image" 
@@ -174,7 +174,7 @@ const EditProfile = () => {
           </span>
         </div>
 
-        <div style={{ marginLeft: "100px" }}>
+        <div >
           <h2 className="editprofile-text-right" style={{marginTop:"70px"}}>Profile Settings</h2>
           <form onSubmit={handleSubmit}>
             {/* Common fields: Name and Email */}

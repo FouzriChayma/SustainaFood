@@ -79,7 +79,7 @@ const Profile = () => {
                     </span>
                   </div>
                   <div className="bottom-bottom">
-                    <h1 style={{ color:'white', fontSize:'40px', fontStyle: 'oblique' }}>
+                    <h1 className='userrole'>
                       {user?.role || 'Loading...'}
                     </h1>
                   {/* <button className="button">Contact Me</button> */} 

@@ -2,6 +2,12 @@ body{
     background: rgba(220, 238, 221, 0.781);
 
  }
+ .container-profile {
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px;
+}
+
  .all{
     
     background: #ffffffaa;
@@ -19,12 +25,13 @@ body{
     width: 290px;
     height: 380px;
     background:#ffffff77;
-    ;
+    
     border-radius: 12px;
     padding: 3px;
     position: relative;
     transition: all 0.5s ease-in-out;
   }
+  
 
   .card-white .mail {
     position: absolute;
@@ -329,9 +336,22 @@ body{
     margin-top: -70px;
 
   }
+  .main {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 20px; /* Ajoute un espace entre les éléments */
+  }
+  
+  .left-column, .center-column, .right-column {
+    flex: 1; /* Chaque colonne prendra une part égale de l'espace */
+    min-width: 300px; /* Assure une largeur minimale */
+  }
+  
   
   /* Colonne de gauche */
   .left-column {
+    
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -856,5 +876,80 @@ body{
     color: white;
     border-radius: 5px;
     border: none;
+  }
+  .userrole{ 
+    color:white;
+    font-size : 40px;
+    font-style:oblique }
+  @media (max-width: 1024px) {
+    .main {
+      flex-direction: column; /* Les colonnes passent en mode vertical */
+      align-items: center; /* Centre le contenu */
+    }
+  
+    .left-column, .center-column, .right-column {
+      width: 90%; /* Chaque colonne prendra presque toute la largeur */
+      text-align: center;
+    }
+  }
+ 
+  @media (max-width: 700px) {
+    .userrole{
+       color:white;
+      size : 20px;
+      font-style:oblique }
+    .profile-header  {
+      font-size: 20px;
+    }
+  
+    .btnProfile {
+      font-size: 12px;
+      padding: 6px 10px;
+    }
+  
+    .profile-pic img {
+      width: 30px;
+      height: 40px;
+    }
+  
+    .card-white {
+      margin-bottom: 5px;
+      height: auto;
+      
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 10px;
+      padding: 5px;
+      position: relative;
+      transition: all 0.4s ease-in-out;
+    }
+  
+    .card-white .mail {
+      position: absolute;
+      right: 1rem;
+      top: 1rem;
+      background: transparent;
+      border: none;
+    }
+  
+    .card-white .mail svg {
+      stroke: #8dc73f;
+      stroke-width: 2px;
+    }
+  
+    .card-white .profile-pic {
+      position: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      z-index: 1;
+      border: 3px solid #8dc73f;
+      overflow: hidden;
+      transition: all 0.4s ease-in-out;
+    }
+  
+  
+    
+   
+  
   }
   

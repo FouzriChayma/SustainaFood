@@ -16,7 +16,7 @@ const EditProfile = () => {
   
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
-
+  const[authUserId, setAuthUserId] = useState(null);
   const role = authUser?.role;
   const [formData, setFormData] = useState({
     name: '',
@@ -41,8 +41,8 @@ const EditProfile = () => {
   useEffect(() => {
     const fetchUserDetails = async () => {
       if (typeof authUser.id === "string") {
-
-      if (authUser && authUser.id) {
+        setAuthUserId(authUser.id);
+        if (authUser && authUser.id) {
         try {
           const response = await getUserById(authUser.id);
           const userData = response.data;
@@ -70,6 +70,7 @@ const EditProfile = () => {
         }
       }}
       else if (typeof authUser.id === "number") {
+        setAuthUserId(authUser._id);
         if (authUser && authUser._id) {
           try {
             const response = await getUserById(authUser._id);
@@ -164,7 +165,8 @@ const EditProfile = () => {
     }
 
     try {
-      await updateUser(authUser.id, data);
+
+      await updateUser(authUserId, data);
       console.log(formData.taxReference);
       navigate("/profile");
     } catch (error) {

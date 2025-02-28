@@ -48,7 +48,7 @@ const Navbar = () => {
     logout()
     navigate("/login")
   }
-
+  const isAdmin = user?.role === "admin";
   return (
     <nav className="navbarfront">
       <div className="logo-container">
@@ -134,7 +134,8 @@ const Navbar = () => {
             <div className="social-icons">
               <FaBell />
             </div>
-
+              {/* Render Profile Menu Only for Non-Admin Users */}
+            {!isAdmin && (
             <div className="profile-menu" onClick={() => setMenuOpen(!menuOpen)}>
               <img src={profilePhotoUrll || "/placeholder.svg"} alt="Profile" className="profile-img" />
               <div className={`dropdown-menu ${menuOpen ? "active" : ""}`}>
@@ -159,6 +160,7 @@ const Navbar = () => {
                 </button>
               </div>
             </div>
+            )}
           </>
         ) : (
           <div className="auth-buttons">

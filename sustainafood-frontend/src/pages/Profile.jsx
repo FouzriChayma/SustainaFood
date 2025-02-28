@@ -18,27 +18,32 @@ const Profile = () => {
   const profilePhotoUrl = user?.photo ? `http://localhost:3000/${user.photo}` : pdp;
 
   useEffect(() => {
-  
     const fetchUser = async () => {
-      try {
-        if (!authUser || !authUser.id) {
-          console.error("⛔ authUser id is undefined!");
-          return;
+      if (typeof authUser.id === "number") {
+        if (!authUser || !authUser._id) return;
+        try {
+          const response = await getUserById(authUser._id);
+          setUser(response.data);
+        } catch (error) {
+          console.error("Backend Error:", error);
         }
-        const id = authUser.id;
-        
-        const response = await getUserById(id);
-        setUser(response.data);
-      } catch (error) {
-        console.error("❌ Backend Error:", error);
-        setError("Failed to fetch user data");
+      } 
+      else if (typeof authUser.id === "string") {
+        if (!authUser || !authUser.id) return;
+        try {
+          const response = await getUserById(authUser.id);
+          setUser(response.data);
+        } catch (error) {
+          console.error("Backend Error:", error);
+        }
       }
     };
-    if (authUser && authUser.id) {
+  
+    if (authUser && (authUser._id || authUser.id)) {
       fetchUser();
     }
-  }, [authUser, token, navigate]);
-
+  }, [authUser]);
+  
   
   return (
     <>

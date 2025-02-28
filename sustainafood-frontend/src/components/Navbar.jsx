@@ -16,8 +16,19 @@ const Navbar = () => {
   const navigate = useNavigate();
   const profilePhotoUrll = user?.photo ? `http://localhost:3000/${user.photo}` : imgmouna;
 
-  useEffect(() => {
-    const fetchUser = async () => {
+
+useEffect(() => {
+  const fetchUser = async () => {
+    if (typeof authUser.id === "number") {
+      if (!authUser || !authUser._id) return;
+      try {
+        const response = await getUserById(authUser._id);
+        setUser(response.data);
+      } catch (error) {
+        console.error("Backend Error:", error);
+      }
+    } 
+    else if (typeof authUser.id === "string") {
       if (!authUser || !authUser.id) return;
       try {
         const response = await getUserById(authUser.id);
@@ -25,12 +36,13 @@ const Navbar = () => {
       } catch (error) {
         console.error("Backend Error:", error);
       }
-    };
-
-    if (authUser && authUser.id) {
-      fetchUser();
     }
-  }, [authUser]);
+  };
+
+  if (authUser && (authUser._id || authUser.id)) {
+    fetchUser();
+  }
+}, [authUser]);
 
   const handleLogout = () => {
     logout();

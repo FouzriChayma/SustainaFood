@@ -25,6 +25,7 @@ import ViewNGO from './pages/backoffice/view-ngo.jsx';
 import ViewTransporter from './pages/backoffice/view-transporter';
 import PrivateRoute from "./PrivateRoute";
 import NotFound from "./pages/Not-Found";
+import AccountSettings from "./pages/AccountSettings.js";
 const App = () => {
   return (
     <Routes>
@@ -38,6 +39,7 @@ const App = () => {
       <Route path="/forget-password" element={<ForgetPass />} />
       <Route path="/reset-code" element={<ResetCode />} />  
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path= "/account-settings" element={<AccountSettings />} />
 
       {/* Private Routes for Admin only */}
       <Route element={<PrivateRoute roles={["admin"]} />}>

@@ -2,6 +2,8 @@ body{
     background: rgba(220, 238, 221, 0.781);
 
  }
+
+
  .all{
     
     background: #ffffffaa;
@@ -19,12 +21,13 @@ body{
     width: 290px;
     height: 380px;
     background:#ffffff77;
-    ;
+    
     border-radius: 12px;
     padding: 3px;
     position: relative;
     transition: all 0.5s ease-in-out;
   }
+  
 
   .card-white .mail {
     position: absolute;
@@ -292,7 +295,7 @@ body{
   /* Conteneur principal */
   .container-profile {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
     margin-top: -70px;
@@ -329,9 +332,28 @@ body{
     margin-top: -70px;
 
   }
+  .main {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 20px; /* Ajoute un espace entre les éléments */
+  }
+  
+  .left-column, .right-column { 
+    flex: 1; /* 1 part d'espace */
+    min-width: 300px;
+  }
+  
+  .center-column { 
+    flex: 1.5; /* 1.5 fois la taille des autres colonnes */
+    min-width: 450px; /* Facultatif : ajuster en fonction de la proportion */
+  }
+  
+  
   
   /* Colonne de gauche */
   .left-column {
+    
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -431,7 +453,7 @@ body{
     background-color: #F9FAFB;
     border-radius: 10px;
     padding: 15px;
-    width: 500px;
+    width: 553px;
 
   }
   
@@ -796,7 +818,7 @@ body{
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-    width: 470px;
+    width: 521px;
     text-align: center; /* Centre le contenu */
   }
   
@@ -848,7 +870,7 @@ body{
     text-align: left; /* Alignement du texte */
   }
   .btnseemore{
-    margin-left: 340px;
+    margin-left: 406px;
     margin-top: 10px;
     font-size: 12px;
     padding:  5px 10px; 
@@ -856,5 +878,80 @@ body{
     color: white;
     border-radius: 5px;
     border: none;
+  }
+  .userrole{ 
+    color:white;
+    font-size : 40px;
+    font-style:oblique }
+  @media (max-width: 1024px) {
+    .main {
+      flex-direction: column; /* Les colonnes passent en mode vertical */
+      align-items: center; /* Centre le contenu */
+    }
+  
+    .left-column, .center-column, .right-column {
+      width: 90%; /* Chaque colonne prendra presque toute la largeur */
+      text-align: center;
+    }
+  }
+ 
+  @media (max-width: 700px) {
+    .userrole{
+       color:white;
+      size : 20px;
+      font-style:oblique }
+    .profile-header  {
+      font-size: 20px;
+    }
+  
+    .btnProfile {
+      font-size: 12px;
+      padding: 6px 10px;
+    }
+  
+    .profile-pic img {
+      width: 30px;
+      height: 40px;
+    }
+  
+    .card-white {
+      margin-bottom: 5px;
+      height: auto;
+      
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 10px;
+      padding: 5px;
+      position: relative;
+      transition: all 0.4s ease-in-out;
+    }
+  
+    .card-white .mail {
+      position: absolute;
+      right: 1rem;
+      top: 1rem;
+      background: transparent;
+      border: none;
+    }
+  
+    .card-white .mail svg {
+      stroke: #8dc73f;
+      stroke-width: 2px;
+    }
+  
+    .card-white .profile-pic {
+      position: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      z-index: 1;
+      border: 3px solid #8dc73f;
+      overflow: hidden;
+      transition: all 0.4s ease-in-out;
+    }
+  
+  
+    
+   
+  
   }
   

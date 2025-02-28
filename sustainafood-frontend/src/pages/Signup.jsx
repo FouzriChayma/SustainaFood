@@ -189,10 +189,9 @@ const Signup = () => {
     }
 
     try {
-      console.log("Sending user data:", data);
       const response = await signupUser(data);
-      console.log("Inscription réussie :", response.data);
-      navigate("/profile");
+      console.log("Inscription réussie ");
+      navigate("/login");
     } catch (err) {
       setError(err.response?.data?.error || "Erreur d'inscription.");
     }
@@ -317,14 +316,14 @@ const Signup = () => {
             <input className="signup-input" type="number" placeholder="Phone Number" value={phone} onChange={(e) => setPhone(e.target.value)} required />
 
             {/* ✅ Google reCAPTCHA */}
-            <ReCAPTCHA 
+            <ReCAPTCHA
               sitekey="6LeXoN8qAAAAAHnZcOwetBZ9TfyOl8K_wg7j97hq"
               onChange={(value) => setCaptchaValue(value)}
             />
 
             {/* Display Errors */}
             {error && <p className="error-message">{error}</p>}
-            
+
             <button type="submit" className="signup-button">Sign Up</button>
 
             <div>

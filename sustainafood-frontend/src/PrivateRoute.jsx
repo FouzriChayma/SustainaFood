@@ -1,20 +1,20 @@
 import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext"; // Adjust the path based on your project
+import { useAuth } from "./contexts/AuthContext";
 
 const PrivateRoute = ({ roles }) => {
-  const { user, token } = useAuth(); // Use AuthContext directly
+  const { user, token } = useAuth();
 
-  console.log("User Roles:", user?.roles || "No user logged in");
+  console.log("User Role:", user?.role || "No user logged in");
   console.log("Required Roles:", roles);
 
   // Redirect to login if no JWT token
   if (!token) {
-    return <Navigate to="/login" replace />;
+    return console.log("No token found. Redirecting...") && <Navigate to="/login" replace />;
   }
 
-  // Redirect unauthorized users
-  if (roles?.length > 0 && !user?.roles?.some((role) => roles.includes(role))) {
+  // If roles are required, check if the single user.role is included in that roles array
+  if (roles?.length > 0 && !roles.includes(user?.role)) {
     console.warn("Unauthorized access: Redirecting...");
     return <Navigate to="/" replace />;
   }

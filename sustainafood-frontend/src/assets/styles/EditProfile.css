@@ -2,29 +2,22 @@
 
 .editprofile-container {
   display: flex;
-  /* Remove align-items: center; so the heading doesn't overlap the image */
-  /* align-items: center; */
-  justify-content: center; /* Keep this if you want horizontal centering */
-  width: 1020px;
-  max-width: 99%;
+  justify-content: center;
+  width: 100%;
+  max-width: 1020px;
   position: relative;
   overflow-y: auto;
-
   background-color: #ffffff25;
   border-radius: 15px;
   box-shadow: 0px 0px 30px rgba(0, 0, 0, 0.42);
   border: 0.1px solid rgba(128, 128, 128, 0.178);
-  margin-top: 30px;
-  margin-left: 277px;
+  margin: 30px auto;
 }
 
 .editprofile-profile-section {
   flex: 1;
-  max-width: 4
-  50px;
+  max-width: 450px;
 }
-
-
 
 .editprofile-profile-image {
   border-radius: 50%;
@@ -36,7 +29,8 @@
 
 .editprofile-row {
   margin-left: 20px;
-  
+  display: flex;
+  flex-wrap: wrap;
 }
 
 .editprofile-col-md-3,
@@ -58,11 +52,13 @@
   background-color: #f9f9f9;
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-  width: 500px;
+  width: 100%;
+  max-width: 500px;
 }
 
 .editprofile-d-flex {
   display: flex;
+  flex-wrap: wrap;
 }
 
 .editprofile-align-items-center {
@@ -94,6 +90,7 @@
   border-radius: 8px;
   padding: 12px;
   font-size: 16px;
+  width: 100%;
 }
 
 .editprofile-form-control:focus {
@@ -127,18 +124,6 @@ img.editprofile-rounded-circle {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-@media (max-width: 768px) {
-  .editprofile-col-md-3,
-  .editprofile-col-md-5,
-  .editprofile-col-md-4 {
-    padding: 15px;
-  }
-
-  .editprofile-form-control {
-    padding: 10px;
-  }
-}
-
 /* Label styles */
 .login-label {
   position: absolute;
@@ -168,8 +153,7 @@ img.editprofile-rounded-circle {
 }
 
 .custom-file-upload {
-  box-shadow: inset 4px 4px 4px rgba(165, 163, 163, 0.315),
-    4px 4px 4px rgba(218, 218, 218, 0.13);
+  box-shadow: inset 4px 4px 4px rgba(165, 163, 163, 0.315), 4px 4px 4px rgba(218, 218, 218, 0.13);
   color: gray;
   padding: 10px 20px;
   cursor: pointer;
@@ -193,9 +177,9 @@ img.editprofile-rounded-circle {
 
 .login-container {
   display: flex;
-  width: 720px;
+  width: 100%;
+  max-width: 720px;
   height: 500px;
-  max-width: 99%;
   align-items: center;
   justify-content: center;
   position: relative;
@@ -204,8 +188,7 @@ img.editprofile-rounded-circle {
   border-radius: 15px;
   box-shadow: 0px 0px 30px rgba(0, 0, 0, 0.42);
   border: 0.1px solid rgba(128, 128, 128, 0.178);
-  margin-top: 120px;
-  margin-left: 400px;
+  margin: 120px auto;
 }
 
 .login-left {
@@ -230,12 +213,7 @@ img.editprofile-rounded-circle {
   height: 40%;
   right: 1%;
   z-index: -1;
-  background: radial-gradient(
-    circle,
-    #71a63f,
-    rgba(106, 237, 80, 0.37) 60%,
-    rgb(39, 185, 83) 100%
-  );
+  background: radial-gradient(circle, #71a63f, rgba(106, 237, 80, 0.37) 60%, rgb(39, 185, 83) 100%);
   filter: blur(70px);
   border-radius: 50%;
 }
@@ -246,10 +224,13 @@ img.editprofile-rounded-circle {
 }
 
 .login-img {
-  width: 270px;
-  height: 300px;
+  width: 100%;
+  max-width: 270px;
+  height: auto;
+  max-height: 300px;
   margin-top: 100px;
 }
+
 .login-logo {
   width: 100px;
   height: 100px;
@@ -268,7 +249,7 @@ img.editprofile-rounded-circle {
   z-index: -1;
 }
 
-.login-input{
+.login-input {
   background: rgba(253, 253, 253, 0);
   outline: none;
   border: 1px solid rgba(255, 0, 0, 0);
@@ -279,8 +260,10 @@ img.editprofile-rounded-circle {
   color: #71a63fc8;
   font-weight: 500;
   font-size: 0.9em;
-  width: 473px;
+  width: 100%;
+  max-width: 473px;
 }
+
 .login-button {
   background: rgba(253, 253, 253, 0);
   outline: none;
@@ -292,23 +275,14 @@ img.editprofile-rounded-circle {
   color: #71a63fc8;
   font-weight: 500;
   font-size: 0.9em;
-  width: 473px;
+  width: 100%;
+  max-width: 473px;
   margin-bottom: 30px;
-  left: 500px;
-  
 }
 
 .login-input-block {
   position: relative;
   margin-top: 20px;
-}
-
-.login-label {
-  position: absolute;
-  left: 15%;
-  top: 37%;
-  pointer-events: none;
-  color: gray;
 }
 
 .login-forgot {
@@ -338,19 +312,17 @@ img.editprofile-rounded-circle {
 }
 
 .login-input {
-  box-shadow: inset 4px 4px 4px rgba(165, 163, 163, 0.315),
-    4px 4px 4px rgba(218, 218, 218, 0.13);
+  box-shadow: inset 4px 4px 4px rgba(165, 163, 163, 0.315), 4px 4px 4px rgba(218, 218, 218, 0.13);
 }
 
 /* Ensure the container has the same width/height as the image */
 .editprofile-profile-image-container {
   text-align: center;
-  position: relative; /* crucial for absolute positioning of the icon */
-  margin-top: 20px;
-  margin-left: -18px;
-  
-  width: 150px;   /* match the image width */
-  height: 150px;  /* match the image height */
+  position: relative;
+  margin: 20px 100px ;
+  margin-top: 200px;
+  width: 150px;
+  height: 150px;
 }
 
 /* Make the image fill the container */
@@ -359,12 +331,14 @@ img.editprofile-rounded-circle {
   height: 100%;
   object-fit: cover;
   border-radius: 50%;
+  margin-top: 0;
 }
 
 /* Position the camera icon within the container */
 .editprofile-photo-icon {
   position: absolute;
-  bottom: 5px; /* a bit of spacing from the bottom edge */
+  bottom: 5px;
+  right: 5px;
   width: 25px;
   height: 25px;
   background-color: rgba(255, 255, 255, 0.9);
@@ -374,12 +348,10 @@ img.editprofile-rounded-circle {
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-  top: 300px;
-  right: 5px;  /* a bit of spacing from the right edge */
-
 }
-.editprofile-text-right{
-  top:100px;
+
+.editprofile-text-right {
+  text-align: center;
 }
 
 .editprofile-photo-icon i {
@@ -391,3 +363,87 @@ img.editprofile-rounded-circle {
 #file-upload-photo {
   display: none;
 }
+
+/* Media Queries for Responsiveness */
+@media (max-width: 1200px) {
+  .editprofile-container {
+    margin: 30px auto;
+  }
+}
+
+@media (max-width: 992px) {
+  .editprofile-row {
+    flex-direction: column;
+  }
+
+  .editprofile-col-md-3,
+  .editprofile-col-md-5,
+  .editprofile-col-md-4 {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .editprofile-col-md-3,
+  .editprofile-col-md-5,
+  .editprofile-col-md-4 {
+    padding: 15px;
+  }
+
+  .editprofile-form-control {
+    padding: 10px;
+  }
+
+  .login-container {
+    flex-direction: column;
+    height: auto;
+    padding: 20px;
+  }
+
+  .login-left,
+  .login-right {
+    width: 100%;
+  }
+
+  .login-img {
+    margin-top: 20px;
+  }
+}
+
+@media (max-width: 576px) {
+  .login-label {
+    left: 10%;
+  }
+
+  .login-forgot {
+    margin-left: 15px;
+  }
+}
+
+@media (max-width: 280px) {
+  .editprofile-profile-image-container {
+    width: 30px;
+    height: 30px;
+  }
+
+  .editprofile-profile-image {
+    width: 10px;
+    height: 10px;
+  }
+
+  .editprofile-profile-button {
+    font-size: 14px;
+    padding: 8px;
+  }
+
+  .editprofile-form-control {
+    font-size: 14px;
+    padding: 6px;
+  }
+
+  .editprofile-photo-icon {
+    width: 20px;
+    height: 20px;
+  }
+}
+

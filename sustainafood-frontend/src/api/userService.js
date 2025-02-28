@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL + "/users";
+//const API_URL = import.meta.env.VITE_API_URL + "/users";
 
 // 🔹 Créer un utilisateur
 export const signupUser = async (userData) => {
@@ -11,6 +11,9 @@ export const signupUser = async (userData) => {
   });
 };
 
+export const createuser=async(userData)=>{
+  return await axios.post('http://localhost:3000/users/createUser',userData)
+}
 export const userwinthemailandpss = async (userData) => {
     return await axios.post('http://localhost:3000/users/userwinthemailandpss', userData);
 }
@@ -32,7 +35,13 @@ export const updateUser = async (id, userData) => {
     },
   });
 };
-
+export const updateUserwithemail = async (id, userData) => {
+  return axios.put(`http://localhost:3000/users/update/${id}`, userData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
 
 // 🔹 Supprimer un utilisateur
 export const deleteUser = async (id) => {

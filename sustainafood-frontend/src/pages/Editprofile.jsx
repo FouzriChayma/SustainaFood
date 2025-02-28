@@ -13,10 +13,10 @@ const EditProfile = () => {
   const [fileName, setFileName] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
 
-  
+
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
-
+  const [authUserId, setAuthUserId] = useState(null);
   const role = authUser?.role;
   const [formData, setFormData] = useState({
     name: '',
@@ -40,31 +40,64 @@ const EditProfile = () => {
 
   useEffect(() => {
     const fetchUserDetails = async () => {
-      if (authUser && authUser.id) {
-        try {
-          const response = await getUserById(authUser.id);
-          const userData = response.data;
-          setFormData({
-            name: userData.name || '',
-            email: userData.email || '',
-            phone: userData.phone || '',
-            photo: userData.photo || '',
-            address: userData.address || '',
-            // Student
-            sexe: userData.sexe || '',
-            num_cin: userData.num_cin || '',
-            age: userData.age || '',
-            image_carte_etudiant: userData.image_carte_etudiant || null,
-            // ONG
-            id_fiscale: userData.id_fiscale || '',
-            type: userData.type || '',
-            // Restaurant / Supermarket
-            taxReference: userData.taxReference || '',
-            // Transporter
-            vehiculeType: userData.vehiculeType || ''
-          });
-        } catch (error) {
-          console.error("Erreur lors de la récupération des données utilisateur :", error);
+      if (typeof authUser.id === "string") {
+        setAuthUserId(authUser.id);
+        if (authUser && authUser.id) {
+          try {
+            const response = await getUserById(authUser.id);
+            const userData = response.data;
+            setFormData({
+              name: userData.name || '',
+              email: userData.email || '',
+              phone: userData.phone || '',
+              photo: userData.photo || '',
+              address: userData.address || '',
+              // Student
+              sexe: userData.sexe || '',
+              num_cin: userData.num_cin || '',
+              age: userData.age || '',
+              image_carte_etudiant: userData.image_carte_etudiant || null,
+              // ONG
+              id_fiscale: userData.id_fiscale || '',
+              type: userData.type || '',
+              // Restaurant / Supermarket
+              taxReference: userData.taxReference || '',
+              // Transporter
+              vehiculeType: userData.vehiculeType || ''
+            });
+          } catch (error) {
+            console.error("Erreur lors de la récupération des données utilisateur :", error);
+          }
+        }
+      }
+      else if (typeof authUser.id === "number") {
+        setAuthUserId(authUser._id);
+        if (authUser && authUser._id) {
+          try {
+            const response = await getUserById(authUser._id);
+            const userData = response.data;
+            setFormData({
+              name: userData.name || '',
+              email: userData.email || '',
+              phone: userData.phone || '',
+              photo: userData.photo || '',
+              address: userData.address || '',
+              // Student
+              sexe: userData.sexe || '',
+              num_cin: userData.num_cin || '',
+              age: userData.age || '',
+              image_carte_etudiant: userData.image_carte_etudiant || null,
+              // ONG
+              id_fiscale: userData.id_fiscale || '',
+              type: userData.type || '',
+              // Restaurant / Supermarket 
+              taxReference: userData.taxReference || '',
+              // Transporter
+              vehiculeType: userData.vehiculeType || ''
+            });
+          } catch (error) {
+            console.error("Erreur lors de la récupération des données utilisateur :", error);
+          }
         }
       }
     };
@@ -73,9 +106,9 @@ const EditProfile = () => {
 
   // Build the actual URL for the user's photo if it's stored as "uploads/<filename>"
   // Otherwise, use the default "pdp" fallback.
-  const profilePhotoUrl = 
+  const profilePhotoUrl =
     formData.photo && typeof formData.photo === 'string'
-      ? `http://localhost:3000/${formData.photo}` 
+      ? `http://localhost:3000/${formData.photo}`
       : pdp;
 
   // Update text input values
@@ -133,8 +166,8 @@ const EditProfile = () => {
     }
 
     try {
-      await updateUser(authUser.id, data);
-      console.log(formData.taxReference);
+
+      await updateUser(authUserId, data);
       navigate("/profile");
     } catch (error) {
       console.error("Erreur lors de la mise à jour du profil :", error);
@@ -146,11 +179,11 @@ const EditProfile = () => {
     <>
       <Navbar />
       <div className="editprofile-container rounded bg-white mt-5 mb-5">
-        <div className="editprofile-profile-image-container text-center">
-          <img 
-            src={imagePreview || profilePhotoUrl} 
-            className="editprofile-profile-image" 
-            alt="Profile Preview" 
+        <div className="editprofile-profile-image-container ">
+          <img
+            src={imagePreview || profilePhotoUrl}
+            className="editprofile-profile-image"
+            alt="Profile Preview"
           />
           <label htmlFor="file-upload-photo" className="editprofile-photo-icon" title="Change Photo">
             <FaCamera style={{ fontSize: "18px", color: "#333" }} />
@@ -174,8 +207,8 @@ const EditProfile = () => {
           </span>
         </div>
 
-        <div style={{ marginLeft: "100px" }}>
-          <h2 className="editprofile-text-right" style={{marginTop:"70px"}}>Profile Settings</h2>
+        <div >
+          <h2 className="editprofile-text-right" style={{ marginTop: "70px" }}>Profile Settings</h2>
           <form onSubmit={handleSubmit}>
             {/* Common fields: Name and Email */}
             <div className="editprofile-row">
@@ -283,11 +316,11 @@ const EditProfile = () => {
                 <div className="row3">
                   <div className="col-md-6 login-input-block">
                     <label htmlFor="file-upload-student" className="custom-file-upload">
-                      <img 
-                        src={upload} 
-                        alt="upload" 
-                        style={{ width: "20px", height: "10px", color: "gray" }} 
-                      /> 
+                      <img
+                        src={upload}
+                        alt="upload"
+                        style={{ width: "20px", height: "10px", color: "gray" }}
+                      />
                       Choose Student Card Image
                     </label>
                     <input
@@ -306,10 +339,10 @@ const EditProfile = () => {
                     {/* Display existing student card image if it's a string */}
                     {typeof formData.image_carte_etudiant === 'string' && formData.image_carte_etudiant && (
                       <div className="student-card-preview" style={{ marginTop: "10px" }}>
-                        <img 
-                          src={`http://localhost:3000/${formData.image_carte_etudiant}`} 
-                          alt="Existing Student Card" 
-                          style={{ width: "200px", height: "auto", border: "1px solid #ccc", borderRadius: "5px" }} 
+                        <img
+                          src={`http://localhost:3000/${formData.image_carte_etudiant}`}
+                          alt="Existing Student Card"
+                          style={{ width: "200px", height: "auto", border: "1px solid #ccc", borderRadius: "5px" }}
                         />
                       </div>
                     )}

@@ -5,6 +5,29 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto"); // For generating random reset codes
 require("dotenv").config(); // Load environment variables
+async function createUser(req, res) {
+    try {
+        const { name, email, photo } = req.body;   
+        const existingUser = await User.findOne({ email });
+
+        if (existingUser) {
+            return res.status(200).json({ id: existingUser._id.toString() }); 
+            // 🔹 Assure un ObjectId valide pour éviter l'erreur
+        }
+
+        const user = new User({ name, email, photo });
+        await user.save();
+
+        console.log("✅ Utilisateur créé avec ID:", user._id.toString()); // 🔹 Log l'ID correctement
+        res.status(201).json({ id: user._id.toString() });
+
+    } catch (error) {
+        console.error("❌ Erreur API :", error.message);
+        res.status(500).json({ message: "Error creating user" });
+    }
+}
+
+
 
 
 
@@ -205,6 +228,7 @@ const updateUser = async (req, res) => {
     try {
       // Récupération des champs texte depuis le corps de la requête
       const {
+        role,
         name,
         email,
         phone,
@@ -225,7 +249,6 @@ const updateUser = async (req, res) => {
   
       // Construction de l'objet de mise à jour
       const updateData = {};
-  
       if (name) updateData.name = name;
       if (email) updateData.email = email;
       if (phone && !isNaN(phone)) updateData.phone = phone;
@@ -265,9 +288,9 @@ const updateUser = async (req, res) => {
       }
   
       // Vérification pour empêcher la modification du rôle par un utilisateur non autorisé
-      if (req.body.role && req.user.role !== "admin") {
-        return res.status(403).json({ error: "Unauthorized to update role" });
-      }
+     // if (req.body.role && req.user.role !== "admin") {
+       // return res.status(403).json({ error: "Unauthorized to update role" });
+     // }
       if (req.body.role) updateData.role = req.body.role;
   
       // Ne pas permettre la modification du mot de passe via cette méthode
@@ -281,6 +304,95 @@ const updateUser = async (req, res) => {
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
+  };
+  
+
+  const updateUserWithEmail = async (req, res) => {
+      try {
+          const { email } = req.params;
+          if (!email) {
+              return res.status(400).json({ error: "Email is required" });
+          }
+  
+          const {
+              phone,
+              address,
+              photo,
+              age,
+              sexe,
+              image_carte_etudiant,
+              num_cin,
+              id_fiscal,
+              type,
+              vehiculeType,
+              taxReference,
+              isBlocked,
+              resetCode,
+              resetCodeExpires,
+              role
+          } = req.body;
+  
+          const user = await User.findOne({ email: email });
+          if (!user) {
+              return res.status(404).json({ error: "User not found" });
+          }
+  
+          if (role && req.user.role !== "admin") {
+              return res.status(403).json({ error: "Unauthorized to update role" });
+          }
+  
+          if (req.body.password) {
+              return res.status(400).json({ error: "Password cannot be updated this way" });
+          }
+  
+          const updateData = {};
+          if (phone && !isNaN(phone)) updateData.phone = phone;
+          if (address) updateData.address = address;
+          if (age && !isNaN(age)) updateData.age = age;
+          if (sexe) updateData.sexe = sexe;
+          if (num_cin) updateData.num_cin = num_cin;
+          if (id_fiscal) updateData.id_fiscal = id_fiscal;
+          if (type) updateData.type = type;
+          if (vehiculeType) updateData.vehiculeType = vehiculeType;
+          if (taxReference) updateData.taxReference = taxReference;
+          if (typeof isBlocked === "boolean") updateData.isBlocked = isBlocked;
+          if (resetCode) updateData.resetCode = resetCode;
+          if (resetCodeExpires) updateData.resetCodeExpires = resetCodeExpires;
+          if (role) updateData.role = role;
+  
+          if (req.files?.photo?.[0]?.path) {
+              updateData.photo = req.files.photo[0].path;
+          } else if (photo) {
+              updateData.photo = photo;
+          }
+  
+          if (req.files?.image_carte_etudiant?.[0]?.path) {
+              updateData.image_carte_etudiant = req.files.image_carte_etudiant[0].path;
+          } else if (image_carte_etudiant) {
+              updateData.image_carte_etudiant = image_carte_etudiant;
+          }
+  
+          const updatedUser = await User.findOneAndUpdate(
+              { email: email },
+              updateData,
+              { new: true }
+          );
+  
+          if (!updatedUser) {
+              return res.status(500).json({ error: "User update failed" });
+          }
+  
+          // 🛑 Génération du token après mise à jour 🛑
+          const token = jwt.sign(
+              { id: updatedUser._id, email: updatedUser.email, role: updatedUser.role },
+              process.env.JWT_SECRET, // Remplace par ta clé secrète
+              { expiresIn: "1h" }
+          );
+  
+          res.status(200).json({ user: updatedUser, token });
+      } catch (error) {
+          res.status(500).json({ error: error.message });
+      }
   };
   
 
@@ -302,8 +414,10 @@ async function toggleBlockUser(req, res) {
 
         res.status(200).json({ message: `User ${user.isBlocked ? "blocked" : "unblocked"} successfully`, isBlocked: user.isBlocked });
     } catch (error) {
+        console.error("Erreur lors de la mise à jour de l'utilisateur:", error);
         res.status(500).json({ error: error.message });
     }
+    
 }
 
 
@@ -467,7 +581,7 @@ async function viewTransporter(req, res) {
     }
 }
 
-module.exports = { addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,
+module.exports = {updateUserWithEmail, createUser,addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,
     getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , 
     toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter
      };

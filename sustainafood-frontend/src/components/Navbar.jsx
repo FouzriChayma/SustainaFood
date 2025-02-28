@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaSignOutAlt, FaSignInAlt, FaBell } from 'react-icons/fa';
+import { FaSignOutAlt, FaBell } from 'react-icons/fa';
 import logo from '../assets/images/logooo.png';
 import imgmouna from '../assets/images/imgmouna.png';
 import { useAuth } from "../contexts/AuthContext";
@@ -8,37 +8,45 @@ import { getUserById } from "../api/userService";
 import '../assets/styles/Navbar.css';
 
 const Navbar = () => {
-  const { user: authUser, token, logout } = useAuth(); // Ajout de la fonction logout du contexte
+  const { user: authUser, token, logout } = useAuth();
   const [user, setUser] = useState(authUser);
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const profilePhotoUrll = user?.photo ? `http://localhost:3000/${user.photo}` : imgmouna;
 
-  const isAuthenticated = !!token;
 
   useEffect(() => {
     const fetchUser = async () => {
-      if (!authUser || !authUser.id) {
-        console.error("⛔ authUser id is undefined!");
-        return;
+      if (typeof authUser.id === "number") {
+        if (!authUser || !authUser._id) return;
+        try {
+          const response = await getUserById(authUser._id);
+          setUser(response.data);
+        } catch (error) {
+          console.error("Backend Error:", error);
+        }
       }
-      try {
-        const response = await getUserById(authUser.id);
-        setUser(response.data);
-      } catch (error) {
-        console.error("❌ Backend Error:", error);
+      else if (typeof authUser.id === "string") {
+        if (!authUser || !authUser.id) return;
+        try {
+          const response = await getUserById(authUser.id);
+          setUser(response.data);
+        } catch (error) {
+          console.error("Backend Error:", error);
+        }
       }
     };
 
-    if (authUser && authUser.id) {
+    if (authUser && (authUser._id || authUser.id)) {
       fetchUser();
     }
   }, [authUser]);
 
   const handleLogout = () => {
-    logout(); // Utilisation de la fonction logout du contexte pour mettre à jour l'état global
-    navigate('/login'); // Rediriger vers la page de connexion
+    logout();
+    navigate('/login');
   };
 
   return (
@@ -48,12 +56,20 @@ const Navbar = () => {
         <h1 className="title">SustainaFood</h1>
       </div>
 
-      <ul className="nav-links">
+      {/* Menu Burger */}
+      <div className={`menu-toggle ${mobileMenuOpen ? "open" : ""}`} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+        <span className="bar"></span>
+        <span className="bar"></span>
+        <span className="bar"></span>
+      </div>
+
+      {/* Liens de navigation */}
+      <ul className={`nav-links ${mobileMenuOpen ? "open" : ""}`}>
         <Link to="/" className="nav-link">Home</Link>
         <Link to="/About" className="nav-link">About</Link>
         <Link to="/Contact" className="nav-link">Contact</Link>
 
-        {isAuthenticated && (
+        {authUser && (
           <>
             <div
               className="dropdown"
@@ -134,14 +150,6 @@ const Navbar = () => {
               </div>
             </div>
           </>
-        )}
-
-        {!isAuthenticated && (
-          <div className="social-icons">
-            <Link to="/login">
-              <FaSignInAlt />
-            </Link>
-          </div>
         )}
       </ul>
     </nav>

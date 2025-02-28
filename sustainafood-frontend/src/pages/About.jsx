@@ -6,10 +6,10 @@ import Footer from "../components/Footer";
 const About = () => {
   return (
     <>
-    <Navbar/>
-    <div>
-      <style>
-        {`
+      <Navbar />
+      <div>
+        <style>
+          {`
         * {
           margin: 0;
           padding: 0;
@@ -105,49 +105,49 @@ const About = () => {
           background-color: #388E3C;
         }
         `}
-      </style>
-      <div className="about-container">
-        <h2 className="about-title">Welcome to SustainaFood</h2>
-        <p className="about-description">
-        Connecting donors, recipients, and transporters to minimize food waste and optimize distribution.        </p>
+        </style>
+        <div className="about-container">
+          <h2 className="about-title">Welcome to SustainaFood</h2>
+          <p className="about-description">
+            Connecting donors, recipients, and transporters to minimize food waste and optimize distribution.        </p>
 
-        <div className="about-values">
-          <div className="value-item">
-            <FaUtensils size={40} color="#4CAF50" />
-            <p>Less Waste</p>
+          <div className="about-values">
+            <div className="value-item">
+              <FaUtensils size={40} color="#4CAF50" />
+              <p>Less Waste</p>
+            </div>
+            <div className="value-item">
+              <FaLink size={40} color="#4CAF50" />
+              <p>Stronger Links</p>
+            </div>
+            <div className="value-item">
+              <FaBox size={40} color="#4CAF50" />
+              <p>Smart Sharing</p>
+            </div>
+            <div className="value-item">
+              <FaGlobe size={40} color="#4CAF50" />
+              <p>Green Future</p>
+            </div>
           </div>
-          <div className="value-item">
-            <FaLink size={40} color="#4CAF50" />
-            <p>Stronger Links</p>
+
+          <div className="about-section">
+            <div className="about-card">
+              <h3 className="about-card-title">🌍 Our Vision</h3>
+              <p className="about-card-text">
+                To build a world where food surplus is efficiently redistributed, minimizing waste.
+              </p>
+            </div>
+            <div className="about-card">
+              <h3 className="about-card-title">🚀 Our Mission</h3>
+              <p className="about-card-text">
+                To provide an intelligent platform that optimizes food distribution, fosters community engagement, and promotes environmental sustainability.
+              </p>
+            </div>
           </div>
-          <div className="value-item">
-            <FaBox size={40} color="#4CAF50" />
-            <p>Smart Sharing</p>
-          </div>
-          <div className="value-item">
-            <FaGlobe size={40} color="#4CAF50" />
-            <p>Green Future</p>
-          </div>
+
         </div>
-
-        <div className="about-section">
-          <div className="about-card">
-            <h3 className="about-card-title">🌍 Our Vision</h3>
-            <p className="about-card-text">
-              To build a world where food surplus is efficiently redistributed, minimizing waste.
-            </p>
-          </div>
-          <div className="about-card">
-            <h3 className="about-card-title">🚀 Our Mission</h3>
-            <p className="about-card-text">
-              To provide an intelligent platform that optimizes food distribution, fosters community engagement, and promotes environmental sustainability.
-            </p>
-          </div>
-        </div>
-
       </div>
-    </div>
-    <Footer/>
+      <Footer />
     </>
   );
 };

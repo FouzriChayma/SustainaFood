@@ -11,11 +11,11 @@
 .logo-container {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .logo {
-  height: 60px;
+  height: 50px;
 }
 
 .title {
@@ -24,6 +24,7 @@
   font-weight: bold;
 }
 
+/* Navigation Links */
 .nav-links {
   list-style: none;
   display: flex;
@@ -47,7 +48,6 @@
 /* Style Dropdown */
 .dropdown {
   position: relative;
-  display: inline-block;
 }
 
 .dropdown-toggle {
@@ -71,9 +71,8 @@
   box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
   border-radius: 5px;
   padding: 10px 0;
-  z-index: 1000  ;
+  z-index: 1000;
   text-align: left;
-
 }
 
 .dropdown:hover .dropdown-content {
@@ -83,7 +82,6 @@
 .dropdown-content a {
   display: block;
   padding: 10px 15px;
-  margin-left: 0px;
   color: black;
   text-decoration: none;
   font-size: 0.9rem;
@@ -105,7 +103,6 @@
   height: 40px;
   width: 40px;
   border-radius: 50%;
-
 }
 
 .dropdown-menu {
@@ -117,41 +114,7 @@
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
   border-radius: 5px;
   overflow: hidden;
-  z-index: 10;
-  min-width: 200px;
-
-}
-
-.dropdown-menu.active {
-  display: block;
-}
-
-.menu-item {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  border: none;
-  background: none;
-  text-align: center;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-.menu-item:hover {
-  background: #8dc73f;
-  color: white;
-}
-/* ----- Dropdown Menu ----- */
-.dropdown-menu {
-  display: none;
-  position: absolute;
-  top: 50px;
-  right: 0;
-  background: white;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  border-radius: 5px;
-  overflow: hidden;
-  z-index: 10;
+  z-index: 1000;
   min-width: 200px;
 }
 
@@ -169,23 +132,17 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  margin: 5px;
-
+  margin-right: 10px;
 }
 
 .user-name {
   font-weight: bold;
-  text-align: left;
-  color: #000000;
-
-
+  color: #000;
 }
 
 .user-email {
   font-size: 0.8rem;
   color: #434141;
-  text-align: left;
-
 }
 
 .menu-item {
@@ -196,16 +153,84 @@
   background: none;
   text-align: left;
   cursor: pointer;
-  
+  transition: background 0.3s ease;
 }
 
 .menu-item:hover {
   background: #8dc73f;
-  width: 100%;
-  
+  color: white;
 }
 
 .logout {
   color: red;
   font-weight: bold;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .nav-links {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 950px) {
+  .navbarfront {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0.8rem;
+  }
+
+  .title {
+    font-size: 1.2rem;
+  }
+
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 70px;
+    left: 0;
+    width: 100%;
+    background: white;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
+    padding: 1rem 0;
+    z-index: 1000;
+  }
+
+  .nav-links.open {
+    display: flex;
+  }
+
+  .nav-link {
+    padding: 10px;
+    text-align: center;
+    font-size: 1rem;
+  }
+
+  .menu-toggle {
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+  }
+
+  .bar {
+    background: black;
+    height: 3px;
+    width: 20px;
+    margin: 2px 0;
+    transition: 0.4s;
+  }
+
+  /* Animation pour le menu burger */
+  .menu-toggle.open .bar:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+  }
+
+  .menu-toggle.open .bar:nth-child(2) {
+    opacity: 0;
+  }
+
+  .menu-toggle.open .bar:nth-child(3) {
+    transform: rotate(-45deg) translate(6px, -6px);
+  }
 }

@@ -1,7 +1,7 @@
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext"; 
-import { loginUser } from "../api/userService";
+import { createuser,getUserById,loginUser } from "../api/userService";
 import { useGoogleLogin } from "@react-oauth/google";
 // import jwt_decode from "jwt-decode";
 import "../assets/styles/log.css"; 
@@ -17,14 +17,14 @@ import { FaEye, FaEyeSlash } from "react-icons/fa"; // Import icons for password
 
 
 const Login = () => {
+  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext); 
+  const [error, setError] = useState(null);
   const { sendTwoFactorCode } = useContext(AuthContext);
 
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [isRightPanelActive, setIsRightPanelActive] = useState(false);
   const [showPassword, setShowPassword] = useState(false); // Define state for password visibility
 
@@ -42,7 +42,7 @@ const Login = () => {
       const response = await loginUser({ email, password });
   
       if (response?.data?.token) {
-        console.log("Connexion réussie :", response.data);
+        console.log("Connexion réussie ");
   
         const userData = {
           id: response.data.id,
@@ -51,7 +51,6 @@ const Login = () => {
         };
   
         login(userData, response.data.token);
-        console.log("✅ Utilisateur connecté :", userData);
         await sendTwoFactorCode(email);  // Envoyer un code 2FA (côté backend)
 
         if (userData.role === "admin") {
@@ -70,8 +69,8 @@ const Login = () => {
   
   // 🔥 Connexion avec Google (via bouton personnalisé)
   const handleGoogleLogin = useGoogleLogin({
+    flow: "implicit",
     onSuccess: async (tokenResponse) => {
-      console.log("✅ Token Google reçu :", tokenResponse);
 
       try {
         if (!tokenResponse || !tokenResponse.access_token) {
@@ -79,34 +78,50 @@ const Login = () => {
           setError("Erreur de connexion Google.");
           return;
         }
-        
+
         const userInfoResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
           headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
         });
         const userInfo = await userInfoResponse.json();
-        console.log("Utilisateur connecté via Google :", userInfo);
-        
+
+        localStorage.setItem("email from google", userInfo.email);
+        localStorage.setItem("id from google", userInfo.sub);
+
         const userData = {
-          id: userInfo.sub,
+          //id: userInfo.sub,
           email: userInfo.email,
           name: userInfo.name,
-          picture: userInfo.picture,
-          role: "user",
+          photo: userInfo.picture,
+          //role: userInfo.role || "", // Assuming role is included in userInfo
         };
-        
-        login(userData, tokenResponse.access_token);
-        navigate("/");
-        
+
+        const response = await createuser(userData);
+        const user=await getUserById(response.data.id);
+        login(user,tokenResponse);
+
+        localStorage.setItem("user_id", response.data.id);
+
+        // Redirect based on role
+        if (!user.data.role) {
+          login(user.data, tokenResponse);
+
+          navigate("/Continueinfo"); // Go to complete the form
+        } else {
+          login(user.data, tokenResponse);
+
+          navigate("/profile"); // Go to the main page
+        }
       } catch (error) {
-        console.error("Erreur lors du décodage du token :", error);
+        console.error("❌ Erreur API :", error.response ? error.response.data : error.message);
         setError("Erreur de connexion Google.");
       }
     },
-    onError: () => {
-      console.log("❌ Échec de la connexion Google");
+    onError: (error) => {
+      console.error("❌ Échec de la connexion Google", error);
       setError("Connexion Google échouée.");
     },
   });
+
   const handleForgotPassword = () => {
     navigate("/forget-password"); // Navigate to the ForgetPass page
   };

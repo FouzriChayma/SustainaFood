@@ -60,11 +60,12 @@ const userSchema = new Schema({
   vehiculeType: { type: String, enum: Object.values(VehiculeType), default: null },
   image_carte_etudiant: { type: String },
   num_cin: { type: String },
-  id_fiscal: { type: String }, // Renamed for consistency
+  id_fiscale: { type: String }, // Renamed for consistency
   type: { type: String, enum: Object.values(OngType) },
   taxReference: { type: String }, // Renamed for clarity
   isBlocked: { type: Boolean, default: false },
   resetCode: { type: String },
+  isActive: { type: Boolean, default: true },
   resetCodeExpires: { type: Date }
 });
 

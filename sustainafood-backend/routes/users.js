@@ -40,5 +40,5 @@ router.get('/view/:id', userController.viewNGO);
 router.get('/view/:id', userController.viewTransporter);
 router.put("/update-user/:email", userController.updateUserWithEmail);
 router.post('/createUser' , userController.createUser);
-
+router.put('/deactivate-account/:id', userController.deactivateAccount);
 module.exports = router;

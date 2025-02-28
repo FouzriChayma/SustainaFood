@@ -58,3 +58,14 @@ export const loginUser = async (userData) => {
       },
     });
   };
+export const deactivateAccount = async (userId, token) => {
+  return axios.put(
+    `http://localhost:3000/users/deactivate-account/${userId}`,
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+};

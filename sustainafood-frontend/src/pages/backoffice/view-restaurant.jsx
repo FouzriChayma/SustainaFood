@@ -78,8 +78,8 @@ const ViewRestaurant = () => {
                                     <td>{restaurant.phone}</td>
                                 </tr>
                                 <tr>
-                                    <td><strong>TaxR:</strong></td>
-                                    <td>{restaurant.taxR || "N/A"}</td>
+                                    <td><strong>Tax Referecence:</strong></td>
+                                    <td>{restaurant.taxReference || "N/A"}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Address:</strong></td>

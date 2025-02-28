@@ -447,6 +447,11 @@ async function user_signin(req, res) {
         if (user.isBlocked) {
             return res.status(403).json({ error: "Your account is blocked. Please contact support." });
         }
+        //réactivation
+        if (!user.isActive) {
+            user.isActive = true;
+            await user.save();
+        }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
@@ -460,7 +465,7 @@ async function user_signin(req, res) {
 
         const token = jwt.sign(payload, "your_jwt_secret", { expiresIn: "1h" });
 
-        res.status(200).json({ token, role: user.role, id: user._id });
+        res.status(200).json({ token, role: user.role, id: user._id , message: !user.isActive ? "Your account has been reactivated. Welcome back!" : null,});
     } catch (error) {
         console.error("Erreur serveur :", error);
         res.status(500).json({ error: "Server error" });
@@ -573,5 +578,30 @@ async function viewTransporter(req, res) {
         res.status(500).json({ error: "Server error" });
     }
 }
+// 🚀 Deactivate Account
+async function deactivateAccount(req, res) {
+    try {
+        const { id } = req.params; // Get user ID from request parameters
 
-module.exports = {updateUserWithEmail, createUser,addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter };
+        // Check if ID is valid
+        if (!id) {
+            return res.status(400).json({ error: "User ID is required" });
+        }
+
+        // Find and update the user
+        const user = await User.findByIdAndUpdate(id, { isActive: false }, { new: true });
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.status(200).json({ message: "Account deactivated successfully", isActive: user.isActive });
+    } catch (error) {
+        console.error("Error deactivating account:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+}
+
+
+
+module.exports = {updateUserWithEmail, createUser,addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter ,deactivateAccount };

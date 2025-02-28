@@ -94,7 +94,8 @@ const SupermarketList = () => {
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th>Phone</th>
-                                <th>TaxR</th>
+                                <th>Tax Refernce</th>
+                                <th>Active</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -112,7 +113,8 @@ const SupermarketList = () => {
                                     <td>{supermarket.name}</td>
                                     <td>{supermarket.email}</td>
                                     <td>{supermarket.phone}</td>
-                                    <td>{supermarket.taxR || "N/A"}</td>
+                                    <td>{supermarket.taxReference || "N/A"}</td>
+                                    <td>{supermarket.active ? "Yes" : "No"}</td>
                                     <td className="action-buttons">
                                         <button className="view-btn">
                                             <Link to={`/supermarkets/view/${supermarket._id}`}>

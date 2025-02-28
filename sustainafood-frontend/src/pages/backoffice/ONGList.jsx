@@ -94,7 +94,8 @@ const ONGList = () => {
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th>Phone</th>
-                                <th>TaxR</th>
+                                <th>Tax Reference</th>
+                                <th>Active</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -112,6 +113,7 @@ const ONGList = () => {
                                     <td>{ong.name}</td>
                                     <td>{ong.email}</td>
                                     <td>{ong.phone}</td>
+                                    <td>{ong.isActive ? "Yes" : "No"}</td>
                                     <td>{ong.taxReference || "N/A"}</td>
                                     <td className="action-buttons">
                                         <button className="view-btn">

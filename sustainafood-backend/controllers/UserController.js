@@ -6,6 +6,8 @@ const nodemailer = require("nodemailer");
 const crypto = require("crypto"); // For generating random reset codes
 require("dotenv").config(); // Load environment variables
 
+
+
 // Generate a 6-digit reset code
 const generateResetCode = () => Math.floor(100000 + Math.random() * 900000).toString(); 
 
@@ -186,7 +188,12 @@ async function getUserByEmailAndPassword(req, res) {
         if (!isMatch) {
             return res.status(401).json({ error: "Invalid password" });
         }
+        ////////////////////2fo
+ // Étape 1 réussie : Envoyer un code de vérification
+ await sendTwoFactorCode(user);
 
+ res.status(200).json({ message: "Verification code sent to email", email });
+ ////////////////////////////////
         // Si l'utilisateur est trouvé et le mot de passe est correct, renvoyer les détails de l'utilisateur
         res.status(200).json(user);
     } catch (error) {
@@ -460,4 +467,7 @@ async function viewTransporter(req, res) {
     }
 }
 
-module.exports = { addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter };
+module.exports = { addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,
+    getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , 
+    toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter
+     };

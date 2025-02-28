@@ -43,11 +43,7 @@ mongoose.connect(mongoConfig.url)
 mongoose.connection.once('open', () => {
   console.log(" MongoDB connection established successfully");
 });
-////////////////////////////////////////////////////////////////
-require("./config/passportConfig"); // Charger la config de Passport
-// app.use(passport.initialize());
-////////////////////////////////////////////
-// Catch 404 and forward to error handler
+
 app.use(function (req, res, next) {
   next(createError(404));
 });

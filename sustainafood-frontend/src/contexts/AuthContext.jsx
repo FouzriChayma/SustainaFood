@@ -83,6 +83,10 @@ const resetPassword = async (email, newPassword) => {
     setLoading(false);
   }
 };
+
+
+
+
    // Method to get the role of the current user
    const getRole = () => {
     return user?.role || null;

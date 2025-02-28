@@ -13,9 +13,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FaEye, FaEyeSlash } from "react-icons/fa"; // Import icons for password visibility
 
+
+
+
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext); 
+  const { sendTwoFactorCode } = useContext(AuthContext);
+
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,11 +52,12 @@ const Login = () => {
   
         login(userData, response.data.token);
         console.log("✅ Utilisateur connecté :", userData);
-  
+        await sendTwoFactorCode(email);  // Envoyer un code 2FA (côté backend)
+
         if (userData.role === "admin") {
           navigate("/dashboard");
         } else {
-          navigate("/profile");
+          navigate(`/home?email=${email}`);
         }
       } else {
         setError("Authentification échouée. Vérifiez vos identifiants.");

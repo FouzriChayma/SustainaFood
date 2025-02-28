@@ -22,6 +22,7 @@ import ViewRestaurant from './pages/backoffice/view-restaurant';
 import ViewSupermarket from './pages/backoffice/view-supermarket';
 import ViewNGO from './pages/backoffice/view-ngo.jsx';
 import ViewTransporter from './pages/backoffice/view-transporter';
+
 const App = () => {
   return (
     <Routes>
@@ -47,6 +48,9 @@ const App = () => {
         <Route path="/forget-password" element={<ForgetPass />} />
         <Route path="/reset-code" element={<ResetCode />} />  
         <Route path="/reset-password" element={<ResetPassword />} />
+
+
+
     </Routes>
   );
 };

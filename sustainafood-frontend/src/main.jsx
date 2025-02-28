@@ -10,7 +10,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <Router>
     <AuthProvider>
     <GoogleOAuthProvider clientId="956944465220-h2iu00f6if7r8a58tb69s34qt9etetli.apps.googleusercontent.com">
-
     <App />
     </GoogleOAuthProvider>
     </AuthProvider>

@@ -40,6 +40,8 @@ const EditProfile = () => {
 
   useEffect(() => {
     const fetchUserDetails = async () => {
+      if (typeof authUser.id === "string") {
+
       if (authUser && authUser.id) {
         try {
           const response = await getUserById(authUser.id);
@@ -65,6 +67,35 @@ const EditProfile = () => {
           });
         } catch (error) {
           console.error("Erreur lors de la récupération des données utilisateur :", error);
+        }
+      }}
+      else if (typeof authUser.id === "number") {
+        if (authUser && authUser._id) {
+          try {
+            const response = await getUserById(authUser._id);
+            const userData = response.data;
+            setFormData({
+              name: userData.name || '',
+              email: userData.email || '',
+              phone: userData.phone || '',
+              photo: userData.photo || '',
+              address: userData.address || '',
+              // Student
+              sexe: userData.sexe || '',
+              num_cin: userData.num_cin || '',
+              age: userData.age || '',
+              image_carte_etudiant: userData.image_carte_etudiant || null,
+              // ONG
+              id_fiscale: userData.id_fiscale || '',
+              type: userData.type || '',
+              // Restaurant / Supermarket 
+              taxReference: userData.taxReference || '',  
+              // Transporter
+              vehiculeType: userData.vehiculeType || ''
+              });
+          } catch (error) { 
+            console.error("Erreur lors de la récupération des données utilisateur :", error);
+          }
         }
       }
     };

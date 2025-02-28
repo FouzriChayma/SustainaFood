@@ -85,6 +85,14 @@ const ViewStudent = () => {
                                     <td><strong>Sex:</strong></td>
                                     <td>{student.sexe}</td>
                                 </tr>
+                                <tr>
+                                    <td><strong>Address:</strong></td>
+                                    <td>{student.address || "N/A"}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Student Card:</strong></td>
+                                    <td>{student.studentCard || "N/A"}</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>

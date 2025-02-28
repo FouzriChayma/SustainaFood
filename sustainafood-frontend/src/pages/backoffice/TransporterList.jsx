@@ -95,6 +95,7 @@ const TransporterList = () => {
                                 <th>Email</th>
                                 <th>Phone</th>
                                 <th>Vehicle Type</th>
+                                <th>Active</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -113,6 +114,7 @@ const TransporterList = () => {
                                     <td>{transporter.email}</td>
                                     <td>{transporter.phone}</td>
                                     <td>{transporter.vehiculeType || "N/A"}</td>
+                                    <td>{transporter.isActive ? "Yes" : "No"}</td>
                                     <td className="action-buttons">
                                         <button className="view-btn">
                                             <Link to={`/transporters/view/${transporter._id}`}>

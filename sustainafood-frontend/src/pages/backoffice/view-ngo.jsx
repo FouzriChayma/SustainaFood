@@ -50,7 +50,7 @@ const ViewNGO = () => {
                 <div className="ngo-card">
                     <div className="ngo-header">
                     <img 
-                                            src={ong.photo ? `http://localhost:3000/${ong.photo}` : "/src/assets/User_icon_2.svg.png"} 
+                                            src={ngo.photo ? `http://localhost:3000/${ngo.photo}` : "/src/assets/User_icon_2.svg.png"} 
                                             alt="ong" 
                                             className="ong-photo" 
                                         />
@@ -74,20 +74,22 @@ const ViewNGO = () => {
                         <table className="details-table">
                             <tbody>
                                 <tr>
+                                    <td><strong>Type:</strong></td>
+                                    <td>{ngo.type || "N/A"}</td>
+                                </tr>
+                                <tr>
                                     <td><strong>Phone:</strong></td>
                                     <td>{ngo.phone}</td>
                                 </tr>
-                                <tr>
-                                    <td><strong>Registration Number:</strong></td>
-                                    <td>{ngo.registrationNumber || "N/A"}</td>
-                                </tr>
+                                
                                 <tr>
                                     <td><strong>Address:</strong></td>
                                     <td>{ngo.address || "N/A"}</td>
                                 </tr>
+                                
                                 <tr>
-                                    <td><strong>Mission:</strong></td>
-                                    <td>{ngo.mission || "N/A"}</td>
+                                    <td><strong>Tax ID:</strong></td>
+                                    <td>{ngo.id_fiscale || "N/A"}</td>
                                 </tr>
                             </tbody>
                         </table>

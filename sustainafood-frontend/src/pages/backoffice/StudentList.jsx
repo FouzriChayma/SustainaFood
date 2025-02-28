@@ -104,6 +104,7 @@ const StudentList = () => {
                                 <th>CIN</th>
                                 <th>Age</th>
                                 <th>Sex</th>
+                                <th>Active</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -124,6 +125,7 @@ const StudentList = () => {
                                     <td>{student.num_cin || "N/A"}</td>
                                     <td>{student.age || "N/A"}</td>
                                     <td>{student.sexe}</td>
+                                    <td>{student.isActive ? "Yes" : "No"}</td>
                                     <td className="action-buttons">
                                         <button className="view-btn">
                                             <Link to={`/students/view/${student._id}`}>

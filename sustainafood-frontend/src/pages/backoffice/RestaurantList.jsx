@@ -94,7 +94,8 @@ const RestaurantList = () => {
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th>Phone</th>
-                                <th>TaxR</th>
+                                <th>Tax Reference</th>
+                                <th>Active</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -113,6 +114,7 @@ const RestaurantList = () => {
                                     <td>{restaurant.email}</td>
                                     <td>{restaurant.phone}</td>
                                     <td>{restaurant.taxReference || "N/A"}</td>
+                                    <td>{restaurant.isActive ? "Yes" : "No"}</td>
                                     <td className="action-buttons">
                                         <button className="view-btn">
                                             <Link to={`/restaurants/view/${restaurant._id}`} className="view-btn">

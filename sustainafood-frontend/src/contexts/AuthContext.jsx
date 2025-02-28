@@ -33,6 +33,7 @@ export const AuthProvider = ({ children }) => {
     setToken(token);
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("token", token);
+    console.log("the token in local storge est from authicontext in fn login:", token)
     navigate("/profile"); // Redirect after login
   };
 
@@ -47,50 +48,51 @@ export const AuthProvider = ({ children }) => {
 
   // Check if the user is authenticated
   const isAuthenticated = () => !!token;
-// Send password reset code
-const sendResetCode = async (email) => {
-  setLoading(true);
-  try {
-    const response = await axios.post("/api/auth/send-reset-code", { email });
-    setResetStatus("Reset code sent successfully.");
-    setLoading(false);
-  } catch (err) {
-    setError("Error sending reset code.");
-    setLoading(false);
-  }
-};
-// Validate the password reset code
-const validateResetCode = async (email, resetCode) => {
-  setLoading(true);
-  try {
-    const response = await axios.post("/api/auth/validate-reset-code", { email, resetCode });
-    setResetStatus("Reset code validated successfully.");
-    setLoading(false);
-  } catch (err) {
-    setError("Invalid or expired reset code.");
-    setLoading(false);
-  }
-};
+  // Send password reset code
+  const sendResetCode = async (email) => {
+    setLoading(true);
+    try {
+      const response = await axios.post("/api/auth/send-reset-code", { email });
+      setResetStatus("Reset code sent successfully.");
+      setLoading(false);
+    } catch (err) {
+      setError("Error sending reset code.");
+      setLoading(false);
+    }
+  };
+  // Validate the password reset code
+  const validateResetCode = async (email, resetCode) => {
+    setLoading(true);
+    try {
+      const response = await axios.post("/api/auth/validate-reset-code", { email, resetCode });
+      setResetStatus("Reset code validated successfully.");
+      setLoading(false);
+    } catch (err) {
+      setError("Invalid or expired reset code.");
+      setLoading(false);
+    }
+  };
 
-// Reset password
-const resetPassword = async (email, newPassword) => {
-  setLoading(true);
-  try {
-    const response = await axios.post("/api/auth/reset-password", { email, newPassword });
-    setResetStatus("Password successfully reset.");
-    setLoading(false);
-  } catch (err) {
-    setError("Error resetting password.");
-    setLoading(false);
-  }
-};
-   // Method to get the role of the current user
-   const getRole = () => {
+  // Reset password
+  const resetPassword = async (email, newPassword) => {
+    setLoading(true);
+    try {
+      const response = await axios.post("/api/auth/reset-password", { email, newPassword });
+      setResetStatus("Password successfully reset.");
+      setLoading(false);
+    } catch (err) {
+      setError("Error resetting password.");
+      setLoading(false);
+    }
+  };
+  // Method to get the role of the current user
+  const getRole = () => {
     return user?.role || null;
   };
 
   return (
-    <AuthContext.Provider value={{ user,
+    <AuthContext.Provider value={{
+      user,
       token,
       login,
       logout,
@@ -100,7 +102,8 @@ const resetPassword = async (email, newPassword) => {
       resetPassword,
       resetStatus,
       error,
-      loading, }}>
+      loading,
+    }}>
       {children}
     </AuthContext.Provider>
   );

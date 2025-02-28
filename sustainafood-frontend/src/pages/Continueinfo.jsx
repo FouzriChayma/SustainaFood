@@ -13,6 +13,7 @@ import { getUserById, updateUserwithemail } from "../api/userService";
 import { FaEye, FaEyeSlash } from "react-icons/fa"; // Icons for password visibility
 import { FaCamera } from "react-icons/fa"; // For the profile photo icon
 import styled from "styled-components";
+import { useAuth } from "../contexts/AuthContext";
 
 const All = styled.div`
   background-color: #eee;
@@ -91,6 +92,8 @@ const ImagePreview = styled.img`
 `;
 
 const Continueinfo = () => {
+  const { user, token } = useAuth();
+
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
   const [error, setError] = useState(null);
@@ -160,7 +163,6 @@ const Continueinfo = () => {
       return;
     }
   
-    console.log("ID utilisateur récupéré :", id);
   
     // Création de FormData
     const data = new FormData();
@@ -193,7 +195,6 @@ const Continueinfo = () => {
       
       // Mise à jour de l'utilisateur
       const response = await updateUserwithemail(id, data);
-      console.log("✅ Inscription réussie :", response.data);
   
       // Récupération de l'utilisateur mis à jour
       const userResponse = await getUserById(id);
@@ -203,15 +204,15 @@ const Continueinfo = () => {
         setError("Erreur : Données utilisateur non récupérées.");
         return;
       }
+      const token= localStorage.getItem("token");
   
-      login(user, response.data.token);
+      login(user,token);
   
       // Stocker les nouvelles informations utilisateur
       const authData = JSON.parse(localStorage.getItem("authData") || "{}");
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("authData", JSON.stringify({ ...authData, email: user.email }));
   
-      console.log("Utilisateur mis à jour:", user);
   
       // Redirection après mise à jour
       if (user.role === "admin") {

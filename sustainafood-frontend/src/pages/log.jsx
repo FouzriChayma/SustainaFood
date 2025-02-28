@@ -37,7 +37,7 @@ const Login = () => {
       const response = await loginUser({ email, password });
   
       if (response?.data?.token) {
-        console.log("Connexion réussie :", response.data);
+        console.log("Connexion réussie ");
   
         const userData = {
           id: response.data.id,
@@ -46,7 +46,6 @@ const Login = () => {
         };
   
         login(userData, response.data.token);
-        console.log("✅ Utilisateur connecté :", userData);
   
         if (userData.role === "admin") {
           navigate("/dashboard");
@@ -66,7 +65,6 @@ const Login = () => {
   const handleGoogleLogin = useGoogleLogin({
     flow: "implicit",
     onSuccess: async (tokenResponse) => {
-      console.log("✅ Token Google reçu :", tokenResponse);
 
       try {
         if (!tokenResponse || !tokenResponse.access_token) {
@@ -80,7 +78,6 @@ const Login = () => {
         });
         const userInfo = await userInfoResponse.json();
 
-        console.log("Utilisateur connecté via Google :", userInfo);
         localStorage.setItem("email from google", userInfo.email);
         localStorage.setItem("id from google", userInfo.sub);
 
@@ -93,20 +90,18 @@ const Login = () => {
         };
 
         const response = await createuser(userData);
-        console.log(response.data.id);
         const user=await getUserById(response.data.id);
-        console.log(user.data);
-        login(user, response.data.token);
+        login(user,tokenResponse);
 
         localStorage.setItem("user_id", response.data.id);
 
         // Redirect based on role
         if (!user.data.role) {
-          login(user.data, response.data.token);
+          login(user.data, tokenResponse);
 
           navigate("/Continueinfo"); // Go to complete the form
         } else {
-          login(user.data, response.data.token);
+          login(user.data, tokenResponse);
 
           navigate("/profile"); // Go to the main page
         }

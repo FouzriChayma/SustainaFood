@@ -11,10 +11,10 @@ const ForgetPass = () => {
     e.preventDefault();
     try {
       const response = await axios.post("http://localhost:3000/users/forgot-password", { email });
-  
+
       if (response.headers["content-type"].includes("application/json")) {
         console.log("Reset code sent:", response.data);
-  
+
         // ✅ Redirect to ResetCode page with email as a query parameter
         navigate(`/reset-code?email=${encodeURIComponent(email)}`);
       } else {

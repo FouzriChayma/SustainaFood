@@ -24,6 +24,7 @@ import ViewSupermarket from './pages/backoffice/view-supermarket';
 import ViewNGO from './pages/backoffice/view-ngo.jsx';
 import ViewTransporter from './pages/backoffice/view-transporter';
 import PrivateRoute from "./PrivateRoute";
+import NotFound from "./pages/Not-Found";
 const App = () => {
   return (
     <Routes>
@@ -61,6 +62,9 @@ const App = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/edit-profile" element={<EditProfile />} />
       </Route>
+
+       {/* NotFound Route - This should be the last route */}
+       <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

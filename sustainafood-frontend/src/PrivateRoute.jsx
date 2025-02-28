@@ -10,13 +10,13 @@ const PrivateRoute = ({ roles }) => {
 
   // Redirect to login if no JWT token
   if (!token) {
-    return console.log("No token found. Redirecting...") && <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   // If roles are required, check if the single user.role is included in that roles array
   if (roles?.length > 0 && !roles.includes(user?.role)) {
     console.warn("Unauthorized access: Redirecting...");
-    return <Navigate to="/" replace />;
+    return <Navigate to="*" replace />;
   }
 
   return <Outlet />;

@@ -166,6 +166,42 @@
   font-weight: bold;
 }
 
+/* Auth Buttons */
+.auth-buttons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.auth-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.signin {
+  color: #8dc73f;
+  border: 1px solid #8dc73f;
+}
+
+.signin:hover {
+  background-color: rgba(141, 199, 63, 0.1);
+}
+
+.signup {
+  background-color: #8dc73f;
+  color: white;
+}
+
+.signup:hover {
+  background-color: #7ab32f;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .nav-links {
@@ -207,6 +243,18 @@
     font-size: 1rem;
   }
 
+  .auth-buttons {
+    flex-direction: column;
+    width: 100%;
+    padding: 0 1rem;
+    gap: 0.5rem;
+  }
+
+  .auth-button {
+    width: 100%;
+    justify-content: center;
+  }
+
   .menu-toggle {
     display: flex;
     flex-direction: column;
@@ -234,3 +282,4 @@
     transform: rotate(-45deg) translate(6px, -6px);
   }
 }
+

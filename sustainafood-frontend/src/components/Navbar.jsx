@@ -1,58 +1,58 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FaSignOutAlt, FaBell } from 'react-icons/fa';
-import logo from '../assets/images/logooo.png';
-import imgmouna from '../assets/images/imgmouna.png';
-import { useAuth } from "../contexts/AuthContext";
-import { getUserById } from "../api/userService";
-import '../assets/styles/Navbar.css';
+
+
+import { useState, useEffect } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { FaSignOutAlt, FaBell, FaSignInAlt, FaUserPlus } from "react-icons/fa"
+import logo from "../assets/images/logooo.png"
+import imgmouna from "../assets/images/imgmouna.png"
+import { useAuth } from "../contexts/AuthContext"
+import { getUserById } from "../api/userService"
+import "../assets/styles/Navbar.css"
 
 const Navbar = () => {
-  const { user: authUser, token, logout } = useAuth();
-  const [user, setUser] = useState(authUser);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
-  const profilePhotoUrll = user?.photo ? `http://localhost:3000/${user.photo}` : imgmouna;
-
+  const { user: authUser, token, logout } = useAuth()
+  const [user, setUser] = useState(authUser)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const navigate = useNavigate()
+  const profilePhotoUrll = user?.photo ? `http://localhost:3000/${user.photo}` : imgmouna
 
   useEffect(() => {
     const fetchUser = async () => {
       if (typeof authUser.id === "number") {
-        if (!authUser || !authUser._id) return;
+        if (!authUser || !authUser._id) return
         try {
-          const response = await getUserById(authUser._id);
-          setUser(response.data);
+          const response = await getUserById(authUser._id)
+          setUser(response.data)
         } catch (error) {
-          console.error("Backend Error:", error);
+          console.error("Backend Error:", error)
+        }
+      } else if (typeof authUser.id === "string") {
+        if (!authUser || !authUser.id) return
+        try {
+          const response = await getUserById(authUser.id)
+          setUser(response.data)
+        } catch (error) {
+          console.error("Backend Error:", error)
         }
       }
-      else if (typeof authUser.id === "string") {
-        if (!authUser || !authUser.id) return;
-        try {
-          const response = await getUserById(authUser.id);
-          setUser(response.data);
-        } catch (error) {
-          console.error("Backend Error:", error);
-        }
-      }
-    };
+    }
 
     if (authUser && (authUser._id || authUser.id)) {
-      fetchUser();
+      fetchUser()
     }
-  }, [authUser]);
+  }, [authUser])
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+    logout()
+    navigate("/login")
+  }
 
   return (
     <nav className="navbarfront">
       <div className="logo-container">
-        <img src={logo} alt="SustainaFood Logo" className="logo" />
+        <img src={logo || "/placeholder.svg"} alt="SustainaFood Logo" className="logo" />
         <h1 className="title">SustainaFood</h1>
       </div>
 
@@ -65,11 +65,17 @@ const Navbar = () => {
 
       {/* Liens de navigation */}
       <ul className={`nav-links ${mobileMenuOpen ? "open" : ""}`}>
-        <Link to="/" className="nav-link">Home</Link>
-        <Link to="/About" className="nav-link">About</Link>
-        <Link to="/Contact" className="nav-link">Contact</Link>
+        <Link to="/" className="nav-link">
+          Home
+        </Link>
+        <Link to="/About" className="nav-link">
+          About
+        </Link>
+        <Link to="/Contact" className="nav-link">
+          Contact
+        </Link>
 
-        {authUser && (
+        {authUser ? (
           <>
             <div
               className="dropdown"
@@ -130,19 +136,23 @@ const Navbar = () => {
             </div>
 
             <div className="profile-menu" onClick={() => setMenuOpen(!menuOpen)}>
-              <img src={profilePhotoUrll} alt="Profile" className="profile-img" />
+              <img src={profilePhotoUrll || "/placeholder.svg"} alt="Profile" className="profile-img" />
               <div className={`dropdown-menu ${menuOpen ? "active" : ""}`}>
                 <div className="profile-info">
-                  <img src={profilePhotoUrll} alt="Profile" className="dropdown-img" />
+                  <img src={profilePhotoUrll || "/placeholder.svg"} alt="Profile" className="dropdown-img" />
                   <div>
-                    <p className="user-name">{user?.name || 'Loading...'}</p>
-                    <p className="user-email">{user?.email || 'Loading...'}</p>
+                    <p className="user-name">{user?.name || "Loading..."}</p>
+                    <p className="user-email">{user?.email || "Loading..."}</p>
                   </div>
                 </div>
                 <hr />
-                <button onClick={() => navigate("/profile")} className="menu-item">Profil and visibility</button>
+                <button onClick={() => navigate("/profile")} className="menu-item">
+                  Profil and visibility
+                </button>
                 <button className="menu-item">Change account</button>
-                <button className="menu-item" onClick={() => navigate("/edit-profile")}>Generate account</button>
+                <button className="menu-item" onClick={() => navigate("/edit-profile")}>
+                  Generate account
+                </button>
                 <hr />
                 <button onClick={handleLogout} className="menu-item logout">
                   <FaSignOutAlt /> LogOut
@@ -150,10 +160,20 @@ const Navbar = () => {
               </div>
             </div>
           </>
+        ) : (
+          <div className="auth-buttons">
+            <Link to="/login" className="auth-button signin">
+              <FaSignInAlt /> Sign In
+            </Link>
+            <Link to="/signup" className="auth-button signup">
+              <FaUserPlus /> Sign Up
+            </Link>
+          </div>
         )}
       </ul>
     </nav>
-  );
-};
+  )
+}
 
-export default Navbar;
+export default Navbar
+

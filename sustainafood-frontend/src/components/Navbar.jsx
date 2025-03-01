@@ -150,9 +150,9 @@ const Navbar = () => {
                 <button onClick={() => navigate("/profile")} className="menu-item">
                   Profil and visibility
                 </button>
-                <button className="menu-item">Change account</button>
+                <button className="menu-item" onClick={() => navigate("/account-settings")}> Account Settings</button>
                 <button className="menu-item" onClick={() => navigate("/edit-profile")}>
-                  Generate account
+                  Edit Profile
                 </button>
                 <hr />
                 <button onClick={handleLogout} className="menu-item logout">

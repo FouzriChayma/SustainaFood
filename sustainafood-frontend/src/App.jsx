@@ -39,7 +39,7 @@ const App = () => {
       <Route path="/forget-password" element={<ForgetPass />} />
       <Route path="/reset-code" element={<ResetCode />} />  
       <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path= "/account-settings" element={<AccountSettings />} />
+    
 
       {/* Private Routes for Admin only */}
       <Route element={<PrivateRoute roles={["admin"]} />}>
@@ -63,6 +63,7 @@ const App = () => {
 
         <Route path="/profile" element={<Profile />} />
         <Route path="/edit-profile" element={<EditProfile />} />
+        <Route path= "/account-settings" element={<AccountSettings />} />
       </Route>
 
        {/* NotFound Route - This should be the last route */}

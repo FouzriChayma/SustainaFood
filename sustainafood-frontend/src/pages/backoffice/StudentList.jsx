@@ -3,15 +3,23 @@ import axios from "axios";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import "/src/assets/styles/backoffcss/studentList.css";
-import { FaEye, FaTrash, FaBan, FaUnlock } from "react-icons/fa";
+import { FaEye, FaTrash, FaBan, FaUnlock, FaFilePdf, FaSort } from "react-icons/fa";
 import ReactPaginate from "react-paginate";
 import { Link } from "react-router-dom";
+
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const StudentList = () => {
     const [students, setStudents] = useState([]); // Liste complète des étudiants
     const [currentPage, setCurrentPage] = useState(0);
     const [searchQuery, setSearchQuery] = useState(""); // State to store the search query
+    const [sortField, setSortField] = useState("name"); // State to store the sorting field
+    const [sortOrder, setSortOrder] = useState("asc"); // State to store the sorting order
     const studentsPerPage = 3; // Nombre d'étudiants par page
+
+    // Calculate pagesVisited
+    const pagesVisited = currentPage * studentsPerPage;
 
     // Récupération des étudiants depuis le backend
     useEffect(() => {
@@ -58,12 +66,51 @@ const StudentList = () => {
         }
     };
 
-    // Pagination
-    const pagesVisited = currentPage * studentsPerPage;
+    // Fonction pour exporter la liste en PDF
+    const exportToPDF = () => {
+        const doc = new jsPDF();
+
+        // Add a title to the PDF
+        doc.setFontSize(18);
+        doc.text("Student List", 10, 10);
+
+        // Define the columns for the table
+        const tableColumn = ["ID", "Name", "Email", "Phone", "CIN", "Age", "Sex", "Active"];
+
+        // Prepare the data for the table
+        const tableRows = students.map((student, index) => [
+            index + 1, // ID
+            student.name, // Name
+            student.email, // Email
+            student.phone, // Phone
+            student.num_cin || "N/A", // CIN
+            student.age || "N/A", // Age
+            student.sexe, // Sex
+            student.isActive ? "Yes" : "No", // Active
+        ]);
+
+        // Add the table to the PDF
+        autoTable(doc, {
+            head: [tableColumn], // Table header
+            body: tableRows, // Table data
+            startY: 20, // Start position below the title
+            theme: "grid", // Add grid lines
+            styles: {
+                fontSize: 10, // Font size for the table
+                cellPadding: 3, // Padding for cells
+            },
+            headStyles: {
+                fillColor: "#4CAF50", // Green background for header
+                textColor: "#ffffff", // White text for header
+            },
+        });
+
+        // Save the PDF
+        doc.save("Student_List.pdf");
+    };
 
     // Filtering the students based on the search query
     const filteredStudents = students.filter(student => {
-        // Safely convert phone and age to strings, or use an empty string if they are null/undefined
         const phoneString = student.phone ? student.phone.toString() : "";
         const ageString = student.age ? student.age.toString() : "";
         const numCinString = student.num_cin ? student.num_cin.toString() : "";
@@ -72,13 +119,33 @@ const StudentList = () => {
             student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             student.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
             phoneString.includes(searchQuery) || // Search in phone number
-            ageString.includes(searchQuery)|| 
+            ageString.includes(searchQuery) ||
             numCinString.includes(searchQuery) ||
             sexeString.includes(searchQuery)
         );
     });
 
-    const displayStudents = filteredStudents.slice(pagesVisited, pagesVisited + studentsPerPage);
+    // Sorting the students based on the selected field and order
+    const sortedStudents = filteredStudents.sort((a, b) => {
+        if (sortField === "name") {
+            return sortOrder === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+        } else if (sortField === "email") {
+            return sortOrder === "asc" ? a.email.localeCompare(b.email) : b.email.localeCompare(a.email);
+        } else if (sortField === "phone") {
+            return sortOrder === "asc" ? a.phone - b.phone : b.phone - a.phone;
+        } else if (sortField === "num_cin") {
+            return sortOrder === "asc" ? (a.num_cin || "").localeCompare(b.num_cin || "") : (b.num_cin || "").localeCompare(a.num_cin || "");
+        } else if (sortField === "age") {
+            return sortOrder === "asc" ? a.age - b.age : b.age - a.age;
+        } else if (sortField === "sexe") {
+            return sortOrder === "asc" ? a.sexe.localeCompare(b.sexe) : b.sexe.localeCompare(a.sexe);
+        } else if (sortField === "isActive") {
+            return sortOrder === "asc" ? (a.isActive ? 1 : -1) - (b.isActive ? 1 : -1) : (b.isActive ? 1 : -1) - (a.isActive ? 1 : -1);
+        }
+        return 0;
+    });
+
+    const displayStudents = sortedStudents.slice(pagesVisited, pagesVisited + studentsPerPage);
 
     const pageCount = Math.ceil(filteredStudents.length / studentsPerPage);
 
@@ -92,7 +159,28 @@ const StudentList = () => {
             <div className="dashboard-content">
                 <Navbar setSearchQuery={setSearchQuery} /> {/* Pass search setter to Navbar */}
                 <div className="student-list">
-                    <h3>Student Management</h3>
+                    <div className="header-container">
+                        <h2>Student Management</h2>
+                        <button className="export-pdf-btn" onClick={exportToPDF}>
+                            <FaFilePdf /> Export to PDF
+                        </button>
+                    </div>
+                    <div className="sort-container">
+                        <label>Sort by:</label>
+                        <select value={sortField} onChange={(e) => setSortField(e.target.value)}>
+                            <option value="name">Name</option>
+                            <option value="email">Email</option>
+                            <option value="phone">Phone</option>
+                            <option value="num_cin">CIN</option>
+                            <option value="age">Age</option>
+                            <option value="sexe">Sex</option>
+                            <option value="isActive">Active Status</option>
+                        </select>
+                        <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+                            <option value="asc">Ascending</option>
+                            <option value="desc">Descending</option>
+                        </select>
+                    </div>
                     <table>
                         <thead>
                             <tr>
@@ -113,10 +201,10 @@ const StudentList = () => {
                                 <tr key={student._id}>
                                     <td>{pagesVisited + index + 1}</td>
                                     <td>
-                                        <img 
-                                            src={student.photo ? `http://localhost:3000/${student.photo}` : "/src/assets/User_icon_2.svg.png"} 
-                                            alt="Student" 
-                                            className="student-photoList" 
+                                        <img
+                                            src={student.photo ? `http://localhost:3000/${student.photo}` : "/src/assets/User_icon_2.svg.png"}
+                                            alt="Student"
+                                            className="student-photoList"
                                         />
                                     </td>
                                     <td>{student.name}</td>

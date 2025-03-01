@@ -4,8 +4,6 @@ import Footer from '../components/Footer';
 import '../assets/styles/Contact.css';
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaClock } from 'react-icons/fa';  // Importation des icônes
 
-
-
 const Contact = () => {
   const [feedback, setFeedback] = useState({
     name: '',

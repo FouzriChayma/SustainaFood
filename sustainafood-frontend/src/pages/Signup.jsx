@@ -286,7 +286,6 @@ const Signup = () => {
             </span>
 
             <select className="signup-input" value={role} onChange={(e) => setRole(e.target.value)} required>
-              <option value="admin">Admin</option>
               <option value="ong">ONG</option>
               <option value="restaurant">Restaurant</option>
               <option value="supermarket">Supermarket</option>

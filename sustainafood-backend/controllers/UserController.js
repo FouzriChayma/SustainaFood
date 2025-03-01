@@ -602,6 +602,46 @@ async function deactivateAccount(req, res) {
     }
 }
 
+// change password
 
 
-module.exports = {updateUserWithEmail, createUser,addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter ,deactivateAccount };
+async function changePassword(req, res) {
+    try {
+      // 1. Get the user ID from the route param
+      const { id } = req.params; 
+      const { currentPassword, newPassword } = req.body;
+  
+      if (!id) {
+        return res.status(400).json({ error: "Missing user ID in route param." });
+      }
+  
+      // 2. Find the user by ID
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found." });
+      }
+  
+      // 3. Compare the current password
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ error: "Current password is incorrect." });
+      }
+  
+      // 4. Hash the new password
+      user.password = await bcrypt.hash(newPassword, 10);
+  
+      // 5. Save and respond
+      await user.save();
+      return res.status(200).json({ message: "Password changed successfully." });
+  
+    } catch (error) {
+      console.error("Error changing password:", error);
+      return res.status(500).json({ error: "Server error." });
+    }
+  }
+  
+  
+
+
+
+module.exports = {changePassword,updateUserWithEmail, createUser,addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter ,deactivateAccount };

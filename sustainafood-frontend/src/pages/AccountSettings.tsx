@@ -4,16 +4,43 @@ import Footer from "../components/Footer"; // Adjust the import path as needed
 import "../assets/styles/AccountSettings.css";
 import axios from "axios"; // Import axios
 import { useAuth } from "../contexts/AuthContext"; // Import useAuth for user and token
-import { deactivateAccount } from "../api/userService";
+import { deactivateAccount , changePassword} from "../api/userService";
 
 const AccountSettings = () => {
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
   const { user, token, logout } = useAuth(); // Get user, token, and logout from AuthContext
 
-  const handleChangePassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    alert("Password change functionality will be implemented here.");
-  };
+    // State for password fields
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+  
+    // Handle Change Password
+    const handleChangePassword = async (e) => {
+      e.preventDefault();
+  
+      // Make sure the new passwords match
+      if (newPassword !== confirmPassword) {
+        alert("New password and Confirm password do not match!");
+        return;
+      }
+  
+      try {
+        // user.id must match what your backend expects as "userId"
+        const response = await changePassword(user.id, currentPassword, newPassword);
+  
+        if (response.status === 200) {
+          alert("Password changed successfully!");
+          // Reset the input fields
+          setCurrentPassword("");
+          setNewPassword("");
+          setConfirmPassword("");
+        }
+      } catch (error) {
+        console.error("Error changing password:", error);
+        alert(error.response?.data?.error || "Failed to change password");
+      }
+    };
 
   const handleDeactivateAccount = async () => {
     if (
@@ -51,20 +78,39 @@ const AccountSettings = () => {
         <div className="accountsettings-container">
           <h1 className="accountsettings-title">Account Settings</h1>
 
-          <section className="accountsettings-section">
+     {/* Change Password Section */}
+     <section className="accountsettings-section">
             <h2>Change Password</h2>
             <form onSubmit={handleChangePassword} className="accountsettings-form">
               <div className="accountsettings-form-group">
                 <label htmlFor="currentPassword">Current Password</label>
-                <input type="password" id="currentPassword" required />
+                <input
+                  type="password"
+                  id="currentPassword"
+                  required
+                  value={currentPassword}                 // <-- bind state
+                  onChange={(e) => setCurrentPassword(e.target.value)} // <-- update state
+                />
               </div>
               <div className="accountsettings-form-group">
                 <label htmlFor="newPassword">New Password</label>
-                <input type="password" id="newPassword" required />
+                <input
+                  type="password"
+                  id="newPassword"
+                  required
+                  value={newPassword}                      // <-- bind state
+                  onChange={(e) => setNewPassword(e.target.value)}     // <-- update state
+                />
               </div>
               <div className="accountsettings-form-group">
                 <label htmlFor="confirmPassword">Confirm New Password</label>
-                <input type="password" id="confirmPassword" required />
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  required
+                  value={confirmPassword}                   // <-- bind state
+                  onChange={(e) => setConfirmPassword(e.target.value)}  // <-- update state
+                />
               </div>
               <button type="submit" className="accountsettings-button">
                 Change Password

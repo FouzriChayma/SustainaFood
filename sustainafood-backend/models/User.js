@@ -65,7 +65,8 @@ const userSchema = new Schema({
   taxReference: { type: String }, // Renamed for clarity
   isBlocked: { type: Boolean, default: false },
   resetCode: { type: String },
-  resetCodeExpires: { type: Date },
+  resetCodeExpires: { type: Date }
+/////////////////////////////
 
 });
 

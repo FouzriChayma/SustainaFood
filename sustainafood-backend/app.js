@@ -57,4 +57,11 @@ app.use(function (err, req, res, next) {
   res.render('error');
 });
 
+
+
+const authRoutes = require("./routes/authRoutes");
+app.use("/auth", authRoutes);
+////////////////////////////
+
+
 module.exports = app;

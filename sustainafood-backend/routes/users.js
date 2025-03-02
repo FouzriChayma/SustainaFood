@@ -42,6 +42,8 @@ router.get('/view/:id', userController.viewNGO);
 router.get('/view/:id', userController.viewTransporter);
 router.put("/update-user/:email", userController.updateUserWithEmail);
 router.post('/createUser' , userController.createUser);
+/////////////////////////////////////////////////////
+
 
 
 module.exports = router;

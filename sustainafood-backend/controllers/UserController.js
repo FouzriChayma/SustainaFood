@@ -5,6 +5,9 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto"); // For generating random reset codes
 require("dotenv").config(); // Load environment variables
+/////////////////////////////////
+
+/////////////////////////////////////////////////////////
 async function createUser(req, res) {
     try {
         const { name, email, photo } = req.body;   
@@ -433,47 +436,47 @@ async function deleteUser(req, res) {
         res.status(500).json({ error: error.message });
     }
 }
-
+///////////////////////////////////////////hedhy badltha ///////////////////////////////////////////
 // Signin (generate JWT token)
-async function user_signin(req, res) {
-    console.log("Requête reçue :", req.body); // 🔹 LOG DES DONNÉES REÇUES
-
-    const { email, password } = req.body;
-
+async function user_signin (req, res){
     try {
-        if (!email || !password) {
-            return res.status(400).json({ error: "Email and password are required" });
+      const { email, password, token } = req.body;
+      const user = await User.findOne({ email });
+  
+      if (!user) {
+        return res.status(404).json({ message: "Utilisateur non trouvé" });
+      }
+  
+      const isPasswordValid = password === user.password; // Remplace par bcrypt.compare()
+  
+      if (!isPasswordValid) {
+        return res.status(400).json({ message: "Mot de passe incorrect" });
+      }
+  
+      // Vérifier si 2FA est activé
+      if (user.isTwoFactorEnabled) {
+        if (!token) {
+          return res.status(401).json({ message: "Code 2FA requis" });
         }
-
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ error: "Invalid credentials" });
+  
+        const isValid = speakeasy.totp.verify({
+          secret: user.twoFactorSecret,
+          encoding: "base32",
+          token,
+        });
+  
+        if (!isValid) {
+          return res.status(400).json({ message: "Code 2FA invalide" });
         }
-
-        // Check if the user is blocked
-        if (user.isBlocked) {
-            return res.status(403).json({ error: "Your account is blocked. Please contact support." });
-        }
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ error: "Invalid credentials" });
-        }
-
-        const payload = {
-            userId: user._id,
-            role: user.role,
-        };
-
-        const token = jwt.sign(payload, "your_jwt_secret", { expiresIn: "1h" });
-
-        res.status(200).json({ token, role: user.role, id: user._id });
+      }
+  
+      res.json({ message: "Connexion réussie", userId: user._id });
     } catch (error) {
-        console.error("Erreur serveur :", error);
-        res.status(500).json({ error: "Server error" });
+      res.status(500).json({ message: "Erreur interne", error });
     }
-}
-
+  };
+  
+/////////////////////////////////////////////////////////
 // 🚀 View Student by ID
 async function viewStudent(req, res) {
     try {
@@ -582,6 +585,9 @@ async function viewTransporter(req, res) {
 }
 
 module.exports = {updateUserWithEmail, createUser,addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,
+
     getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , 
     toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter
+
+
      };

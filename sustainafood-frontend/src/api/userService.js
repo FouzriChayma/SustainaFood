@@ -58,3 +58,28 @@ export const loginUser = async (userData) => {
       },
     });
   };
+export const deactivateAccount = async (userId, token) => {
+  return axios.put(
+    `http://localhost:3000/users/deactivate-account/${userId}`,
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+};
+
+
+// userService.js
+export const changePassword = async (userId, currentPassword, newPassword) => {
+  return axios.put(
+    `http://localhost:3000/users/change-password/${userId}`, // <-- note the "/:id"
+    { currentPassword, newPassword }, // No "userId" in body now
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+};

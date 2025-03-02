@@ -79,7 +79,7 @@ const ViewSupermarket = () => {
                                 </tr>
                                 <tr>
                                     <td><strong>Tax Registration Number:</strong></td>
-                                    <td>{supermarket.taxR || "N/A"}</td>
+                                    <td>{supermarket.taxReference || "N/A"}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Address:</strong></td>

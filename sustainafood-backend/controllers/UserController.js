@@ -438,39 +438,44 @@ async function deleteUser(req, res) {
 }
 ///////////////////////////////////////////hedhy badltha ///////////////////////////////////////////
 // Signin (generate JWT token)
-async function user_signin (req, res){
+async function user_signin(req, res) {
+    console.log("Requête reçue :", req.body); // 🔹 LOG DES DONNÉES REÇUES
+
+    const { email, password } = req.body;
+
     try {
-      const { email, password, token } = req.body;
-      const user = await User.findOne({ email });
-  
-      if (!user) {
-        return res.status(404).json({ message: "Utilisateur non trouvé" });
-      }
-  
-      const isPasswordValid = password === user.password; // Remplace par bcrypt.compare()
-  
-      if (!isPasswordValid) {
-        return res.status(400).json({ message: "Mot de passe incorrect" });
-      }
-  
-      // Vérifier si 2FA est activé
-      if (user.isTwoFactorEnabled) {
-        if (!token) {
-          return res.status(401).json({ message: "Code 2FA requis" });
+        if (!email || !password) {
+            return res.status(400).json({ error: "Email and password are required" });
         }
-  
-        const isValid = speakeasy.totp.verify({
-          secret: user.twoFactorSecret,
-          encoding: "base32",
-          token,
-        });
-  
-        if (!isValid) {
-          return res.status(400).json({ message: "Code 2FA invalide" });
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ error: "Invalid credentials" });
         }
-      }
-  
-      res.json({ message: "Connexion réussie", userId: user._id });
+
+        // Check if the user is blocked
+        if (user.isBlocked) {
+            return res.status(403).json({ error: "Your account is blocked. Please contact support." });
+        }
+        //réactivation
+        if (!user.isActive) {
+            user.isActive = true;
+            await user.save();
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ error: "Invalid credentials" });
+        }
+
+        const payload = {
+            userId: user._id,
+            role: user.role,
+        };
+
+        const token = jwt.sign(payload, "your_jwt_secret", { expiresIn: "1h" });
+
+        res.status(200).json({ token, role: user.role, id: user._id , message: !user.isActive ? "Your account has been reactivated. Welcome back!" : null,});
     } catch (error) {
       res.status(500).json({ message: "Erreur interne", error });
     }
@@ -583,11 +588,70 @@ async function viewTransporter(req, res) {
         res.status(500).json({ error: "Server error" });
     }
 }
+// 🚀 Deactivate Account
+async function deactivateAccount(req, res) {
+    try {
+        const { id } = req.params; // Get user ID from request parameters
 
-module.exports = {updateUserWithEmail, createUser,addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,
+        // Check if ID is valid
+        if (!id) {
+            return res.status(400).json({ error: "User ID is required" });
+        }
 
-    getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , 
-    toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter
+        // Find and update the user
+        const user = await User.findByIdAndUpdate(id, { isActive: false }, { new: true });
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.status(200).json({ message: "Account deactivated successfully", isActive: user.isActive });
+    } catch (error) {
+        console.error("Error deactivating account:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+}
+
+// change password
 
 
-     };
+async function changePassword(req, res) {
+    try {
+      // 1. Get the user ID from the route param
+      const { id } = req.params; 
+      const { currentPassword, newPassword } = req.body;
+  
+      if (!id) {
+        return res.status(400).json({ error: "Missing user ID in route param." });
+      }
+  
+      // 2. Find the user by ID
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found." });
+      }
+  
+      // 3. Compare the current password
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ error: "Current password is incorrect." });
+      }
+  
+      // 4. Hash the new password
+      user.password = await bcrypt.hash(newPassword, 10);
+  
+      // 5. Save and respond
+      await user.save();
+      return res.status(200).json({ message: "Password changed successfully." });
+  
+    } catch (error) {
+      console.error("Error changing password:", error);
+      return res.status(500).json({ error: "Server error." });
+    }
+  }
+  
+  
+
+
+
+module.exports = {changePassword,updateUserWithEmail, createUser,addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter ,deactivateAccount };

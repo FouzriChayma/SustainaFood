@@ -1,0 +1,29 @@
+.donation-cardlist {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 15px 20px 67px rgba(0, 0, 0, 0.1);
+    width: 1162px;
+    text-align: center;
+}
+.btnseemorelist {
+    height: 35px;
+    margin-left: 1033px;
+    margin-top: 15px;
+    font-size: 15px;
+    padding: 5px 10px;
+    background-color: black;
+    color: white;
+    border-radius: 5px;
+    border: none;
+}
+.donation-li-list {
+    background: #dcebda83;
+    padding: 8px;
+    border-radius: 5px;
+    margin: 5px 0;
+    display: flex
+;
+    justify-content: space-between;
+    align-items: center;
+}

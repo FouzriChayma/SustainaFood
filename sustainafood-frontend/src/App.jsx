@@ -27,6 +27,8 @@ import ViewTransporter from './pages/backoffice/view-transporter';
 import PrivateRoute from "./PrivateRoute";
 import NotFound from "./pages/Not-Found";
 import AccountSettings from "./pages/AccountSettings.js";
+import ListOfDonations from "./pages/ListOfDonations";
+import AddDonation from "./pages/AddDonation";
 const App = () => {
   return (
     <Routes>
@@ -65,6 +67,11 @@ const App = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/edit-profile" element={<EditProfile />} />
         <Route path= "/account-settings" element={<AccountSettings />} />
+      </Route>
+
+      <Route element={<PrivateRoute roles={["ong", "restaurant", "supermarket", "student"]} />}>
+      <Route path="/ListOfDonations" element={<ListOfDonations />} />
+      <Route path="/AddDonation" element={<AddDonation />} />
       </Route>
 
        {/* NotFound Route - This should be the last route */}

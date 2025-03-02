@@ -9,6 +9,7 @@ import { useAuth } from "../contexts/AuthContext"
 import { getUserById } from "../api/userService"
 import "../assets/styles/Navbar.css"
 
+
 const Navbar = () => {
   const { user: authUser, token, logout } = useAuth()
   const [user, setUser] = useState(authUser)
@@ -87,7 +88,7 @@ const Navbar = () => {
                 <div className="dropdown-content">
                   <Link to="#">My Donations</Link>
                   <Link to="#">My Requests</Link>
-                  <Link to="#">List of Donations</Link>
+                  <Link to="/ListOfDonations">List of Donations</Link>
                 </div>
               )}
             </div>

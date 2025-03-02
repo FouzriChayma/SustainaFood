@@ -1,4 +1,5 @@
 /* Transporter Management Page */
+
 .transporter-list {
     background: white;
     padding: 20px;
@@ -10,12 +11,67 @@
     overflow-x: auto; /* Ensure table is scrollable on small screens */
     margin-top: 50px;
 }
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
 
+/* Style for the export PDF button */
+.export-pdf-btn {
+    background-color: #4CAF50; /* Green */
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.export-pdf-btn:hover {
+    background-color: #45a049;
+}
 /* Title */
 .transporter-list h3 {
     font-size: 18px;
     font-weight: bold;
     margin-bottom: 15px;
+}
+/* Sorting Container */
+.sort-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.sort-container label {
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+}
+
+.sort-container select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    background-color: white;
+    transition: border-color 0.3s ease;
+}
+
+.sort-container select:hover {
+    border-color: #007bff;
+}
+
+.sort-container select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
 
 /* Table */

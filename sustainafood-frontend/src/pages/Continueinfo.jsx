@@ -1,388 +1,406 @@
-import { useState, useContext } from "react";
-import { AuthContext } from "../contexts/AuthContext"; 
-import { useNavigate } from "react-router-dom";
-import ReCAPTCHA from "react-google-recaptcha"; // ✅ Import ReCAPTCHA
-import "../assets/styles/log.css";
-import logo from "../assets/images/LogoCh.png";
-import loginImg from "../assets/images/signupCh.png";
-import fbimg from "../assets/images/fb.png";
-import gglimg from "../assets/images/ggl.jpg";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
-import { getUserById, updateUserwithemail } from "../api/userService";
-import { FaEye, FaEyeSlash } from "react-icons/fa"; // Icons for password visibility
-import { FaCamera } from "react-icons/fa"; // For the profile photo icon
-import styled from "styled-components";
-import { useAuth } from "../contexts/AuthContext";
+"use client"
 
-const All = styled.div`
-  background-color: #eee;
-  border: none;
-  color: black;
-  padding: 3px 15px;
-  margin: 4px 0;
-  width: 100%;
-`;
+import { useState, useContext } from "react"
+import { AuthContext } from "../contexts/AuthContext"
+import { useNavigate } from "react-router-dom"
+import ReCAPTCHA from "react-google-recaptcha"
+import { getUserById, updateUserwithemail } from "../api/userService"
+import { useAuth } from "../contexts/AuthContext"
+import { FaCamera } from "react-icons/fa"
+import "../assets/styles/ContinueInfo.css"
 
-const StyledWrapper = styled.div`
-  /* Button styling for the plus button */
-  .plusButton {
-    --plus_sideLength: 2.5rem;
-    --plus_topRightTriangleSideLength: 0.9rem;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border: 1px solid white;
-    width: var(--plus_sideLength);
-    height: var(--plus_sideLength);
-    background-color: #8dc73f;
-    overflow: hidden;
-  }
-  .plusButton::before {
-    position: absolute;
-    content: "";
-    top: 0;
-    right: 0;
-    width: 0;
-    height: 0;
-    border-width: 0 var(--plus_topRightTriangleSideLength) var(--plus_topRightTriangleSideLength) 0;
-    border-style: solid;
-    border-color: transparent white transparent transparent;
-    transition-timing-function: ease-in-out;
-    transition-duration: 0.2s;
-  }
-  .plusButton:hover {
-    cursor: pointer;
-  }
-  .plusButton:hover::before {
-    --plus_topRightTriangleSideLength: calc(var(--plus_sideLength) * 2);
-  }
-  .plusButton:focus-visible::before {
-    --plus_topRightTriangleSideLength: calc(var(--plus_sideLength) * 2);
-  }
-  .plusButton > .plusIcon {
-    fill: white;
-    width: calc(var(--plus_sideLength) * 0.5);
-    height: calc(var(--plus_sideLength) * 0.5);
-    z-index: 1;
-    transition-timing-function: ease-in-out;
-    transition-duration: 0.2s;
-  }
-  .plusButton:hover > .plusIcon {
-    fill: black;
-    transform: rotate(180deg);
-  }
-  .plusButton:focus-visible > .plusIcon {
-    fill: black;
-    transform: rotate(180deg);
-  }
-`;
+const ContinueInfo = () => {
+  const { user, token } = useAuth()
+  const { login } = useContext(AuthContext)
+  const navigate = useNavigate()
+  const [error, setError] = useState(null)
+  const [fileName, setFileName] = useState("")
+  const [imagePreview, setImagePreview] = useState(null)
+  const [profilePhotoFile, setProfilePhotoFile] = useState(null)
+  const [formData, setFormData] = useState({
+    phone: "",
+    name: "",
+    address: "",
+    role: "ong", // Default to ONG
+    id_fiscale: "",
+    num_cin: "",
+    sexe: "male",
+    age: "",
+    taxReference: "",
+    vehiculeType: "car",
+    type: "charitable",
+  })
+  const [captchaValue, setCaptchaValue] = useState(null)
+  const [errors, setErrors] = useState({})
 
-const HiddenFileInput = styled.input`
-  display: none;
-`;
+  const validateName = (name) => /^[a-zA-Z\s]+$/.test(name)
+  const validateEmail = (email) => /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)
+  const validatePhone = (phone) => /^\d{8,15}$/.test(phone)
+  const validateCIN = (cin) => /^\d{8}$/.test(cin)
+  const validateFiscalID = (id) => /^TN\d{8}$/.test(id)
+  const validateTaxReference = (ref) => /^VAT-\d{8}$/.test(ref)
 
-const ImagePreview = styled.img`
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-left: 10px;
-`;
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
 
-const Continueinfo = () => {
-  const { user, token } = useAuth();
-
-  const { login } = useContext(AuthContext);
-  const navigate = useNavigate();
-  const [error, setError] = useState(null);
-  const [fileName, setFileName] = useState("");
-  const [imagePreview, setImagePreview] = useState(null);
-  // NEW: State to store the actual profile photo file
-  const [profilePhotoFile, setProfilePhotoFile] = useState(null);
-  const [isRightPanelActive, setIsRightPanelActive] = useState(false);
-  // Input fields state
-  const [phone, setPhone] = useState("");
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-  const [role, setRole] = useState("admin");
-  const [id_fiscale, setId_fiscale] = useState("");
-  const [num_cin, setNum_cin] = useState("");
-  const [sexe, setSexe] = useState("male");
-  const [age, setAge] = useState("");
-  const [taxReference, setTaxReference] = useState("");
-  const [vehiculeType, setVehiculeType] = useState("car");
-  const [type, setType] = useState("charitable");
-  // State for CAPTCHA
-  const [captchaValue, setCaptchaValue] = useState(null);
-
-  const isOng = role === "ong";
-  const isstudent = role === "student";
-  const istransporter = role === "transporter";
-  const isDonor = role === "supermarket" || role === "restaurant";
-
+    // Validate field immediately
+    const newErrors = { ...errors }
+    switch (name) {
+      case "name":
+        if (value && !validateName(value)) {
+          newErrors[name] = "Invalid name format"
+        } else {
+          delete newErrors[name]
+        }
+        break
+      case "phone":
+        if (value && !validatePhone(value)) {
+          newErrors[name] = "Invalid phone number format"
+        } else {
+          delete newErrors[name]
+        }
+        break
+      case "num_cin":
+        if (value && !validateCIN(value)) {
+          newErrors[name] = "CIN must be exactly 8 digits"
+        } else {
+          delete newErrors[name]
+        }
+        break
+      case "id_fiscale":
+        if (value && !validateFiscalID(value)) {
+          newErrors[name] = "Invalid fiscal ID format (must be TN followed by 8 digits)"
+        } else {
+          delete newErrors[name]
+        }
+        break
+      case "taxReference":
+        if (value && !validateTaxReference(value)) {
+          newErrors[name] = "Invalid Tax Reference format (must be like VAT-12345678)"
+        } else {
+          delete newErrors[name]
+        }
+        break
+    }
+    setErrors(newErrors)
+  }
 
   const handleFileChange = (event) => {
-    const file = event.target.files[0];
+    const file = event.target.files[0]
     if (file) {
-      setFileName(file.name);
-      setProfilePhotoFile(file); // Save the actual file for uploading
-      const reader = new FileReader();
+      setFileName(file.name)
+      setProfilePhotoFile(file)
+      const reader = new FileReader()
       reader.onload = (e) => {
-        setImagePreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
+        setImagePreview(e.target.result)
+      }
+      reader.readAsDataURL(file)
     }
-  };
-  const togglePanel = () => {
-    setIsRightPanelActive(!isRightPanelActive);
-  };
-  const handleSignup = async (e) => {
-    e.preventDefault();
-    setError("");
-  
-    // Vérification du reCAPTCHA
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError("")
+
     if (!captchaValue) {
-      setError("Veuillez valider le reCAPTCHA.");
-      return;
+      setError("Please complete the reCAPTCHA.")
+      return
     }
-  
-    // Vérification des champs obligatoires
-    if (!phone || !role || !address) {
-      setError("Veuillez remplir tous les champs.");
-      return;
+
+    if (!formData.phone || !formData.role || !formData.address || !formData.name) {
+      setError("Please fill in all required fields.")
+      return
     }
-  
-    // Récupération des infos de localStorage
-    const email = localStorage.getItem("email from google");
-    const id = localStorage.getItem("user_id");
-  
+
+    if (Object.keys(errors).length > 0) {
+      setError("Please fix the errors in the form.")
+      return
+    }
+
+    const email = localStorage.getItem("email from google")
+    const id = localStorage.getItem("user_id")
+
     if (!id || !email) {
-      setError("Erreur : utilisateur non trouvé.");
-      return;
+      setError("Error: User not found.")
+      return
     }
-  
-  
-    // Création de FormData
-    const data = new FormData();
-    data.append("email", email);
-    data.append("phone", phone);
-    data.append("address", address);
-    data.append("role", role);
-  
-    if (isOng) {
-      data.append("id_fiscale", id_fiscale);
-      data.append("type", type);
-    }
-    if (isstudent) {
-      data.append("sexe", sexe);
-      data.append("age", age);
-      data.append("num_cin", num_cin);
-    }
-    if (istransporter) {
-      data.append("vehiculeType", vehiculeType);
-    }
-    if (isDonor) {
-      data.append("taxReference", taxReference);
-    }
+
+    const data = new FormData()
+    Object.keys(formData).forEach((key) => {
+      data.append(key, formData[key])
+    })
+    data.append("email", email)
+
     if (profilePhotoFile) {
-      data.append("photo", profilePhotoFile);
+      data.append("photo", profilePhotoFile)
     }
-  
+
     try {
-      console.log("🔄 Envoi des données...");
-      
-      // Mise à jour de l'utilisateur
-      const response = await updateUserwithemail(id, data);
-  
-      // Récupération de l'utilisateur mis à jour
-      const userResponse = await getUserById(id);
-      const user = userResponse.data;
-  
+      const response = await updateUserwithemail(id, data)
+      const userResponse = await getUserById(id)
+      const user = userResponse.data
+
       if (!user) {
-        setError("Erreur : Données utilisateur non récupérées.");
-        return;
+        setError("Error: User data not retrieved.")
+        return
       }
-      const token= localStorage.getItem("token");
-  
-      login(user,token);
-  
-      // Stocker les nouvelles informations utilisateur
-      const authData = JSON.parse(localStorage.getItem("authData") || "{}");
-      localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("authData", JSON.stringify({ ...authData, email: user.email }));
-  
-  
-      // Redirection après mise à jour
-      if (user.role === "admin") {
-        navigate("/dashboard");
-      } else {
-        navigate("/profile");
-      }
+
+      login(user, token)
+
+      const authData = JSON.parse(localStorage.getItem("authData") || "{}")
+      localStorage.setItem("user", JSON.stringify(user))
+      localStorage.setItem("authData", JSON.stringify({ ...authData, email: user.email }))
+
+      navigate(user.role === "admin" ? "/dashboard" : "/profile")
     } catch (err) {
-      console.error("❌ Erreur lors de l'inscription :", err);
-      setError(err.response?.data?.error || "Erreur d'inscription.");
+      console.error("Error during registration:", err)
+      setError(err.response?.data?.error || "Registration error.")
     }
-  };
-   
-
-
+  }
 
   return (
-    <div className="aa">
-      <div className={`signup-container ${isRightPanelActive ? "right-panel-active" : ""}`} id="container">
-        <div className="signup-form-container signup-sign-up-container">
-          <form className="signup-form" onSubmit={handleSignup}>
-            <h1 className="signup-h1">Sign Up</h1>
-            <div className="signup-social-container">
-              <a href="#" className="signup-social">
-                <img src={fbimg} alt="Facebook" />
-              </a>
-              <a href="#" className="signup-social">
-                <img src={gglimg} alt="Google" />
-              </a>
-            </div>
-            <span>or use your email</span>
-
-            {/* Input Fields */}
-            
-           
-
-            <select className="signup-input" value={role} onChange={(e) => setRole(e.target.value)} required>
-              <option value="admin">Admin</option>
+    <div className="continueinfo-container">
+      <div className="continueinfo-card">
+        <h2 className="continueinfo-title">Complete Your Profile</h2>
+        <p className="continueinfo-description">Please provide additional information to complete your registration.</p>
+        <form onSubmit={handleSubmit} className="continueinfo-form">
+          <div className="continueinfo-form-group">
+            <label htmlFor="name" className="continueinfo-label">
+              Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              className={`continueinfo-input ${errors.name ? "continueinfo-input-error" : ""}`}
+            />
+            {errors.name && <p className="continueinfo-error-message">{errors.name}</p>}
+          </div>
+          <div className="continueinfo-form-group">
+            <label htmlFor="role" className="continueinfo-label">
+              Role
+            </label>
+            <select id="role" name="role" value={formData.role} onChange={handleChange} className="continueinfo-select">
               <option value="ong">ONG</option>
               <option value="restaurant">Restaurant</option>
               <option value="supermarket">Supermarket</option>
               <option value="student">Student</option>
               <option value="transporter">Transporter</option>
             </select>
+          </div>
 
-            {/* Profil Photo Upload Section */}
-            <All>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <HiddenFileInput
-                  id="file"
-                  type="file"
-                  onChange={handleFileChange}
-                />
-                <div style={{ marginBottom: "9px" }}>
-                  <span>Profil photo</span>
-                </div>
-                <br />
-                {imagePreview && <ImagePreview src={imagePreview} alt="Profil" />}
-                {fileName && <p>📂 {fileName}</p>}
-              </div>
-              <StyledWrapper>
-                <div
-                  tabIndex={0}
-                  className="plusButton"
-                  style={{ marginLeft: "380px", marginTop: "-21px" }}
-                  onClick={() => document.getElementById("file").click()}
+          <div className="continueinfo-form-group">
+            <label htmlFor="phone" className="continueinfo-label">
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+              className={`continueinfo-input ${errors.phone ? "continueinfo-input-error" : ""}`}
+            />
+            {errors.phone && <p className="continueinfo-error-message">{errors.phone}</p>}
+          </div>
+
+          <div className="continueinfo-form-group">
+            <label htmlFor="address" className="continueinfo-label">
+              Address
+            </label>
+            <input
+              type="text"
+              id="address"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              required
+              className="continueinfo-input"
+            />
+          </div>
+
+          {formData.role === "student" && (
+            <>
+              <div className="continueinfo-form-group">
+                <label htmlFor="sexe" className="continueinfo-label">
+                  Gender
+                </label>
+                <select
+                  id="sexe"
+                  name="sexe"
+                  value={formData.sexe}
+                  onChange={handleChange}
+                  className="continueinfo-select"
                 >
-                  <svg className="plusIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30">
-                    <g mask="url(#mask0_21_345)">
-                      <path d="M13.75 23.75V16.25H6.25V13.75H13.75V6.25H16.25V13.75H23.75V16.25H16.25V23.75H13.75Z" />
-                    </g>
-                  </svg>
-                </div>
-              </StyledWrapper>
-            </All>
-
-            {isstudent && (
-              <>
-                <select className="signup-input" value={sexe} onChange={(e) => setSexe(e.target.value)} required>
-                  <option value="male">Men</option>
-                  <option value="female">Women</option>
-                  <option value="other">OTHER</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
                 </select>
-                <input className="signup-input" type="number" placeholder="Age" value={age} onChange={(e) => setAge(e.target.value)} required />
-                <input className="signup-input" type="text" placeholder="Cin number" value={num_cin} onChange={(e) => setNum_cin(e.target.value)} required />
-              </>
-            )}
-            {isOng && (
-              <>
-                <input className="signup-input" type="text" placeholder="Fiscale id" value={id_fiscale} onChange={(e) => setId_fiscale(e.target.value)} required />
-                <select className="signup-input" value={type} onChange={(e) => setType(e.target.value)} required>
+              </div>
+              <div className="continueinfo-form-group">
+                <label htmlFor="age" className="continueinfo-label">
+                  Age
+                </label>
+                <input
+                  type="number"
+                  id="age"
+                  name="age"
+                  value={formData.age}
+                  onChange={handleChange}
+                  required
+                  className="continueinfo-input"
+                />
+              </div>
+              <div className="continueinfo-form-group">
+                <label htmlFor="num_cin" className="continueinfo-label">
+                  CIN Number
+                </label>
+                <input
+                  type="text"
+                  id="num_cin"
+                  name="num_cin"
+                  value={formData.num_cin}
+                  onChange={handleChange}
+                  required
+                  className={`continueinfo-input ${errors.num_cin ? "continueinfo-input-error" : ""}`}
+                />
+                {errors.num_cin && <p className="continueinfo-error-message">{errors.num_cin}</p>}
+              </div>
+            </>
+          )}
+
+          {formData.role === "ong" && (
+            <>
+              <div className="continueinfo-form-group">
+                <label htmlFor="id_fiscale" className="continueinfo-label">
+                  Fiscal ID
+                </label>
+                <input
+                  type="text"
+                  id="id_fiscale"
+                  name="id_fiscale"
+                  value={formData.id_fiscale}
+                  onChange={handleChange}
+                  required
+                  className={`continueinfo-input ${errors.id_fiscale ? "continueinfo-input-error" : ""}`}
+                />
+                {errors.id_fiscale && <p className="continueinfo-error-message">{errors.id_fiscale}</p>}
+              </div>
+              <div className="continueinfo-form-group">
+                <label htmlFor="type" className="continueinfo-label">
+                  ONG Type
+                </label>
+                <select
+                  id="type"
+                  name="type"
+                  value={formData.type}
+                  onChange={handleChange}
+                  className="continueinfo-select"
+                >
                   <option value="advocacy">Advocacy</option>
                   <option value="operational">Operational</option>
                   <option value="charitable">Charitable</option>
                   <option value="development">Development</option>
                   <option value="environmental">Environmental</option>
-                  <option value="human-rights">Human-rights</option>
+                  <option value="human-rights">Human Rights</option>
                   <option value="relief">Relief</option>
                   <option value="research">Research</option>
                   <option value="philanthropic">Philanthropic</option>
-                  <option value="social_welfare">Social_welfare</option>
+                  <option value="social_welfare">Social Welfare</option>
                   <option value="cultural">Cultural</option>
-                  <option value="faith_based">Faith_based</option>
+                  <option value="faith_based">Faith Based</option>
                 </select>
-              </>
-            )}
-            {istransporter && (
-              <>
-                <select className="signup-input" value={vehiculeType} onChange={(e) => setVehiculeType(e.target.value)} required>
-                  <option value="car">CAR</option>
-                  <option value="motorbike">MOTORBIKE</option>
-                  <option value="bicycle">BICYCLE</option>
-                  <option value="van">VAN</option>
-                  <option value="truck">TRUCK</option>
-                  <option value="scooter">SCOOTER</option>
-                </select>
-              </>
-            )}
-            {isDonor && (
-              <>
-                <input className="signup-input" type="text" placeholder="Tax reference" value={taxReference} onChange={(e) => setTaxReference(e.target.value)} required />
-              </>
-            )}
-            <input className="signup-input" type="text" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} required />
-            <input className="signup-input" type="number" placeholder="Phone Number" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+              </div>
+            </>
+          )}
 
-            {/* ✅ Google reCAPTCHA */}
-            <ReCAPTCHA 
+          {formData.role === "transporter" && (
+            <div className="continueinfo-form-group">
+              <label htmlFor="vehiculeType" className="continueinfo-label">
+                Vehicle Type
+              </label>
+              <select
+                id="vehiculeType"
+                name="vehiculeType"
+                value={formData.vehiculeType}
+                onChange={handleChange}
+                className="continueinfo-select"
+              >
+                <option value="car">Car</option>
+                <option value="motorbike">Motorbike</option>
+                <option value="bicycle">Bicycle</option>
+                <option value="van">Van</option>
+                <option value="truck">Truck</option>
+                <option value="scooter">Scooter</option>
+              </select>
+            </div>
+          )}
+
+          {(formData.role === "restaurant" || formData.role === "supermarket") && (
+            <div className="continueinfo-form-group">
+              <label htmlFor="taxReference" className="continueinfo-label">
+                Tax Reference
+              </label>
+              <input
+                type="text"
+                id="taxReference"
+                name="taxReference"
+                value={formData.taxReference}
+                onChange={handleChange}
+                required
+                className={`continueinfo-input ${errors.taxReference ? "continueinfo-input-error" : ""}`}
+              />
+              {errors.taxReference && <p className="continueinfo-error-message">{errors.taxReference}</p>}
+            </div>
+          )}
+
+          <div className="continueinfo-form-group">
+            <label htmlFor="file" className="continueinfo-label">
+              Profile Photo
+            </label>
+            <div className="continueinfo-file-input">
+              <button
+                type="button"
+                className="continueinfo-file-button"
+                onClick={() => document.getElementById("file").click()}
+              >
+                <FaCamera className="continueinfo-camera-icon" />
+                <span>Upload photo</span>
+              </button>
+              <input id="file" type="file" onChange={handleFileChange} className="continueinfo-hidden-input" />
+              {imagePreview && (
+                <img
+                  src={imagePreview || "/placeholder.svg"}
+                  alt="Profile Preview"
+                  className="continueinfo-image-preview"
+                />
+              )}
+              {fileName && <span className="continueinfo-file-name">{fileName}</span>}
+            </div>
+          </div>
+
+          <div className="continueinfo-recaptcha">
+            <ReCAPTCHA
               sitekey="6LeXoN8qAAAAAHnZcOwetBZ9TfyOl8K_wg7j97hq"
               onChange={(value) => setCaptchaValue(value)}
             />
-
-            {/* Display Errors */}
-            {error && <p className="error-message">{error}</p>}
-            
-            <button type="submit" className="signup-button">Sign Up</button>
-
-            <div>
-              <span style={{ fontSize: "14px", marginLeft: "-230px" }}>
-                Already have an account? <a href="/login">Sign In</a>
-              </span>
-            </div>
-          </form>
-        </div>
-
-        <div className="signup-form-container signup-sign-in-container">
-          <form className="signup-form" action="#">
-            <img src={logo} alt="Logo" className="signup-logo" />
-            <p className="signup-p">Be a part of a movement to make the world a better place by redistributing surplus food to those who need it.</p>
-          </form>
-        </div>
-
-        <div className="signup-overlay-container">
-          <div className="signup-overlay">
-            <div className="signup-overlay-panel signup-overlay-left">
-              <img src={loginImg} alt="Logo" className="signup-logo" />
-              <button className="signbtn" onClick={togglePanel}>
-                <FontAwesomeIcon icon={faArrowLeft} />
-              </button>
-            </div>
-            <div className="signup-overlay-panel signup-overlay-right">
-              <h1 className="signup-h1">Join Us Today!</h1>
-              <p className="signup-p">Sign up to help us reduce food waste and support your community!</p>
-              <button className="signbtn" onClick={togglePanel}>Sign Up</button>
-            </div>
           </div>
-        </div>
+
+          {error && <p className="continueinfo-error">{error}</p>}
+
+          <button type="submit" className="continueinfo-submit-button">
+            Complete Registration
+          </button>
+        </form>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Continueinfo;
+export default ContinueInfo
+

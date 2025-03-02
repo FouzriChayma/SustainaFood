@@ -92,7 +92,6 @@ const ImagePreview = styled.img`
 const Signup = () => {
   const [fileName, setFileName] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
-  // NEW: State to store the actual profile photo file
   const [profilePhotoFile, setProfilePhotoFile] = useState(null);
 
   const handleFileChange = (event) => {
@@ -138,24 +137,78 @@ const Signup = () => {
   // State for CAPTCHA
   const [captchaValue, setCaptchaValue] = useState(null);
 
+  // State for errors
+  const [errors, setErrors] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    phone: "",
+    address: "",
+    role: "",
+    id_fiscale: "",
+    num_cin: "",
+    sexe: "",
+    age: "",
+    taxReference: "",
+    vehiculeType: "",
+    type: "",
+  });
+
   const togglePanel = () => {
     setIsRightPanelActive(!isRightPanelActive);
+  };
+
+  const validateFields = () => {
+    const newErrors = {};
+
+    if (!name.match(/^[a-zA-Z\s]+$/)) {
+      newErrors.name = "Invalid name format";
+    }
+
+    if (!email.match(/^\S+@\S+\.\S+$/)) {
+      newErrors.email = "Invalid email format";
+    }
+
+    if (!password.match(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W)[A-Za-z\d\W]+$/)) {
+    
+      newErrors.password = "Password must include at least one uppercase, one lowercase, one number, and one special character";
+    }
+
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    if (!phone.match(/^\d{8,15}$/)) {
+      newErrors.phone = "Invalid phone number format";
+    }
+
+    if (isstudent && !num_cin.match(/^\d{8}$/)) {
+      newErrors.num_cin = "Invalid CIN format (must be 8 digits)";
+    }
+
+    if (isOng && !id_fiscale.match(/^TN\d{8}$/)) {
+      newErrors.id_fiscale = "Invalid NGO fiscal ID format (must be like TN12345678)";
+    }
+
+    if (isDonor && !taxReference.match(/^VAT-\d{8}$/)) {
+      newErrors.taxReference = "Invalid Tax Reference format (must be like VAT-12345678)";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
 
+    if (!validateFields()) {
+      return;
+    }
+
     if (!captchaValue) {
       setError("Veuillez valider le reCAPTCHA.");
-      return;
-    }
-    if (!email || !password || !confirmPassword || !phone || !name || !address) {
-      setError("Veuillez remplir tous les champs.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas.");
       return;
     }
 
@@ -215,18 +268,24 @@ const Signup = () => {
 
             {/* Input Fields */}
             <input className="signup-input" type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+            {errors.name && <p className="error-message">{errors.name}</p>}
+
             <input className="signup-input" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            {errors.email && <p className="error-message">{errors.email}</p>}
+
             <input className="signup-input" type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            {errors.password && <p className="error-message">{errors.password}</p>}
             <span style={{ marginBottom: "10px" }} className="auth-eye-icon" onClick={() => setShowPassword(!showPassword)}>
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </span>
+
             <input className="signup-input" type={showConfirmPassword ? "text" : "password"} placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+            {errors.confirmPassword && <p className="error-message">{errors.confirmPassword}</p>}
             <span style={{ marginBottom: "10px" }} className="auth-eye-icon" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
               {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
             </span>
 
             <select className="signup-input" value={role} onChange={(e) => setRole(e.target.value)} required>
-              <option value="admin">Admin</option>
               <option value="ong">ONG</option>
               <option value="restaurant">Restaurant</option>
               <option value="supermarket">Supermarket</option>
@@ -273,12 +332,15 @@ const Signup = () => {
                   <option value="other">OTHER</option>
                 </select>
                 <input className="signup-input" type="number" placeholder="Age" value={age} onChange={(e) => setAge(e.target.value)} required />
+                {errors.age && <p className="error-message">{errors.age}</p>}
                 <input className="signup-input" type="text" placeholder="Cin number" value={num_cin} onChange={(e) => setNum_cin(e.target.value)} required />
+                {errors.num_cin && <p className="error-message">{errors.num_cin}</p>}
               </>
             )}
             {isOng && (
               <>
                 <input className="signup-input" type="text" placeholder="Fiscale id" value={id_fiscale} onChange={(e) => setId_fiscale(e.target.value)} required />
+                {errors.id_fiscale && <p className="error-message">{errors.id_fiscale}</p>}
                 <select className="signup-input" value={type} onChange={(e) => setType(e.target.value)} required>
                   <option value="advocacy">Advocacy</option>
                   <option value="operational">Operational</option>
@@ -310,10 +372,13 @@ const Signup = () => {
             {isDonor && (
               <>
                 <input className="signup-input" type="text" placeholder="Tax reference" value={taxReference} onChange={(e) => setTaxReference(e.target.value)} required />
+                {errors.taxReference && <p className="error-message">{errors.taxReference}</p>}
               </>
             )}
             <input className="signup-input" type="text" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} required />
+            {errors.address && <p className="error-message">{errors.address}</p>}
             <input className="signup-input" type="number" placeholder="Phone Number" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+            {errors.phone && <p className="error-message">{errors.phone}</p>}
 
             {/* ✅ Google reCAPTCHA */}
             <ReCAPTCHA

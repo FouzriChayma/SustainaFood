@@ -28,6 +28,9 @@ import NotFound from "./pages/Not-Found";
 import AccountSettings from "./pages/AccountSettings.js";
 import ListOfDonations from "./pages/ListOfDonations";
 import AddDonation from "./pages/AddDonation";
+import MyRequests from "./pages/MyRequests.jsx";
+import MyDonations from "./pages/MyDonations"; 
+
 const App = () => {
   return (
     <Routes>
@@ -72,6 +75,13 @@ const App = () => {
       <Route path="/ListOfDonations" element={<ListOfDonations />} />
       <Route path="/AddDonation" element={<AddDonation />} />
       </Route>
+         {/* Private Routes for ong,student */}
+      <Route element={<PrivateRoute roles={["ong", "student"]} />}>
+      <Route path="/myrequests" element={<MyRequests />} />
+      </Route>
+      <Route element={<PrivateRoute roles={["supermarket","restaurant"]} />}>
+  <Route path="/mydonations" element={<MyDonations />} />
+</Route>
 
        {/* NotFound Route - This should be the last route */}
        <Route path="*" element={<NotFound />} />

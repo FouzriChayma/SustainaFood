@@ -25,12 +25,12 @@ pipeline {
                 script {
                     // Exécuter les tests unitaires du backend
                     dir('sustainafood-backend') {
-                        // Exemple: sh 'npm test'
+                        sh 'npm test'  // Décommentez et assurez-vous que cette commande fonctionne
                     }
 
                     // Exécuter les tests unitaires du frontend
                     dir('sustainafood-frontend') {
-                        // Exemple: sh 'npm test'
+                        sh 'npm test'  // Décommentez et assurez-vous que cette commande fonctionne
                     }
                 }
             }
@@ -42,7 +42,7 @@ pipeline {
                 script {
                     // Build du backend (optionnel si nécessaire)
                     dir('sustainafood-backend') {
-                        // Exemple: sh 'npm run build'
+                        sh 'npm run build'  // Décommentez si vous avez besoin de build pour le backend
                     }
 
                     // Build du frontend
@@ -57,11 +57,15 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    sh 'node -v' // Afficher la version de Node pour déboguer
+                    // Vérifier la version de Node
+                    sh 'node -v'
 
-                    def scannerHome = tool 'scanner' // Scanner SonarQube
+                    // Vérifier la version de npm
+                    sh 'npm -v'
+
+                    // Analyse SonarQube
+                    def scannerHome = tool 'scanner'
                     withSonarQubeEnv {
-                        // Exécuter l'analyse SonarQube
                         sh "${scannerHome}/bin/sonar-scanner"
                     }
                 }

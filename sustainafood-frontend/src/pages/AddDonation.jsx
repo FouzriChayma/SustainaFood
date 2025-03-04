@@ -1,154 +1,213 @@
 import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import "../assets/styles/AddDonation.css";
-import { useNavigate } from "react-router-dom";
 import logo from "../assets/images/LogoCh.png";
-import Papa from "papaparse"; // Import CSV parsing library
+import Papa from "papaparse";
 import { IoIosCloseCircleOutline } from "react-icons/io";
 import { FaEdit } from "react-icons/fa";
-
+import { addDonation } from "../api/donationService"; // Adjust the import path accordingly
 
 export const AddDonation = () => {
-    const [error, setError] = useState(null);
-    const [Type, setType] = useState("donation");
-    const [Category, setCategory] = useState("donation");
-    const [products, setProducts] = useState([]); // State to hold CSV data
+  const [error, setError] = useState(null);
+  const [Type, setType] = useState("donation");
+  const [Category, setCategory] = useState("donation");
+  const [products, setProducts] = useState([]); // State to hold CSV data
+  const fileInputRef = useRef(null);
+  const navigate = useNavigate(); // Use this to redirect after success
 
-    const fileInputRef = useRef(null); // Create a ref for the file input
+  // Handle CSV File Upload
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
 
-    // Handle CSV File Upload
-    const handleFileUpload = (event) => {
-        const file = event.target.files[0];
+    if (file) {
+      Papa.parse(file, {
+        complete: (result) => {
+          setProducts(result.data); // Store parsed CSV data
+        },
+        header: true,
+        skipEmptyLines: true,
+      });
+    }
+  };
 
-        if (file) {
-            Papa.parse(file, {
-                complete: (result) => {
-                    setProducts(result.data); // Store parsed CSV data
-                },
-                header: true, // Use first row as headers
-                skipEmptyLines: true,
-            });
-        }
-    };
+  // Handle Deleting the Product List
+  const handleDeleteList = () => {
+    setProducts([]); // Clear the product list
+  };
 
-    // Handle Deleting the Product List
-    const handleDeleteList = () => {
-        setProducts([]); // Clear the product list
-    };
+  // Handle Form Submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    return (
-        <>
-            <Navbar />
-            <div className="add-donation">
-                <div>
-                    <form className="signup-form">
-                        <img src={logo} alt="Logo" className="adddonation-logo" />
-                        <h1 className="signup-h1">Add Donation</h1>
+    // Create FormData to match the multipart/form-data requirement.
+    const donationData = new FormData();
+    donationData.append("title", e.target.title.value);
+    donationData.append("location", e.target.Location.value);
+    donationData.append("expirationDate", e.target["Expiration Date"].value);
+    
+    // Add Type and Category from state
+    donationData.append("Type", Type);
+    donationData.append("Category", Category);
 
-                        <input className="signup-input" type="text" placeholder="Title" name="title" required />
-                        <input className="signup-input" type="text" placeholder="Location" name="Location" required />
-                        <input className="signup-input" type="date" placeholder="Expiration Date" name="Expiration Date" required />
+    // Optionally add more fields required by your backend.
+    // For example, if you have a description, user, delivery, or status field:
+    donationData.append("description", ""); // Modify as needed.
+    donationData.append("user", "userId");    // Replace with current user ID if available.
+    donationData.append("delivery", "false"); // Or appropriate value.
+    donationData.append("status", "active");  // Adjust according to your logic.
 
-                        <select className="signup-input" value={Type} onChange={(e) => setType(e.target.value)} required>
-                            <option value="donation">Donation</option>
-                            <option value="request">Request</option>
-                        </select>
+    // Convert your products array to a JSON string before appending.
+    donationData.append("products", JSON.stringify(products));
 
-                        <select className="signup-input" value={Category} onChange={(e) => setCategory(e.target.value)} required>
-                            <option value="Prepared_Meals">Prepared Meals</option>
-                            <option value="Packaged_Products">Packaged Products</option>
-                        </select>
+    try {
+      const response = await addDonation(donationData);
+      console.log("Donation created successfully:", response.data);
+      // On success, you might redirect to a confirmation or detail page:
+      navigate("/donation-success"); // Adjust the route as needed.
+    } catch (err) {
+      console.error("Error creating donation:", err);
+      setError(
+        err.response?.data?.message || "An error occurred while creating the donation."
+      );
+    }
+  };
 
-                        {/* Hidden File Input */}
-                        <input
-                            ref={fileInputRef}
-                            className="file"
-                            type="file"
-                            accept=".csv"
-                            onChange={handleFileUpload}
-                            style={{ display: "none" }} // Hide input
-                        />
+  return (
+    <>
+      <Navbar />
+      <div className="add-donation">
+        <div>
+          <form className="signup-form" onSubmit={handleSubmit}>
+            <img src={logo} alt="Logo" className="adddonation-logo" />
+            <h1 className="signup-h1">Add Donation</h1>
 
-                        {/* Conditionally Show Upload or Modify/Delete Buttons */}
-                        {products.length === 0 ? (
-                            <button className="container-btn-file" onClick={() => fileInputRef.current.click()}>
-                                <svg
-                                    fill="#fff"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="20"
-                                    height="20"
-                                    viewBox="0 0 50 50"
-                                >
-                                    <path
-                                        d="M28.8125 .03125L.8125 5.34375C.339844 
-                                        5.433594 0 5.863281 0 6.34375L0 43.65625C0 
-                                        44.136719 .339844 44.566406 .8125 44.65625L28.8125 
-                                        49.96875C28.875 49.980469 28.9375 50 29 50C29.230469 
-                                        50 29.445313 49.929688 29.625 49.78125C29.855469 49.589844 
-                                        30 49.296875 30 49L30 1C30 .703125 29.855469 .410156 29.625 
-                                        .21875C29.394531 .0273438 29.105469 -.0234375 28.8125 .03125ZM32 
-                                        6L32 13L34 13L34 15L32 15L32 20L34 20L34 22L32 22L32 27L34 27L34 
-                                        29L32 29L32 35L34 35L34 37L32 37L32 44L47 44C48.101563 44 49 
-                                        43.101563 49 42L49 8C49 6.898438 48.101563 6 47 6ZM36 13L44 
-                                        13L44 15L36 15ZM6.6875 15.6875L11.8125 15.6875L14.5 21.28125C14.710938 
-                                        21.722656 14.898438 22.265625 15.0625 22.875L15.09375 22.875C15.199219 
-                                        22.511719 15.402344 21.941406 15.6875 21.21875L18.65625 15.6875L23.34375 
-                                        15.6875L17.75 24.9375L23.5 34.375L18.53125 34.375L15.28125 
-                                        28.28125C15.160156 28.054688 15.035156 27.636719 14.90625 
-                                        27.03125L14.875 27.03125C14.8125 27.316406 14.664063 27.761719 
-                                        14.4375 28.34375L11.1875 34.375L6.1875 34.375L12.15625 25.03125ZM36 
-                                        20L44 20L44 22L36 22ZM36 27L44 27L44 29L36 29ZM36 35L44 35L44 37L36 37Z"
-                                    ></path>
-                                </svg>
-                                Upload List of Products
-                            </button>
-                        ) : (
-                            <>
-                                <p style={{ marginLeft: "-656px", color: " #8dc73f" }}>List of products uploaded</p>
-                                <div className="file-actions" style={{ marginLeft: '812px' }} >
+            <input className="signup-input" type="text" placeholder="Title" name="title" required />
+            <input className="signup-input" type="text" placeholder="Location" name="Location" required />
+            <input className="signup-input" type="date" placeholder="Expiration Date" name="Expiration Date" required />
 
-                                    <button type="button" className="delete-btn" style={{ color: "black" }} onClick={() => fileInputRef.current.click()}>
-                                        <FaEdit />
-                                    </button>
-                                    <button type="button" className="delete-btn" onClick={handleDeleteList}>
-                                        <IoIosCloseCircleOutline />
-                                    </button>
-                                </div>
-                            </>
-                        )}
+            <select
+              className="signup-input"
+              value={Type}
+              onChange={(e) => setType(e.target.value)}
+              required
+            >
+              <option value="donation">Donation</option>
+              <option value="request">Request</option>
+            </select>
 
-                        {/* Display Table if Products Exist */}
-                        {products.length > 0 && (
-                            <table className="product-table">
-                                <thead>
-                                    <tr>
-                                        {Object.keys(products[0]).map((key, index) => (
-                                            <th key={index}>{key}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {products.map((row, rowIndex) => (
-                                        <tr key={rowIndex}>
-                                            {Object.values(row).map((value, colIndex) => (
-                                                <td key={colIndex}>{value}</td>
-                                            ))}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
+            <select
+              className="signup-input"
+              value={Category}
+              onChange={(e) => setCategory(e.target.value)}
+              required
+            >
+              <option value="Prepared_Meals">Prepared Meals</option>
+              <option value="Packaged_Products">Packaged Products</option>
+            </select>
 
-                        {error && <p className="error-message">{error}</p>}
+            {/* Hidden File Input */}
+            <input
+              ref={fileInputRef}
+              className="file"
+              type="file"
+              accept=".csv"
+              onChange={handleFileUpload}
+              style={{ display: "none" }}
+            />
 
-                        <button type="submit" className="signup-button">Add</button>
-                    </form>
+            {/* Conditionally Show Upload or Modify/Delete Buttons */}
+            {products.length === 0 ? (
+              <button
+                type="button"
+                className="container-btn-file"
+                onClick={() => fileInputRef.current.click()}
+              >
+                <svg
+                  fill="#fff"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 50 50"
+                >
+                  <path
+                    d="M28.8125 .03125L.8125 5.34375C.339844 
+                    5.433594 0 5.863281 0 6.34375L0 43.65625C0 
+                    44.136719 .339844 44.566406 .8125 44.65625L28.8125 
+                    49.96875C28.875 49.980469 28.9375 50 29 50C29.230469 
+                    50 29.445313 49.929688 29.625 49.78125C29.855469 49.589844 
+                    30 49.296875 30 49L30 1C30 .703125 29.855469 .410156 29.625 
+                    .21875C29.394531 .0273438 29.105469 -.0234375 28.8125 .03125ZM32 
+                    6L32 13L34 13L34 15L32 15L32 20L34 20L34 22L32 22L32 27L34 27L34 
+                    29L32 29L32 35L34 35L34 37L32 37L32 44L47 44C48.101563 44 49 
+                    43.101563 49 42L49 8C49 6.898438 48.101563 6 47 6ZM36 13L44 
+                    13L44 15L36 15ZM6.6875 15.6875L11.8125 15.6875L14.5 21.28125C14.710938 
+                    21.722656 14.898438 22.265625 15.0625 22.875L15.09375 22.875C15.199219 
+                    22.511719 15.402344 21.941406 15.6875 21.21875L18.65625 15.6875L23.34375 
+                    15.6875L17.75 24.9375L23.5 34.375L18.53125 34.375L15.28125 
+                    28.28125C15.160156 28.054688 15.035156 27.636719 14.90625 
+                    27.03125L14.875 27.03125C14.8125 27.316406 14.664063 27.761719 
+                    14.4375 28.34375L11.1875 34.375L6.1875 34.375L12.15625 25.03125ZM36 
+                    20L44 20L44 22L36 22ZM36 27L44 27L44 29L36 29ZM36 35L44 35L44 37L36 37Z"
+                  ></path>
+                </svg>
+                Upload List of Products
+              </button>
+            ) : (
+              <>
+                <p style={{ marginLeft: "-656px", color: "#8dc73f" }}>
+                  List of products uploaded
+                </p>
+                <div className="file-actions" style={{ marginLeft: "812px" }}>
+                  <button
+                    type="button"
+                    className="delete-btn"
+                    style={{ color: "black" }}
+                    onClick={() => fileInputRef.current.click()}
+                  >
+                    <FaEdit />
+                  </button>
+                  <button type="button" className="delete-btn" onClick={handleDeleteList}>
+                    <IoIosCloseCircleOutline />
+                  </button>
                 </div>
-            </div>
-            <Footer />
-        </>
-    );
+              </>
+            )}
+
+            {/* Display Table if Products Exist */}
+            {products.length > 0 && (
+              <table className="product-table">
+                <thead>
+                  <tr>
+                    {Object.keys(products[0]).map((key, index) => (
+                      <th key={index}>{key}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {Object.values(row).map((value, colIndex) => (
+                        <td key={colIndex}>{value}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {error && <p className="error-message">{error}</p>}
+
+            <button type="submit" className="signup-button">
+              Add
+            </button>
+          </form>
+        </div>
+      </div>
+      <Footer />
+    </>
+  );
 };
 
 export default AddDonation;

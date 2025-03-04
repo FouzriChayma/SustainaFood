@@ -36,8 +36,11 @@ const Login = () => {
     try {
       const response = await loginUser({ email, password });
   
-      if (response?.data?.token) {
-        console.log("Connexion réussie ");
+      if (response?.data?.requires2FA) {
+        // Redirect to 2FA verification page
+        navigate(`/two-fa-verification?email=${encodeURIComponent(email)}`);
+      } else if (response?.data?.token) {
+        console.log("Connexion réussie");
   
         const userData = {
           id: response.data.id,

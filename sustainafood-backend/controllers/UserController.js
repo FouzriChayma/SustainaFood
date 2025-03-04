@@ -457,7 +457,40 @@ async function user_signin(req, res) {
         if (!isMatch) {
             return res.status(400).json({ error: "Invalid credentials" });
         }
+        
+        // Check if 2FA is enabled
+        if (user.is2FAEnabled) {
+            // Generate and send 2FA code
+            const twoFACode = generate2FACode();
+            user.twoFACode = twoFACode;
+            user.twoFACodeExpires = Date.now() + 10 * 60 * 1000; // Expires in 10 minutes
+            await user.save();
 
+            // Send 2FA code via email
+            const transporter = nodemailer.createTransport({
+                service: "gmail",
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS,
+                },
+                tls: {
+                    rejectUnauthorized: false,
+                },
+            });
+
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: "Your 2FA Verification Code",
+                text: `Your 2FA verification code is: ${twoFACode}. This code is valid for 10 minutes.`,
+            };
+
+            await transporter.sendMail(mailOptions);
+
+            return res.status(200).json({ message: "2FA code sent to your email", requires2FA: true });
+        }
+
+       
         const payload = {
             userId: user._id,
             role: user.role,
@@ -465,7 +498,7 @@ async function user_signin(req, res) {
 
         const token = jwt.sign(payload, "your_jwt_secret", { expiresIn: "1h" });
 
-        res.status(200).json({ token, role: user.role, id: user._id , message: !user.isActive ? "Your account has been reactivated. Welcome back!" : null,});
+        res.status(200).json({ token, role: user.role, id: user._id , message: !user.isActive ? "Your account has been reactivated. Welcome back!" : null, is2FAEnabled: user.is2FAEnabled});
     } catch (error) {
         console.error("Erreur serveur :", error);
         res.status(500).json({ error: "Server error" });
@@ -641,7 +674,111 @@ async function changePassword(req, res) {
   }
   
   
+// Generate a 6-digit 2FA code
+const generate2FACode = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+// 🚀 Send 2FA Code
+async function send2FACode(req, res) {
+    const { email } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        // Generate 2FA code
+        const twoFACode = generate2FACode();
+
+        // Store 2FA code & expiration
+        user.twoFACode = twoFACode;
+        user.twoFACodeExpires = Date.now() + 10 * 60 * 1000; // Expires in 10 minutes
+        await user.save();
+
+        // Configure email transporter
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+            },
+            tls: {
+                rejectUnauthorized: false,
+            },
+        });
+
+        // Email details
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: "Your 2FA Verification Code",
+            text: `Your 2FA verification code is: ${twoFACode}. This code is valid for 10 minutes.`,
+        };
+
+        // Send email
+        await transporter.sendMail(mailOptions);
+
+        res.status(200).json({ message: "2FA code sent successfully" });
+
+    } catch (error) {
+        console.error("Error sending 2FA code:", error);
+        res.status(500).json({ error: "Error sending 2FA code" });
+    }
+}
+
+// 🚀 Validate 2FA Code
+async function validate2FACode(req, res) {
+    const { email, twoFACode } = req.body;
+  
+    try {
+      const user = await User.findOne({ email });
+  
+      if (!user) {
+        return res.status(400).json({ error: "User not found" });
+      }
+  
+      if (!user.twoFACode || !user.twoFACodeExpires) {
+        return res.status(400).json({ error: "No 2FA code found for this user" });
+      }
+  
+      if (user.twoFACode !== twoFACode) {
+        return res.status(400).json({ error: "Invalid 2FA code" });
+      }
+  
+      if (user.twoFACodeExpires < Date.now()) {
+        return res.status(400).json({ error: "2FA code has expired" });
+      }
+  
+      // Clear the 2FA code after successful validation
+      user.twoFACode = undefined;
+      user.twoFACodeExpires = undefined;
+      await user.save();
+  
+      // Generate a token for the user
+      const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, "your_jwt_secret", { expiresIn: "1h" });
+  
+      res.status(200).json({ token, role: user.role, id: user._id });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Server error" });
+    }
+  }
+// 🚀 Toggle 2FA Status
+async function toggle2FA(req, res) {
+    const { email } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        // Toggle 2FA status
+        user.is2FAEnabled = !user.is2FAEnabled;
+        await user.save();
+
+        res.status(200).json({ message: `2FA ${user.is2FAEnabled ? "enabled" : "disabled"}` });
+    } catch (error) {
+        console.error("Error toggling 2FA:", error);
+        res.status(500).json({ error: "Error toggling 2FA" });
+    }
+}
 
 
-
-module.exports = {changePassword,updateUserWithEmail, createUser,addUser, getUsers, getUserById, updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter ,deactivateAccount };
+module.exports = {changePassword,updateUserWithEmail, createUser,addUser, getUsers, getUserById,updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter ,deactivateAccount , send2FACode , validate2FACode , toggle2FA};

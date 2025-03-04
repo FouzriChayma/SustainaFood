@@ -2,64 +2,74 @@ pipeline {
     agent any
 
     stages {
+        // Étape 1: Installer les dépendances
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Install backend dependencies
-                    dir('backend') {
+                    // Installer les dépendances du backend
+                    dir('sustainafood-backend') {
                         sh 'npm install'
                     }
 
-                    // Install frontend dependencies
-                    dir('frontend') {
+                    // Installer les dépendances du frontend
+                    dir('sustainafood-frontend') {
                         sh 'npm install --legacy-peer-deps'
                     }
                 }
             }
         }
 
+        // Étape 2: Exécuter les tests unitaires
         stage('Run Unit Tests') {
             steps {
                 script {
-                    // Run backend unit tests
-                    dir('backend') {
-                        // sh 'npm test'
+                    // Exécuter les tests unitaires du backend
+                    dir('sustainafood-backend') {
+                        sh 'npm test'  // Décommentez et assurez-vous que cette commande fonctionne
                     }
 
-                    // Run frontend unit tests
-                    dir('frontend') {
-                        // sh 'npm test'
+                    // Exécuter les tests unitaires du frontend
+                    dir('sustainafood-frontend') {
+                        sh 'npm test'  // Décommentez et assurez-vous que cette commande fonctionne
                     }
                 }
             }
         }
 
+        // Étape 3: Build de l'application
         stage('Build Application') {
             steps {
                 script {
-                    // Build the backend (optional, depending on your project)
-                    dir('backend') {
-                        // sh 'npm run build'
+                    // Build du backend (optionnel si nécessaire)
+                    dir('sustainafood-backend') {
+                        sh 'npm run build'  // Décommentez si vous avez besoin de build pour le backend
                     }
 
-                    // Build the frontend
-                    dir('frontend') {
+                    // Build du frontend
+                    dir('sustainafood-frontend') {
                         sh 'npm run build'
                     }
                 }
             }
         }
 
+        // Étape 4: Analyse SonarQube
         stage('SonarQube Analysis') {
             steps {
-                script { 
-                     sh 'node -v'
+                script {
+                    // Vérifier la version de Node
+                    sh 'node -v'
+
+                    // Vérifier la version de npm
+                    sh 'npm -v'
+
+                    // Analyse SonarQube
                     def scannerHome = tool 'scanner'
-                   withSonarQubeEnv {
+                    withSonarQubeEnv {
                         sh "${scannerHome}/bin/sonar-scanner"
-                        }
-                } 
-            } 
+                    }
+                }
+            }
         }
     }
 }

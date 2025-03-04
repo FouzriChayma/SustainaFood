@@ -35,16 +35,7 @@ pipeline {
                 }
             }
         }
-/////////////////////
-stage('Fix FontAwesome') {
-    steps {
-        script {
-            dir('sustainafood-frontend') {
-                sh 'npm install @fortawesome/fontawesome-svg-core'
-            }
-        }
-    }
-}
+
 
         // Étape 3: Build de l'application
         stage('Build Application') {

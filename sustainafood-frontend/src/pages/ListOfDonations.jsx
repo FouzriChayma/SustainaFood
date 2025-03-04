@@ -195,6 +195,7 @@ const ProposedSolutionList = styled.ul`
   }
 `;
 
+
 const ListOfDonations = () => {
   return (
     <>
@@ -243,6 +244,12 @@ const ListOfDonations = () => {
           </g>
         </svg>
         <input placeholder="Search" type="search" className="inputsearch" />
+         {/* Sélecteur de tri */}
+         <select className="sort-select">
+                    <option value="date">Latest Donations</option>
+                    <option value="name">Near me  </option>
+                    <option value="quantity">Urgent</option>
+                  </select>
       </div>
                      </div>
                  </div>

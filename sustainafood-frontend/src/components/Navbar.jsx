@@ -86,7 +86,7 @@ const Navbar = () => {
               <span className="dropdown-toggle">Donations</span>
               {dropdownOpen === "donations" && (
                 <div className="dropdown-content">
-                  <Link to="#">My Donations</Link>
+                  <Link to="/Mydonations">My Donations</Link>
                   <Link to="#">My Requests</Link>
                   <Link to="/ListOfDonations">List of Donations</Link>
                 </div>
@@ -100,7 +100,7 @@ const Navbar = () => {
               <span className="dropdown-toggle">Transporter</span>
               {dropdownOpen === "transporter" && (
                 <div className="dropdown-content">
-                  <Link to="#">Assigned Deliveries</Link>
+                  <Link to="delivry">Assigned Deliveries</Link>
                   <Link to="#">Route Optimization</Link>
                 </div>
               )}

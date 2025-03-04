@@ -1,99 +1,124 @@
+/* ===== Global Styles ===== */
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background-color: #f0f8f0;
+  box-sizing: border-box;
+}
 
+/* ===== Container Principal ===== */
+.container-listdonation {
+  width: 80%;
+  margin: auto;
+  padding: 40px 0;
+}
 
- .all{
-    
-    background: #ffffffaa;
-    border-radius: 12px;
-    padding: 5px;
-    margin-left: 30px;
-    margin-top: 30px;
-    position: relative;
-    box-shadow: #604b4a53 0px 20px 20px 10px;
- }
- /* Conteneur principal */
- .container-listdonation {
-    width: 100%;
-    max-width: 1472px;
-    margin: 0 auto;
-    padding: 20px;
-    margin-top: -100px;
-
-  }
-  /* En-tête */
-  .profile-headerLIST {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    MARGIN-TOP: 80px;
-    margin-bottom: 49px;
-  }
-  .profile-header h1 {
-    font-size: 24px;
-  }
-  /* From Uiverse.io by alexruix */ 
-.groupsearch {
+/* ===== Header Section ===== */
+.profile-headerLIST {
   display: flex;
-  line-height: 28px;
   align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  padding: 20px 30px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.profile-headerLIST h1 {
+  font-size: 40px;
+  color: #228b22;
+  margin: 0;
+}
+
+/* ===== Search Bar ===== */
+.groupsearch {
   position: relative;
-  width: 250px;
+  display: flex;
+  align-items: center;
 }
 
 .inputsearch {
-  line-height: 28px;
-  padding: 0 1rem;
-  width: 100%;
-  padding-left: 2.5rem;
-  border: 2px solid transparent;
-  border-radius: 8px;
+  width: 250px;
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 30px;
+  font-size: 16px;
   outline: none;
-  background-color: #D9E8D8;
-  color: #0d0c22;
-  box-shadow: 0 0 5px #C1D9BF, 0 0 0 10px #f5f5f5eb;
-  transition: .3s ease;
+  transition: all 0.3s ease;
 }
 
-.inputsearch::placeholder {
-  color: #777;
+.inputsearch:focus {
+  border-color: #56ab2f;
+  box-shadow: 0px 0px 8px rgba(34, 139, 34, 0.3);
+  text-align: center; /* Centrer le texte */
+
+
 }
 
 .iconsearch {
   position: absolute;
-  left: 1rem;
-  fill: #777;
-  width: 1rem;
-  height: 1rem;
+  /* left: 10px; */
+  width: 25px;
+  height: 20px;
+  fill: #228b22;
 }
 
-
-
-
-
-
-.parent {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(5, 1fr);
-  gap: 8px;
-}
-  
-.div5 {
-  background-color: #D9E8D8;
-  grid-column: span 5 / span 5;
-  grid-row: span 2 / span 2;
+/* ===== Liste des donations ===== */
+.contentlist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.div6 {
-  background-color: white;
-  grid-column: span 3 / span 3;
-  grid-row: span 2 / span 2;
-  grid-column-start: 2;
-  grid-row-start: 3;
+.contentlist div {
+  background: #fffdfd;
+  padding: 0px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
 }
-.contentlist{
-  background-color: rgba(203, 200, 200, 0.13);
-  padding:30px;
-  border-radius: 15px;
-  margin-left: 95px;
 
+.contentlist div:hover {
+  transform: scale(1.02);
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 1024px) {
+  .container-listdonation {
+      width: 95%;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-headerLIST {
+      flex-direction: column;
+      text-align: center;
+      gap: 15px;
+  }
+
+  .inputsearch {
+      width: 100%;
+  }
+}
+///////////////////////////////////
+/* Style du select avec position à droite */
+.sort-select {
+  width: 20px;
+  padding: 8px 12px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 50px;
+  font-size: 16px;
+  color: #333;
+  appearance: none; /* Supprime le style par défaut du select */
+  cursor: pointer;
+  right: 20px; /* 20px à partir du bord droit */
+  top: 10px; /* 10px à partir du bord supérieur */
+}
+
+/* Style du select au focus */
+.sort-select:focus {
+  border-color: #228b22;
+  outline: none;
 }

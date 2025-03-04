@@ -118,7 +118,6 @@ const AccountSettings = () => {
             </form>
           </section>
 
-          {/* Section de la 2FA */}
           <section className="accountsettings-section">
             <h2>Two-Factor Authentication (2FA)</h2>
             <div className="accountsettings-twofa-toggle">
@@ -132,30 +131,9 @@ const AccountSettings = () => {
               </label>
               <span>{is2FAEnabled ? "Enabled" : "Disabled"}</span>
             </div>
-            {is2FAEnabled && !is2FAVerified && (
-              <div className="accountsettings-twofa-verification">
-                <h3>Enter the verification code sent to your email:</h3>
-                <form onSubmit={handle2FAVerification}>
-                  <input
-                    type="text"
-                    id="twoFACode"
-                    value={twoFACode}
-                    onChange={(e) => setTwoFACode(e.target.value)}
-                    required
-                  />
-                  <button type="submit" className="accountsettings-button">
-                    Verify 2FA Code
-                  </button>
-                </form>
-              </div>
-            )}
-            {is2FAVerified && <p>2FA is now fully set up.</p>}
-            {is2FAEnabled && !is2FAVerified && (
-              <p>Check your email for the 2FA verification code.</p>
-            )}
+            {is2FAEnabled && <p>2FA is enabled. Use an authenticator app to generate codes.</p>}
           </section>
 
-          {/* Section de désactivation du compte */}
           <section className="accountsettings-section">
             <h2>Deactivate Account</h2>
             <p>

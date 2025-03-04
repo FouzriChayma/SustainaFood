@@ -28,11 +28,16 @@ import NotFound from "./pages/Not-Found";
 import AccountSettings from "./pages/AccountSettings.js";
 import ListOfDonations from "./pages/ListOfDonations";
 import AddDonation from "./pages/AddDonation";
+<<<<<<< HEAD
 import MyRequests from "./pages/MyRequests.jsx";
 import MyDonations from "./pages/MyDonations"; 
 import TwoFAVerification from "./pages/TwoFAVerification";
 
+=======
+import DetailsDonations from "./pages/DetailsDonations";
+>>>>>>> Mouna
 const App = () => {
+
   return (
     <Routes>
       {/* Public Routes */}
@@ -76,6 +81,7 @@ const App = () => {
       <Route element={<PrivateRoute roles={["ong", "restaurant", "supermarket", "student"]} />}>
       <Route path="/ListOfDonations" element={<ListOfDonations />} />
       <Route path="/AddDonation" element={<AddDonation />} />
+      <Route path="/DetailsDonations/:id" element={<DetailsDonations />} />
       </Route>
          {/* Private Routes for ong,student */}
       <Route element={<PrivateRoute roles={["ong", "student"]} />}>

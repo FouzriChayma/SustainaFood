@@ -96,57 +96,66 @@ async function getDonationsByCategory (req, res)  {
 // ✅ Create a new donation (also creates related products)
 async function createDonation(req, res) {
     try {
-        const { title, location, expirationDate, description, Category, Type, user, products, delivery, status } = req.body;
-
-        // Step 1: Create the donation first (without products)
-        const newDonation = new Donation({
-            title,
-            location,
-            expirationDate,
-            description,
-            Category,
-            Type,
-            user,
-            products: [],  // Initially empty
-            delivery,
-            status
-        });
-
-        await newDonation.save();  // Save it first to get the _id
-
-        // Step 2: Get the donation ID
-        const donationId = newDonation._id;
-
-        // Step 3: Assign `iddonation` to each product
-        for (let product of products) {
-            const counter = await Counter.findOneAndUpdate(
-                { _id: 'ProductId' },
-                { $inc: { seq: 1 } },
-                { new: true, upsert: true }
-            );
-
-            product.id = counter.seq;  // Auto-incremented ID
-            product.iddonation = donationId;  // Assign donation ID
-        }
-
-        // Step 4: Create products
-        const createdProducts = await Product.insertMany(products);
-        const productIds = createdProducts.map(product => product._id);
-
-        // Step 5: Update the donation with product IDs
-        newDonation.products = productIds;
-        await newDonation.save();
-
-        res.status(201).json({ message: 'Donation created successfully', newDonation });
+      let { title, location, expirationDate, description, Category, Type, user, products, delivery, status } = req.body;
+      
+      // Vérifie si products est une chaîne et, dans ce cas, parse-la
+      if (typeof products === 'string') {
+        products = JSON.parse(products);
+      }
+  
+      // Optionnel : filtrer les produits vides
+      products = products.filter(product =>
+        product.productType && product.weightPerUnit && product.totalQuantity && product.productDescription && product.status
+      );
+  
+      // Étape 1 : Créer la donation sans produits
+      const newDonation = new Donation({
+        title,
+        location,
+        expirationDate,
+        description,
+        Category,
+        Type,
+        user,
+        products: [], // Initialement vide
+        delivery,
+        status
+      });
+  
+      await newDonation.save(); // Sauvegarde pour obtenir l'ID
+  
+      // Étape 2 : Récupérer l'ID de la donation
+      const donationId = newDonation._id;
+  
+      // Étape 3 : Pour chaque produit, assigner l'ID de donation et un ID auto-incrémenté
+      for (let product of products) {
+        const counter = await Counter.findOneAndUpdate(
+          { _id: 'ProductId' },
+          { $inc: { seq: 1 } },
+          { new: true, upsert: true }
+        );
+        product.id = counter.seq;
+        product.iddonation = donationId;
+      }
+  
+      // Étape 4 : Créer les produits
+      const createdProducts = await Product.insertMany(products);
+      const productIds = createdProducts.map(product => product._id);
+  
+      // Étape 5 : Mettre à jour la donation avec les IDs des produits créés
+      newDonation.products = productIds;
+      await newDonation.save();
+  
+      res.status(201).json({ message: 'Donation created successfully', newDonation });
     } catch (error) {
-        console.error("Donation Creation Error:", error);
-        res.status(400).json({
-            message: "Failed to create donation",
-            error: error.message || error
-        });
+      console.error("Donation Creation Error:", error);
+      res.status(400).json({
+        message: "Failed to create donation",
+        error: error.message || error
+      });
     }
-}
-
+  }
+  
 
 
 // ✅ Update a donation (also updates related products)

@@ -10,9 +10,17 @@ import { FaEdit } from "react-icons/fa";
 import { addDonation } from "../api/donationService"; // Adjust the import path accordingly
 
 export const AddDonation = () => {
+  const userid=localStorage.getItem("user_id");
   const [error, setError] = useState(null);
+  const[title,setTitle]=useState("");
+  const[location,setLocation]=useState("");
+  const[expirationDate,setExpirationDate]=useState("");
   const [Type, setType] = useState("donation");
-  const [Category, setCategory] = useState("donation");
+  const [Category, setCategory] = useState("Prepared_Meals");
+  const[description,setDescription]=useState("");
+  const[Delivery,setDelivery]=useState("pickup");
+
+
   const [products, setProducts] = useState([]); // State to hold CSV data
   const fileInputRef = useRef(null);
   const navigate = useNavigate(); // Use this to redirect after success
@@ -41,38 +49,47 @@ export const AddDonation = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Create FormData to match the multipart/form-data requirement.
+    // Create FormData to match multipart/form-data requirement
     const donationData = new FormData();
-    donationData.append("title", e.target.title.value);
-    donationData.append("location", e.target.Location.value);
-    donationData.append("expirationDate", e.target["Expiration Date"].value);
+    donationData.append("title", title);
+    donationData.append("location", location);
+    donationData.append("expirationDate", expirationDate);
     
-    // Add Type and Category from state
-    donationData.append("Type", Type);
-    donationData.append("Category", Category);
+    // Validate and append Type & Category
+    if (Type) donationData.append("Type", Type);
+    if (Category) donationData.append("Category", Category);
 
-    // Optionally add more fields required by your backend.
-    // For example, if you have a description, user, delivery, or status field:
-    donationData.append("description", ""); // Modify as needed.
-    donationData.append("user", "userId");    // Replace with current user ID if available.
-    donationData.append("delivery", "false"); // Or appropriate value.
-    donationData.append("status", "active");  // Adjust according to your logic.
+    // Optionally add more fields required by your backend
+    if (description) donationData.append("description", description);
+    if (userid) donationData.append("user", userid);
+    if (Delivery) donationData.append("delivery", Delivery);
 
-    // Convert your products array to a JSON string before appending.
-    donationData.append("products", JSON.stringify(products));
+    donationData.append("status", "pending"); // Default status
+    donationData.append("created_at", new Date().toISOString());
+    donationData.append("updated_at", new Date().toISOString());
+
+    // Convert the products array to a JSON string before appending
+    if (products?.length) {
+        donationData.append("products", JSON.stringify(products));
+    }
+
+    // Debugging: Log FormData contents correctly
+    console.log("FormData entries:");
+    for (let pair of donationData.entries()) {
+        console.log(`${pair[0]}:`, pair[1]);
+    }
 
     try {
-      const response = await addDonation(donationData);
-      console.log("Donation created successfully:", response.data);
-      // On success, you might redirect to a confirmation or detail page:
-      navigate("/donation-success"); // Adjust the route as needed.
+        const response = await addDonation(donationData);
+
+        console.log("Donation created successfully:", response.data);
+        // Redirect on success
+        navigate("/ListOfDonations");
     } catch (err) {
-      console.error("Error creating donation:", err);
-      setError(
-        err.response?.data?.message || "An error occurred while creating the donation."
-      );
+        console.error("Error creating donation:", err);
+        setError(err.response?.data?.message || "An error occurred while creating the donation.");
     }
-  };
+};
 
   return (
     <>
@@ -83,9 +100,9 @@ export const AddDonation = () => {
             <img src={logo} alt="Logo" className="adddonation-logo" />
             <h1 className="signup-h1">Add Donation</h1>
 
-            <input className="signup-input" type="text" placeholder="Title" name="title" required />
-            <input className="signup-input" type="text" placeholder="Location" name="Location" required />
-            <input className="signup-input" type="date" placeholder="Expiration Date" name="Expiration Date" required />
+            <input className="signup-input" type="text" placeholder="Title" name="title" value={title} onChange={(e)=>setTitle(e.target.value)} required />
+            <input className="signup-input" type="text" placeholder="Location" name="Location" value={location} onChange={(e)=>setLocation(e.target.value)} required />
+            <input className="signup-input" type="date" placeholder="Expiration Date" name="Expiration Date" value={expirationDate} onChange={(e)=>setExpirationDate(e.target.value)} required />
 
             <select
               className="signup-input"
@@ -106,6 +123,27 @@ export const AddDonation = () => {
               <option value="Prepared_Meals">Prepared Meals</option>
               <option value="Packaged_Products">Packaged Products</option>
             </select>
+            <select
+              className="signup-input"
+              value={Delivery}
+              onChange={(e) => setDelivery(e.target.value)}
+              required
+            >
+              <option value="pickup">Pickup</option>
+              <option value="same_day"> Same day</option>
+              <option value="standard"> Standard</option>
+              <option value="overnight"> Overnight</option>
+              <option value="express"> express</option>
+
+            </select>
+            <textarea 
+              className="signup-input" 
+              placeholder="Description" 
+              name="Description" 
+              value={description} 
+              onChange={(e) => setDescription(e.target.value)} 
+              required
+            />
 
             {/* Hidden File Input */}
             <input

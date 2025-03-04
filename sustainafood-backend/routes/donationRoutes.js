@@ -1,4 +1,6 @@
 const express = require('express');
+const multer = require('multer');
+const upload = multer(); // Pour parser les champs sans fichier
 const router = express.Router();
 const donationController = require('../controllers/donationController');
 
@@ -21,7 +23,8 @@ router.get('/type/:type', donationController.getDonationsByType);
 router.get('/category/:category', donationController.getDonationsByCategory);
 
 // ✅ Create a new donation (with associated products)
-router.post('/', donationController.createDonation);
+// Ajout de "upload.none()" pour parser les champs du FormData
+router.post('/', upload.none(), donationController.createDonation);
 
 // ✅ Update a donation (and update associated products)
 router.put('/:id', donationController.updateDonation);

@@ -30,6 +30,7 @@ import ListOfDonations from "./pages/ListOfDonations";
 import AddDonation from "./pages/AddDonation";
 import MyRequests from "./pages/MyRequests.jsx";
 import MyDonations from "./pages/MyDonations"; 
+import TwoFAVerification from "./pages/TwoFAVerification";
 
 const App = () => {
   return (
@@ -44,7 +45,8 @@ const App = () => {
       <Route path="/forget-password" element={<ForgetPass />} />
       <Route path="/reset-code" element={<ResetCode />} />  
       <Route path="/reset-password" element={<ResetPassword />} />
-    
+      <Route path="/two-fa-verification" element={<TwoFAVerification />} />
+
 
       {/* Private Routes for Admin only */}
       <Route element={<PrivateRoute roles={["admin"]} />}>

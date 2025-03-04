@@ -2,16 +2,17 @@ pipeline {
     agent any
 
     stages {
-        // Étape 1: Installer les dépendances
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Charger NVM
+                    // Charger NVM et installer Node.js (avec npm)
                     sh '''#!/bin/bash
                     export NVM_DIR="/var/lib/jenkins/.nvm"
-                    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # Corrected line
-                    [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-                    nvm install 20  # Installer la version de Node.js (ajuster si nécessaire)
+                    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # Charger NVM
+                    [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"  # Charger bash_completion
+                    nvm install 20  # Installer Node.js version 20
+                    nvm use 20  # Utiliser Node.js version 20
+                    npm install -g npm  # Installer ou mettre à jour npm
                     '''
                     
                     // Installer les dépendances du backend

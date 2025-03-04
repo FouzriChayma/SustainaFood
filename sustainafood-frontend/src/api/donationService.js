@@ -7,3 +7,10 @@ export const addDonation = async (donationrData) => {
       },
     });
   };
+  export const getDonations = async () => {
+    return axios.get(`http://localhost:3000/donation/`);
+  };
+  export const getDonationById = async (id) => {
+    return axios.get(`http://localhost:3000/donation/${id}`);
+  };
+  

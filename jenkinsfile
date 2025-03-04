@@ -1,26 +1,71 @@
-pipeline{
-agent any
-stages {
-stage('Install dependencies') {
-steps{
-script {
-sh('npm install')
-}
-}
-}
-stage('Unit Test') {
-steps{
-script {
-sh('npm test')
-}
-}
-}
-stage('Build application') {
-steps{
-script {
-sh('npm run build-dev')
-}
-}
-}
-}
+pipeline {
+    agent any
+
+    stages {
+        // Étape 1: Installer les dépendances
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    // Installer les dépendances du backend
+                    dir('sustainafood-backend') {
+                        sh 'npm install'
+                    }
+
+                    // Installer les dépendances du frontend
+                    dir('sustainafood-frontend') {
+                        sh 'npm install --legacy-peer-deps'
+                    }
+                }
+            }
+        }
+
+        // Étape 2: Exécuter les tests unitaires
+        stage('Run Unit Tests') {
+            steps {
+                script {
+                    // Exécuter les tests unitaires du backend
+                    dir('sustainafood-backend') {
+                        // Exemple: sh 'npm test'
+                    }
+
+                    // Exécuter les tests unitaires du frontend
+                    dir('sustainafood-frontend') {
+                        // Exemple: sh 'npm test'
+                    }
+                }
+            }
+        }
+
+        // Étape 3: Build de l'application
+        stage('Build Application') {
+            steps {
+                script {
+                    // Build du backend (optionnel si nécessaire)
+                    dir('sustainafood-backend') {
+                        // Exemple: sh 'npm run build'
+                    }
+
+                    // Build du frontend
+                    dir('sustainafood-frontend') {
+                        sh 'npm run build'
+                    }
+                }
+            }
+        }
+
+        // Étape 4: Analyse SonarQube
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    sh 'node -v' // Afficher la version de Node pour déboguer
+
+                    def scannerHome = tool 'scanner' // Scanner SonarQube
+                    withSonarQubeEnv {
+                        // Exécuter l'analyse SonarQube
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
+                }
+            }
+        }
+    }
 }

@@ -1,4 +1,4 @@
-pipline deveops - pi 
+
 pipeline {
     agent any
 

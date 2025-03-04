@@ -53,7 +53,19 @@ pipeline {
             }
         }
 
-      
-      
+        // Étape 4: Analyse SonarQube
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    sh 'node -v' // Afficher la version de Node pour déboguer
+
+                    def scannerHome = tool 'scanner' // Scanner SonarQube
+                    withSonarQubeEnv {
+                        // Exécuter l'analyse SonarQube
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
+                }
+            }
+        }
     }
 }

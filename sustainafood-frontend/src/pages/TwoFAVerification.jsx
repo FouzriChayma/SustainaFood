@@ -24,7 +24,7 @@ const TwoFAVerification = () => {
         const { token, role, id, is2FAEnabled } = response.data;
         // Save token and user data (e.g., in context or local storage)
         login({ id, role, email }, token, is2FAEnabled); // Pass is2FAEnabled to login
-        navigate("/dashboard"); // Redirect to the dashboard or home page
+        navigate("/profile"); // Redirect to the dashboard or home page
       }
     } catch (error) {
       console.error("Error verifying 2FA code:", error);

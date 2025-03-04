@@ -5,9 +5,10 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var cors = require('cors');
 var mongoose = require('mongoose');
-
+var productRouter=require('./routes/productRoutes');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var donationRouter = require('./routes/donationRoutes');
 var authRouter = require('./routes/authRoutes'); // 🔹 Ajouter la route auth
 
 var app = express();
@@ -31,6 +32,8 @@ app.use(cors());
 // Routes
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/product',productRouter);
+app.use('/donation',donationRouter);
 app.use('/auth', authRouter); // 🔹 Ajouter la route d'authentification
 
 // Database Connection

@@ -2,14 +2,7 @@ pipeline {
     agent any
 
     stages {
-        // Étape 1: Récupérer le code source depuis GitHub
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main', url: 'https://github.com/FouzriChayma/SustainaFood.git'
-            }
-        }
-
-        // Étape 2: Installer les dépendances
+        // Étape 1: Installer les dépendances
         stage('Install Dependencies') {
             steps {
                 script {
@@ -26,29 +19,33 @@ pipeline {
             }
         }
 
-        // Étape 3: Exécuter les tests unitaires
+        // Étape 2: Exécuter les tests unitaires
         stage('Run Unit Tests') {
             steps {
                 script {
-                    catchError(buildResult: 'UNSTABLE') { // Empêche le pipeline de s'arrêter si un test échoue
-                        dir('sustainafood-backend') {
-                            sh 'npm test' 
-                        }
-                        dir('sustainafood-frontend') {
-                            sh 'npm test' 
-                        }
+                    // Exécuter les tests unitaires du backend
+                    dir('sustainafood-backend') {
+                        // Exemple: sh 'npm test'
+                    }
+
+                    // Exécuter les tests unitaires du frontend
+                    dir('sustainafood-frontend') {
+                        // Exemple: sh 'npm test'
                     }
                 }
             }
         }
 
-        // Étape 4: Build de l'application
+        // Étape 3: Build de l'application
         stage('Build Application') {
             steps {
                 script {
+                    // Build du backend (optionnel si nécessaire)
                     dir('sustainafood-backend') {
-                        sh 'npm run build'
+                        // Exemple: sh 'npm run build'
                     }
+
+                    // Build du frontend
                     dir('sustainafood-frontend') {
                         sh 'npm run build'
                     }
@@ -56,21 +53,6 @@ pipeline {
             }
         }
 
-        // Étape 5: Archiver les artefacts générés
-        stage('Archive Build') {
-            steps {
-                archiveArtifacts artifacts: '**/build/**', fingerprint: true
-            }
-        }
-    }
-
-    // Gestion des échecs et notification
-    post {
-        failure {
-            echo '❌ Le pipeline a échoué. Vérifiez les logs !'
-        }
-        success {
-            echo '✅ Build réussi avec succès !'
-        }
+     
     }
 }

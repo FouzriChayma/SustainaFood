@@ -117,7 +117,7 @@ const Signup = () => {
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
-  const [role, setRole] = useState("admin");
+  const [role, setRole] = useState("ong");
   const [error, setError] = useState("");
   const [id_fiscale, setId_fiscale] = useState("");
   const [num_cin, setNum_cin] = useState("");

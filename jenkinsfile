@@ -1,105 +1,69 @@
+pipline deveops - pi 
 pipeline {
     agent any
 
-    environment {
-        NVM_DIR = "/home/vagrant/.nvm"
-    }
-
     stages {
-        // Étape 1: Charger Node.js et NPM via NVM
-        stage('Use Node and NPM') {
-            steps {
-                sh '''
-                export NVM_DIR="$HOME/.nvm"
-                [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-                nvm use 20
-                '''
-            }
-        }
-
-        // Étape 2: Installer les dépendances
+        // Étape 1: Installer les dépendances
         stage('Install Dependencies') {
             steps {
                 script {
                     // Installer les dépendances du backend
                     dir('sustainafood-backend') {
-                        sh '''
-                        export NVM_DIR="$HOME/.nvm"
-                        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                        [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-                        nvm use 20
-                        npm install
-                        '''
+                        sh 'npm install'
                     }
 
                     // Installer les dépendances du frontend
                     dir('sustainafood-frontend') {
-                        sh '''
-                        export NVM_DIR="$HOME/.nvm"
-                        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                        [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-                        nvm use 20
-                        npm install --legacy-peer-deps
-                        '''
+                        sh 'npm install --legacy-peer-deps'
                     }
                 }
             }
         }
 
-        // Étape 3: Exécuter les tests unitaires
+        // Étape 2: Exécuter les tests unitaires
         stage('Run Unit Tests') {
             steps {
                 script {
                     // Exécuter les tests unitaires du backend
                     dir('sustainafood-backend') {
-                        sh '''
-                        export NVM_DIR="$HOME/.nvm"
-                        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                        [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-                        nvm use 20
-                        npm test
-                        '''
+                        // Exemple: sh 'npm test'
                     }
 
                     // Exécuter les tests unitaires du frontend
                     dir('sustainafood-frontend') {
-                        sh '''
-                        export NVM_DIR="$HOME/.nvm"
-                        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                        [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-                        nvm use 20
-                        npm test
-                        '''
+                        // Exemple: sh 'npm test'
                     }
                 }
             }
         }
 
-        // Étape 4: Build de l'application
+        // Étape 3: Build de l'application
         stage('Build Application') {
             steps {
                 script {
                     // Build du backend (optionnel si nécessaire)
                     dir('sustainafood-backend') {
-                        sh '''
-                        export NVM_DIR="$HOME/.nvm"
-                        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                        [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-                        nvm use 20
-                        npm run build
-                        '''
+                        // Exemple: sh 'npm run build'
                     }
 
                     // Build du frontend
                     dir('sustainafood-frontend') {
-                        sh '''
-                        export NVM_DIR="$HOME/.nvm"
-                        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                        [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-                        nvm use 20
-                        npm run build
-                        '''
+                        sh 'npm run build'
+                    }
+                }
+            }
+        }
+
+        // Étape 4: Analyse SonarQube
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    sh 'node -v' // Afficher la version de Node pour déboguer
+
+                    def scannerHome = tool 'scanner' // Scanner SonarQube
+                    withSonarQubeEnv {
+                        // Exécuter l'analyse SonarQube
+                        sh "${scannerHome}/bin/sonar-scanner"
                     }
                 }
             }

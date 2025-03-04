@@ -1,42 +1,26 @@
-pipeline {
-    agent any
-
-    stages {
-        stage('Install Dependencies') {
-            steps {
-                script {
-                    // Vérifier si NVM et npm sont installés
-                    sh '''#!/bin/bash
-                    echo "Checking if NVM is installed"
-                    if [ -s "$HOME/.nvm/nvm.sh" ]; then
-                        echo "NVM is installed"
-                        . "$HOME/.nvm/nvm.sh"  # Charger NVM
-                    else
-                        echo "NVM is NOT installed"
-                        exit 1
-                    fi
-
-                    # Vérifier si npm est accessible
-                    echo "Checking npm version"
-                    npm -v
-
-                    # Installer NVM et Node.js si nécessaire
-                    nvm install 20  # Installer Node.js version 20
-                    nvm use 20  # Utiliser Node.js version 20
-                    npm install -g npm  # Installer ou mettre à jour npm
-                    '''
-                    
-                    // Installer les dépendances du backend
-                    dir('sustainafood-backend') {
-                        sh 'npm install'
-                    }
-                    
-                    // Installer les dépendances du frontend
-                    dir('sustainafood-frontend') {
-                        sh 'npm install --legacy-peer-deps'
-                    }
-                }
-            }
-        }
-    }
+pipeline{
+agent any
+stages {
+stage('Install dependencies') {
+steps{
+script {
+sh('npm install')
+}
+}
+}
+stage('Unit Test') {
+steps{
+script {
+sh('npm test')
+}
+}
+}
+stage('Build application') {
+steps{
+script {
+sh('npm run build-dev')
+}
+}
+}
+}
 }

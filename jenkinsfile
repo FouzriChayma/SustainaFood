@@ -5,9 +5,9 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Installer NVM et la version de Node.js requise
+                    // Installer NVM
                     sh '''#!/bin/bash
-                    export NVM_DIR="/var/lib/jenkins/.nvm"
+                    export NVM_DIR="$HOME/.nvm"
                     [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # Charger NVM
                     [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"  # Charger bash_completion
                     nvm install 20  # Installer Node.js version 20
@@ -19,7 +19,7 @@ pipeline {
                     dir('sustainafood-backend') {
                         sh 'npm install'
                     }
-
+                    
                     // Installer les dépendances du frontend
                     dir('sustainafood-frontend') {
                         sh 'npm install --legacy-peer-deps'
@@ -27,7 +27,5 @@ pipeline {
                 }
             }
         }
-
-        // Exécuter les tests unitaires, build, etc.
     }
 }

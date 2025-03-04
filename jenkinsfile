@@ -6,12 +6,12 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Charger NVM
+                    // Charger NVM et s'assurer que la version de Node.js est installée
                     sh '''#!/bin/bash
                     export NVM_DIR="/var/lib/jenkins/.nvm"
                     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
                     [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-                    nvm install 20  # Installer la version de Node.js (ajuster si nécessaire)
+                    nvm ls 20 || nvm install 20  # Installer la version 20 si elle n'est pas déjà installée
                     '''
                     
                     // Installer les dépendances du backend
@@ -33,12 +33,12 @@ pipeline {
                 script {
                     // Exécuter les tests unitaires du backend
                     dir('sustainafood-backend') {
-                        // Exemple: sh 'npm test'
+                        sh 'npm test'  // Décommente cette ligne si tu veux exécuter les tests du backend
                     }
 
                     // Exécuter les tests unitaires du frontend
                     dir('sustainafood-frontend') {
-                        // Exemple: sh 'npm test'
+                        sh 'npm test'  // Décommente cette ligne si tu veux exécuter les tests du frontend
                     }
                 }
             }
@@ -50,7 +50,7 @@ pipeline {
                 script {
                     // Build du backend (optionnel si nécessaire)
                     dir('sustainafood-backend') {
-                        // Exemple: sh 'npm run build'
+                        sh 'npm run build'  // Décommente si tu as besoin de construire le backend
                     }
 
                     // Build du frontend

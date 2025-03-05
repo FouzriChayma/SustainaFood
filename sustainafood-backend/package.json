@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-     "test": "mocha --require chai/register-expect --recursive './test.js'"  // Commande pour exécuter les tests
+     "test": "mocha --require chai/register-expect --recursive './test.js'"  
   },
   "dependencies": {
     "axios": "^1.7.9",

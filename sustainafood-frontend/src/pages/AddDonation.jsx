@@ -19,8 +19,7 @@ export const AddDonation = () => {
   const [Category, setCategory] = useState("Prepared_Meals");
   const[description,setDescription]=useState("");
   const[Delivery,setDelivery]=useState("pickup");
-
-
+  const [errors, setErrors] = useState({});
   const [products, setProducts] = useState([]); // State to hold CSV data
   const fileInputRef = useRef(null);
   const navigate = useNavigate(); // Use this to redirect after success
@@ -40,6 +39,29 @@ export const AddDonation = () => {
     }
   };
 
+  const validateForm = () => {
+    let tempErrors = {};
+    
+    if (!title.trim()) tempErrors.title = "Title is required";
+    else if (title.length < 3) tempErrors.title = "Title must be at least 3 characters long";
+    
+    if (!location.trim()) tempErrors.location = "Location is required";
+    else if (location.length < 3) tempErrors.location = "Location must be at least 3 characters long";
+    
+    if (!expirationDate) tempErrors.expirationDate = "Expiration date is required";
+    else {
+      const today = new Date();
+      const expDate = new Date(expirationDate);
+      if (expDate < today) tempErrors.expirationDate = "Expiration date cannot be in the past";
+    }
+    
+    if (!description.trim()) tempErrors.description = "Description is required";
+    else if (description.length < 10) tempErrors.description = "Description must be at least 10 characters long";
+    
+    setErrors(tempErrors);
+    return Object.keys(tempErrors).length === 0;
+  };
+
   // Handle Deleting the Product List
   const handleDeleteList = () => {
     setProducts([]); // Clear the product list
@@ -48,6 +70,9 @@ export const AddDonation = () => {
   // Handle Form Submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
 
     // Create FormData to match multipart/form-data requirement
     const donationData = new FormData();
@@ -101,9 +126,11 @@ export const AddDonation = () => {
             <h1 className="signup-h1">Add Donation</h1>
 
             <input className="signup-input" type="text" placeholder="Title" name="title" value={title} onChange={(e)=>setTitle(e.target.value)} required />
+            {errors.title && <p className="error-message">{errors.title}</p>}
             <input className="signup-input" type="text" placeholder="Location" name="Location" value={location} onChange={(e)=>setLocation(e.target.value)} required />
+            {errors.location && <p className="error-message">{errors.location}</p>}
             <input className="signup-input" type="date" placeholder="Expiration Date" name="Expiration Date" value={expirationDate} onChange={(e)=>setExpirationDate(e.target.value)} required />
-
+            {errors.expirationDate && <p className="error-message">{errors.expirationDate}</p>}
             <select
               className="signup-input"
               value={Type}
@@ -144,6 +171,7 @@ export const AddDonation = () => {
               onChange={(e) => setDescription(e.target.value)} 
               required
             />
+            {errors.description && <p className="error-message">{errors.description}</p>}
 
             {/* Hidden File Input */}
             <input

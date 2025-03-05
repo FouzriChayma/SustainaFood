@@ -135,9 +135,7 @@ const Login = () => {
           <form className="signup-form" onSubmit={handleLogin}>
             <h1 className="signup-h1">Sign in</h1>
             <div className="signup-social-container">
-              <a href="#" className="signup-social">
-                <img src={fbimg} alt="Facebook" />
-              </a>
+              
               {/* Bouton Google personnalisé */}
               <a href="#" className="signup-social" onClick={handleGoogleLogin}>
                 <img src={gglimg} alt="Google" />

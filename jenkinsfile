@@ -8,7 +8,8 @@ pipeline {
                 script {
                     // Installer les dépendances du backend
                     dir('sustainafood-backend') {
-                        sh 'npm install'
+                        sh 'npm install' // Installer les dépendances du backend
+                        sh 'npm install mocha chai supertest --save-dev' // Installer Mocha, Chai, et Supertest pour les tests
                     }
 
                     // Installer les dépendances du frontend
@@ -25,7 +26,7 @@ pipeline {
                 script {
                     // Exécuter les tests unitaires du backend
                     dir('sustainafood-backend') {
-                        // Exemple: sh 'npm test'
+                        sh 'npm test'  // Cette commande va exécuter Mocha et lancer les tests
                     }
 
                     // Exécuter les tests unitaires du frontend

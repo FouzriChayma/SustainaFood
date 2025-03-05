@@ -102,24 +102,43 @@ export const AddDonation = () => {
     if (!validateForm()) {
       return;
     }
-
+  
+    // Log state values before creating FormData
+    console.log("State values before FormData:");
+    console.log("title:", title);
+    console.log("location:", location);
+    console.log("expirationDate:", expirationDate);
+    console.log("type:", type);
+    console.log("category:", category);
+    console.log("description:", description);
+    console.log("userid:", userid);
+    console.log("delivery:", delivery);
+    console.log("products:", products);
+  
     const donationData = new FormData();
     donationData.append("title", title);
     donationData.append("location", location);
     donationData.append("expirationDate", expirationDate);
-    donationData.append("type", type); // Fixed variable name
-    donationData.append("category", category); // Fixed variable name
+    donationData.append("Type", type);
+    donationData.append("Category", category);
     donationData.append("description", description);
     donationData.append("user", userid);
-    donationData.append("delivery", delivery); // Fixed variable name
+    donationData.append("delivery", delivery);
     donationData.append("status", "pending");
     donationData.append("created_at", new Date().toISOString());
     donationData.append("updated_at", new Date().toISOString());
-
+  
     if (products.length) {
       donationData.append("products", JSON.stringify(products));
     }
-
+  
+    // Enhanced FormData logging
+    console.log("FormData entries before submission:");
+    const entries = Array.from(donationData.entries());
+    entries.forEach(([key, value]) => {
+      console.log(`${key}: ${value}`);
+    });
+  
     try {
       const response = await addDonation(donationData);
       console.log("Donation created successfully:", response.data);

@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -48,12 +47,31 @@ pipeline {
 
                     // Build du frontend
                     dir('sustainafood-frontend') {
+                        // Vérifier et installer les packages manquants
+                        sh 'npm install @fortawesome/fontawesome-svg-core'
+                        sh 'npm install @fortawesome/react-fontawesome'
+                        sh 'npm install @fortawesome/free-solid-svg-icons'
+
+                        // Lancer le build
                         sh 'npm run build'
                     }
                 }
             }
         }
 
-       
+        // Étape 4: Analyse SonarQube
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    sh 'node -v' // Afficher la version de Node pour déboguer
+
+                    def scannerHome = tool 'scanner' // Scanner SonarQube
+                    withSonarQubeEnv {
+                        // Exécuter l'analyse SonarQube
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
+                }
+            }
+        }
     }
 }

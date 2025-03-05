@@ -505,6 +505,59 @@ async function user_signin(req, res) {
     }
 }
 
+const send2FACodeforsigninwithgoogle = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        // Fetch the user from the database
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (!user.is2FAEnabled) {
+            return res.status(400).json({ message: "2FA not enabled for this user", requires2FA: false });
+        }
+
+        // Generate 2FA code
+        const twoFACode = generate2FACode();
+        user.twoFACode = twoFACode;
+        user.twoFACodeExpires = Date.now() + 10 * 60 * 1000; // 10 minutes expiration
+        await user.save();
+
+        // Configure email transporter
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+            },
+            tls: {
+                rejectUnauthorized: false,
+            },
+        });
+
+        // Email details
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: "Your 2FA Verification Code",
+            text: `Your 2FA verification code is: ${twoFACode}. This code is valid for 10 minutes.`,
+        };
+
+        // Send email
+        await transporter.sendMail(mailOptions);
+
+        return res.status(200).json({ message: "2FA code sent to your email", requires2FA: true });
+    } catch (error) {
+        console.error("❌ Error sending 2FA code:", error);
+        return res.status(500).json({ message: "Failed to send 2FA code" });
+    }
+};
+
+
+  
 // 🚀 View Student by ID
 async function viewStudent(req, res) {
     try {
@@ -781,4 +834,4 @@ async function toggle2FA(req, res) {
 }
 
 
-module.exports = {changePassword,updateUserWithEmail, createUser,addUser, getUsers, getUserById,updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter ,deactivateAccount , send2FACode , validate2FACode , toggle2FA};
+module.exports = {send2FACode,send2FACodeforsigninwithgoogle,changePassword,updateUserWithEmail, createUser,addUser, getUsers, getUserById,updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter ,deactivateAccount  , validate2FACode , toggle2FA};

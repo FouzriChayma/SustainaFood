@@ -9,8 +9,9 @@ const RequestStatus = {
     REJECTED: 'rejected',
     FULFILLED: 'fulfilled'
 };
+Object.freeze(RequestStatus);
 
-// Define the ProductRequest subdocument schema
+// Define the ProductRequest subdocument schema (embedded in RequestNeed)
 const productRequestSchema = new Schema({
     product: { 
         type: Schema.Types.ObjectId, 

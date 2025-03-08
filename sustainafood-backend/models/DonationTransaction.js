@@ -11,7 +11,7 @@ const TransactionStatus = {
 };
 Object.freeze(TransactionStatus); // Prevents changes to the enum
 
-// Define the AllocatedProduct subdocument schema
+// Define the AllocatedProduct subdocument schema (embedded in DonationTransaction)
 const allocatedProductSchema = new Schema({
     product: { 
         type: Schema.Types.ObjectId, 

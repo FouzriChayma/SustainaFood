@@ -46,7 +46,7 @@ donationSchema.index({ category: 1 });
 donationSchema.index({ expirationDate: 1 });
 
 // Pre-save hook for auto-incrementing ID
-donationSchema.pre('save', async function (next) {
+donationSchema.pre('save', async function(next) {
     if (this.isNew) {
         try {
             const counter = await Counter.findOneAndUpdate(

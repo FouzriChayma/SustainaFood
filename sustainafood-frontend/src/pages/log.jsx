@@ -1,7 +1,7 @@
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext"; 
-import { createuser,getUserById,loginUser } from "../api/userService";
+import { createuser,getUserById,loginUser,toggle2FA,send2FACodeforsigninwithgoogle } from "../api/userService";
 import { useGoogleLogin } from "@react-oauth/google";
 // import jwt_decode from "jwt-decode";
 import "../assets/styles/log.css"; 
@@ -84,6 +84,7 @@ const Login = () => {
         localStorage.setItem("email from google", userInfo.email);
         localStorage.setItem("id from google", userInfo.sub);
 
+        
         const userData = {
           //id: userInfo.sub,
           email: userInfo.email,
@@ -97,17 +98,24 @@ const Login = () => {
         login(user,tokenResponse);
 
         localStorage.setItem("user_id", response.data.id);
-
+        console.log("is enabled 2FA",user.data.is2FAEnabled)
         // Redirect based on role
         if (!user.data.role) {
           login(user.data, tokenResponse);
 
           navigate("/Continueinfo"); // Go to complete the form
+        } if (!user.data.role) {
+          navigate("/Continueinfo");
+        } else { if (user.data.is2FAEnabled) {
+          send2FACodeforsigninwithgoogle(user.data.email);
+          console.log("User requires 2FA verification", user.data.is2FAEnabled);
+          const response = await toggle2FA(user.data.email);
+          navigate(`/two-fa-verification?email=${encodeURIComponent(user.data.email)}`);
         } else {
+          console.log("Connexion réussie");
           login(user.data, tokenResponse);
-
-          navigate("/profile"); // Go to the main page
-        }
+          navigate("/profile");
+        }}
       } catch (error) {
         console.error("❌ Erreur API :", error.response ? error.response.data : error.message);
         setError("Erreur de connexion Google.");
@@ -135,9 +143,7 @@ const Login = () => {
           <form className="signup-form" onSubmit={handleLogin}>
             <h1 className="signup-h1">Sign in</h1>
             <div className="signup-social-container">
-              <a href="#" className="signup-social">
-                <img src={fbimg} alt="Facebook" />
-              </a>
+              
               {/* Bouton Google personnalisé */}
               <a href="#" className="signup-social" onClick={handleGoogleLogin}>
                 <img src={gglimg} alt="Google" />

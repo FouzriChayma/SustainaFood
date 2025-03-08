@@ -3,7 +3,7 @@ import axios from "axios";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import "/src/assets/styles/backoffcss/adminProfile.css";
-import { FaCamera, FaEdit, FaTimes , FaSave  } from "react-icons/fa";
+import { FaCamera, FaEdit, FaTimes, FaSave } from "react-icons/fa";
 import { useAuth } from "../../contexts/AuthContext";
 import { getUserById, updateUser } from "../../api/userService";
 
@@ -14,15 +14,12 @@ const AdminProfile = () => {
     email: "",
     address: "",
     phone: "",
-    photo: "/src/assets/admin.jpg", // default fallback
+    photo: "",
   });
-
-  // File for new profile photo
   const [profilePhotoFile, setProfilePhotoFile] = useState(null);
-
-  // For editing personal info
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editedData, setEditedData] = useState({ ...admin });
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (!token) {
@@ -36,10 +33,8 @@ const AdminProfile = () => {
           console.error("⛔ authUser id is undefined!");
           return;
         }
-
         const response = await getUserById(authUser.id);
         const userData = response.data;
-
         setAdmin({
           name: userData.name || "",
           email: userData.email || "",
@@ -53,49 +48,48 @@ const AdminProfile = () => {
         console.error("❌ Backend Error:", error);
       }
     };
-
     fetchUserData();
   }, [authUser, token]);
 
-  // When user selects a file for profile photo
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      // For immediate preview
       setAdmin((prev) => ({
         ...prev,
         photo: URL.createObjectURL(file),
       }));
-      // Store the actual file for uploading
       setProfilePhotoFile(file);
     }
   };
 
-  // Save only the image
   const handleSaveImage = async (e) => {
-    e.preventDefault(); // Prevent default form submission
+    e.preventDefault();
     try {
       if (!authUser || !authUser.id) {
         console.error("⛔ authUser id is undefined!");
+        alert("User authentication error. Please log in again.");
         return;
       }
-
       if (!profilePhotoFile) {
-        alert("No new image selected.");
+        alert("Please select an image to upload.");
         return;
       }
-
       const formData = new FormData();
-      // Append the new photo file
       formData.append("photo", profilePhotoFile);
-
-      // Call the updateUser API
+      console.log("Uploading file:", formData.get("photo"));
       const response = await updateUser(authUser.id, formData);
-
       if (response.status === 200) {
+        const updatedUser = response.data;
+        setAdmin((prev) => ({
+          ...prev,
+          photo: updatedUser.photo
+            ? `http://localhost:3000/${updatedUser.photo}`
+            : prev.photo,
+        }));
+        setProfilePhotoFile(null);
         alert("Profile image updated successfully!");
       } else {
-        alert("Failed to update profile image.");
+        alert("Failed to update profile image. Status: " + response.status);
       }
     } catch (error) {
       console.error("❌ Error updating profile image:", error);
@@ -103,35 +97,78 @@ const AdminProfile = () => {
     }
   };
 
-  // Open/Close the personal info edit modal
   const openEditModal = () => {
     setEditedData({ ...admin });
+    setErrors({});
     setIsEditModalOpen(true);
   };
   const closeModal = () => {
     setIsEditModalOpen(false);
+    setErrors({});
   };
 
-  // Save personal info changes (name, email, address, phone)
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const isValidPhone = (phone) => {
+    const phoneRegex = /^\+?[\d\s-]{7,}$/;
+    return phoneRegex.test(phone);
+  };
+
+  // New validation function
+  const validateFields = (data) => {
+    const newErrors = {};
+
+    if (!data.name) {
+      newErrors.name = "Name is required.";
+    } else if (data.name.length < 2) {
+      newErrors.name = "Name must be at least 2 characters.";
+    }
+
+    if (!data.email) {
+      newErrors.email = "Email is required.";
+    } else if (!isValidEmail(data.email)) {
+      newErrors.email = "A valid email is required.";
+    }
+
+    if (!data.address) {
+      newErrors.address = "Address is required.";
+    }
+
+    if (!data.phone) {
+      newErrors.phone = "Phone number is required.";
+    } else if (!isValidPhone(data.phone)) {
+      newErrors.phone = "Invalid phone number format (e.g., +1234567890).";
+    }
+
+    return newErrors;
+  };
+
   const handleSaveChanges = async () => {
+    const validationErrors = validateFields(editedData);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setErrors({});
     try {
       if (!authUser || !authUser.id) {
         console.error("⛔ authUser id is undefined!");
+        alert("User authentication error. Please log in again.");
         return;
       }
-
-      const formData = new FormData();
-      formData.append("name", editedData.name);
-      formData.append("email", editedData.email);
-      formData.append("address", editedData.address);
-      formData.append("phone", editedData.phone);
-
-      // We are not dealing with the photo here, so skip it
-
-      const response = await updateUser(authUser.id, formData);
-
+      const updatedData = {
+        name: editedData.name,
+        email: editedData.email,
+        address: editedData.address,
+        phone: editedData.phone,
+      };
+      const response = await updateUser(authUser.id, updatedData);
       if (response.status === 200) {
-        // Update local state
         setAdmin((prev) => ({
           ...prev,
           name: editedData.name,
@@ -141,7 +178,7 @@ const AdminProfile = () => {
         }));
         alert("Profile updated successfully!");
       } else {
-        alert("Failed to update profile.");
+        alert("Failed to update profile. Status: " + response.status);
       }
     } catch (error) {
       console.error("❌ Error updating profile:", error);
@@ -156,17 +193,13 @@ const AdminProfile = () => {
       <Sidebar />
       <div className="profile-container">
         <Navbar />
-
         <div className="profile-header">
           <h2>My Profile</h2>
           <div className="profile-line"></div>
         </div>
-        
         <div className="profile-card">
-        <form onSubmit={handleSaveImage}>
-          <div className="profile-pic">
-            {/* We wrap the image + camera icon + "Save Image" button in a form */}
-            
+          <form onSubmit={handleSaveImage}>
+            <div className="profile-pic">
               <img src={admin.photo} alt="Profile" />
               <label className="upload-icon">
                 <FaCamera />
@@ -177,22 +210,18 @@ const AdminProfile = () => {
                   className="file-input"
                 />
               </label>
-              </div>
-              <button type="submit" className="save-image-btn" onClick={handleSaveChanges}>
-                    <FaSave className="save-icon" /> {/* Use the save icon */}
-                </button>
-            
-          
-        </form>
-        <div >
-    <h2>{admin.name}</h2>
-    <p>{admin.email}</p>
-    <p>{admin.address}</p>
-    <p>{admin.phone}</p>
-</div>
-
+            </div>
+            <button type="submit" className="save-image-btn">
+              <FaSave className="save-icon" /> Save Image
+            </button>
+          </form>
+          <div>
+            <h2>{admin.name}</h2>
+            <p>{admin.email}</p>
+            <p>{admin.address}</p>
+            <p>{admin.phone}</p>
+          </div>
         </div>
-
         <div className="info-section">
           <div className="section-header">
             <h3>Personal Information</h3>
@@ -220,7 +249,6 @@ const AdminProfile = () => {
             </div>
           </div>
         </div>
-
         {isEditModalOpen && (
           <div className="modal-overlay">
             <div className="modal-content">
@@ -239,7 +267,7 @@ const AdminProfile = () => {
                     setEditedData({ ...editedData, name: e.target.value })
                   }
                 />
-
+                {errors.name && <p className="error">{errors.name}</p>}
                 <label>Email Address</label>
                 <input
                   type="email"
@@ -248,7 +276,7 @@ const AdminProfile = () => {
                     setEditedData({ ...editedData, email: e.target.value })
                   }
                 />
-
+                {errors.email && <p className="error">{errors.email}</p>}
                 <label>Address</label>
                 <input
                   type="text"
@@ -257,7 +285,7 @@ const AdminProfile = () => {
                     setEditedData({ ...editedData, address: e.target.value })
                   }
                 />
-
+                {errors.address && <p className="error">{errors.address}</p>}
                 <label>Phone Number</label>
                 <input
                   type="text"
@@ -266,6 +294,7 @@ const AdminProfile = () => {
                     setEditedData({ ...editedData, phone: e.target.value })
                   }
                 />
+                {errors.phone && <p className="error">{errors.phone}</p>}
               </div>
               <div className="modal-footer">
                 <button className="save-btn" onClick={handleSaveChanges}>

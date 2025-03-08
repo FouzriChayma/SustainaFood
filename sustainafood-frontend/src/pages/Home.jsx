@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import donation1 from '../assets/images/donation1.jpg';
 import donation2 from '../assets/images/donation2.jpg';
 import donation3 from '../assets/images/donation3.jpg';
+import { useAuth } from "../contexts/AuthContext";
 
 // Replace this with the actual path to your background pattern image:
 import patternBg from '../assets/images/bg.png';
@@ -181,6 +182,8 @@ const ProposedSolutionList = styled.ul`
 `;
 
 const Home = () => {
+  const { user: authUser, token, logout } = useAuth();
+
   return (
     <>
       <GlobalStyle />
@@ -193,7 +196,7 @@ const Home = () => {
             <p>
               Connecting donors, recipients, and transporters to reduce food waste and bring help where it's needed.
             </p>
-            <CallToAction href="/signup">Join Us Today</CallToAction>
+            {!authUser && <CallToAction href="/signup">Join Us Today</CallToAction>}
           </HeroText>
           <SliderContainer>
             <Slide1 src={donation1} alt="Donation 1" />

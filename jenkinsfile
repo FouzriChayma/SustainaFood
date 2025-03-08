@@ -47,6 +47,12 @@ pipeline {
 
                     // Build du frontend
                     dir('sustainafood-frontend') {
+                        // Vérifier et installer les packages manquants
+                        sh 'npm install @fortawesome/fontawesome-svg-core'
+                        sh 'npm install @fortawesome/react-fontawesome'
+                        sh 'npm install @fortawesome/free-solid-svg-icons'
+
+                        // Lancer le build
                         sh 'npm run build'
                     }
                 }

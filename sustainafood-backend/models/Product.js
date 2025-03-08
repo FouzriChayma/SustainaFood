@@ -52,6 +52,10 @@ const productSchema = new Schema({
         minlength: 2, 
         maxlength: 100 
     }, // Product name, 2-100 characters
+    image: {
+        type: String, // Could use Buffer for binary data or String for URL/path
+        required: false
+    },
     productType: { 
         type: String, 
         enum: Object.values(ProductType), 
@@ -86,6 +90,16 @@ const productSchema = new Schema({
         ref: 'Donation', 
         required: true 
     }, // Reference to a Donation
+
+    isArchived: { // New field to mark product as archived
+        type: Boolean,
+        default: false,
+        required: true
+    },
+    archivedAt: { // Timestamp of when archived
+        type: Date,
+        default: null
+    },
     status: { 
         type: String, 
         enum: Object.values(ProductStatus), 
@@ -130,6 +144,7 @@ productSchema.pre('save', async function(next) {
 
 // Add an index for faster queries on donation
 productSchema.index({ donation: 1 });
+productSchema.index({ isArchived: 1 });
 
 // Create and export the Product model
 const Product = mongoose.model('Product', productSchema);

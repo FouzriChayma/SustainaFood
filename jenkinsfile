@@ -2,72 +2,87 @@ pipeline {
     agent any
 
     stages {
-        // Étape 1: Installer les dépendances
+        // Étape 1: Installation des dépendances
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Installer les dépendances du backend
+                    // Installer les dépendances backend
                     dir('sustainafood-backend') {
+                        echo '📦 Installation des dépendances backend...'
                         sh 'npm install'
                     }
 
-                    // Installer les dépendances du frontend
+                    // Installer les dépendances frontend
                     dir('sustainafood-frontend') {
+                        echo '📦 Installation des dépendances frontend...'
                         sh 'npm install --legacy-peer-deps'
                     }
                 }
             }
         }
 
-        // Étape 2: Exécuter les tests unitaires
-        stage('Run Unit Tests') {
+        // Étape 2: Tests backend avec Jest & Supertest
+        stage('Run Backend Unit Tests') {
             steps {
                 script {
-                    // Exécuter les tests unitaires du backend
                     dir('sustainafood-backend') {
-                        // Exemple: sh 'npm test'
-                    }
-
-                    // Exécuter les tests unitaires du frontend
-                    dir('sustainafood-frontend') {
-                        // Exemple: sh 'npm test'
+                        echo '🚀 Lancement des tests backend (Jest + Supertest)...'
+                        sh 'npm test' // ✅ Lancement des tests unitaires backend
                     }
                 }
             }
         }
 
-        // Étape 3: Build de l'application
+        // (Optionnel) Étape 3: Tests frontend
+        stage('Run Frontend Unit Tests') {
+            steps {
+                script {
+                    dir('sustainafood-frontend') {
+                        echo '🚀 (Optionnel) Lancement des tests frontend...'
+                        // 🔔 Décommente cette ligne si tu as des tests frontend
+                        // sh 'npm test'
+                    }
+                }
+            }
+        }
+
+        // Étape 4: Build backend et frontend
         stage('Build Application') {
             steps {
                 script {
-                    // Build du backend (optionnel si nécessaire)
+                    // (Optionnel) Build backend (si nécessaire)
                     dir('sustainafood-backend') {
-                        // Exemple: sh 'npm run build'
+                        echo '⚙️ (Optionnel) Build backend...'
+                        // 🔔 Décommente si tu as un build backend
+                        // sh 'npm run build'
                     }
 
-                    // Build du frontend
+                    // Build frontend
                     dir('sustainafood-frontend') {
-                        // Vérifier et installer les packages manquants
+                        echo '⚙️ Build frontend et installation des packages manquants...'
+
+                        // Installer les packages nécessaires (FontAwesome ici)
                         sh 'npm install @fortawesome/fontawesome-svg-core'
                         sh 'npm install @fortawesome/react-fontawesome'
                         sh 'npm install @fortawesome/free-solid-svg-icons'
 
-                        // Lancer le build
+                        // Lancer le build frontend
                         sh 'npm run build'
                     }
                 }
             }
         }
 
-        // Étape 4: Analyse SonarQube
+        // Étape 5: Analyse SonarQube
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    sh 'node -v' // Afficher la version de Node pour déboguer
+                    echo '🔎 Lancement de l\'analyse SonarQube...'
+                    sh 'node -v' // Vérification version Node.js pour debug
 
-                    def scannerHome = tool 'scanner' // Scanner SonarQube
+                    def scannerHome = tool 'scanner' // Définir le scanner Sonar
                     withSonarQubeEnv {
-                        // Exécuter l'analyse SonarQube
+                        // Lancer le scanner SonarQube
                         sh "${scannerHome}/bin/sonar-scanner"
                     }
                 }

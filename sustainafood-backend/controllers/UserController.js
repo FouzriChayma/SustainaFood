@@ -142,6 +142,11 @@ async function addUser(req, res) {
       if (password !== confirmPassword) {
         return res.status(400).json({ error: "Passwords do not match" });
       }
+      // ✅ Vérifier si l'email existe déjà
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already exists" });
+      }
   
       // Hacher le mot de passe avant de le stocker
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -447,10 +452,13 @@ async function user_signin(req, res) {
         if (user.isBlocked) {
             return res.status(403).json({ error: "Your account is blocked. Please contact support." });
         }
-        //réactivation
+        let welcomeMessage = null;
+
+        // réactivation uniquement si l'utilisateur est inactif
         if (!user.isActive) {
             user.isActive = true;
             await user.save();
+            welcomeMessage = "Your account has been reactivated. Welcome back!";
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
@@ -497,8 +505,14 @@ async function user_signin(req, res) {
         };
 
         const token = jwt.sign(payload, "your_jwt_secret", { expiresIn: "1h" });
-
-        res.status(200).json({ token, role: user.role, id: user._id , message: !user.isActive ? "Your account has been reactivated. Welcome back!" : null, is2FAEnabled: user.is2FAEnabled});
+        console.log("Response being sent:", {
+        token,
+        role: user.role,
+        id: user._id,
+        message: welcomeMessage,
+        is2FAEnabled: user.is2FAEnabled
+        });
+        res.status(200).json({ token, role: user.role, id: user._id ,message: welcomeMessage, is2FAEnabled: user.is2FAEnabled});
     } catch (error) {
         console.error("Erreur serveur :", error);
         res.status(500).json({ error: "Server error" });

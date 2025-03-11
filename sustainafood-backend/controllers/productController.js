@@ -60,31 +60,85 @@ async function getProductsByStatus (req, res)  {
 };
 
 // ✅ Create a new product
-async function createProduct  (req, res)  {
+
+async function createProduct(req, res) {
     try {
-        const newProduct = new Product(req.body);
+        const { name, productType, productDescription, weightPerUnit, weightUnit, totalQuantity, donation, status } = req.body;
+
+        // Validate required fields
+        if (!name || !productType || !productDescription || !donation || !status) {
+            return res.status(400).json({ message: 'Please fill in all required fields.' });
+        }
+
+        // Check if an image file was uploaded
+        let imagePath = null;
+        if (req.files && req.files.image && req.files.image[0]) {
+            imagePath = req.files.image[0].path; // Get the file path from Multer
+        }
+
+        // Build the product object
+        const productData = {
+            name,
+            productType,
+            productDescription,
+            weightPerUnit,
+            weightUnit,
+            totalQuantity,
+            donation,
+            status,
+            image: imagePath // Add the image path to the product data
+        };
+
+        // Create the product
+        const newProduct = new Product(productData);
         await newProduct.save();
+
         res.status(201).json({ message: 'Product created successfully', newProduct });
     } catch (error) {
-        res.status(400).json({ message: 'Failed to create product', error });
+        res.status(400).json({ message: 'Failed to create product', error: error.message });
     }
-};
+}
+
+module.exports = { createProduct };
 
 // ✅ Update a product by ID
-async function updateProduct (req, res)  {
+async function updateProduct(req, res) {
     try {
         const { id } = req.params;
-        const updatedProduct = await Product.findByIdAndUpdate(id, req.body, { new: true });
+        const { name, productType, productDescription, weightPerUnit, weightUnit, totalQuantity, donation, status } = req.body;
 
-        if (!updatedProduct) {
+        // Find the product by ID
+        const product = await Product.findById(id);
+
+        if (!product) {
             return res.status(404).json({ message: 'Product not found' });
         }
 
+        // Check if a new image file was uploaded
+        if (req.files && req.files.image && req.files.image[0]) {
+            product.image = req.files.image[0].path; // Update the image path
+        }
+
+        // Update other fields if provided
+        if (name) product.name = name;
+        if (productType) product.productType = productType;
+        if (productDescription) product.productDescription = productDescription;
+        if (weightPerUnit) product.weightPerUnit = weightPerUnit;
+        if (weightUnit) product.weightUnit = weightUnit;
+        if (totalQuantity) product.totalQuantity = totalQuantity;
+        if (donation) product.donation = donation;
+        if (status) product.status = status;
+
+        // Save the updated product
+        const updatedProduct = await product.save();
+
         res.status(200).json({ message: 'Product updated successfully', updatedProduct });
     } catch (error) {
-        res.status(500).json({ message: 'Failed to update product', error });
+        res.status(500).json({ message: 'Failed to update product', error: error.message });
     }
-};
+}
+
+module.exports = { updateProduct };
 
 // ✅ Delete a product by ID
 async function deleteProduct  (req, res)  {

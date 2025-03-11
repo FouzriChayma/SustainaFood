@@ -6,6 +6,7 @@ import "/src/assets/styles/backoffcss/ngoList.css";
 import { FaEye, FaTrash, FaBan, FaUnlock, FaFilePdf, FaSort } from "react-icons/fa";
 import ReactPaginate from "react-paginate";
 import { Link } from "react-router-dom";
+import logo from '../../assets/images/logooo.png';  // Import the logo
 
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -68,44 +69,114 @@ const ONGList = () => {
 
     // Fonction pour exporter la liste en PDF
     const exportToPDF = () => {
-        const doc = new jsPDF();
-
-        // Add a title to the PDF
-        doc.text("ONG List", 10, 10);
-
-        // Define the columns for the table
-        const tableColumn = ["ID", "Name", "Email", "Phone", "Tax Reference", "Active"];
-
-        // Prepare the data for the table
-        const tableRows = ongs.map((ong, index) => [
-            index + 1, // ID
-            ong.name, // Name
-            ong.email, // Email
-            ong.phone, // Phone
-            ong.id_fiscale || "N/A", // Tax Reference
-            ong.isActive ? "Yes" : "No", // Active
-        ]);
-
-        // Add the table to the PDF
+        const doc = new jsPDF({
+            orientation: "landscape",
+            unit: "mm",
+            format: "a4",
+        });
+    
+        // Header background - changed to a neutral light gray
+        doc.setFillColor(245, 245, 245); // Light gray instead of green
+        doc.rect(0, 0, doc.internal.pageSize.width, 40, "F");
+    
+        // Decorative bottom line - keeping main color as accent
+        doc.setDrawColor(144, 196, 60); // Main color #90C43C
+        doc.setLineWidth(1.5);
+        doc.line(0, 40, doc.internal.pageSize.width, 40);
+    
+        // Logo
+        const imgWidth = 30, imgHeight = 30;
+        doc.addImage(logo, "PNG", 5, 5, imgWidth, imgHeight);
+    
+        // Title - changed to dark slate blue
+        const title = "ONG LIST";
+        doc.setFontSize(28);
+        doc.setTextColor(50, 62, 72); // Dark slate blue instead of green
+        doc.setFont("helvetica", "bold");
+        doc.text(title, doc.internal.pageSize.width / 2, 20, { align: "center" });
+    
+        // Date
+        const today = new Date();
+        const dateStr = today.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
+        doc.setFontSize(10);
+        doc.setTextColor(80, 80, 80); // Dark gray
+        doc.text(`Generated: ${dateStr}`, doc.internal.pageSize.width - 50, 38);
+    
+        // Table
         autoTable(doc, {
-            head: [tableColumn], // Table header
-            body: tableRows, // Table data
-            startY: 20, // Start position below the title
-            theme: "grid", // Add grid lines
+            head: [["ID", "Name", "Email", "Phone", "Tax Reference", "Status"]],
+            body: ongs.map((ong, index) => [
+                (index + 1).toString(),
+                ong.name,
+                ong.email,
+                ong.phone || "N/A",
+                ong.id_fiscale || "N/A",
+                ong.isActive ? "Active" : "Inactive",
+            ]),
+            startY: 50,
+            theme: "grid",
             styles: {
-                fontSize: 10, // Font size for the table
-                cellPadding: 3, // Padding for cells
+                fontSize: 9,
+                cellPadding: 6,
+                lineColor: [200, 200, 200], // Light gray borders
+                lineWidth: 0.2,
+                valign: "middle",
+                textColor: [45, 45, 45], // Dark gray text
             },
             headStyles: {
-                fillColor: "#4CAF50", // Green background for header
-                textColor: "#ffffff", // White text for header
+                fillColor: [70, 80, 95], // Dark blue-gray instead of green
+                textColor: [255, 255, 255],
+                fontStyle: "bold",
+                halign: "center",
+                fontSize: 10,
+            },
+            alternateRowStyles: {
+                fillColor: [250, 250, 250], // Very light gray instead of light green
+            },
+            didDrawCell: (data) => {
+                if (data.section === "body" && data.column.index === 5) {
+                    const status = data.cell.text[0];
+                    if (status === "Active") {
+                        doc.setFillColor(144, 196, 60); // Main green for active status only
+                        doc.roundedRect(data.cell.x + 2, data.cell.y + 2, data.cell.width - 4, data.cell.height - 4, 2, 2, "F");
+                        doc.setTextColor(255, 255, 255); // White text
+                    } else if (status === "Inactive") {
+                        doc.setFillColor(220, 220, 220); // Light gray for inactive
+                        doc.roundedRect(data.cell.x + 2, data.cell.y + 2, data.cell.width - 4, data.cell.height - 4, 2, 2, "F");
+                        doc.setTextColor(100, 100, 100); // Dark gray text
+                    }
+                }
+            },
+            didDrawPage: (data) => {
+                // Footer line
+                doc.setDrawColor(200, 200, 200); // Light gray line
+                doc.setLineWidth(0.5);
+                doc.line(15, doc.internal.pageSize.height - 20, doc.internal.pageSize.width - 15, doc.internal.pageSize.height - 20);
+    
+                // Page numbers - using main color as accent
+                doc.setFillColor(144, 196, 60); // Main green #90C43C
+                doc.roundedRect(doc.internal.pageSize.width / 2 - 15, doc.internal.pageSize.height - 18, 30, 12, 3, 3, "F");
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(9);
+                doc.text(`Page ${data.pageNumber} of ${doc.internal.getNumberOfPages()}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: "center" });
+    
+                // Confidentiality notice
+                doc.setTextColor(120, 120, 120);
+                doc.setFontSize(8);
+                doc.setFont("helvetica", "italic");
+                doc.text("Confidential - For internal use only", 15, doc.internal.pageSize.height - 10);
+    
+                // Institution info
+                doc.text("© SustainaFood", doc.internal.pageSize.width - 45, doc.internal.pageSize.height - 10);
             },
         });
-
-        // Save the PDF
-        doc.save("ONG_List.pdf");
+    
+        doc.save(`ONG_Directory_${today.toISOString().split("T")[0]}.pdf`);
     };
-
     // Filtering the ONGs based on the search query
     const filteredONGs = ongs.filter(ong => {
         const phoneString = ong.phone.toString(); // Convert phone number to string for searching

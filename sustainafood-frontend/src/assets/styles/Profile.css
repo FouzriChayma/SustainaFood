@@ -954,4 +954,207 @@ body{
    
   
   }
-  
+
+  /* Add these styles to your CSS file for the enhanced welcome message */
+
+.welcome-message {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #8dc73f 0%, #50C9A7 100%);
+  color: white;
+  padding: 15px 30px;
+  border-radius: 12px;
+  z-index: 1000;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  animation: popIn 0.5s ease-out forwards, fadeOut 0.5s ease-in forwards 4.5s;
+  overflow: hidden;
+  min-width: 300px;
+  text-align: center;
+}
+
+.welcome-message-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+.welcome-icon {
+  font-size: 24px;
+  animation: bounce 1s ease infinite;
+}
+
+.confetti-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: -10px;
+  animation: confettiFall linear forwards;
+}
+
+.confetti-0 {
+  background-color: #f55d56;
+  transform: rotate(0deg);
+}
+
+.confetti-1 {
+  background-color: #f7b733;
+  transform: rotate(45deg);
+}
+
+.confetti-2 {
+  background-color: #50C9A7;
+  transform: rotate(90deg);
+}
+
+.confetti-3 {
+  background-color: #6cabf6;
+  transform: rotate(135deg);
+}
+
+.confetti-4 {
+  background-color: #ffffff;
+  transform: rotate(180deg);
+}
+
+@keyframes popIn {
+  0% { transform: translate(-50%, -20px); opacity: 0; }
+  50% { transform: translate(-50%, 10px); opacity: 1; }
+  100% { transform: translate(-50%, 0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes confettiFall {
+  0% { 
+    top: -10px; 
+    transform: translateX(0) rotate(0deg); 
+  }
+  100% { 
+    top: 100%; 
+    transform: translateX(20px) rotate(360deg); 
+  }
+}
+
+/* Enhance the existing feedback cards with animations */
+.feedback-cards .feedback-card {
+  transition: transform 0.4s ease, filter 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.feedback-cards .feedback-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.7s ease;
+}
+
+.feedback-cards .feedback-card:hover::before {
+  left: 100%;
+}
+
+/* Enhance the winner card with better animations */
+.winner-cards:hover .winner-outlinePage {
+  box-shadow: 0 15px 30px rgba(177, 152, 94, 0.4);
+  transform: translateY(-5px);
+  transition: all 0.5s ease;
+}
+
+.winner-cards .winner-outlinePage {
+  transition: all 0.5s ease;
+}
+
+/* Add party stars to the trophy */
+.winner-icon.winner-trophy {
+  position: relative;
+}
+
+.winner-icon.winner-trophy::before,
+.winner-icon.winner-trophy::after {
+  content: '✨';
+  position: absolute;
+  font-size: 20px;
+  animation: twinkle 1.5s ease-in-out infinite alternate;
+}
+
+.winner-icon.winner-trophy::before {
+  top: 10px;
+  right: 10px;
+  animation-delay: 0.2s;
+}
+
+.winner-icon.winner-trophy::after {
+  top: 40px;
+  left: 10px;
+  animation-delay: 0.7s;
+}
+
+@keyframes twinkle {
+  0% { opacity: 0.3; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Add a pop effect to the profile card on hover */
+.card-white {
+  transition: all 0.5s ease-in-out, transform 0.3s ease;
+}
+
+.card-white:hover {
+  transform: translateY(-5px);
+}
+
+/* Add a party animation to the user role text */
+.userrole {
+  position: relative;
+  display: inline-block;
+}
+
+.userrole::after {
+  content: '🎊';
+  position: absolute;
+  right: -30px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 24px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card-white:hover .userrole::after {
+  opacity: 1;
+  animation: partyPop 1s ease infinite;
+}
+
+@keyframes partyPop {
+  0%, 100% { transform: translateY(-50%) rotate(0deg); }
+  25% { transform: translateY(-50%) rotate(10deg); }
+  75% { transform: translateY(-50%) rotate(-10deg); }
+}
+

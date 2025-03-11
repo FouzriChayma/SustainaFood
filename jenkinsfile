@@ -2,72 +2,101 @@ pipeline {
     agent any
 
     stages {
-        // Étape 1: Installer les dépendances
+        // 🚀 Étape 1: Installer les dépendances
         stage('Install Dependencies') {
             steps {
                 script {
                     // Installer les dépendances du backend
                     dir('sustainafood-backend') {
+                        echo '📦 Installation des dépendances backend...'
                         sh 'npm install'
                     }
 
                     // Installer les dépendances du frontend
                     dir('sustainafood-frontend') {
+                        echo '📦 Installation des dépendances frontend...'
                         sh 'npm install --legacy-peer-deps'
                     }
                 }
             }
         }
 
-        // Étape 2: Exécuter les tests unitaires
-        stage('Run Unit Tests') {
+        // ✅ Étape 2: Peupler la base MongoDB (optionnel si besoin de seed)
+        stage('Seed MongoDB') {
             steps {
                 script {
-                    // Exécuter les tests unitaires du backend
                     dir('sustainafood-backend') {
-                        // Exemple: sh 'npm test'
-                    }
-
-                    // Exécuter les tests unitaires du frontend
-                    dir('sustainafood-frontend') {
-                        // Exemple: sh 'npm test'
+                        echo '🌱 Peuplement de MongoDB avec utilisateurs de test...'
+                        // ⚠️ Attention, seulement si tu as un script de seed, sinon commente cette ligne
+                        // sh 'npm run seed'
                     }
                 }
             }
         }
 
-        // Étape 3: Build de l'application
+        // ✅ Étape 3: Exécuter les tests unitaires backend et afficher les résultats
+        stage('Run Backend Unit Tests') {
+            steps {
+                script {
+                    dir('sustainafood-backend') {
+                        echo '🚀 Lancement des tests backend (Jest + Supertest)...'
+                        // Lancer les tests backend avec affichage
+                        sh 'npm test'
+                    }
+                }
+            }
+        }
+
+        // ✅ Étape 4: (Optionnel) Exécuter les tests unitaires frontend
+        stage('Run Frontend Unit Tests') {
+            steps {
+                script {
+                    dir('sustainafood-frontend') {
+                        echo '🚀 Lancement des tests frontend...'
+                        // ⚠️ Décommente si tu as des tests frontend
+                        // sh 'npm test'
+                    }
+                }
+            }
+        }
+
+        // ⚙️ Étape 5: Build de l'application backend + frontend
         stage('Build Application') {
             steps {
                 script {
-                    // Build du backend (optionnel si nécessaire)
+                    // (Optionnel) Build backend si nécessaire
                     dir('sustainafood-backend') {
-                        // Exemple: sh 'npm run build'
+                        echo '⚙️ Build backend (optionnel)'
+                        // Décommente si besoin de build backend
+                        // sh 'npm run build'
                     }
 
-                    // Build du frontend
+                    // ✅ Build frontend avec packages supplémentaires
                     dir('sustainafood-frontend') {
-                        // Vérifier et installer les packages manquants
+                        echo '⚙️ Vérification et installation des packages manquants...'
+                        // Installer les packages FontAwesome manquants
                         sh 'npm install @fortawesome/fontawesome-svg-core'
                         sh 'npm install @fortawesome/react-fontawesome'
                         sh 'npm install @fortawesome/free-solid-svg-icons'
 
-                        // Lancer le build
+                        // Lancer le build frontend
+                        echo '⚙️ Lancement du build frontend...'
                         sh 'npm run build'
                     }
                 }
             }
         }
 
-        // Étape 4: Analyse SonarQube
+        // 🔎 Étape 6: Analyse SonarQube
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    sh 'node -v' // Afficher la version de Node pour déboguer
+                    echo '🔎 Lancement de l\'analyse SonarQube...'
+                    sh 'node -v' // Affiche version Node.js pour vérification
 
-                    def scannerHome = tool 'scanner' // Scanner SonarQube
+                    def scannerHome = tool 'scanner' // Utilitaire SonarScanner configuré dans Jenkins
                     withSonarQubeEnv {
-                        // Exécuter l'analyse SonarQube
+                        // Exécuter SonarQube scanner
                         sh "${scannerHome}/bin/sonar-scanner"
                     }
                 }

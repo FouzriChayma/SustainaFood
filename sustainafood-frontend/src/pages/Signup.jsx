@@ -117,7 +117,7 @@ const Signup = () => {
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
-  const [role, setRole] = useState("admin");
+  const [role, setRole] = useState("ong");
   const [error, setError] = useState("");
   const [id_fiscale, setId_fiscale] = useState("");
   const [num_cin, setNum_cin] = useState("");
@@ -256,15 +256,7 @@ const Signup = () => {
         <div className="signup-form-container signup-sign-up-container">
           <form className="signup-form" onSubmit={handleSignup}>
             <h1 className="signup-h1">Sign Up</h1>
-            <div className="signup-social-container">
-              <a href="#" className="signup-social">
-                <img src={fbimg} alt="Facebook" />
-              </a>
-              <a href="#" className="signup-social">
-                <img src={gglimg} alt="Google" />
-              </a>
-            </div>
-            <span>or use your email</span>
+           
 
             {/* Input Fields */}
             <input className="signup-input" type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />

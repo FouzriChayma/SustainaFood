@@ -10,154 +10,204 @@ import { FaCamera } from "react-icons/fa"
 import "../assets/styles/ContinueInfo.css"
 
 const ContinueInfo = () => {
-  const { user, token } = useAuth()
-  const { login } = useContext(AuthContext)
-  const navigate = useNavigate()
-  const [error, setError] = useState(null)
-  const [fileName, setFileName] = useState("")
-  const [imagePreview, setImagePreview] = useState(null)
-  const [profilePhotoFile, setProfilePhotoFile] = useState(null)
+  const { user, token } = useAuth();
+  const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [error, setError] = useState(null);
+  const [fileName, setFileName] = useState("");
+  const [imagePreview, setImagePreview] = useState(null);
+  const [profilePhotoFile, setProfilePhotoFile] = useState(null);
   const [formData, setFormData] = useState({
     phone: "",
     name: "",
     address: "",
     role: "ong", // Default to ONG
-    id_fiscale: "",
-    num_cin: "",
-    sexe: "male",
-    age: "",
-    taxReference: "",
-    vehiculeType: "car",
-    type: "charitable",
-  })
-  const [captchaValue, setCaptchaValue] = useState(null)
-  const [errors, setErrors] = useState({})
+  });
+  const [captchaValue, setCaptchaValue] = useState(null);
+  const [errors, setErrors] = useState({});
 
-  const validateName = (name) => /^[a-zA-Z\s]+$/.test(name)
-  const validateEmail = (email) => /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)
-  const validatePhone = (phone) => /^\d{8,15}$/.test(phone)
-  const validateCIN = (cin) => /^\d{8}$/.test(cin)
-  const validateFiscalID = (id) => /^TN\d{8}$/.test(id)
-  const validateTaxReference = (ref) => /^VAT-\d{8}$/.test(ref)
+  const validateName = (name) => /^[a-zA-Z\s]+$/.test(name);
+  const validatePhone = (phone) => /^\d{8,15}$/.test(phone);
+  const validateCIN = (cin) => /^\d{8}$/.test(cin);
+  const validateFiscalID = (id) => /^TN\d{8}$/.test(id);
+  const validateTaxReference = (ref) => /^VAT-\d{8}$/.test(ref);
 
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
     // Validate field immediately
-    const newErrors = { ...errors }
+    const newErrors = { ...errors };
     switch (name) {
       case "name":
         if (value && !validateName(value)) {
-          newErrors[name] = "Invalid name format"
+          newErrors[name] = "Invalid name format";
         } else {
-          delete newErrors[name]
+          delete newErrors[name];
         }
-        break
+        break;
       case "phone":
         if (value && !validatePhone(value)) {
-          newErrors[name] = "Invalid phone number format"
+          newErrors[name] = "Invalid phone number format";
         } else {
-          delete newErrors[name]
+          delete newErrors[name];
         }
-        break
+        break;
       case "num_cin":
         if (value && !validateCIN(value)) {
-          newErrors[name] = "CIN must be exactly 8 digits"
+          newErrors[name] = "CIN must be exactly 8 digits";
         } else {
-          delete newErrors[name]
+          delete newErrors[name];
         }
-        break
+        break;
       case "id_fiscale":
         if (value && !validateFiscalID(value)) {
-          newErrors[name] = "Invalid fiscal ID format (must be TN followed by 8 digits)"
+          newErrors[name] = "Invalid fiscal ID format (must be TN followed by 8 digits)";
         } else {
-          delete newErrors[name]
+          delete newErrors[name];
         }
-        break
+        break;
       case "taxReference":
         if (value && !validateTaxReference(value)) {
-          newErrors[name] = "Invalid Tax Reference format (must be like VAT-12345678)"
+          newErrors[name] = "Invalid Tax Reference format (must be like VAT-12345678)";
         } else {
-          delete newErrors[name]
+          delete newErrors[name];
         }
-        break
+        break;
     }
-    setErrors(newErrors)
-  }
+    setErrors(newErrors);
+  };
+
+  const handleRoleChange = (e) => {
+    const { value } = e.target;
+
+    // Define role-specific fields
+    let roleSpecificFields = {};
+    switch (value) {
+      case "student":
+        roleSpecificFields = { sexe: "male", age: "", num_cin: "" };
+        break;
+      case "ong":
+        roleSpecificFields = { id_fiscale: "", type: "charitable" };
+        break;
+      case "transporter":
+        roleSpecificFields = { vehiculeType: "car" };
+        break;
+      case "restaurant":
+      case "supermarket":
+        roleSpecificFields = { taxReference: "" };
+        break;
+      default:
+        roleSpecificFields = {};
+    }
+
+    // Remove irrelevant fields when role changes
+    const { vehiculeType, ...rest } = formData; // Remove vehiculeType for non-transporter roles
+
+    // Update formData with the new role and role-specific fields
+    setFormData({
+      ...rest,
+      role: value,
+      ...roleSpecificFields,
+    });
+  };
 
   const handleFileChange = (event) => {
-    const file = event.target.files[0]
+    const file = event.target.files[0];
     if (file) {
-      setFileName(file.name)
-      setProfilePhotoFile(file)
-      const reader = new FileReader()
+      setFileName(file.name);
+      setProfilePhotoFile(file);
+      const reader = new FileReader();
       reader.onload = (e) => {
-        setImagePreview(e.target.result)
-      }
-      reader.readAsDataURL(file)
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError("")
+    e.preventDefault();
+    setError("");
 
     if (!captchaValue) {
-      setError("Please complete the reCAPTCHA.")
-      return
+      setError("Please complete the reCAPTCHA.");
+      return;
     }
 
     if (!formData.phone || !formData.role || !formData.address || !formData.name) {
-      setError("Please fill in all required fields.")
-      return
+      setError("Please fill in all required fields.");
+      return;
     }
 
     if (Object.keys(errors).length > 0) {
-      setError("Please fix the errors in the form.")
-      return
+      setError("Please fix the errors in the form.");
+      return;
     }
 
-    const email = localStorage.getItem("email from google")
-    const id = localStorage.getItem("user_id")
+    const email = localStorage.getItem("email from google");
+    const id = localStorage.getItem("user_id");
 
     if (!id || !email) {
-      setError("Error: User not found.")
-      return
+      setError("Error: User not found.");
+      return;
     }
 
-    const data = new FormData()
-    Object.keys(formData).forEach((key) => {
-      data.append(key, formData[key])
-    })
-    data.append("email", email)
+    const data = new FormData();
+
+    // Append common fields
+    data.append("phone", formData.phone);
+    data.append("name", formData.name);
+    data.append("address", formData.address);
+    data.append("role", formData.role);
+
+    // Append role-specific fields
+    switch (formData.role) {
+      case "student":
+        data.append("sexe", formData.sexe);
+        data.append("age", formData.age);
+        data.append("num_cin", formData.num_cin);
+        break;
+      case "ong":
+        data.append("id_fiscale", formData.id_fiscale);
+        data.append("type", formData.type);
+        break;
+      case "transporter":
+        data.append("vehiculeType", formData.vehiculeType);
+        break;
+      case "restaurant":
+      case "supermarket":
+        data.append("taxReference", formData.taxReference);
+        break;
+    }
+
+    data.append("email", email);
 
     if (profilePhotoFile) {
-      data.append("photo", profilePhotoFile)
+      data.append("photo", profilePhotoFile);
     }
 
     try {
-      const response = await updateUserwithemail(id, data)
-      const userResponse = await getUserById(id)
-      const user = userResponse.data
+      const response = await updateUserwithemail(id, data);
+      const userResponse = await getUserById(id);
+      const user = userResponse.data;
 
       if (!user) {
-        setError("Error: User data not retrieved.")
-        return
+        setError("Error: User data not retrieved.");
+        return;
       }
 
-      login(user, token)
+      login(user, token);
 
-      const authData = JSON.parse(localStorage.getItem("authData") || "{}")
-      localStorage.setItem("user", JSON.stringify(user))
-      localStorage.setItem("authData", JSON.stringify({ ...authData, email: user.email }))
+      const authData = JSON.parse(localStorage.getItem("authData") || "{}");
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("authData", JSON.stringify({ ...authData, email: user.email }));
 
-      navigate(user.role === "admin" ? "/dashboard" : "/profile")
+      navigate(user.role === "admin" ? "/dashboard" : "/profile");
     } catch (err) {
-      console.error("Error during registration:", err)
-      setError(err.response?.data?.error || "Registration error.")
+      console.error("Error during registration:", err);
+      setError(err.response?.data?.error || "Registration error.");
     }
-  }
+  };
 
   return (
     <div className="continueinfo-container">
@@ -165,6 +215,7 @@ const ContinueInfo = () => {
         <h2 className="continueinfo-title">Complete Your Profile</h2>
         <p className="continueinfo-description">Please provide additional information to complete your registration.</p>
         <form onSubmit={handleSubmit} className="continueinfo-form">
+          {/* Common Fields */}
           <div className="continueinfo-form-group">
             <label htmlFor="name" className="continueinfo-label">
               Name
@@ -180,11 +231,18 @@ const ContinueInfo = () => {
             />
             {errors.name && <p className="continueinfo-error-message">{errors.name}</p>}
           </div>
+
           <div className="continueinfo-form-group">
             <label htmlFor="role" className="continueinfo-label">
               Role
             </label>
-            <select id="role" name="role" value={formData.role} onChange={handleChange} className="continueinfo-select">
+            <select
+              id="role"
+              name="role"
+              value={formData.role}
+              onChange={handleRoleChange}
+              className="continueinfo-select"
+            >
               <option value="ong">ONG</option>
               <option value="restaurant">Restaurant</option>
               <option value="supermarket">Supermarket</option>
@@ -224,6 +282,7 @@ const ContinueInfo = () => {
             />
           </div>
 
+          {/* Role-Specific Fields */}
           {formData.role === "student" && (
             <>
               <div className="continueinfo-form-group">
@@ -359,6 +418,7 @@ const ContinueInfo = () => {
             </div>
           )}
 
+          {/* Profile Photo Upload */}
           <div className="continueinfo-form-group">
             <label htmlFor="file" className="continueinfo-label">
               Profile Photo
@@ -384,6 +444,7 @@ const ContinueInfo = () => {
             </div>
           </div>
 
+          {/* reCAPTCHA */}
           <div className="continueinfo-recaptcha">
             <ReCAPTCHA
               sitekey="6LeXoN8qAAAAAHnZcOwetBZ9TfyOl8K_wg7j97hq"
@@ -391,16 +452,17 @@ const ContinueInfo = () => {
             />
           </div>
 
+          {/* Error Message */}
           {error && <p className="continueinfo-error">{error}</p>}
 
+          {/* Submit Button */}
           <button type="submit" className="continueinfo-submit-button">
             Complete Registration
           </button>
         </form>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ContinueInfo
-
+export default ContinueInfo;

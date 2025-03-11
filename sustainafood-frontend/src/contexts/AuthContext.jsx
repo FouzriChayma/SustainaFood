@@ -27,11 +27,11 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(false); // Track loading state
 
   // Login function
-  const login = (userData, token) => {
-    setUser(userData);
+  const login = (userData, token , is2FAEnabled) => {
+    setUser({ ...userData, is2FAEnabled }); // Include is2FAEnabled in user data
     console.log("User logged in:", userData);
     setToken(token);
-    localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("user", JSON.stringify({ ...userData, is2FAEnabled }));
     localStorage.setItem("token", token);
     console.log("the token in local storge est from authicontext in fn login:", token)
     navigate("/profile"); // Redirect after login

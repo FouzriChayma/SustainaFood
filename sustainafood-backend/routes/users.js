@@ -44,4 +44,8 @@ router.put("/update-user/:email", userController.updateUserWithEmail);
 router.post('/createUser' , userController.createUser);
 router.put('/deactivate-account/:id', userController.deactivateAccount);
 router.put('/change-password/:id', userController.changePassword);
+router.post("/send-2fa-code", userController.send2FACode);
+router.post("/validate-2fa-code", userController.validate2FACode);
+router.post("/toggle-2fa", userController.toggle2FA);
+router.post("/send2FACodeforsigninwithgoogle", userController.send2FACodeforsigninwithgoogle);
 module.exports = router;

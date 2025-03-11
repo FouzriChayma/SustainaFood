@@ -1,5 +1,6 @@
-// Home.jsx
-import React from 'react';
+// ListOfDonations.jsx
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -9,11 +10,9 @@ import donation3 from '../assets/images/donation3.jpg';
 import donation4 from '../assets/images/donation4.png';
 import donation5 from '../assets/images/fooddonation.png';
 import Composantdonation from '../components/Composantdonation';
-import '../assets/styles/ListOfDonations.css'
-
-import donation from '../assets/images/fooddonation1.png'
-
-// Replace this with the actual path to your background pattern image:
+import '../assets/styles/ListOfDonations.css';
+import { getDonations } from "../api/donationService";
+import donation from '../assets/images/fooddonation1.png';
 import patternBg from '../assets/images/bg.png';
 
 const GlobalStyle = createGlobalStyle`
@@ -36,10 +35,9 @@ const fade = keyframes`
 const HomeContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0px;
+  gap: 0;
 `;
 
-/* ===== HERO SECTION ===== */
 const HeroSection = styled.section`
   position: relative;
   display: flex;
@@ -48,22 +46,16 @@ const HeroSection = styled.section`
   justify-content: space-between;
   padding: 60px 80px;
   gap: 30px;
-
-  /* 
-    1) We set the pattern image to repeat. 
-    2) We apply a semi-transparent overlay for readability.
-    3) You can adjust background-size depending on your pattern's scale.
-  */
   background: 
     linear-gradient(rgba(230, 242, 230, 0.85), rgba(230, 242, 230, 0.85)),
     url(${patternBg}) repeat center center;
-  background-size: 200px 200px; 
-  overflow: hidden; /* So the wave is contained properly */
+  background-size: 200px 200px;
+  overflow: hidden;
 `;
 
 const HeroText = styled.div`
   flex: 1 1 500px;
-  z-index: 2; /* Make sure text stays above the wave */
+  z-index: 2;
   h1 {
     font-size: 48px;
     color: #228b22;
@@ -98,7 +90,7 @@ const SliderContainer = styled.div`
   height: 300px;
   border-radius: 20px;
   overflow: hidden;
-  z-index: 2; /* Above the wave shape */
+  z-index: 2;
 `;
 
 const SlideImage = styled.img`
@@ -134,17 +126,15 @@ const Slide = styled(SlideImage)`
   animation-delay: 20s;
 `;
 
-/* ===== WAVE SHAPE ===== */
 const Wave = styled.svg`
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
   height: auto;
-  z-index: 1; /* Behind text and slider, but above background */
+  z-index: 1;
 `;
 
-/* ===== FEATURES SECTION ===== */
 const SectionWrapper = styled.section`
   padding: 60px 80px;
   background: ${props => props.bgColor || '#fff'};
@@ -157,57 +147,34 @@ const SectionTitle = styled.h2`
   margin-bottom: 40px;
 `;
 
-const FeaturesGrid = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 30px;
-  justify-content: center;
-`;
-
-const FeatureCard = styled.div`
-  background: #f9fff9;
-  border-radius: 15px;
-  box-shadow: rgba(0, 0, 0, 0.05) 0px 4px 12px;
-  padding: 20px;
-  flex: 1 1 250px;
-  max-width: 300px;
-  h3 {
-    font-size: 24px;
-    color: #228b22;
-    margin-bottom: 10px;
-  }
-  p {
-    font-size: 16px;
-    color: #555;
-    line-height: 1.4;
-  }
-`;
-
-/* ===== PROPOSED SOLUTION SECTION ===== */
-const ProposedSolutionList = styled.ul`
-  list-style: disc;
-  margin-left: 40px;
-  font-size: 18px;
-  color: #555;
-  li {
-    margin-bottom: 10px;
-    line-height: 1.6;
-  }
-`;
-
-
 const ListOfDonations = () => {
+  const [donations, setDonations] = useState([]);
+
+  useEffect(() => {
+    const fetchDonations = async () => {
+      try {
+        const response = await getDonations();
+        setDonations(response.data);
+        console.log("Donations fetched:", response.data);
+      } catch (error) {
+        console.error("Backend Error:", error);
+      }
+    };
+    fetchDonations();
+  }, []);
+
   return (
     <>
       <GlobalStyle />
       <Navbar />
       <HomeContainer>
-        {/* Hero Section */}
+        {/* HERO SECTION */}
         <HeroSection>
           <HeroText>
-            <h1> List Of Donations in SustainaFood</h1>
+            <h1>List Of Donations in SustainaFood</h1>
             <p>
-            Give if you can, receive if you need—together, we reduce food waste and spread hope!            </p>
+              Give if you can, receive if you need—together, we reduce food waste and spread hope!
+            </p>
             <CallToAction href="/AddDonation">Add Your Donation</CallToAction>
           </HeroText>
           <SliderContainer>
@@ -217,10 +184,7 @@ const ListOfDonations = () => {
             <Slide4 src={donation4} alt="Donation 4" />
             <Slide5 src={donation5} alt="Donation 5" />
             <Slide src={donation} alt="Donation 6" />
-
           </SliderContainer>
-
-          {/* Decorative Wave at the bottom of Hero */}
           <Wave viewBox="0 0 1440 320">
             <path
               fill="#f0f8f0"
@@ -229,53 +193,41 @@ const ListOfDonations = () => {
             />
           </Wave>
         </HeroSection>
-
-        {/* Features Section */}
+        {/* SECTION DES DONATIONS */}
         <SectionWrapper>
-        <div className="container-listdonation">
+          <div className="container-listdonation">
             <header>
-                 <div className="profile-headerLIST">
-                    <h1 style={{ color: '#228b22' , fontSize: '40px'}}>List Of Donations</h1>
-                    <div className="date-switcher">
-      <div className="groupsearch">
-        <svg className="iconsearch" aria-hidden="true" viewBox="0 0 24 24">
-          <g>
-            <path d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-7.5-3.365-7.5-7.5z" />
-          </g>
-        </svg>
-        <input placeholder="Search" type="search" className="inputsearch" />
-         {/* Sélecteur de tri */}
-         <select className="sort-select">
-                    <option value="date">Latest Donations</option>
-                    <option value="name">Near me  </option>
-                    <option value="quantity">Urgent</option>
-                  </select>
-      </div>
-                     </div>
-                 </div>
+              <div className="profile-headerLIST">
+                <h1 style={{ color: '#228b22', fontSize: '40px' }}>List Of Donations</h1>
+                <div className="date-switcher">
+                  <div className="groupsearch">
+                    <svg className="iconsearch" aria-hidden="true" viewBox="0 0 24 24">
+                      <g>
+                        <path d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-7.5-3.365-7.5-7.5z" />
+                      </g>
+                    </svg>
+                    <input placeholder="Search" type="search" className="inputsearch" />
+                  </div>
+                </div>
+              </div>
             </header>
             <div className='contentlist'>
-                <div style={{marginBottom:"40px"}}>
-                   {/*  Affichage personnalisé en fonction du rôle */}
-                    <Composantdonation   />   
-                 </div>
-                 {/*<div>
-                      Affichage personnalisé en fonction du rôle 
-                     <Composantdonation   />   
-                </div>*/}
-                  {/*<div >
-                      Affichage personnalisé en fonction du rôle 
-                       <Composantdonation   />   
-                </div>*/}
-                <div >
-                      {/* Affichage personnalisé en fonction du rôle */}
-                       <Composantdonation   />   
+              <div style={{ marginBottom: "40px" }}>
+                <div className="donor-profile">
+                  <div className="projects">
+                    {donations.length > 0 ? (
+                      donations.map((donationItem) => (
+                        <Composantdonation key={donationItem._id} donation={donationItem} />
+                      ))
+                    ) : (
+                      <p>No donations found.</p>
+                    )}
+                  </div>
                 </div>
-             </div>
-           </div>
+              </div>
+            </div>
+          </div>
         </SectionWrapper>
-
-       
       </HomeContainer>
       <Footer />
     </>

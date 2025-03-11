@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState , useEffect  } from "react";
 import Navbar from "../components/Navbar"; // Adjust the import path as needed
 import Footer from "../components/Footer"; // Adjust the import path as needed
 import "../assets/styles/AccountSettings.css";
 import axios from "axios"; // Import axios
 import { useAuth } from "../contexts/AuthContext"; // Import useAuth for user and token
-import { deactivateAccount , changePassword} from "../api/userService";
+import { deactivateAccount , changePassword , toggle2FA , getUserById} from "../api/userService";
 
 const AccountSettings = () => {
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
@@ -65,10 +65,31 @@ const AccountSettings = () => {
       }
     }
   };
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await getUserById(user.id);
+        setIs2FAEnabled(response.data.is2FAEnabled); // Set is2FAEnabled state
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
 
-  const handle2FAToggle = () => {
-    setIs2FAEnabled(!is2FAEnabled);
-    alert(`2FA has been ${is2FAEnabled ? "disabled" : "enabled"}.`);
+    fetchUserData();
+  }, [user.id]); // Re-fetch when user.id changes
+
+  const handle2FAToggle = async () => {
+    try {
+      const response = await toggle2FA(user.email);
+  
+      if (response.status === 200) {
+        setIs2FAEnabled(!is2FAEnabled); // Update local state
+        alert(`2FA has been ${!is2FAEnabled ? "enabled" : "disabled"}.`);
+      }
+    } catch (error) {
+      console.error("Error toggling 2FA:", error);
+      alert("Failed to toggle 2FA. Please try again.");
+    }
   };
 
   return (
@@ -118,6 +139,7 @@ const AccountSettings = () => {
             </form>
           </section>
 
+          {/* 2FA Section */}
           <section className="accountsettings-section">
             <h2>Two-Factor Authentication (2FA)</h2>
             <div className="accountsettings-twofa-toggle">

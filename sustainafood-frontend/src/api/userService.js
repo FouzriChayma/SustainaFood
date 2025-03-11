@@ -71,7 +71,29 @@ export const deactivateAccount = async (userId, token) => {
 };
 
 
+
+// 🔹 Toggle 2FA Status
+export const toggle2FA = async (email) => {
+  return await axios.post("http://localhost:3000/users/toggle-2fa", { email },    console.log("Données envoyées :", email),
+  {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
 // userService.js
+
+// 🔹 Validate 2FA Code
+export const validate2FACode = async (email, twoFACode) => {
+  return await axios.post("http://localhost:3000/users/validate-2fa-code", {
+    email,
+    twoFACode,
+  }, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
 export const changePassword = async (userId, currentPassword, newPassword) => {
   return axios.put(
     `http://localhost:3000/users/change-password/${userId}`, // <-- note the "/:id"
@@ -82,4 +104,7 @@ export const changePassword = async (userId, currentPassword, newPassword) => {
       },
     }
   );
+};
+export const send2FACodeforsigninwithgoogle = async (email) => {
+  return axios.post("http://localhost:3000/users/send2FACodeforsigninwithgoogle", { email });
 };

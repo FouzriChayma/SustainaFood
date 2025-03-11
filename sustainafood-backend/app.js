@@ -41,6 +41,7 @@ app.use('/requests', requestNeedRoutes);
 app.use('/donation-transactions', donationTransactionRoutes);
 
 // Database Connection
+if (process.env.NODE_ENV !== 'test') {//pour la db de test
 var mongoConfig = require('./config/database.json');
 
 mongoose.connect(mongoConfig.url)
@@ -50,6 +51,7 @@ mongoose.connect(mongoConfig.url)
 mongoose.connection.once('open', () => {
   console.log(" MongoDB connection established successfully");
 });
+}
 ////////////////////////////////////////////////////////////////
 require("./config/passportConfig"); // Charger la config de Passport
 // app.use(passport.initialize());

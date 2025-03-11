@@ -142,6 +142,11 @@ async function addUser(req, res) {
       if (password !== confirmPassword) {
         return res.status(400).json({ error: "Passwords do not match" });
       }
+      // ✅ Vérifier si l'email existe déjà
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already exists" });
+      }
   
       // Hacher le mot de passe avant de le stocker
       const hashedPassword = await bcrypt.hash(password, 10);

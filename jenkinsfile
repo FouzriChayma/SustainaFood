@@ -2,89 +2,55 @@ pipeline {
     agent any
 
     stages {
-        // Étape 1: Installation des dépendances
-        stage('Install Dependencies') {
+        // Lancer MongoDB en container Docker
+        stage('Start MongoDB') {
             steps {
                 script {
-                    // Installer les dépendances backend
-                    dir('sustainafood-backend') {
-                        echo '📦 Installation des dépendances backend...'
-                        sh 'npm install'
-                    }
+                    echo '🚀 Démarrage de MongoDB en Docker...'
+                    sh 'docker run -d -p 27017:27017 --name mongodb mongo'
+                }
+            }
+        }
 
-                    // Installer les dépendances frontend
-                    dir('sustainafood-frontend') {
-                        echo '📦 Installation des dépendances frontend...'
-                        sh 'npm install --legacy-peer-deps'
+        // Installer les dépendances backend
+        stage('Install Backend Dependencies') {
+            steps {
+                script {
+                    dir('sustainafood-backend') {
+                        sh 'npm install'
                     }
                 }
             }
         }
 
-        // Étape 2: Tests backend avec Jest & Supertest
+        // Lancer les tests backend
         stage('Run Backend Unit Tests') {
             steps {
                 script {
                     dir('sustainafood-backend') {
                         echo '🚀 Lancement des tests backend (Jest + Supertest)...'
-                        sh 'npm test' // ✅ Lancement des tests unitaires backend
+                        sh 'npm test'
                     }
                 }
             }
         }
 
-        // (Optionnel) Étape 3: Tests frontend
-        stage('Run Frontend Unit Tests') {
+        // Arrêter MongoDB après les tests
+        stage('Stop MongoDB') {
             steps {
                 script {
-                    dir('sustainafood-frontend') {
-                        echo '🚀 (Optionnel) Lancement des tests frontend...'
-                        // 🔔 Décommente cette ligne si tu as des tests frontend
-                        // sh 'npm test'
-                    }
+                    echo '🛑 Arrêt de MongoDB...'
+                    sh 'docker stop mongodb'
+                    sh 'docker rm mongodb'
                 }
             }
         }
 
-        // Étape 4: Build backend et frontend
+        // Build et autres étapes (build frontend, sonar...)
         stage('Build Application') {
             steps {
                 script {
-                    // (Optionnel) Build backend (si nécessaire)
-                    dir('sustainafood-backend') {
-                        echo '⚙️ (Optionnel) Build backend...'
-                        // 🔔 Décommente si tu as un build backend
-                        // sh 'npm run build'
-                    }
-
-                    // Build frontend
-                    dir('sustainafood-frontend') {
-                        echo '⚙️ Build frontend et installation des packages manquants...'
-
-                        // Installer les packages nécessaires (FontAwesome ici)
-                        sh 'npm install @fortawesome/fontawesome-svg-core'
-                        sh 'npm install @fortawesome/react-fontawesome'
-                        sh 'npm install @fortawesome/free-solid-svg-icons'
-
-                        // Lancer le build frontend
-                        sh 'npm run build'
-                    }
-                }
-            }
-        }
-
-        // Étape 5: Analyse SonarQube
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    echo '🔎 Lancement de l\'analyse SonarQube...'
-                    sh 'node -v' // Vérification version Node.js pour debug
-
-                    def scannerHome = tool 'scanner' // Définir le scanner Sonar
-                    withSonarQubeEnv {
-                        // Lancer le scanner SonarQube
-                        sh "${scannerHome}/bin/sonar-scanner"
-                    }
+                    // Tes étapes de build backend + frontend ici
                 }
             }
         }

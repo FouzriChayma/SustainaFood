@@ -46,8 +46,10 @@ const Login = () => {
           id: response.data.id,
           role: response.data.role,
           email, // Optionally include the email used for login
+          welcomeMessage: response.data.message // Store the welcome message
         };
-  
+        console.log("Message reçu du backend :", response.data.message);
+
         login(userData, response.data.token);
   
         if (userData.role === "admin") {

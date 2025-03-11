@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     stages {
-        // Lancer MongoDB en container Docker
+        // 🚀 Étape 1: Lancer MongoDB en container Docker
         stage('Start MongoDB') {
             steps {
                 script {
@@ -12,18 +12,19 @@ pipeline {
             }
         }
 
-        // Installer les dépendances backend
+        // 📦 Étape 2: Installer les dépendances backend
         stage('Install Backend Dependencies') {
             steps {
                 script {
                     dir('sustainafood-backend') {
+                        echo '📦 Installation des dépendances backend...'
                         sh 'npm install'
                     }
                 }
             }
         }
 
-        // Lancer les tests backend
+        // ✅ Étape 3: Lancer les tests backend (Jest + Supertest)
         stage('Run Backend Unit Tests') {
             steps {
                 script {
@@ -35,7 +36,7 @@ pipeline {
             }
         }
 
-        // Arrêter MongoDB après les tests
+        // 🛑 Étape 4: Arrêter MongoDB après les tests
         stage('Stop MongoDB') {
             steps {
                 script {
@@ -46,11 +47,45 @@ pipeline {
             }
         }
 
-        // Build et autres étapes (build frontend, sonar...)
+        // ⚙️ Étape 5: Build Application backend + frontend (ton contenu)
         stage('Build Application') {
             steps {
                 script {
-                    // Tes étapes de build backend + frontend ici
+                    // Build du backend (optionnel si nécessaire)
+                    dir('sustainafood-backend') {
+                        echo '⚙️ Build backend (si nécessaire)'
+                        // Décommenter si besoin de build backend
+                        // sh 'npm run build'
+                    }
+
+                    // Build du frontend
+                    dir('sustainafood-frontend') {
+                        echo '⚙️ Installation des packages manquants pour le frontend...'
+                        // Vérifier et installer les packages FontAwesome manquants
+                        sh 'npm install @fortawesome/fontawesome-svg-core'
+                        sh 'npm install @fortawesome/react-fontawesome'
+                        sh 'npm install @fortawesome/free-solid-svg-icons'
+
+                        // Lancer le build du frontend
+                        echo '⚙️ Lancement du build frontend...'
+                        sh 'npm run build'
+                    }
+                }
+            }
+        }
+
+        // 🔎 Étape 6: Analyse SonarQube (optionnelle, désactive si pas encore prêt)
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    echo '🔎 Lancement de l\'analyse SonarQube...'
+                    sh 'node -v' // Vérification version de Node.js
+
+                    def scannerHome = tool 'scanner' // Outil SonarScanner (configuré dans Jenkins)
+                    withSonarQubeEnv {
+                        // Lancer SonarQube scanner
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
                 }
             }
         }

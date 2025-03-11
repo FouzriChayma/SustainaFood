@@ -6,6 +6,17 @@
     width: 1162px;
     text-align: center;
 }
+.btnseelist {
+    height: 35px;
+    margin-left: 1003px;
+    margin-top: 15px;
+    font-size: 15px;
+    padding: 5px 10px;
+    background-color: black;
+    color: white;
+    border-radius: 5px;
+    border: none;
+}
 .btnseemorelist {
     height: 35px;
     margin-left: 1033px;

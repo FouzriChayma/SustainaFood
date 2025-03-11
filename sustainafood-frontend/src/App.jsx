@@ -28,7 +28,7 @@ import NotFound from "./pages/Not-Found";
 import AccountSettings from "./pages/AccountSettings.js";
 import ListOfDonations from "./pages/ListOfDonations";
 import AddDonation from "./pages/AddDonation";
-import MyRequests from "./pages/MyRequests.jsx";
+import MyRequest from "./pages/MyRequest.jsx";
 import MyDonations from "./pages/MyDonations"; 
 import TwoFAVerification from "./pages/TwoFAVerification";
 
@@ -82,7 +82,7 @@ const App = () => {
       </Route>
          {/* Private Routes for ong,student */}
       <Route element={<PrivateRoute roles={["ong", "student"]} />}>
-      <Route path="/myrequests" element={<MyRequests />} />
+      <Route path="/myrequest" element={<MyRequest />} />
       </Route>
       <Route element={<PrivateRoute roles={["supermarket","restaurant"]} />}>
   <Route path="/mydonations" element={<MyDonations />} />

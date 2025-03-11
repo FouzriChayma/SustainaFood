@@ -18,10 +18,19 @@ const Navbar = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      if (authUser) {
+      if (typeof authUser.id === "number") {
+        if (!authUser || !authUser._id) return;
         try {
-          const userId = authUser.id || authUser._id; // Handle both id and _id
-          const response = await getUserById(userId);
+          const response = await getUserById(authUser._id);
+          setUser(response.data);
+        } catch (error) {
+          console.error("Backend Error:", error);
+        }
+      }
+      else if (typeof authUser.id === "string") {
+        if (!authUser || !authUser.id) return;
+        try {
+          const response = await getUserById(authUser.id);
           setUser(response.data);
         } catch (error) {
           console.error("Backend Error:", error);
@@ -29,10 +38,11 @@ const Navbar = () => {
       }
     };
 
-    if (authUser) {
+    if (authUser && (authUser._id || authUser.id)) {
       fetchUser();
     }
   }, [authUser]);
+
 
   const handleLogout = () => {
     logout();
@@ -84,7 +94,7 @@ const Navbar = () => {
               {dropdownOpen === "donations" && (
                 <div className="dropdown-content">
                   <Link to="/ListOfDonations">List of Donations</Link>
-                  {isRecipient && <Link to="/myrequests">My Requests</Link>}
+                  {isRecipient && <Link to="/myrequest">My Requests</Link>}
                   {isDonner && <Link to="/mydonations">My Donations</Link>}
                 </div>
               )}

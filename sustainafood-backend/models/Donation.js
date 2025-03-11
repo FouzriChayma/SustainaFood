@@ -3,46 +3,50 @@ const Schema = mongoose.Schema;
 const Counter = require('./Counter');
 
 // Define Enums
-const Delivery = {
-    PICKUP: 'pickup', 
-    SAME_DAY: 'same_day',
-    STANDARD: 'standard',
-    OVERNIGHT: 'overnight',
-    EXPRESS: 'express'
-};
-Object.freeze(Delivery);
-
-const Type = {
-    DONATION: 'donation',
-    REQUEST: 'request'
-};
-Object.freeze(Type);
-
 const Category = {
-    PREPARED_MEALS: 'Prepared_Meals',
-    PACKAGED_PRODUCTS: 'Packaged_Products'
+    PREPARED_MEALS: 'prepared_meals',
+    PACKAGED_PRODUCTS: 'packaged_products'
 };
 Object.freeze(Category);
 
-// Define Schema
+const Status = {
+    PENDING: 'pending',
+    PARTIALLY_FULFILLED: 'partially_fulfilled',
+    FULFILLED: 'fulfilled',
+    CANCELLED: 'cancelled'
+};
+Object.freeze(Status);
+
+// Define Donation Schema
 const donationSchema = new Schema({
-    title: { type: String, required: true },
+    id: { type: Number, unique: true }, // Auto-incremented custom ID
+    donor: { type: Schema.Types.ObjectId, ref: 'User', required: true }, // Renamed from 'user'
+    title: { type: String, required: true, minlength: 3, maxlength: 100 },
+    description: { type: String, maxlength: 500 },
+    category: { type: String, enum: Object.values(Category), required: true }, // Lowercase naming
+    products: [{ type: Schema.Types.ObjectId, ref: 'Product', required: true }],
     location: { type: String, required: true },
-    expirationDate: { type: Date, required: true },
-    description: { type: String },
-    Category: { type: String, enum: Object.values(Category), required: true },
-    Type: { type: String, enum: Object.values(Type), required: true },
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    id: { type: Number }, // Auto-incremented custom ID
-    products: [{ type: Schema.Types.ObjectId, ref: 'Product', required: true }], // List of products
-    delivery: { type: String, enum: Object.values(Delivery), required: true },
-    status: { type: String, enum: ['pending', 'delivered', 'cancelled'], required: true },
-    created_at: { type: Date, default: Date.now },
-    updated_at: { type: Date, default: Date.now }
+    expirationDate: {
+        type: Date,
+        required: true,
+        validate: {
+            validator: (date) => date > new Date(), // Ensure future date
+            message: 'Expiration date must be in the future'
+        }
+    },
+    status: { type: String, enum: Object.values(Status), default: Status.PENDING, required: true },
+    linkedRequests: [{ type: Schema.Types.ObjectId, ref: 'RequestNeed' }] // Added from concept
+}, {
+    timestamps: true // Adds createdAt and updatedAt automatically
 });
 
-// Pre-save hook to auto-increment `id` before saving a new donation
-donationSchema.pre('save', async function (next) {
+// Indexes for performance
+donationSchema.index({ status: 1 });
+donationSchema.index({ category: 1 });
+donationSchema.index({ expirationDate: 1 });
+
+// Pre-save hook for auto-incrementing ID
+donationSchema.pre('save', async function(next) {
     if (this.isNew) {
         try {
             const counter = await Counter.findOneAndUpdate(
@@ -52,7 +56,7 @@ donationSchema.pre('save', async function (next) {
             );
             this.id = counter.seq;
         } catch (err) {
-            return next(err);
+            return next(new Error('Failed to generate donation ID: ' + err.message));
         }
     }
     next();

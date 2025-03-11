@@ -10,6 +10,8 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var donationRouter = require('./routes/donationRoutes');
 var authRouter = require('./routes/authRoutes'); // 🔹 Ajouter la route auth
+var requestNeedRoutes = require('./routes/requestNeedRoutes');
+var donationTransactionRoutes = require('./routes/donationTransactionRoutes');
 
 var app = express();
 // var passport = require("passport"); // ✅ Importer Passport
@@ -35,6 +37,8 @@ app.use('/users', usersRouter);
 app.use('/product',productRouter);
 app.use('/donation',donationRouter);
 app.use('/auth', authRouter); // 🔹 Ajouter la route d'authentification
+app.use('/requests', requestNeedRoutes);
+app.use('/donation-transactions', donationTransactionRoutes);
 
 // Database Connection
 if (process.env.NODE_ENV !== 'test') {//pour la db de test

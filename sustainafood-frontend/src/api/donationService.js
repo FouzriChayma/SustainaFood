@@ -13,4 +13,6 @@ export const addDonation = async (donationrData) => {
   export const getDonationById = async (id) => {
     return axios.get(`http://localhost:3000/donation/${id}`);
   };
-  
+  export const getDonationByUserId = async (id) => {
+    return axios.get(`http://localhost:3000/donation/user/${id}`);
+  };

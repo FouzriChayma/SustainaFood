@@ -48,6 +48,18 @@ export const AuthProvider = ({ children }) => {
 
   // Check if the user is authenticated
   const isAuthenticated = () => !!token;
+
+
+    // Clear the welcome message
+    const clearWelcomeMessage = () => {
+      setUser((prevUser) => {
+        if (!prevUser) return prevUser;
+        const updatedUser = { ...prevUser, welcomeMessage: "" };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        return updatedUser;
+      });
+    };
+
   // Send password reset code
   const sendResetCode = async (email) => {
     setLoading(true);
@@ -100,6 +112,7 @@ export const AuthProvider = ({ children }) => {
       sendResetCode,
       validateResetCode,
       resetPassword,
+      clearWelcomeMessage,
       resetStatus,
       error,
       loading,

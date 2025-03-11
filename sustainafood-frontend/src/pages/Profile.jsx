@@ -12,9 +12,11 @@ import dhiaphoto from '../assets/images/dhiaphoto.png';
 import assilphoto from '../assets/images/assilphoto.png';
 const Profile = () => {
   const navigate = useNavigate();
-  const { user: authUser, token } = useAuth();
+  const { user: authUser, token, clearWelcomeMessage } = useAuth(); // Add clearWelcomeMessage
   const [user, setUser] = useState(authUser);
   const [error, setError] = useState("");
+  const [welcomeMessage, setWelcomeMessage] = useState(authUser?.welcomeMessage || "");
+
   const profilePhotoUrl = user?.photo ? `http://localhost:3000/${user.photo}` : pdp;
 
   useEffect(() => {
@@ -43,12 +45,46 @@ const Profile = () => {
       fetchUser();
     }
   }, [authUser]);
+  
 
+  useEffect(() => {
+    if (welcomeMessage) {
+      // Display the message for 5 seconds
+      const timer = setTimeout(() => {
+        setWelcomeMessage(""); // Clear the local state
+        clearWelcomeMessage(); // Clear the message from the context
+      }, 5000);
+
+      return () => clearTimeout(timer); // Cleanup the timer
+    }
+  }, [welcomeMessage, clearWelcomeMessage]);
+  
 
   return (
     <>
       <Navbar />
       <div className="container-profile">
+      {welcomeMessage && (
+        <div className="welcome-message">
+          <div className="welcome-message-content">
+            <div className="welcome-icon">🎉</div>
+            <span>{welcomeMessage}</span>
+          </div>
+          <div className="confetti-container">
+            {Array.from({ length: 20 }).map((_, i) => (
+              <div
+                key={i}
+                className={`confetti confetti-${i % 5}`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  animationDuration: `${3 + Math.random() * 2}s`,
+                }}
+              ></div>
+            ))}
+          </div>
+        </div>
+      )}
         <header>
           <div className="profile-header">
             <h1>My Profile</h1>

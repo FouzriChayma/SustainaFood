@@ -25,47 +25,73 @@ pipeline {
                 script {
                     // Exécuter les tests unitaires du backend
                     dir('sustainafood-backend') {
-                        // Exemple: sh 'npm test'
+                        echo 'Running backend unit tests...'
+                        sh 'npm test'
+                        echo 'Backend unit tests completed.'
                     }
 
                     // Exécuter les tests unitaires du frontend
                     dir('sustainafood-frontend') {
-                        // Exemple: sh 'npm test'
+                        echo 'Running frontend unit tests...'
+                        sh 'npm test'
+                        echo 'Frontend unit tests completed.'
                     }
                 }
             }
         }
 
-        // Étape 3: Build de l'application
+        // ✅ Étape 3: Exécuter les tests fonctionnels spécifiques 2FA et Sign-in
+        stage('Run Functional Tests: 2FA and User Sign-in') {
+            steps {
+                script {
+                    dir('sustainafood-backend') {
+                        echo 'Running backend functional test for 2FA...'
+                        sh 'npx jest test/user-2fa.test.js --detectOpenHandles --forceExit'
+
+                        echo 'Running backend functional test for User Sign-in...'
+                        sh 'npx jest test/user-signin.test.js --detectOpenHandles --forceExit'
+
+                        echo 'Backend functional tests (2FA & Sign-in) completed.'
+                    }
+                }
+            }
+        }
+
+        // Étape 4: Build de l'application
         stage('Build Application') {
             steps {
                 script {
-                    // Build du backend (optionnel si nécessaire)
+                    // Build du backend (optionnel si tu veux)
                     dir('sustainafood-backend') {
-                        // Exemple: sh 'npm run build'
+                        echo 'Building backend...'
+                        // sh 'npm run build' // décommente si tu as besoin
+                        echo 'Backend build completed.'
                     }
 
                     // Build du frontend
                     dir('sustainafood-frontend') {
-                        // Vérifier et installer les packages manquants
+                        echo 'Building frontend...'
+
+                        // Installer les icônes manquantes (optionnel si pas dans package.json)
                         sh 'npm install @fortawesome/fontawesome-svg-core'
                         sh 'npm install @fortawesome/react-fontawesome'
                         sh 'npm install @fortawesome/free-solid-svg-icons'
 
-                        // Lancer le build
+                        // Build du frontend
                         sh 'npm run build'
+                        echo 'Frontend build completed.'
                     }
                 }
             }
         }
 
-        // Étape 4: Analyse SonarQube
+        // Étape 5: Analyse SonarQube
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    sh 'node -v' // Afficher la version de Node pour déboguer
+                    sh 'node -v' // Pour vérifier la version de Node.js utilisée
 
-                    def scannerHome = tool 'scanner' // Scanner SonarQube
+                    def scannerHome = tool 'scanner' // Nom de ton scanner SonarQube configuré
                     withSonarQubeEnv {
                         // Exécuter l'analyse SonarQube
                         sh "${scannerHome}/bin/sonar-scanner"

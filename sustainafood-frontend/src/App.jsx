@@ -34,6 +34,8 @@ import MyDonations from "./pages/MyDonations";
 import TwoFAVerification from "./pages/TwoFAVerification";
 
 import DetailsDonations from "./pages/DetailsDonations";
+import RequestTable from "./pages/backoffice/RequestTable.jsx";
+import ProductList from "./pages/backoffice/ProductList.jsx";
 const App = () => {
 
   return (
@@ -65,6 +67,11 @@ const App = () => {
         <Route path="/ongs/view/:id" element={<ViewNGO />} />
         <Route path="/transporters/view/:id" element={<ViewTransporter />} />
         <Route path="/admin-profile" element={<AdminProfile />} />
+        <Route path="/food-donation/requests" element={<RequestTable />} />
+        <Route path="/food-donation/product" element={<ProductList />} />
+
+        
+
       </Route>
 
       {/* Private Routes for other roles (if needed) */}
@@ -80,6 +87,7 @@ const App = () => {
       <Route path="/ListOfDonations" element={<ListOfDonations />} />
       <Route path="/AddDonation" element={<AddDonation />} />
       <Route path="/DetailsDonations/:id" element={<DetailsDonations />} />
+
       </Route>
          {/* Private Routes for ong,student */}
       <Route element={<PrivateRoute roles={["ong", "student"]} />}>

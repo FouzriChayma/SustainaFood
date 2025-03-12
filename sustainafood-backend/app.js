@@ -37,9 +37,9 @@ app.use('/users', usersRouter);
 app.use('/product',productRouter);
 app.use('/donation',donationRouter);
 app.use('/auth', authRouter); // 🔹 Ajouter la route d'authentification
-app.use('/requests', requestNeedRoutes);
-app.use('/donation-transactions', donationTransactionRoutes);
 
+app.use('/donation-transactions', donationTransactionRoutes);
+app.use('/request', requestNeedRoutes);
 // Database Connection
 var mongoConfig = require('./config/database.json');
 

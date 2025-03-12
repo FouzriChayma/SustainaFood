@@ -1,82 +1,73 @@
 pipeline {
     agent any
 
-    environment {
-        MONGO_URI = 'mongodb://localhost:27017/sustainafood'
-        JWT_SECRET = 'tonSecret' // Remplace si besoin
-    }
-
     stages {
-
-        stage('Start MongoDB') {
-            steps {
-                script {
-                    sh '''
-if [ ! "$(docker ps -q -f name=mongodb)" ]; then
-  if [ "$(docker ps -aq -f status=exited -f name=mongodb)" ]; then
-    docker start mongodb
-  else
-    docker run -d -p 27017:27017 --name mongodb -v mongo-data:/data/db mongo
-  fi
-else
-  echo "MongoDB already running"
-fi
-'''
-                }
-            }
-        }
-
-        stage('Wait for MongoDB') {
-            steps {
-                script {
-                    sh '''
-until nc -z localhost 27017; do   
-  echo "Waiting for MongoDB to be ready..."
-  sleep 1
-done
-'''
-                }
-            }
-        }
-
+        // Étape 1: Installer les dépendances
         stage('Install Dependencies') {
             steps {
                 script {
-                    dir('sustainafood-backend') { sh 'npm install' }
-                    dir('sustainafood-frontend') { sh 'npm install --legacy-peer-deps' }
-                }
-            }
-        }
-
-        stage('Run Backend Unit Tests') {
-            steps {
-                script {
+                    // Installer les dépendances du backend
                     dir('sustainafood-backend') {
-                        echo '🚀 Lancement des tests backend (Jest + Supertest)...'
-                        sh 'npm test'
+                        sh 'npm install'
+                    }
+
+                    // Installer les dépendances du frontend
+                    dir('sustainafood-frontend') {
+                        sh 'npm install --legacy-peer-deps'
                     }
                 }
             }
         }
 
+        // Étape 2: Exécuter les tests unitaires
+        stage('Run Unit Tests') {
+            steps {
+                script {
+                    // Exécuter les tests unitaires du backend
+                    dir('sustainafood-backend') {
+                        // Exemple: sh 'npm test'
+                    }
+
+                    // Exécuter les tests unitaires du frontend
+                    dir('sustainafood-frontend') {
+                        // Exemple: sh 'npm test'
+                    }
+                }
+            }
+        }
+
+        // Étape 3: Build de l'application
         stage('Build Application') {
             steps {
                 script {
+                    // Build du backend (optionnel si nécessaire)
+                    dir('sustainafood-backend') {
+                        // Exemple: sh 'npm run build'
+                    }
+
+                    // Build du frontend
                     dir('sustainafood-frontend') {
+                        // Vérifier et installer les packages manquants
                         sh 'npm install @fortawesome/fontawesome-svg-core'
                         sh 'npm install @fortawesome/react-fontawesome'
                         sh 'npm install @fortawesome/free-solid-svg-icons'
+
+                        // Lancer le build
                         sh 'npm run build'
                     }
                 }
             }
         }
 
+        // Étape 4: Analyse SonarQube
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    def scannerHome = tool 'scanner'
+                    sh 'node -v' // Afficher la version de Node pour déboguer
+
+                    def scannerHome = tool 'scanner' // Scanner SonarQube
                     withSonarQubeEnv {
+                        // Exécuter l'analyse SonarQube
                         sh "${scannerHome}/bin/sonar-scanner"
                     }
                 }

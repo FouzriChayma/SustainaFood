@@ -69,11 +69,11 @@ const Sidebar = () => {
               )}
 
               <Link to="/transporters" className={location.pathname === "/transporters" ? "active" : ""} role="menuitem">Transporters</Link>
-            </nav>
+            </div>
           )}
         </div>
 
-        {/* Food Donation Management avec sous-menu ✅ */}
+        {/* Food Donation Management avec sous-menu ✅
         <div className="dropdown">
           <button
             onClick={() => setShowFoodDonation(!showFoodDonation)}
@@ -88,7 +88,7 @@ const Sidebar = () => {
               <Link to="/food-donation/product" className={location.pathname === "/food-donation/product" ? "active" : ""} role="menuitem">Product list</Link>
             </nav>
           )}
-        </div>
+        </div> */}
 
         {/* Food Donation Management dropdown */}
         <div className="dropdown">
@@ -100,6 +100,8 @@ const Sidebar = () => {
             <div className="dropdown-content-dashboard">
               <Link to="/Donations">Donation Management</Link>
               <Link to="/DonationTransList">Donation Transaction List</Link>
+              <Link to="/food-donation/requests" className={location.pathname === "/food-donation/requests" ? "active" : ""} role="menuitem">Request list</Link>
+              <Link to="/food-donation/product" className={location.pathname === "/food-donation/product" ? "active" : ""} role="menuitem">Product list</Link>
             </div>
           )}
         </div>

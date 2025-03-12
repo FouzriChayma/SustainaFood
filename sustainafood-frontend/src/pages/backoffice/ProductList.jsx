@@ -1,31 +1,31 @@
-import  { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
-import { FaFilePdf } from "react-icons/fa";
+import { FaFilePdf, FaSort } from "react-icons/fa";
 import axios from "axios";
-import "/src/assets/styles/backoffcss/studentList.css";
 import ReactPaginate from "react-paginate";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import "../../assets/styles/backoffcss/ProductList.css";
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
-  const [searchQuery, setSearchQuery] = useState(""); // Search query for filtering products
-  const [loading, setLoading] = useState(true); // Loading state
-  const [error, setError] = useState(null); // Error state
-  const productsPerPage = 5; // Number of products per page
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortField, setSortField] = useState("name"); // Default sort field
+  const [sortOrder, setSortOrder] = useState("asc"); // Default sort order
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const productsPerPage = 5;
 
-  // Calculate pagesVisited
   const pagesVisited = currentPage * productsPerPage;
 
-  // Fetch products dynamically
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:3000/product/all"); // API endpoint to get all products
-        console.log("API Response Data:", response.data); // Check the structure here
+        const response = await axios.get("http://localhost:3000/product/all");
+        console.log("API Response Data:", response.data);
         setProducts(response.data);
         setLoading(false);
       } catch (error) {
@@ -35,9 +35,8 @@ const ProductList = () => {
       }
     };
     fetchProducts();
-  }, []); // Empty array means this effect runs once after the component mounts
+  }, []);
 
-  // Filtering products based on the search query
   const filteredProducts = products.filter((product) => {
     const query = searchQuery.toLowerCase();
     return (
@@ -47,14 +46,35 @@ const ProductList = () => {
     );
   });
 
-  // Exporting product list to PDF
+  // Sorting Logic
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    let comparison = 0;
+
+    if (sortField === "name") {
+      comparison = (a.name || "").localeCompare(b.name || ""); // handles null/undefined names
+    } else if (sortField === "productType") {
+      comparison = (a.productType || "").localeCompare(b.productType || "");
+    } else if (sortField === "status") {
+      comparison = (a.status || "").localeCompare(b.status || "");
+    } else if (sortField === "weight") {
+      const weightA = a.weightPerUnit || 0;  // Treat missing weight as 0
+      const weightB = b.weightPerUnit || 0;
+      comparison = weightA - weightB;       // Numeric comparison
+    } else if (sortField === "id") {
+        comparison = a.id - b.id;  // numeric comparison for IDs
+    }
+
+    return sortOrder === "asc" ? comparison : comparison * -1;
+  });
+
+
   const exportToPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.text("Product List", 10, 10);
 
     const tableColumn = ["ID", "Name", "Type", "Status", "Description", "Weight"];
-    const tableRows = products.map((product) => [
+    const tableRows = sortedProducts.map((product) => [  // Use sortedProducts here
       product.id,
       product.name,
       product.productType,
@@ -81,12 +101,19 @@ const ProductList = () => {
     doc.save("Product_List.pdf");
   };
 
-  // Pagination logic
-  const displayProducts = filteredProducts.slice(pagesVisited, pagesVisited + productsPerPage);
+  const displayProducts = sortedProducts.slice(pagesVisited, pagesVisited + productsPerPage);
   const pageCount = Math.ceil(filteredProducts.length / productsPerPage);
 
   const changePage = ({ selected }) => {
     setCurrentPage(selected);
+  };
+
+  const handleSortChange = (e) => {
+    setSortField(e.target.value);
+  };
+
+  const handleSortOrderChange = (e) => {
+    setSortOrder(e.target.value);
   };
 
   return (
@@ -112,6 +139,31 @@ const ProductList = () => {
             />
           </div>
 
+          <div className="sort-container">
+            <label htmlFor="sortField">Sort By:</label>
+            <select
+              id="sortField"
+              value={sortField}
+              onChange={handleSortChange}
+            >
+              <option value="name">Name</option>
+              <option value="productType">Type</option>
+              <option value="status">Status</option>
+              <option value="weight">Weight</option>
+              <option value="id">ID</option>
+            </select>
+
+            <label htmlFor="sortOrder">Order:</label>
+            <select
+              id="sortOrder"
+              value={sortOrder}
+              onChange={handleSortOrderChange}
+            >
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </div>
+
           {loading ? (
             <div>Loading products...</div>
           ) : error ? (
@@ -127,22 +179,18 @@ const ProductList = () => {
                     <th>Status</th>
                     <th>Description</th>
                     <th>Weight</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {displayProducts.map((product) => (
-                    <tr key={product.id}> {/* Changed _id to id here */}
-                      <td>{product.id}</td>  {/* Changed the index to product.id */}
+                    <tr key={product.id}>
+                      <td>{product.id}</td>
                       <td>{product.name}</td>
                       <td>{product.productType}</td>
                       <td>{product.status}</td>
                       <td>{product.productDescription}</td>
                       <td>{product.weightPerUnit ? `${product.weightPerUnit} ${product.weightUnit}` : "N/A"}</td>
-                      <td>
-                        <button className="action-btn">View</button>
-                        <button className="action-btn">Delete</button>
-                      </td>
+                    
                     </tr>
                   ))}
                 </tbody>

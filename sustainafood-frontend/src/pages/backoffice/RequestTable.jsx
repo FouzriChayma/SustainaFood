@@ -1,64 +1,89 @@
-import  { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import ReactPaginate from "react-paginate";
 import { FaFilePdf } from "react-icons/fa";
-import axios from "axios"; // Import axios for making API requests
-import "/src/assets/styles/backoffcss/studentList.css";
-import "../../assets/styles/backoffcss/request.css";
+import axios from "axios";
+import "../../assets/styles/backoffcss/RequestTable.css";
 
 const RequestTable = () => {
   const [requests, setRequests] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
-  const [searchQuery, setSearchQuery] = useState(""); // Search query for filtering requests
-  const [loading, setLoading] = useState(true); // Loading state
-  const [error, setError] = useState(null); // Error state
-  const requestsPerPage = 5; // Number of requests per page
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortField, setSortField] = useState("recipient"); // Default sort field
+  const [sortOrder, setSortOrder] = useState("asc"); // Default sort order
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const requestsPerPage = 5;
 
-  // Calculate pagesVisited
   const pagesVisited = currentPage * requestsPerPage;
 
-  // Fetch requests dynamically
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        setLoading(true); // Start loading
-        const response = await axios.get("http://localhost:3000/request"); // Ensure backend API is running
+        setLoading(true);
+        const response = await axios.get("http://localhost:3000/request");
         setRequests(response.data);
-        setLoading(false); // End loading
+        setLoading(false);
       } catch (error) {
         setLoading(false);
-        setError("Error fetching requests. Please try again later."); // Handle error gracefully
+        setError("Error fetching requests. Please try again later.");
         console.error("Error fetching requests:", error);
       }
     };
     fetchRequests();
-  }, []); // Empty array means this effect runs once after the component mounts
+  }, []);
 
-  // Filtering requests based on the search query
-  // const filteredRequests = requests.filter((request) => {
-  //   const query = searchQuery.toLowerCase();
-  //   // Check if recipient, status, or date includes the search query
-  //   const recipientMatch = request.recipient?.toLowerCase().includes(query);
-  //   const statusMatch = request.status?.toLowerCase().includes(query);
-  //   const dateMatch = request.date?.toLowerCase().includes(query);
-    
-  //   return recipientMatch || statusMatch || dateMatch;
-  // });
+  const filteredRequests = requests.filter((request) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      request.recipient?.toLowerCase().includes(query) ||
+      request.status?.toLowerCase().includes(query) ||
+      request.date?.toLowerCase().includes(query)
+    );
+  });
 
-  // Exporting data to PDF
+  // Sorting Logic
+  const sortedRequests = [...filteredRequests].sort((a, b) => {
+    let comparison = 0;
+
+    if (sortField === "recipient") {
+      comparison = (a.recipient || "").localeCompare(b.recipient || "");
+    } else if (sortField === "status") {
+      comparison = (a.status || "").localeCompare(b.status || "");
+    } else if (sortField === "date") {
+       // Handle date sorting, ensuring valid Date objects are used
+       const dateA = a.date ? new Date(a.date) : null;
+       const dateB = b.date ? new Date(b.date) : null;
+
+       if (dateA && dateB) {
+           comparison = dateA.getTime() - dateB.getTime(); // Compare timestamps
+       } else if (dateA) {
+           comparison = -1; // Treat a null date as earlier
+       } else if (dateB) {
+           comparison = 1;  // Treat a null date as earlier
+       } else {
+           comparison = 0;  // Both are null, so equal
+       }
+    } else if (sortField === "id") {
+        comparison = (a._id || "").localeCompare(b._id || ""); // sort by _id
+    }
+
+    return sortOrder === "asc" ? comparison : comparison * -1;
+  });
+
   const exportToPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.text("Request List", 10, 10);
 
     const tableColumn = ["ID", "Recipient", "Products", "Status", "Date"];
-    const tableRows = requests.map((request) => [
-      request._id, // Assuming _id is the ID field from the API response
+    const tableRows = sortedRequests.map((request) => [  // Use sortedRequests here
+      request._id,
       request.recipient,
-      request.requestedProducts.map(p => `${p.product} (x${p.quantity})`).join(", "),
+      request.requestedProducts.map(p => `${p._id} (x${p.quantity})`).join(", "),
       request.status,
       request.date,
     ]);
@@ -81,20 +106,26 @@ const RequestTable = () => {
     doc.save("Request_List.pdf");
   };
 
-  // Pagination logic
-  // const displayRequests = filteredRequests.slice(pagesVisited, pagesVisited + requestsPerPage);
-  const displayRequests = requests.slice(pagesVisited, pagesVisited + requestsPerPage);
-  const pageCount = Math.ceil(requests.length / requestsPerPage);
+  const displayRequests = sortedRequests.slice(pagesVisited, pagesVisited + requestsPerPage);
+  const pageCount = Math.ceil(filteredRequests.length / requestsPerPage);
 
   const changePage = ({ selected }) => {
     setCurrentPage(selected);
+  };
+
+  const handleSortChange = (e) => {
+    setSortField(e.target.value);
+  };
+
+  const handleSortOrderChange = (e) => {
+    setSortOrder(e.target.value);
   };
 
   return (
     <div className="dashboard-container">
       <Sidebar />
       <div className="dashboard-content">
-        <Navbar setSearchQuery={setSearchQuery} /> {/* Pass search setter to Navbar */}
+        <Navbar setSearchQuery={setSearchQuery} />
 
         <div className="request-list">
           <div className="header-container">
@@ -113,10 +144,34 @@ const RequestTable = () => {
             />
           </div>
 
+          <div className="sort-container">
+            <label htmlFor="sortField">Sort By:</label>
+            <select
+              id="sortField"
+              value={sortField}
+              onChange={handleSortChange}
+            >
+              <option value="recipient">Recipient</option>
+              <option value="status">Status</option>
+              <option value="date">Date</option>
+              <option value="id">ID</option>
+            </select>
+
+            <label htmlFor="sortOrder">Order:</label>
+            <select
+              id="sortOrder"
+              value={sortOrder}
+              onChange={handleSortOrderChange}
+            >
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </div>
+
           {loading ? (
-            <div>Loading requests...</div> // Show loading indicator
+            <div>Loading requests...</div>
           ) : error ? (
-            <div>{error}</div> // Show error message
+            <div>{error}</div>
           ) : (
             <>
               <table>
@@ -127,39 +182,20 @@ const RequestTable = () => {
                     <th>Products</th>
                     <th>Status</th>
                     <th>Date</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                {displayRequests.length > 0 ? (
-  displayRequests.map((request, index) => {
-    return (
-      <tr key={request._id}>
-        <td>{pagesVisited + index + 1}</td>
-        <td>{request.recipient || "N/A"}</td> {/* Display "N/A" if recipient is empty */}
-        <td>
-          {request.requestedProducts && request.requestedProducts.length > 0 ? (
-            request.requestedProducts
-              .map((p) => `${p._id} (x${p.quantity})`) // Access _id instead of product
-              .join(", ")
-          ) : (
-            "No Products"
-          )}
-        </td>
-        <td>{request.status}</td>
-        <td>{request.date}</td>
-        <td>
-          <button className="action-btn">View</button>
-          <button className="action-btn">Delete</button>
-        </td>
-      </tr>
-    );
-  })
-) : (
-  <tr>
-    <td colSpan="6">No requests found.</td>
-  </tr>
-                  )}
+                  {displayRequests.map((request) => (
+                    <tr key={request._id}>
+                      <td>{request._id}</td>
+                      <td>{request.recipient}</td>
+                      <td>
+                        {request.requestedProducts.map(p => `${p._id} (x${p.quantity})`).join(", ")}
+                      </td>
+                      <td>{request.status}</td>
+                      <td>{request.date}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
 

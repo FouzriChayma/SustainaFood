@@ -3,90 +3,80 @@ pipeline {
 
     stages {
 
-        // 🚀 Étape 1: Démarrer MongoDB avec volume persistant
+        // Start MongoDB if not running
         stage('Start MongoDB') {
             steps {
                 script {
-                    echo '🚀 Suppression ancienne instance MongoDB (si existe)...'
-                    sh 'docker rm -f mongodb || true' // Supprimer ancien MongoDB
-
-                    echo '🚀 Démarrage de MongoDB avec volume persistant...'
-                    sh 'docker run -d -p 27017:27017 --name mongodb -v mongo-data:/data/db mongo' // Redémarrer proprement
-
-                    echo '⏳ Attente du démarrage complet de MongoDB...'
-                    sh 'sleep 10' // Laisser le temps de démarrer proprement
+                    sh '''
+if [ ! "$(docker ps -q -f name=mongodb)" ]; then
+  if [ "$(docker ps -aq -f status=exited -f name=mongodb)" ]; then
+    docker start mongodb
+  else
+    docker run -d -p 27017:27017 --name mongodb -v mongo-data:/data/db mongo
+  fi
+else
+  echo "MongoDB already running"
+fi
+'''
                 }
             }
         }
 
-        // 📦 Étape 2: Installer les dépendances backend et frontend
+        // Wait for MongoDB
+        stage('Wait for MongoDB') {
+            steps {
+                script {
+                    sh '''
+until nc -z localhost 27017; do   
+  echo "Waiting for MongoDB to be ready..."
+  sleep 1
+done
+'''
+                }
+            }
+        }
+
+        // Install dependencies
         stage('Install Dependencies') {
             steps {
                 script {
-                    dir('sustainafood-backend') {
-                        echo '📦 Installation des dépendances backend...'
-                        sh 'npm install'
-                    }
-
-                    dir('sustainafood-frontend') {
-                        echo '📦 Installation des dépendances frontend...'
-                        sh 'npm install --legacy-peer-deps'
-                    }
+                    dir('sustainafood-backend') { sh 'npm install' }
+                    dir('sustainafood-frontend') { sh 'npm install --legacy-peer-deps' }
                 }
             }
         }
 
-        // ✅ Étape 3: Exécuter les tests backend
+        // Run backend tests
         stage('Run Backend Unit Tests') {
             steps {
                 script {
                     dir('sustainafood-backend') {
                         echo '🚀 Lancement des tests backend (Jest + Supertest)...'
-                        sh 'npm test'
+                        sh 'MONGO_URI=mongodb://localhost:27017/sustainafood npm test'
                     }
                 }
             }
         }
 
-        // ✅ Étape 4: Tests frontend (optionnel)
-        stage('Run Frontend Unit Tests') {
-            steps {
-                script {
-                    dir('sustainafood-frontend') {
-                        echo '🚀 Lancement des tests frontend...'
-                        // sh 'npm test' // Décommente si frontend tests présents
-                    }
-                }
-            }
-        }
-
-        // ⚙️ Étape 5: Build application
+        // Build
         stage('Build Application') {
             steps {
                 script {
-                    dir('sustainafood-backend') {
-                        echo '⚙️ Build backend...'
-                        // sh 'npm run build' // Si nécessaire
-                    }
-
+                    dir('sustainafood-backend') { /* sh 'npm run build' */ }
                     dir('sustainafood-frontend') {
-                        echo '⚙️ Préparation frontend...'
                         sh 'npm install @fortawesome/fontawesome-svg-core'
                         sh 'npm install @fortawesome/react-fontawesome'
                         sh 'npm install @fortawesome/free-solid-svg-icons'
-                        echo '⚙️ Build frontend...'
                         sh 'npm run build'
                     }
                 }
             }
         }
 
-        // 🔎 Étape 6: Analyse SonarQube
+        // SonarQube
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    echo '🔎 Analyse SonarQube...'
-                    sh 'node -v'
                     def scannerHome = tool 'scanner'
                     withSonarQubeEnv {
                         sh "${scannerHome}/bin/sonar-scanner"

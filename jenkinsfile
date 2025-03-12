@@ -1,9 +1,13 @@
 pipeline {
     agent any
 
+    environment {
+        MONGO_URI = 'mongodb://localhost:27017/sustainafood'
+        JWT_SECRET = 'tonSecret' // Remplace si besoin
+    }
+
     stages {
 
-        // Start MongoDB if not running
         stage('Start MongoDB') {
             steps {
                 script {
@@ -22,7 +26,6 @@ fi
             }
         }
 
-        // Wait for MongoDB
         stage('Wait for MongoDB') {
             steps {
                 script {
@@ -36,7 +39,6 @@ done
             }
         }
 
-        // Install dependencies
         stage('Install Dependencies') {
             steps {
                 script {
@@ -46,23 +48,20 @@ done
             }
         }
 
-        // Run backend tests
         stage('Run Backend Unit Tests') {
             steps {
                 script {
                     dir('sustainafood-backend') {
                         echo '🚀 Lancement des tests backend (Jest + Supertest)...'
-                        sh 'MONGO_URI=mongodb://localhost:27017/sustainafood npm test'
+                        sh 'npm test'
                     }
                 }
             }
         }
 
-        // Build
         stage('Build Application') {
             steps {
                 script {
-                    dir('sustainafood-backend') { /* sh 'npm run build' */ }
                     dir('sustainafood-frontend') {
                         sh 'npm install @fortawesome/fontawesome-svg-core'
                         sh 'npm install @fortawesome/react-fontawesome'
@@ -73,7 +72,6 @@ done
             }
         }
 
-        // SonarQube
         stage('SonarQube Analysis') {
             steps {
                 script {

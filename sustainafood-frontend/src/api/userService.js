@@ -1,7 +1,7 @@
 import axios from "axios";
 
 //const API_URL = import.meta.env.VITE_API_URL + "/users";
-
+const API_URL = "http://localhost:3000"; // Ensure this matches your backend port
 // 🔹 Créer un utilisateur
 export const signupUser = async (userData) => {
   return await axios.post('http://localhost:3000/users/create', userData, {
@@ -84,15 +84,21 @@ export const toggle2FA = async (email) => {
 // userService.js
 
 // 🔹 Validate 2FA Code
-export const validate2FACode = async (email, twoFACode) => {
-  return await axios.post("http://localhost:3000/users/validate-2fa-code", {
-    email,
-    twoFACode,
-  }, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+export const validate2FACode = async (data) => {
+  const token = localStorage.getItem("token"); // Adjust if using a token
+  try {
+      const response = await axios.post(`${API_URL}/users/validate-2fa-code`, {
+          email: data.email,
+          twoFACode: data.twoFACode,
+      }, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      console.log("API Response:", response); // Debug the response
+      return response;
+  } catch (error) {
+      console.error("API Error:", error);
+      throw error; // Re-throw to handle in the component
+  }
 };
 export const changePassword = async (userId, currentPassword, newPassword) => {
   return axios.put(

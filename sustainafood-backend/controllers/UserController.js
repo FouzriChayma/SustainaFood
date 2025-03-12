@@ -3,8 +3,16 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
+const twilio = require('twilio');
 const crypto = require("crypto"); // For generating random reset codes
 require("dotenv").config(); // Load environment variables
+
+// Initialize Twilio client
+const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+const verifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID;
+
+// Generate a 6-digit code (used for both reset and 2FA)
+const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 /////////////////////////////////
 
 /////////////////////////////////////////////////////////
@@ -146,6 +154,11 @@ async function addUser(req, res) {
       // Vérifier si les mots de passe correspondent
       if (password !== confirmPassword) {
         return res.status(400).json({ error: "Passwords do not match" });
+      }
+      // ✅ Vérifier si l'email existe déjà
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already exists" });
       }
   
       // Hacher le mot de passe avant de le stocker
@@ -438,8 +451,10 @@ async function deleteUser(req, res) {
 }
 ///////////////////////////////////////////hedhy badltha ///////////////////////////////////////////
 // Signin (generate JWT token)
+// Signin (generate JWT token)
+
 async function user_signin(req, res) {
-    console.log("Requête reçue :", req.body); // 🔹 LOG DES DONNÉES REÇUES
+    console.log("Requête reçue :", req.body);
 
     const { email, password } = req.body;
 
@@ -453,117 +468,67 @@ async function user_signin(req, res) {
             return res.status(400).json({ error: "Invalid credentials" });
         }
 
-        // Check if the user is blocked
         if (user.isBlocked) {
             return res.status(403).json({ error: "Your account is blocked. Please contact support." });
         }
-        //réactivation
+
+        let welcomeMessage = null;
         if (!user.isActive) {
             user.isActive = true;
             await user.save();
+            welcomeMessage = "Your account has been reactivated. Welcome back!";
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ error: "Invalid credentials" });
         }
-        
-        // Check if 2FA is enabled
+
         if (user.is2FAEnabled) {
-            // Generate and send 2FA code
-            const twoFACode = generate2FACode();
-            user.twoFACode = twoFACode;
-            user.twoFACodeExpires = Date.now() + 10 * 60 * 1000; // Expires in 10 minutes
-            await user.save();
+            if (!user.phone || isNaN(user.phone)) {
+                console.error("Invalid phone number in database:", user.phone);
+                return res.status(500).json({ error: "User phone number is missing or invalid" });
+            }
 
-            // Send 2FA code via email
-            const transporter = nodemailer.createTransport({
-                service: "gmail",
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS,
-                },
-                tls: {
-                    rejectUnauthorized: false,
-                },
-            });
+            const phoneWithPrefix = `+216${user.phone.toString()}`;
+            console.log("Sending 2FA to:", phoneWithPrefix);
 
-            const mailOptions = {
-                from: process.env.EMAIL_USER,
-                to: email,
-                subject: "Your 2FA Verification Code",
-                text: `Your 2FA verification code is: ${twoFACode}. This code is valid for 10 minutes.`,
-            };
+            try {
+                const verification = await client.verify.v2
+                    .services(verifyServiceSid)
+                    .verifications.create({ to: phoneWithPrefix, channel: "sms" });
+                console.log("Verification SID:", verification.sid);
+            } catch (verifyError) {
+                console.error("Verify API error:", verifyError.message, verifyError.stack);
+                return res.status(500).json({ error: "Failed to send 2FA code via Verify API", details: verifyError.message });
+            }
 
-            await transporter.sendMail(mailOptions);
-
-            return res.status(200).json({ message: "2FA code sent to your email", requires2FA: true });
+            return res.status(200).json({ message: "2FA code sent to your phone", requires2FA: true });
         }
 
-       
         const payload = {
             userId: user._id,
             role: user.role,
         };
 
-        const token = jwt.sign(payload, "your_jwt_secret", { expiresIn: "1h" });
-
-        res.status(200).json({ token, role: user.role, id: user._id , message: !user.isActive ? "Your account has been reactivated. Welcome back!" : null, is2FAEnabled: user.is2FAEnabled});
+        const token = jwt.sign(payload, process.env.JWT_SECRET || "your_jwt_secret", { expiresIn: "1h" });
+        res.status(200).json({
+            token,
+            role: user.role,
+            id: user._id,
+            message: welcomeMessage,
+            is2FAEnabled: user.is2FAEnabled,
+        });
     } catch (error) {
-      res.status(500).json({ message: "Erreur interne", error });
+        console.error("Erreur serveur détaillée :", {
+            message: error.message,
+            stack: error.stack,
+            requestBody: req.body,
+        });
+        res.status(500).json({ error: "Server error", details: error.message });
     }
 }
 
-const send2FACodeforsigninwithgoogle = async (req, res) => {
-    try {
-        const { email } = req.body;
-
-        // Fetch the user from the database
-        const user = await User.findOne({ email });
-
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        if (!user.is2FAEnabled) {
-            return res.status(400).json({ message: "2FA not enabled for this user", requires2FA: false });
-        }
-
-        // Generate 2FA code
-        const twoFACode = generate2FACode();
-        user.twoFACode = twoFACode;
-        user.twoFACodeExpires = Date.now() + 10 * 60 * 1000; // 10 minutes expiration
-        await user.save();
-
-        // Configure email transporter
-        const transporter = nodemailer.createTransport({
-            service: "gmail",
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-            },
-            tls: {
-                rejectUnauthorized: false,
-            },
-        });
-
-        // Email details
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: "Your 2FA Verification Code",
-            text: `Your 2FA verification code is: ${twoFACode}. This code is valid for 10 minutes.`,
-        };
-
-        // Send email
-        await transporter.sendMail(mailOptions);
-
-        return res.status(200).json({ message: "2FA code sent to your email", requires2FA: true });
-    } catch (error) {
-        console.error("❌ Error sending 2FA code:", error);
-        return res.status(500).json({ message: "Failed to send 2FA code" });
-    }
-};
 
 
   
@@ -739,102 +704,114 @@ async function changePassword(req, res) {
 // Generate a 6-digit 2FA code
 const generate2FACode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// 🚀 Send 2FA Code
+// Send 2FA code via Verify API
 async function send2FACode(req, res) {
     const { email } = req.body;
-
     try {
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ error: "User not found" });
 
-        // Generate 2FA code
-        const twoFACode = generate2FACode();
+        if (!user.phone || isNaN(user.phone)) {
+            return res.status(500).json({ error: "User phone number is missing or invalid" });
+        }
 
-        // Store 2FA code & expiration
+        const phoneWithPrefix = `+216${user.phone.toString()}`;
+        const twoFACode = generateCode();
         user.twoFACode = twoFACode;
-        user.twoFACodeExpires = Date.now() + 10 * 60 * 1000; // Expires in 10 minutes
+        user.twoFACodeExpires = Date.now() + 10 * 60 * 1000;
         await user.save();
 
-        // Configure email transporter
-        const transporter = nodemailer.createTransport({
-            service: "gmail",
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-            },
-            tls: {
-                rejectUnauthorized: false,
-            },
-        });
+        try {
+            const verification = await client.verify.v2
+                .services(verifyServiceSid)
+                .verifications.create({ to: phoneWithPrefix, channel: "sms" });
+            console.log("Verification SID:", verification.sid);
+        } catch (verifyError) {
+            console.error("Verify API error:", verifyError.message, verifyError.stack);
+            return res.status(500).json({ error: "Failed to send 2FA code via Verify API", details: verifyError.message });
+        }
 
-        // Email details
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: "Your 2FA Verification Code",
-            text: `Your 2FA verification code is: ${twoFACode}. This code is valid for 10 minutes.`,
-        };
-
-        // Send email
-        await transporter.sendMail(mailOptions);
-
-        res.status(200).json({ message: "2FA code sent successfully" });
-
+        res.status(200).json({ message: "2FA code sent successfully via SMS" });
     } catch (error) {
         console.error("Error sending 2FA code:", error);
-        res.status(500).json({ error: "Error sending 2FA code" });
+        res.status(500).json({ error: "Error sending 2FA code", details: error.message });
     }
 }
-
-// 🚀 Validate 2FA Code
+// Generate a 6-digit code (used for both reset and 2FA)
+// Validate 2FA code
+// Validate 2FA code
 async function validate2FACode(req, res) {
     const { email, twoFACode } = req.body;
-  
-    try {
-      const user = await User.findOne({ email });
-  
-      if (!user) {
-        return res.status(400).json({ error: "User not found" });
-      }
-  
-      if (!user.twoFACode || !user.twoFACodeExpires) {
-        return res.status(400).json({ error: "No 2FA code found for this user" });
-      }
-  
-      if (user.twoFACode !== twoFACode) {
-        return res.status(400).json({ error: "Invalid 2FA code" });
-      }
-  
-      if (user.twoFACodeExpires < Date.now()) {
-        return res.status(400).json({ error: "2FA code has expired" });
-      }
-  
-      // Clear the 2FA code after successful validation
-      user.twoFACode = undefined;
-      user.twoFACodeExpires = undefined;
-      await user.save();
-  
-      // Generate a token for the user
-      const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, "your_jwt_secret", { expiresIn: "1h" });
-  
-      res.status(200).json({ token, role: user.role, id: user._id });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Server error" });
+    console.log("Validating 2FA code:", { email, twoFACode, typeOfEmail: typeof email, typeOfTwoFACode: typeof twoFACode });
+
+    // Validate input
+    if (typeof email !== "string" || typeof twoFACode !== "string") {
+        return res.status(400).json({ error: "Email and twoFACode must be strings" });
     }
-  }
-// 🚀 Toggle 2FA Status
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return res.status(400).json({ error: "User not found" });
+
+        if (!user.phone || isNaN(user.phone)) {
+            return res.status(400).json({ error: "User phone number is missing or invalid" });
+        }
+
+        const phoneWithPrefix = `+216${user.phone.toString()}`;
+        console.log("Verifying 2FA for:", phoneWithPrefix);
+
+        // Use Twilio Verify to check the code
+        let verificationCheck;
+        try {
+            verificationCheck = await client.verify.v2
+                .services(verifyServiceSid)
+                .verificationChecks.create({ to: phoneWithPrefix, code: twoFACode });
+            console.log("Verification Check Status:", verificationCheck.status);
+        } catch (verifyError) {
+            console.error("Verify Check API error:", verifyError.message, verifyError.stack);
+            return res.status(500).json({ error: "Failed to verify 2FA code via Verify API", details: verifyError.message });
+        }
+
+        if (verificationCheck.status !== "approved") {
+            return res.status(400).json({ error: "Invalid or expired 2FA code" });
+        }
+
+        // Debug user data before token generation
+        console.log("User data for token:", {
+            _id: user._id,
+            email: user.email,
+            role: user.role,
+        });
+
+        // Check JWT_SECRET
+        if (!process.env.JWT_SECRET) {
+            console.error("JWT_SECRET is not configured");
+            return res.status(500).json({ error: "JWT_SECRET is not configured" });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        console.log("Token generated:", token);
+
+        res.status(200).json({ token, role: user.role, id: user._id.toString() });
+    } catch (error) {
+        console.error("Error in validate2FACode:", {
+            message: error.message,
+            stack: error.stack,
+            requestBody: req.body,
+        });
+        res.status(500).json({ error: "Server error", details: error.message });
+    }
+}
+// Toggle 2FA status
 async function toggle2FA(req, res) {
     const { email } = req.body;
-
     try {
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ error: "User not found" });
 
-        // Toggle 2FA status
         user.is2FAEnabled = !user.is2FAEnabled;
         await user.save();
-
         res.status(200).json({ message: `2FA ${user.is2FAEnabled ? "enabled" : "disabled"}` });
     } catch (error) {
         console.error("Error toggling 2FA:", error);
@@ -842,5 +819,39 @@ async function toggle2FA(req, res) {
     }
 }
 
+// Send 2FA code for Google sign-in via Verify API
+const send2FACodeforsigninwithgoogle = async (req, res) => {
+    try {
+        const { email, phone } = req.body;
+
+        if (!phone) return res.status(400).json({ error: "Phone number is required for SMS 2FA" });
+
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        if (!user.is2FAEnabled) return res.status(400).json({ message: "2FA not enabled for this user", requires2FA: false });
+
+        const twoFACode = generateCode();
+        user.twoFACode = twoFACode;
+        user.twoFACodeExpires = Date.now() + 10 * 60 * 1000;
+        await user.save();
+
+        const phoneWithPrefix = `+216${phone.toString()}`;
+        try {
+            const verification = await client.verify.v2
+                .services(verifyServiceSid)
+                .verifications.create({ to: phoneWithPrefix, channel: "sms" });
+            console.log("Verification SID:", verification.sid);
+        } catch (verifyError) {
+            console.error("Verify API error:", verifyError.message, verifyError.stack);
+            return res.status(500).json({ message: "Failed to send 2FA code via Verify API", details: verifyError.message });
+        }
+
+        return res.status(200).json({ message: "2FA code sent to your phone", requires2FA: true });
+    } catch (error) {
+        console.error("❌ Error sending 2FA code via SMS:", error);
+        return res.status(500).json({ message: "Failed to send 2FA code via SMS", details: error.message });
+    }
+};
 
 module.exports = {send2FACode,send2FACodeforsigninwithgoogle,changePassword,updateUserWithEmail, createUser,addUser, getUsers, getUserById,updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter ,deactivateAccount  , validate2FACode , toggle2FA};

@@ -29,11 +29,13 @@ import NotFound from "./pages/Not-Found";
 import AccountSettings from "./pages/AccountSettings.js";
 import ListOfDonations from "./pages/ListOfDonations";
 import AddDonation from "./pages/AddDonation";
-import MyRequests from "./pages/MyRequests.jsx";
+import MyRequest from "./pages/MyRequest.jsx";
 import MyDonations from "./pages/MyDonations"; 
 import TwoFAVerification from "./pages/TwoFAVerification";
 
 import DetailsDonations from "./pages/DetailsDonations";
+import DonationList from "./pages/backoffice/DonationList.jsx";
+import DonationTransactionList from "./pages/backoffice/DonationTransactionList.jsx";
 import RequestTable from "./pages/backoffice/RequestTable.jsx";
 import ProductList from "./pages/backoffice/ProductList.jsx";
 const App = () => {
@@ -67,6 +69,8 @@ const App = () => {
         <Route path="/ongs/view/:id" element={<ViewNGO />} />
         <Route path="/transporters/view/:id" element={<ViewTransporter />} />
         <Route path="/admin-profile" element={<AdminProfile />} />
+        <Route path="/Donations" element={<DonationList />} />
+        <Route path="/DonationTransList" element={<DonationTransactionList/>} />
         <Route path="/food-donation/requests" element={<RequestTable />} />
         <Route path="/food-donation/product" element={<ProductList />} />
 
@@ -91,7 +95,7 @@ const App = () => {
       </Route>
          {/* Private Routes for ong,student */}
       <Route element={<PrivateRoute roles={["ong", "student"]} />}>
-      <Route path="/myrequests" element={<MyRequests />} />
+      <Route path="/myrequest" element={<MyRequest />} />
       </Route>
       <Route element={<PrivateRoute roles={["supermarket","restaurant"]} />}>
   <Route path="/mydonations" element={<MyDonations />} />

@@ -38,9 +38,10 @@ app.use('/product',productRouter);
 app.use('/donation',donationRouter);
 app.use('/auth', authRouter); // 🔹 Ajouter la route d'authentification
 
-app.use('/donation-transactions', donationTransactionRoutes);
+app.use('/donationTransaction', donationTransactionRoutes);
 app.use('/request', requestNeedRoutes);
 // Database Connection
+if (process.env.NODE_ENV !== 'test') {//pour la db de test
 var mongoConfig = require('./config/database.json');
 
 mongoose.connect(mongoConfig.url)
@@ -50,7 +51,12 @@ mongoose.connect(mongoConfig.url)
 mongoose.connection.once('open', () => {
   console.log(" MongoDB connection established successfully");
 });
-
+}
+////////////////////////////////////////////////////////////////
+require("./config/passportConfig"); // Charger la config de Passport
+// app.use(passport.initialize());
+////////////////////////////////////////////
+// Catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
 });

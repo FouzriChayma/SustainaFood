@@ -2,16 +2,15 @@ pipeline {
     agent any
 
     stages {
-        // Étape 1: Installer les dépendances
+        // ✅ Étape 1: Installer les dépendances
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Installer les dépendances du backend
+                    // Backend dependencies
                     dir('sustainafood-backend') {
                         sh 'npm install'
                     }
-
-                    // Installer les dépendances du frontend
+                    // Frontend dependencies
                     dir('sustainafood-frontend') {
                         sh 'npm install --legacy-peer-deps'
                     }
@@ -19,55 +18,81 @@ pipeline {
             }
         }
 
-        // Étape 2: Exécuter les tests unitaires
-        stage('Run Unit Tests') {
+        // ✅ Étape 2: Exécuter les tests unitaires séparément (2FA & Sign-in)
+        stage('Run Backend Tests Separately') {
             steps {
                 script {
-                    // Exécuter les tests unitaires du backend
                     dir('sustainafood-backend') {
-                        // Exemple: sh 'npm test'
-                    }
+                        // ✅ Lancer user-2fa.test.js
+                        echo 'Running backend test: 2FA'
+                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                            sh 'npx jest test/user-2fa.test.js --detectOpenHandles --forceExit'
+                        }
 
-                    // Exécuter les tests unitaires du frontend
-                    dir('sustainafood-frontend') {
-                        // Exemple: sh 'npm test'
+                        // ✅ Lancer user-signin.test.js
+                        echo 'Running backend test: Sign-in'
+                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                            sh 'npx jest test/user-signin.test.js --detectOpenHandles --forceExit'
+                        }
+
+                        echo 'Backend tests completed.'
                     }
                 }
             }
         }
 
-        // Étape 3: Build de l'application
+        // ✅ Étape 3: Tests frontend
+        stage('Run Frontend Tests') {
+            steps {
+                script {
+                    dir('sustainafood-frontend') {
+                        echo 'Running frontend tests...'
+                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                            sh 'npm test'
+                        }
+                        echo 'Frontend tests completed.'
+                    }
+                }
+            }
+        }
+
+        // ✅ Étape 4: Build Application
         stage('Build Application') {
             steps {
                 script {
-                    // Build du backend (optionnel si nécessaire)
+                    // Backend build (optionnel)
                     dir('sustainafood-backend') {
-                        // Exemple: sh 'npm run build'
+                        echo 'Building backend...'
+                        // sh 'npm run build' // Uncomment if backend build is needed
+                        echo 'Backend build completed.'
                     }
 
-                    // Build du frontend
+                    // Frontend build
                     dir('sustainafood-frontend') {
-                        // Vérifier et installer les packages manquants
+                        echo 'Building frontend...'
+
+                        // Installer fontawesome icons (optional)
                         sh 'npm install @fortawesome/fontawesome-svg-core'
                         sh 'npm install @fortawesome/react-fontawesome'
                         sh 'npm install @fortawesome/free-solid-svg-icons'
 
-                        // Lancer le build
+                        // Build frontend
                         sh 'npm run build'
+                        echo 'Frontend build completed.'
                     }
                 }
             }
         }
 
-        // Étape 4: Analyse SonarQube
+        // ✅ Étape 5: SonarQube Analysis
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    sh 'node -v' // Afficher la version de Node pour déboguer
+                    sh 'node -v' // Debug Node.js version
 
-                    def scannerHome = tool 'scanner' // Scanner SonarQube
+                    def scannerHome = tool 'scanner' // Sonar scanner tool name in Jenkins
                     withSonarQubeEnv {
-                        // Exécuter l'analyse SonarQube
+                        // Run sonar-scanner
                         sh "${scannerHome}/bin/sonar-scanner"
                     }
                 }

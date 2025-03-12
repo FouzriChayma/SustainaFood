@@ -1,54 +1,53 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
-import {
-    FaUsers, FaChartBar, FaCogs, FaTruck, FaUserCog,
-    FaAppleAlt, FaChevronDown, FaChevronUp, FaUniversity,
-    FaHandsHelping, FaFileAlt, FaLock, FaQuestionCircle
+import { 
+    FaUsers, FaChartBar, FaCogs, FaTruck, FaUserCog, 
+    FaAppleAlt, FaChevronDown, FaChevronUp, FaUniversity, 
+    FaHandsHelping, FaFileAlt, FaLock, FaQuestionCircle 
 } from "react-icons/fa";
 import logo from '../../assets/images/logooo.png';
 import "/src/assets/styles/backoffcss/sidebar.css";
 
+// Sidebar component for navigation
 const Sidebar = () => {
+  // State to manage dropdown visibility
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showRecipients, setShowRecipients] = useState(false);
   const [showDonors, setShowDonors] = useState(false);
+  const [showFoodDonationManagement, setShowFoodDonationManagement] = useState(false);
   const [showFoodDonation, setShowFoodDonation] = useState(false);
 
   const location = useLocation(); // Get current location
 
   return (
     <div className="sidebar">
+      {/* Sidebar header with logo and title */}
       <div className="sidebar-header">
         <img src={logo} alt="Logo" className="logo" />
         <h2>SustainaFood Admin</h2>
       </div>
       <nav>
+        {/* Dashboard link */}
         <Link to="/dashboard" className={location.pathname === "/dashboard" ? "active" : ""}>
           <FaChartBar className="icon" /> <span>Dashboard</span>
         </Link>
-        <Link to="/reports" className={location.pathname === "/reports" ? "active" : ""}>
+        {/* Reports link */}
+        <Link to="/reports">
           <FaFileAlt className="icon" /> <span>Reports</span>
         </Link>
 
-        {/* User Management avec sous-menu */}
+        {/* User Management dropdown */}
         <div className="dropdown">
-          <button
-            onClick={() => setShowUserManagement(!showUserManagement)}
-            aria-expanded={showUserManagement}
-            aria-controls="user-management-dropdown"
-          >
-            <FaUsers className="icon" /> <span>User Management</span> {showUserManagement ? <FaChevronUp /> : <FaChevronDown />}
+          <button onClick={() => setShowUserManagement(!showUserManagement)}>
+            <FaUsers className="icon" /> <span>User Management</span> 
+            {showUserManagement ? <FaChevronUp /> : <FaChevronDown />}
           </button>
           {showUserManagement && (
-            <nav className="dropdown-content-dashboard" id="user-management-dropdown" role="menu">
-               {/* Recipients sous-menu */}
-              <button
-                className="sub-dropdown"
-                onClick={() => setShowRecipients(!showRecipients)}
-                aria-expanded={showRecipients}
-                aria-controls="recipients-dropdown"
-              >
-                <FaHandsHelping className="icon" /> <span>Recipients</span> {showRecipients ? <FaChevronUp /> : <FaChevronDown />}
+            <div className="dropdown-content-dashboard">
+              {/* Recipients submenu */}
+              <button className="sub-dropdown" onClick={() => setShowRecipients(!showRecipients)}>
+                <FaHandsHelping className="icon" /> <span>Recipients</span> 
+                {showRecipients ? <FaChevronUp /> : <FaChevronDown />}
               </button>
               {showRecipients && (
                 <ul className="sub-dropdown-content" id="recipients-dropdown" role="menu">
@@ -57,14 +56,10 @@ const Sidebar = () => {
                 </ul>
               )}
 
-              {/* Donors sous-menu */}
-              <button
-                className="sub-dropdown"
-                onClick={() => setShowDonors(!showDonors)}
-                aria-expanded={showDonors}
-                aria-controls="donors-dropdown"
-              >
-                <FaUniversity className="icon" /> <span>Donors</span> {showDonors ? <FaChevronUp /> : <FaChevronDown />}
+              {/* Donors submenu */}
+              <button className="sub-dropdown" onClick={() => setShowDonors(!showDonors)}>
+                <FaUniversity className="icon" /> <span>Donors</span> 
+                {showDonors ? <FaChevronUp /> : <FaChevronDown />}
               </button>
               {showDonors && (
                 <ul className="sub-dropdown-content" id="donors-dropdown" role="menu">
@@ -95,16 +90,34 @@ const Sidebar = () => {
           )}
         </div>
 
-        <Link to="/logistics" className={location.pathname === "/logistics" ? "active" : ""}>
+        {/* Food Donation Management dropdown */}
+        <div className="dropdown">
+          <button onClick={() => setShowFoodDonationManagement(!showFoodDonationManagement)}>
+            <FaAppleAlt className="icon" /> <span>Food Donation Management</span> 
+            {showFoodDonationManagement ? <FaChevronUp /> : <FaChevronDown />}
+          </button>
+          {showFoodDonationManagement && (
+            <div className="dropdown-content-dashboard">
+              <Link to="/Donations">Donation Management</Link>
+              <Link to="/DonationTransList">Donation Transaction List</Link>
+            </div>
+          )}
+        </div>
+
+        {/* Logistics & Transport link */}
+        <Link to="/logistics">
           <FaTruck className="icon" /> <span>Logistics & Transport</span>
         </Link>
-        <Link to="/settings" className={location.pathname === "/settings" ? "active" : ""}>
+        {/* Settings link */}
+        <Link to="/settings">
           <FaCogs className="icon" /> <span>Settings</span>
         </Link>
-        <Link to="/Authentification" className={location.pathname === "/Authentification" ? "active" : ""}>
+        {/* Authentification link */}
+        <Link to="/Authentification">
           <FaLock className="icon" /> <span>Authentification</span>
         </Link>
-        <Link to="/Help-Center" className={location.pathname === "/Help-Center" ? "active" : ""}>
+        {/* Help Center link */}
+        <Link to="/Help-Center">
           <FaQuestionCircle className="icon" /> <span>Help Center</span>
         </Link>
       </nav>

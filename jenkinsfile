@@ -7,9 +7,14 @@ pipeline {
         stage('Start MongoDB') {
             steps {
                 script {
+                    echo '🚀 Suppression ancienne instance MongoDB (si existe)...'
+                    sh 'docker rm -f mongodb || true' // Supprimer ancien MongoDB
+
                     echo '🚀 Démarrage de MongoDB avec volume persistant...'
-                    // Démarrer MongoDB et garder les données dans le volume mongo-data
-                    sh 'docker run -d -p 27017:27017 --name mongodb -v mongo-data:/data/db mongo || true'
+                    sh 'docker run -d -p 27017:27017 --name mongodb -v mongo-data:/data/db mongo' // Redémarrer proprement
+
+                    echo '⏳ Attente du démarrage complet de MongoDB...'
+                    sh 'sleep 10' // Laisser le temps de démarrer proprement
                 }
             }
         }
@@ -18,13 +23,11 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Backend
                     dir('sustainafood-backend') {
                         echo '📦 Installation des dépendances backend...'
                         sh 'npm install'
                     }
 
-                    // Frontend
                     dir('sustainafood-frontend') {
                         echo '📦 Installation des dépendances frontend...'
                         sh 'npm install --legacy-peer-deps'
@@ -39,58 +42,52 @@ pipeline {
                 script {
                     dir('sustainafood-backend') {
                         echo '🚀 Lancement des tests backend (Jest + Supertest)...'
-                        sh 'npm test' // Lancer les tests unitaires
+                        sh 'npm test'
                     }
                 }
             }
         }
 
-        // ✅ Étape 4: (Optionnel) Exécuter les tests frontend
+        // ✅ Étape 4: Tests frontend (optionnel)
         stage('Run Frontend Unit Tests') {
             steps {
                 script {
                     dir('sustainafood-frontend') {
-                        echo '🚀 Lancement des tests frontend (si disponibles)...'
-                        // Décommente la ligne suivante si tu as des tests frontend
-                        // sh 'npm test'
+                        echo '🚀 Lancement des tests frontend...'
+                        // sh 'npm test' // Décommente si frontend tests présents
                     }
                 }
             }
         }
 
-        // ⚙️ Étape 5: Build de l'application backend + frontend
+        // ⚙️ Étape 5: Build application
         stage('Build Application') {
             steps {
                 script {
-                    // ⚙️ Backend build (optionnel si nécessaire)
                     dir('sustainafood-backend') {
-                        echo '⚙️ Build backend (si applicable)...'
-                        // Décommente si ton backend a besoin d'être buildé
-                        // sh 'npm run build'
+                        echo '⚙️ Build backend...'
+                        // sh 'npm run build' // Si nécessaire
                     }
 
-                    // ⚙️ Frontend build
                     dir('sustainafood-frontend') {
-                        echo '⚙️ Vérification et installation des packages FontAwesome...'
+                        echo '⚙️ Préparation frontend...'
                         sh 'npm install @fortawesome/fontawesome-svg-core'
                         sh 'npm install @fortawesome/react-fontawesome'
                         sh 'npm install @fortawesome/free-solid-svg-icons'
-
-                        echo '⚙️ Lancement du build frontend...'
+                        echo '⚙️ Build frontend...'
                         sh 'npm run build'
                     }
                 }
             }
         }
 
-        // 🔎 Étape 6: Analyse SonarQube (optionnelle, à activer si configuré)
+        // 🔎 Étape 6: Analyse SonarQube
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    echo '🔎 Lancement de l\'analyse SonarQube...'
-                    sh 'node -v' // Affiche la version de Node.js pour vérification
-
-                    def scannerHome = tool 'scanner' // Outil SonarScanner (pré-configuré dans Jenkins)
+                    echo '🔎 Analyse SonarQube...'
+                    sh 'node -v'
+                    def scannerHome = tool 'scanner'
                     withSonarQubeEnv {
                         sh "${scannerHome}/bin/sonar-scanner"
                     }

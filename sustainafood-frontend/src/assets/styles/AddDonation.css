@@ -55,3 +55,62 @@
     width: 100%;
   }
   
+  .radio-buttons-container-adddonation {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  
+  .radio-button-adddonation {
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+  }
+  
+  .radio-button__input-adddonation {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .radio-button__label-adddonation {
+    display: inline-block;
+    padding-left: 30px;
+    margin-bottom: 10px;
+    position: relative;
+    font-size: 16px;
+    color: #000;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+  }
+  
+  .radio-button__custom-adddonation {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #555;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+  }
+  
+  .radio-button__input-adddonation:checked + .radio-button__label-adddonation .radio-button__custom-adddonation {
+    transform: translateY(-50%) scale(0.9);
+    border: 5px solid #8dc73f;
+    color: #8dc73f;
+  }
+  
+  .radio-button__input-adddonation:checked + .radio-button__label-adddonation {
+    color: #8dc73f;
+  }
+  
+  .radio-button__label-adddonation:hover .radio-button__custom-adddonation {
+    transform: translateY(-50%) scale(1.2);
+    border-color: #8dc73f;
+    box-shadow: 0 0 10px #4c8bf580;
+  }
+  
+  

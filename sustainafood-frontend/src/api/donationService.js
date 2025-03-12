@@ -3,7 +3,7 @@ import axios from "axios";
 export const addDonation = async (donationrData) => {
     return await axios.post('http://localhost:3000/donation/', donationrData, {
       headers: {
-        "Content-Type": "multipart/form-data",
+        "Content-Type": "application/json",
       },
     });
   };
@@ -11,8 +11,14 @@ export const addDonation = async (donationrData) => {
     return axios.get(`http://localhost:3000/donation/`);
   };
   export const getDonationById = async (id) => {
-    return axios.get(`http://localhost:3000/donation/${id}`);
-  };
+    try {
+        return await axios.get(`http://localhost:3000/donation/${id}`);
+    } catch (error) {
+        console.error("Error fetching donation:", error);
+        throw error;
+    }
+};
+
   export const getDonationByUserId = async (id) => {
     return axios.get(`http://localhost:3000/donation/user/${id}`);
   };

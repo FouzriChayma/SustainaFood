@@ -6,7 +6,7 @@ const Counter = require('../models/Counter');
 // ✅ Get all donations
 async function getAllDonations (req, res)  {
     try {
-        const donations = await Donation.find().populate('user').populate('products');
+        const donations = await Donation.find().populate('donor').populate('products');
         res.status(200).json(donations);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
@@ -14,10 +14,15 @@ async function getAllDonations (req, res)  {
 };
 
 // ✅ Get donation by ID
-async function getDonationById  (req, res)  {
+async function getDonationById(req, res) {
     try {
         const { id } = req.params;
-        const donation = await Donation.findById(id).populate('user').populate('products');
+       
+
+        const donation = await Donation.findById(id)
+            .populate('donor')
+            .populate('products');
+            console.log(donation);
 
         if (!donation) {
             return res.status(404).json({ message: 'Donation not found' });
@@ -25,15 +30,17 @@ async function getDonationById  (req, res)  {
 
         res.status(200).json(donation);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
+        console.error("Error fetching donation:", error);
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
 
 // ✅ Get donations by User ID
 async function getDonationsByUserId(req, res)  {
     try {
         const { userId } = req.params;
-        const donations = await Donation.find({ user: userId }).populate('products');
+        const donations = await Donation.find({ donor: userId }).populate('products');
 
         if (!donations.length) {
             return res.status(404).json({ message: 'No donations found for this user' });
@@ -95,39 +102,57 @@ async function getDonationsByCategory (req, res)  {
 
 // ✅ Create a new donation (also creates related products)
 async function createDonation(req, res) {
+    console.log("body donation back", req.body);
     try {
-      let { title, location, expirationDate, description, Category, Type, user, products, delivery, status } = req.body;
-      
-      // Vérifie si products est une chaîne et, dans ce cas, parse-la
-      if (typeof products === 'string') {
-        products = JSON.parse(products);
-      }
-  
-      // Optionnel : filtrer les produits vides
-      products = products.filter(product =>
-        product.productType && product.weightPerUnit && product.totalQuantity && product.productDescription && product.status
-      );
-  
-      // Étape 1 : Créer la donation sans produits
-      const newDonation = new Donation({
+      let {
         title,
         location,
         expirationDate,
         description,
-        Category,
+        category,
         Type,
-        user,
-        products: [], // Initialement vide
-        delivery,
+        donor,
+        products,
+        //delivery,
+        status
+      } = req.body;
+      
+      // Ensure products is an array
+      if (!Array.isArray(products)) {
+        if (typeof products === 'string') {
+          products = JSON.parse(products);
+        } else {
+          products = [];
+        }
+      }
+      
+      // Optional: filter out empty products
+      products = products.filter(product =>
+        product.productType &&
+        product.weightPerUnit &&
+        product.totalQuantity &&
+        product.productDescription &&
+        product.status
+      );
+      
+      // Create the donation without products first (to get its _id)
+      const newDonation = new Donation({
+        title,
+        location,
+        expirationDate: new Date(expirationDate),
+        description,
+        category: category ? category : undefined,
+        type: Type ? Type : undefined,
+        donor,
+        products: [], // Initially empty
+       // delivery,
         status
       });
-  
-      await newDonation.save(); // Sauvegarde pour obtenir l'ID
-  
-      // Étape 2 : Récupérer l'ID de la donation
+      
+      await newDonation.save(); // Save to obtain the donation _id
       const donationId = newDonation._id;
-  
-      // Étape 3 : Pour chaque produit, assigner l'ID de donation et un ID auto-incrémenté
+      
+      // For each product, assign the donation ID and an auto-incremented product ID
       for (let product of products) {
         const counter = await Counter.findOneAndUpdate(
           { _id: 'ProductId' },
@@ -135,17 +160,17 @@ async function createDonation(req, res) {
           { new: true, upsert: true }
         );
         product.id = counter.seq;
-        product.iddonation = donationId;
+        product.donation = donationId;
       }
-  
-      // Étape 4 : Créer les produits
+      
+      // Create the products in the database
       const createdProducts = await Product.insertMany(products);
       const productIds = createdProducts.map(product => product._id);
-  
-      // Étape 5 : Mettre à jour la donation avec les IDs des produits créés
+      
+      // Update the donation with the created product IDs
       newDonation.products = productIds;
       await newDonation.save();
-  
+      
       res.status(201).json({ message: 'Donation created successfully', newDonation });
     } catch (error) {
       console.error("Donation Creation Error:", error);
@@ -155,6 +180,7 @@ async function createDonation(req, res) {
       });
     }
   }
+  
   
 
 

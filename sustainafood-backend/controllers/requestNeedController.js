@@ -85,6 +85,89 @@ async function createRequest(req, res) {
     }
 }
 
+
+async function createRequest(req, res) {
+    console.log("Request body received:", req.body);
+    
+    try {
+        let {
+            title,
+            location,
+            expirationDate,
+            description,
+            category,
+            Type,
+            recipient,
+            requestedProducts,
+            status,
+            linkedDonation,
+            NumberOfMeals
+        } = req.body;
+
+        // Ensure requestedProducts is an array
+        if (!Array.isArray(requestedProducts)) {
+            if (typeof requestedProducts === 'string') {
+                try {
+                    requestedProducts = JSON.parse(requestedProducts);
+                } catch (error) {
+                    return res.status(400).json({ message: "Invalid requestedProducts format" });
+                }
+            } else {
+                requestedProducts = [];
+            }
+        }
+
+        // Filter out incomplete product requests
+        requestedProducts = requestedProducts.filter(product =>
+            product.product && product.quantity
+        );
+
+        // Create the request without products first
+        const newRequest = new RequestNeed({
+            title,
+            location,
+            expirationDate: new Date(expirationDate),
+            description,
+            category: category || undefined,
+            recipient,
+            requestedProducts: [],
+            status: status || "pending",
+            linkedDonation: linkedDonation || null,
+            NumberOfMeals: NumberOfMeals || undefined
+        });
+
+        await newRequest.save();
+        const requestId = newRequest._id;
+
+        // Assign the request ID to each requested product
+        for (let product of requestedProducts) {
+            const counter = await Counter.findOneAndUpdate(
+                { _id: 'ProductRequestId' },
+                { $inc: { seq: 1 } },
+                { new: true, upsert: true }
+            );
+            product.id = counter.seq;
+            product.request = requestId;
+        }
+
+        // Create the requested products in the database
+        const createdProducts = await Product.insertMany(requestedProducts);
+        const productIds = createdProducts.map(product => product._id);
+
+        // Update the request with the created product IDs
+        newRequest.requestedProducts = productIds;
+        await newRequest.save();
+
+        res.status(201).json({ message: 'Request created successfully', newRequest });
+    } catch (error) {
+        console.error("Request Creation Error:", error);
+        res.status(400).json({
+            message: "Failed to create request",
+            error: error.message || error
+        });
+    }
+}
+
 // ✅ Update a request by ID
 async function updateRequest(req, res) {
     try {

@@ -10,13 +10,17 @@ const RequestStatus = {
     FULFILLED: 'fulfilled'
 };
 Object.freeze(RequestStatus);
-
+const Category = {
+    PREPARED_MEALS: 'prepared_meals',
+    PACKAGED_PRODUCTS: 'packaged_products'
+};
+Object.freeze(Category);
 // Define the ProductRequest subdocument schema (embedded in RequestNeed)
 const productRequestSchema = new Schema({
     product: { 
         type: Schema.Types.ObjectId, 
         ref: 'Product', 
-        required: true 
+        required: false 
     },
     quantity: { 
         type: Number, 
@@ -36,6 +40,23 @@ const requestNeedSchema = new Schema({
         unique: true, 
         required: true 
     },
+    title: {
+        type: String,
+        required: true,
+        maxlength: 100
+    },
+    location: { type: String, required: true },
+    expirationDate: {
+        type: Date,
+        required: true,
+        validate: {
+            validator: (date) => date > new Date(), // Ensure future date
+            message: 'Expiration date must be in the future'
+        }
+    },
+    description: { type: String, maxlength: 500 },
+    category: { type: String, enum: Object.values(Category), required: true }, // Lowercase naming
+
     recipient: { 
         type: Schema.Types.ObjectId, 
         ref: 'User', 
@@ -52,6 +73,15 @@ const requestNeedSchema = new Schema({
         type: Schema.Types.ObjectId, 
         ref: 'Donation', 
         required: false // Optional field
+    },
+    NumberOfMeals: { 
+        type: Number, 
+        required: false, 
+        min: [1, 'Quantity must be at least 1'],
+        validate: {
+            validator: Number.isInteger,
+            message: 'Quantity must be an integer'
+        }
     }
 }, {
     timestamps: true // Automatically adds createdAt and updatedAt

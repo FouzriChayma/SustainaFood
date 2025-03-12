@@ -33,6 +33,8 @@ import MyDonations from "./pages/MyDonations";
 import TwoFAVerification from "./pages/TwoFAVerification";
 
 import DetailsDonations from "./pages/DetailsDonations";
+import DonationList from "./pages/backoffice/DonationList.jsx";
+import DonationTransactionList from "./pages/backoffice/DonationTransactionList.jsx";
 const App = () => {
 
   return (
@@ -64,6 +66,8 @@ const App = () => {
         <Route path="/ongs/view/:id" element={<ViewNGO />} />
         <Route path="/transporters/view/:id" element={<ViewTransporter />} />
         <Route path="/admin-profile" element={<AdminProfile />} />
+        <Route path="/Donations" element={<DonationList />} />
+        <Route path="/DonationTransList" element={<DonationTransactionList/>} />
       </Route>
 
       {/* Private Routes for other roles (if needed) */}

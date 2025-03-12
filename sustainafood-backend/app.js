@@ -38,7 +38,7 @@ app.use('/product',productRouter);
 app.use('/donation',donationRouter);
 app.use('/auth', authRouter); // 🔹 Ajouter la route d'authentification
 app.use('/requests', requestNeedRoutes);
-app.use('/donation-transactions', donationTransactionRoutes);
+app.use('/donationTransaction', donationTransactionRoutes);
 
 // Database Connection
 if (process.env.NODE_ENV !== 'test') {//pour la db de test

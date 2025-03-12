@@ -18,18 +18,33 @@ pipeline {
             }
         }
 
-        // ✅ Étape 2: Exécuter tous les tests (unitaires + fonctionnels)
-        stage('Run All Tests') {
+        // ✅ Étape 2: Exécuter les tests unitaires séparément (2FA & Sign-in)
+        stage('Run Backend Tests Separately') {
             steps {
                 script {
                     dir('sustainafood-backend') {
-                        echo 'Running all backend tests (unit + functional)...'
+                        // ✅ Lancer user-2fa.test.js
+                        echo 'Running backend test: 2FA'
                         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                            sh 'npx jest "test/*.test.js" --detectOpenHandles --forceExit'
+                            sh 'npx jest test/user-2fa.test.js --detectOpenHandles --forceExit'
                         }
+
+                        // ✅ Lancer user-signin.test.js
+                        echo 'Running backend test: Sign-in'
+                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                            sh 'npx jest test/user-signin.test.js --detectOpenHandles --forceExit'
+                        }
+
                         echo 'Backend tests completed.'
                     }
+                }
+            }
+        }
 
+        // ✅ Étape 3: Tests frontend
+        stage('Run Frontend Tests') {
+            steps {
+                script {
                     dir('sustainafood-frontend') {
                         echo 'Running frontend tests...'
                         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
@@ -41,14 +56,14 @@ pipeline {
             }
         }
 
-        // ✅ Étape 3: Build application
+        // ✅ Étape 4: Build Application
         stage('Build Application') {
             steps {
                 script {
-                    // Backend build (optional, uncomment if needed)
+                    // Backend build (optionnel)
                     dir('sustainafood-backend') {
                         echo 'Building backend...'
-                        // sh 'npm run build' // Uncomment if backend build exists
+                        // sh 'npm run build' // Uncomment if backend build is needed
                         echo 'Backend build completed.'
                     }
 
@@ -56,12 +71,12 @@ pipeline {
                     dir('sustainafood-frontend') {
                         echo 'Building frontend...'
 
-                        // Install optional fontawesome (if not in package.json)
+                        // Installer fontawesome icons (optional)
                         sh 'npm install @fortawesome/fontawesome-svg-core'
                         sh 'npm install @fortawesome/react-fontawesome'
                         sh 'npm install @fortawesome/free-solid-svg-icons'
 
-                        // Build command
+                        // Build frontend
                         sh 'npm run build'
                         echo 'Frontend build completed.'
                     }
@@ -69,13 +84,13 @@ pipeline {
             }
         }
 
-        // ✅ Étape 4: Analyse SonarQube
+        // ✅ Étape 5: SonarQube Analysis
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    sh 'node -v' // Check Node.js version for debug
+                    sh 'node -v' // Debug Node.js version
 
-                    def scannerHome = tool 'scanner' // Adjust 'scanner' to your Jenkins Sonar tool name
+                    def scannerHome = tool 'scanner' // Sonar scanner tool name in Jenkins
                     withSonarQubeEnv {
                         // Run sonar-scanner
                         sh "${scannerHome}/bin/sonar-scanner"

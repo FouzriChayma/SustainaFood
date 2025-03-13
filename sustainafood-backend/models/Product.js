@@ -79,6 +79,11 @@ const productSchema = new Schema({
         enum: Object.values(WeightUnit), 
         required: false // Optional for prepared meals
     }, // Unit of weight, if applicable
+    weightUnitTotale: { 
+        type: String, 
+        enum: Object.values(WeightUnit), 
+        required: false // Optional for prepared meals
+    },
     totalQuantity: { 
         type: Number, 
         required: false, // Optional for prepared meals
@@ -88,11 +93,8 @@ const productSchema = new Schema({
             message: 'Total quantity must be an integer'
         }
     }, // Total number of units, if applicable
-    donation: { 
-        type: Schema.Types.ObjectId, 
-        ref: 'Donation', 
-        required: true 
-    }, // Reference to a Donation
+    donation: { type: Schema.Types.ObjectId, ref: 'Donation' }, // Optional
+    request: { type: Schema.Types.ObjectId, ref: 'RequestNeed' },// Reference to a Donation
 
     isArchived: { // New field to mark product as archived
         type: Boolean,

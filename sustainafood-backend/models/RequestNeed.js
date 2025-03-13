@@ -7,84 +7,91 @@ const RequestStatus = {
     PENDING: 'pending',
     APPROVED: 'approved',
     REJECTED: 'rejected',
-    FULFILLED: 'fulfilled'
+    FULFILLED: 'fulfilled',
 };
 Object.freeze(RequestStatus);
+
+// Define the category enum
 const Category = {
     PREPARED_MEALS: 'prepared_meals',
-    PACKAGED_PRODUCTS: 'packaged_products'
+    PACKAGED_PRODUCTS: 'packaged_products',
 };
 Object.freeze(Category);
+
 // Define the ProductRequest subdocument schema (embedded in RequestNeed)
-const productRequestSchema = new Schema({
-    product: { 
-        type: Schema.Types.ObjectId, 
-        ref: 'Product', 
-        required: false 
-    },
-    quantity: { 
-        type: Number, 
-        required: true, 
-        min: [1, 'Quantity must be at least 1'],
-        validate: {
-            validator: Number.isInteger,
-            message: 'Quantity must be an integer'
-        }
-    }
-});
+
 
 // Define the RequestNeed schema
 const requestNeedSchema = new Schema({
-    id: { 
-        type: Number, 
-        unique: true, 
-        required: true 
-    },
+    id: { type: Number },
     title: {
         type: String,
-        required: true,
-        maxlength: 100
+        required: [true, 'Title is required'],
+        maxlength: [100, 'Title cannot exceed 100 characters'],
+        trim: true
     },
-    location: { type: String, required: true },
+    location: { 
+        type: String, 
+        required: [true, 'Location is required'],
+        trim: true 
+    },
     expirationDate: {
         type: Date,
-        required: true,
+        required: [true, 'Expiration date is required'],
         validate: {
             validator: (date) => date > new Date(), // Ensure future date
             message: 'Expiration date must be in the future'
         }
     },
-    description: { type: String, maxlength: 500 },
-    category: { type: String, enum: Object.values(Category), required: true }, // Lowercase naming
-
+    description: { 
+        type: String, 
+        maxlength: [500, 'Description cannot exceed 500 characters'],
+        trim: true 
+    },
+    category: { 
+        type: String, 
+        enum: Object.values(Category), 
+        required: [true, 'Category is required'] 
+    },
     recipient: { 
         type: Schema.Types.ObjectId, 
         ref: 'User', 
-        required: true 
+        required: [true, 'Recipient is required'] 
     },
-    requestedProducts: [productRequestSchema],
     status: { 
         type: String, 
         enum: Object.values(RequestStatus), 
         default: RequestStatus.PENDING, 
-        required: true 
+        required: [true, 'Status is required'] 
     },
     linkedDonation: { 
         type: Schema.Types.ObjectId, 
         ref: 'Donation', 
-        required: false // Optional field
+        required: false 
     },
-    NumberOfMeals: { 
-        type: Number, 
-        required: false, 
-        min: [1, 'Quantity must be at least 1'],
+    requestedProducts: [{ type: Schema.Types.ObjectId, ref: 'Product',  required: [
+        function() { return this.category === 'packaged_products'; }, 
+        'Number of meals is required for prepared meals'
+      ], }],
+
+
+    numberOfMeals: { 
+        type: Number,
+        required: [
+          function() { return this.category === 'prepared_meals'; }, 
+          'Number of meals is required for prepared meals'
+        ],
+        min: [1, 'Number of meals cannot be negative'],
         validate: {
-            validator: Number.isInteger,
-            message: 'Quantity must be an integer'
+          validator: Number.isInteger,
+          message: 'Number of meals must be an integer'
         }
-    }
+      },
 }, {
-    timestamps: true // Automatically adds createdAt and updatedAt
+    timestamps: { 
+        createdAt: 'created_at', 
+        updatedAt: 'updated_at' 
+    } // Map to your custom field names
 });
 
 // Pre-save hook to auto-increment the ID
@@ -97,11 +104,13 @@ requestNeedSchema.pre('save', async function(next) {
                 { new: true, upsert: true }
             );
             this.id = counter.seq;
+            next();
         } catch (err) {
-            return next(new Error('Failed to generate request ID: ' + err.message));
+            next(new Error(`Failed to generate request ID: ${err.message}`));
         }
+    } else {
+        next();
     }
-    next();
 });
 
 // Create and export the model

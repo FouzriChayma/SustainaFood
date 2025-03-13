@@ -12,7 +12,8 @@ const DetailsDonations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const userId = localStorage.getItem("user_id");
+  const user = localStorage.getItem("user");
+  const userId= JSON.parse(user).id;
   const [isTheOwner, setIsTheOwner] = useState(false);
   const [editedDonation, setEditedDonation] = useState({
     title: "",
@@ -24,7 +25,8 @@ const DetailsDonations = () => {
    // delivery: "",
     products: [],
   });
-
+  const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
+  const isRecipient = user?.role === "ong" || user?.role === "student";
   // Fetch donation data when the component mounts or ID changes
   useEffect(() => {
     const fetchDonation = async () => {
@@ -69,12 +71,14 @@ const DetailsDonations = () => {
     deleteDonation(id)
       .then(() => {
         console.log("Donation deleted successfully");
-        window.location.href = "/myrequest";
+        // Revenir à la page précédente
+        window.history.back();
       })
       .catch((error) => {
         console.error("Error deleting donation:", error);
       });
   };
+  
 
   // Handle saving the edited donation
   const handleSaveDonation = () => {

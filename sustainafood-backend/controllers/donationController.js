@@ -113,6 +113,7 @@ async function createDonation(req, res) {
         Type,
         donor,
         products,
+        numberOfMeals,
         //delivery,
         status
       } = req.body;
@@ -144,6 +145,7 @@ async function createDonation(req, res) {
         category: category ? category : undefined,
         type: Type ? Type : undefined,
         donor,
+        numberOfMeals,
         products: [], // Initially empty
        // delivery,
         status

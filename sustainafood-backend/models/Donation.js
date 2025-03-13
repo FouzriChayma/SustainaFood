@@ -24,7 +24,22 @@ const donationSchema = new Schema({
     title: { type: String, required: true, minlength: 3, maxlength: 100 },
     description: { type: String, maxlength: 500 },
     category: { type: String, enum: Object.values(Category), required: true }, // Lowercase naming
-    products: [{ type: Schema.Types.ObjectId, ref: 'Product', required: true }],
+    products: [{ type: Schema.Types.ObjectId, ref: 'Product', required: [
+        function() { return this.category === 'packaged_products'; }, 
+        'Number of meals is required for prepared meals'
+      ], }],
+    numberOfMeals: { 
+        type: Number,
+        required: [
+          function() { return this.category === 'prepared_meals'; }, 
+          'Number of meals is required for prepared meals'
+        ],
+        min: [1, 'Number of meals cannot be negative'],
+        validate: {
+          validator: Number.isInteger,
+          message: 'Number of meals must be an integer'
+        }
+      },
     location: { type: String, required: true },
     expirationDate: {
         type: Date,

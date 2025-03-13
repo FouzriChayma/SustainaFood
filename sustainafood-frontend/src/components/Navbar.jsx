@@ -45,6 +45,7 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     navigate("/login");
+    localStorage.clear();
   };
 
   const isDonner = user?.role === "restaurant" || user?.role === "supermarket";

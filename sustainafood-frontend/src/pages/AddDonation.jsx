@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -22,14 +22,14 @@ export const AddDonation = () => {
   const [type, setType] = useState("donation");
   const [category, setCategory] = useState("prepared_meals");
   const [description, setDescription] = useState("");
-  const [numberOfMeals, setNumberOfMeals] = useState(0); // Changed to camelCase
+  const [numberOfMeals, setNumberOfMeals] = useState("");
 
   // Error handling
   const [error, setError] = useState(null);
   const [errors, setErrors] = useState({});
 
   // Products state
-  const [products, setProducts] = useState([]); // For CSV mode
+  const [products, setProducts] = useState([]); // CSV products
   const [manualProducts, setManualProducts] = useState([
     {
       name: "",
@@ -37,21 +37,24 @@ export const AddDonation = () => {
       productDescription: "",
       weightPerUnit: "",
       weightUnit: "kg",
+      weightUnitTotale: "kg",
       totalQuantity: "",
+      image: "",
+      status: "available",
     },
-  ]); // For manual mode
+  ]); // Manual products
 
   // Editing state for CSV table
   const [editableRow, setEditableRow] = useState(null);
   const [editedProduct, setEditedProduct] = useState({});
 
   // Toggle between CSV and manual entry
-  const [isCsv, setIsCsv] = useState(true);
-  const [isForm, setIsForm] = useState(false);
+  const [productEntryMode, setProductEntryMode] = useState("csv"); // "csv" or "form"
 
   // User data
   const user = JSON.parse(localStorage.getItem("user"));
-  const userid = localStorage.getItem("user_id");
+  const [userid, setUserid] = useState();
+
   const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
 
@@ -73,6 +76,14 @@ export const AddDonation = () => {
     "Other",
   ];
   const weightUnits = ["kg", "g", "lb", "oz", "ml", "l"];
+
+  useEffect(() => {
+    if (typeof user.id === "number") {
+      setUserid(user._id);
+    } else if (typeof user.id === "string") {
+      setUserid(user.id);
+    }
+  }, [user]);
 
   // CSV File Upload handler
   const handleFileUpload = (event) => {
@@ -105,6 +116,33 @@ export const AddDonation = () => {
 
     if (!description.trim()) tempErrors.description = "Description is required";
     else if (description.length < 10) tempErrors.description = "Description must be at least 10 characters long";
+
+    if (category === "prepared_meals") {
+      if (!numberOfMeals || numberOfMeals <= 0) {
+        tempErrors.numberOfMeals = "Number of meals is required and must be greater than 0";
+      }
+    }
+
+    if (category === "packaged_products") {
+      if (productEntryMode === "csv" && products.length === 0) {
+        tempErrors.products = "Please upload a CSV file with products";
+      } else if (productEntryMode === "form") {
+        const invalidProducts = manualProducts.filter(
+          (p) =>
+            !p.name.trim() ||
+            p.name.length < 2 ||
+            !p.productType ||
+            !p.productDescription ||
+            p.productDescription.length > 500 ||
+            !p.status ||
+            (p.weightPerUnit && (isNaN(p.weightPerUnit) || p.weightPerUnit < 0)) ||
+            (p.totalQuantity && (isNaN(p.totalQuantity) || p.totalQuantity < 0))
+        );
+        if (invalidProducts.length > 0) {
+          tempErrors.products = "All manual products must have valid name (min 2 chars), type, description (max 500 chars), and status. Weight and quantity must be positive numbers if provided.";
+        }
+      }
+    }
 
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
@@ -152,14 +190,16 @@ export const AddDonation = () => {
         productDescription: "",
         weightPerUnit: "",
         weightUnit: "kg",
+        weightUnitTotale: "kg",
         totalQuantity: "",
+        image: "",
+        status: "available",
       },
     ]);
   };
 
   const handleRemoveManualProduct = (index) => {
-    const updated = manualProducts.filter((_, i) => i !== index);
-    setManualProducts(updated);
+    setManualProducts(manualProducts.filter((_, i) => i !== index));
   };
 
   // Submit handler
@@ -170,7 +210,7 @@ export const AddDonation = () => {
     const donationData = new FormData();
     donationData.append("title", title);
     donationData.append("location", location);
-    donationData.append("expirationDate", expirationDate); // ISO format (e.g., "2024-03-20")
+    donationData.append("expirationDate", expirationDate);
     donationData.append("description", description);
     donationData.append("category", category);
     donationData.append("created_at", new Date().toISOString());
@@ -180,9 +220,16 @@ export const AddDonation = () => {
       donationData.append("type", type);
       donationData.append("donor", userid);
       donationData.append("status", "pending");
-      const productsToSend = isCsv && products.length ? products : isForm ? manualProducts : [];
-      if (productsToSend.length) {
-        donationData.append("products", JSON.stringify(productsToSend));
+
+      if (category === "prepared_meals") {
+        donationData.append("numberOfMeals", numberOfMeals);
+      }
+
+      if (category === "packaged_products") {
+        const productsToSend = productEntryMode === "csv" ? products : manualProducts;
+        if (productsToSend.length) {
+          donationData.append("products", JSON.stringify(productsToSend));
+        }
       }
 
       try {
@@ -196,16 +243,16 @@ export const AddDonation = () => {
     } else if (isRecipient) {
       donationData.append("recipient", userid);
       donationData.append("status", "pending");
-      donationData.append("numberOfMeals", numberOfMeals); // Added for requests
-      const productsToSend = isCsv && products.length ? products : isForm ? manualProducts : [];
-      if (productsToSend.length) {
-        donationData.append("requestedProducts", JSON.stringify(productsToSend));
+
+      if (category === "prepared_meals") {
+        donationData.append("numberOfMeals", numberOfMeals);
       }
 
-      // Log FormData for debugging
-      console.log("FormData entries for request:");
-      for (let [key, value] of donationData.entries()) {
-        console.log(`${key}: ${value}`);
+      if (category === "packaged_products") {
+        const productsToSend = productEntryMode === "csv" ? products : manualProducts;
+        if (productsToSend.length) {
+          donationData.append("requestedProducts", JSON.stringify(productsToSend));
+        }
       }
 
       try {
@@ -218,6 +265,26 @@ export const AddDonation = () => {
       }
     }
   };
+
+  // Reset product states when category changes
+  useEffect(() => {
+    if (category !== "packaged_products") {
+      setProducts([]);
+      setManualProducts([
+        {
+          name: "",
+          productType: "Canned_Goods",
+          productDescription: "",
+          weightPerUnit: "",
+          weightUnit: "kg",
+          weightUnitTotale: "kg",
+          totalQuantity: "",
+          image: "",
+          status: "available",
+        },
+      ]);
+    }
+  }, [category]);
 
   return (
     <>
@@ -251,7 +318,6 @@ export const AddDonation = () => {
           <input
             className="signup-input"
             type="date"
-            placeholder="Expiration Date"
             value={expirationDate}
             onChange={(e) => setExpirationDate(e.target.value)}
             required
@@ -259,7 +325,7 @@ export const AddDonation = () => {
           {errors.expirationDate && <p className="error-message">{errors.expirationDate}</p>}
 
           {isDonner && (
-            <select className="signup-input" value={type} onChange={(e) => setType(e.target.value)} required>
+            <select className="signup-input" value={type} onChange={(e) => setType(e.target.value)}>
               <option value="donation">Donation</option>
               <option value="request">Request</option>
             </select>
@@ -269,7 +335,6 @@ export const AddDonation = () => {
             className="signup-input"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            required
           >
             <option value="prepared_meals">Prepared Meals</option>
             <option value="packaged_products">Packaged Products</option>
@@ -285,6 +350,7 @@ export const AddDonation = () => {
               required
             />
           )}
+          {errors.numberOfMeals && <p className="error-message">{errors.numberOfMeals}</p>}
 
           <textarea
             className="signup-input"
@@ -295,8 +361,7 @@ export const AddDonation = () => {
           />
           {errors.description && <p className="error-message">{errors.description}</p>}
 
-          {/* CSV/Manual toggle */}
-          {products.length === 0 && category === "packaged_products" && (
+          {category === "packaged_products" && (
             <>
               <div className="radio-buttons-container-adddonation">
                 <div className="radio-button-adddonation">
@@ -305,11 +370,8 @@ export const AddDonation = () => {
                     id="radio-csv"
                     className="radio-button__input-adddonation"
                     type="radio"
-                    checked={isCsv}
-                    onChange={() => {
-                      setIsCsv(true);
-                      setIsForm(false);
-                    }}
+                    checked={productEntryMode === "csv"}
+                    onChange={() => setProductEntryMode("csv")}
                   />
                   <label htmlFor="radio-csv" className="radio-button__label-adddonation">
                     <span className="radio-button__custom-adddonation"></span>
@@ -322,11 +384,8 @@ export const AddDonation = () => {
                     id="radio-form"
                     className="radio-button__input-adddonation"
                     type="radio"
-                    checked={isForm}
-                    onChange={() => {
-                      setIsForm(true);
-                      setIsCsv(false);
-                    }}
+                    checked={productEntryMode === "form"}
+                    onChange={() => setProductEntryMode("form")}
                   />
                   <label htmlFor="radio-form" className="radio-button__label-adddonation">
                     <span className="radio-button__custom-adddonation"></span>
@@ -335,29 +394,29 @@ export const AddDonation = () => {
                 </div>
               </div>
 
-              {isCsv && (
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv"
-                  onChange={handleFileUpload}
-                  style={{ display: "none" }}
-                />
-              )}
-              {isCsv && (
-                <button
-                  type="button"
-                  className="container-btn-file"
-                  onClick={() => fileInputRef.current.click()}
-                >
-                  <svg fill="#fff" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 50 50">
-                    {/* SVG path unchanged for brevity */}
-                  </svg>
-                  Upload List of Products
-                </button>
+              {productEntryMode === "csv" && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileUpload}
+                    style={{ display: "none" }}
+                  />
+                  <button
+                    type="button"
+                    className="container-btn-file"
+                    onClick={() => fileInputRef.current.click()}
+                  >
+                    <svg fill="#fff" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 50 50">
+                      <path d="M 25 2 C 12.309295 2 2 12.309295 2 25 C 2 37.690705 12.309295 48 25 48 C 37.690705 48 48 37.690705 48 25 C 48 12.309295 37.690705 2 25 2 z M 25 4 C 36.609824 4 46 13.390176 46 25 C 46 36.609824 36.609824 46 25 46 C 13.390176 46 4 36.609824 4 25 C 4 13.390176 13.390176 4 25 4 z M 24 13 L 24 24 L 13 24 L 13 26 L 24 26 L 24 37 L 26 37 L 26 26 L 37 26 L 37 24 L 26 24 L 26 13 L 24 13 z" />
+                    </svg>
+                    Upload List of Products
+                  </button>
+                </>
               )}
 
-              {isForm && (
+              {productEntryMode === "form" && (
                 <div className="manual-product-entry">
                   {manualProducts.map((product, index) => (
                     <div key={index} className="manual-product-row">
@@ -399,6 +458,15 @@ export const AddDonation = () => {
                           <option key={wu} value={wu}>{wu}</option>
                         ))}
                       </select>
+                      <select
+                        className="signup-input"
+                        value={product.weightUnitTotale}
+                        onChange={(e) => handleManualProductChange(index, "weightUnitTotale", e.target.value)}
+                      >
+                        {weightUnits.map((wu) => (
+                          <option key={wu} value={wu}>{wu}</option>
+                        ))}
+                      </select>
                       <input
                         type="number"
                         placeholder="Total Quantity"
@@ -406,6 +474,23 @@ export const AddDonation = () => {
                         onChange={(e) => handleManualProductChange(index, "totalQuantity", e.target.value)}
                         className="signup-input"
                       />
+                      <input
+                        type="text"
+                        placeholder="Image URL"
+                        value={product.image}
+                        onChange={(e) => handleManualProductChange(index, "image", e.target.value)}
+                        className="signup-input"
+                      />
+                      <select
+                        className="signup-input"
+                        value={product.status}
+                        onChange={(e) => handleManualProductChange(index, "status", e.target.value)}
+                      >
+                        <option value="available">Available</option>
+                        <option value="pending">Pending</option>
+                        <option value="reserved">Reserved</option>
+                        <option value="out_of_stock">Out of Stock</option>
+                      </select>
                       {manualProducts.length > 1 && (
                         <button type="button" onClick={() => handleRemoveManualProduct(index)}>
                           Remove
@@ -418,11 +503,11 @@ export const AddDonation = () => {
                   </button>
                 </div>
               )}
+              {errors.products && <p className="error-message">{errors.products}</p>}
             </>
           )}
 
-          {/* CSV table */}
-          {products.length > 0 && (
+          {products.length > 0 && productEntryMode === "csv" && (
             <>
               <p style={{ marginLeft: "-656px", color: "#8dc73f" }}>List of products uploaded</p>
               <div className="file-actions" style={{ marginLeft: "812px" }}>
@@ -441,7 +526,9 @@ export const AddDonation = () => {
               <table className="product-table">
                 <thead>
                   <tr>
-                    {products.length > 0 && Object.keys(products[0]).map((key) => <th key={key}>{key}</th>)}
+                    {Object.keys(products[0]).map((key) => (
+                      <th key={key}>{key}</th>
+                    ))}
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -460,7 +547,9 @@ export const AddDonation = () => {
                           </td>
                         ))
                       ) : (
-                        Object.values(row).map((value, colIndex) => <td key={colIndex}>{value}</td>)
+                        Object.values(row).map((value, colIndex) => (
+                          <td key={colIndex}>{value}</td>
+                        ))
                       )}
                       <td>
                         {editableRow === rowIndex ? (
@@ -487,7 +576,6 @@ export const AddDonation = () => {
           )}
 
           {error && <p className="error-message">{error}</p>}
-
           <button type="submit" className="signup-button">Add</button>
         </form>
       </div>

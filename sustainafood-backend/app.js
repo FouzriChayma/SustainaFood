@@ -53,7 +53,7 @@ mongoose.connection.once('open', () => {
 });
 }
 ////////////////////////////////////////////////////////////////
-require("./config/passportConfig"); // Charger la config de Passport
+//require("./config/passportConfig"); // Charger la config de Passport
 // app.use(passport.initialize());
 ////////////////////////////////////////////
 // Catch 404 and forward to error handler

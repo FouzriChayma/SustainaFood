@@ -12,7 +12,8 @@ const DetailsDonations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const userId = localStorage.getItem("user_id");
+  const user = localStorage.getItem("user");
+  const userId= JSON.parse(user).id;
   const [isTheOwner, setIsTheOwner] = useState(false);
   const [editedDonation, setEditedDonation] = useState({
     title: "",
@@ -21,10 +22,11 @@ const DetailsDonations = () => {
     type: "",
     category: "",
     description: "",
-    delivery: "",
+   // delivery: "",
     products: [],
   });
-
+  const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
+  const isRecipient = user?.role === "ong" || user?.role === "student";
   // Fetch donation data when the component mounts or ID changes
   useEffect(() => {
     const fetchDonation = async () => {
@@ -39,7 +41,7 @@ const DetailsDonations = () => {
           type: fetchedDonation.type || "",
           category: fetchedDonation.category || "",
           description: fetchedDonation.description || "",
-          delivery: fetchedDonation.delivery || "",
+         // delivery: fetchedDonation.delivery || "",
           products: fetchedDonation.products || [],
         });
       } catch (err) {
@@ -53,12 +55,11 @@ const DetailsDonations = () => {
 
   // Check if the current user is the owner of the donation
   useEffect(() => {
+    console.log("Donation:", donation);
     if (donation && userId) {
       // If donation.user is a string, compare it directly; if it's an object, use its _id property.
-      if (typeof donation.user === "string") {
-        setIsTheOwner(userId === donation.user);
-      } else if (donation.user && donation.user._id) {
-        setIsTheOwner(userId === donation.user._id);
+      if (donation.donor && donation.donor._id) {
+        setIsTheOwner(userId === donation.donor._id);
       } else {
         setIsTheOwner(false);
       }
@@ -70,19 +71,26 @@ const DetailsDonations = () => {
     deleteDonation(id)
       .then(() => {
         console.log("Donation deleted successfully");
-        window.location.href = "/myrequest";
+        // Revenir à la page précédente
+        window.history.back();
       })
       .catch((error) => {
         console.error("Error deleting donation:", error);
       });
   };
+  
 
   // Handle saving the edited donation
   const handleSaveDonation = () => {
     console.log('Sending update with data:', editedDonation);
+    
     updateDonation(id, editedDonation)
       .then((response) => {
         console.log("Server response:", response.data);
+        
+        // Redirect to the updated donation details page
+        window.location.href = `/DetailsDonations/${id}`;
+  
         // Update local state with the returned donation data.
         setDonation(response.data.updatedDonation);
         setIsEditing(false);
@@ -91,6 +99,7 @@ const DetailsDonations = () => {
         console.error("Error updating donation:", error.response?.data || error);
       });
   };
+  
 
   // Update a specific product field in the edited donation
   const handleProductChange = (index, field, value) => {
@@ -196,7 +205,7 @@ const DetailsDonations = () => {
               expirationDate ? new Date(expirationDate).toLocaleDateString() : "N/A"
             )}
           </p>
-          <p>
+         {/* Delivery <p>
             <strong>🚚 Delivery:</strong>{" "}
             {isEditing ? (
               <input
@@ -207,7 +216,7 @@ const DetailsDonations = () => {
             ) : (
               delivery || "N/A"
             )}
-          </p>
+          </p> */}
 
           {/* Product List */}
           <h4>📦 Available Products:</h4>

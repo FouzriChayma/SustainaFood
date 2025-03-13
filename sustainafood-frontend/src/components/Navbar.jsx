@@ -15,7 +15,6 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const profilePhotoUrll = user?.photo ? `http://localhost:3000/${user.photo}` : imgmouna;
-
   useEffect(() => {
     const fetchUser = async () => {
       if (typeof authUser.id === "number") {
@@ -42,11 +41,11 @@ const Navbar = () => {
       fetchUser();
     }
   }, [authUser]);
-
-
+  
   const handleLogout = () => {
     logout();
     navigate("/login");
+    localStorage.clear();
   };
 
   const isDonner = user?.role === "restaurant" || user?.role === "supermarket";

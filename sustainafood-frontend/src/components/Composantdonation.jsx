@@ -9,7 +9,7 @@ export const Composantdonation = ({ donation }) => {
     title,
     location,
     expirationDate,
-    delivery,
+    //delivery,
     products,
   } = donation || {};
 
@@ -27,7 +27,6 @@ export const Composantdonation = ({ donation }) => {
           {expirationDate ? new Date(expirationDate).toLocaleDateString() : "N/A"}
         </p>
         <p>
-          <strong>🚚 Delivery:</strong> {delivery || "N/A"}
         </p>
         <h4>📦 Available Products:</h4>
         <ul className="donation-ul">
@@ -37,7 +36,7 @@ export const Composantdonation = ({ donation }) => {
                 {product.productType && product.productDescription ? (
                   <>
                     <span role="img" aria-label="product">🥫</span>{" "}
-                    <strong>{product.productDescription}</strong> - {product.totalQuantity}{" "}
+                    <strong>{product.productDescription}</strong> - {product.totalQuantity} {product.weightUnit}{" "}
                     <span className={`status ${product.status.toLowerCase()}`}>
                       {product.status}
                     </span>

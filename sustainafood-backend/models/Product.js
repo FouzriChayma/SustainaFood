@@ -4,12 +4,12 @@ const Counter = require('./Counter'); // Assumes a Counter model exists for auto
 
 // Define enums for productType
 const ProductType = {
-    CANNED_GOODS: 'Canned Goods',    // For packaged products
-    DRY_GOODS: 'Dry Goods',          // For packaged products
+    CANNED_GOODS: 'Canned_Goods',    // For packaged products
+    DRY_GOODS: 'Dry_Goods',          // For packaged products
     BEVERAGES: 'Beverages',          // For packaged products
     SNACKS: 'Snacks',                // For packaged products
     SOUP: 'Soup',                    // For prepared meals
-    MAIN_COURSE: 'Main Course',      // For prepared meals
+    MAIN_COURSE: 'Main_Course',      // For prepared meals
     DESSERT: 'Dessert', 
     DRINKS: 'Drinks',   
     VEGETABLES: 'Vegetables',
@@ -26,7 +26,10 @@ const WeightUnit = {
     KG: 'kg',
     G: 'g',
     LB: 'lb',
-    OZ: 'oz'
+    OZ: 'oz',
+    ML: 'ml',
+    L: 'l', // Liters
+    
 };
 Object.freeze(WeightUnit);
 
@@ -76,6 +79,11 @@ const productSchema = new Schema({
         enum: Object.values(WeightUnit), 
         required: false // Optional for prepared meals
     }, // Unit of weight, if applicable
+    weightUnitTotale: { 
+        type: String, 
+        enum: Object.values(WeightUnit), 
+        required: false // Optional for prepared meals
+    },
     totalQuantity: { 
         type: Number, 
         required: false, // Optional for prepared meals
@@ -85,11 +93,8 @@ const productSchema = new Schema({
             message: 'Total quantity must be an integer'
         }
     }, // Total number of units, if applicable
-    donation: { 
-        type: Schema.Types.ObjectId, 
-        ref: 'Donation', 
-        required: true 
-    }, // Reference to a Donation
+    donation: { type: Schema.Types.ObjectId, ref: 'Donation' }, // Optional
+    request: { type: Schema.Types.ObjectId, ref: 'RequestNeed' },// Reference to a Donation
 
     isArchived: { // New field to mark product as archived
         type: Boolean,

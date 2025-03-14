@@ -2,10 +2,6 @@ const RequestNeed = require('../models/RequestNeed');
 const Product = require('../models/Product');
 const Counter = require('../models/Counter');
 
-
-  
-
-
 // ✅ Get all requests
 async function getAllRequests(req, res) {
     try {

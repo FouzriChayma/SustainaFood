@@ -12,8 +12,9 @@ const DetailsDonations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const user = localStorage.getItem("user");
-  const userId= JSON.parse(user).id;
+  const user = JSON.parse(localStorage.getItem("user"));
+  const [userid, setUserid] = useState();
+
   const [isTheOwner, setIsTheOwner] = useState(false);
   const [editedDonation, setEditedDonation] = useState({
     title: "",
@@ -27,6 +28,14 @@ const DetailsDonations = () => {
   });
   const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
+  useEffect(() => {
+    if (typeof user.id === "number") {
+      setUserid(user._id);
+    } else if (typeof user.id === "string") {
+      setUserid(user.id);
+    }
+  }, [user]);
+
   // Fetch donation data when the component mounts or ID changes
   useEffect(() => {
     const fetchDonation = async () => {
@@ -56,15 +65,15 @@ const DetailsDonations = () => {
   // Check if the current user is the owner of the donation
   useEffect(() => {
     console.log("Donation:", donation);
-    if (donation && userId) {
+    if (donation && userid) {
       // If donation.user is a string, compare it directly; if it's an object, use its _id property.
       if (donation.donor && donation.donor._id) {
-        setIsTheOwner(userId === donation.donor._id);
+        setIsTheOwner(userid === donation.donor._id);
       } else {
         setIsTheOwner(false);
       }
     }
-  }, [donation, userId]);
+  }, [donation, userid]);
 
   // Handle deletion of the donation
   const handleDeleteDonation = () => {

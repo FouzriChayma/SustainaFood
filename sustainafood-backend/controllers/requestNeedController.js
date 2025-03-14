@@ -5,7 +5,9 @@ const Counter = require('../models/Counter');
 // ✅ Get all requests
 async function getAllRequests(req, res) {
     try {
-        const requests = await RequestNeed.find().populate('recipient').populate('requestedProducts.product');
+        const requests = await RequestNeed.find()
+            .populate('recipient')
+            .populate('requestedProducts');
         res.status(200).json(requests);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
@@ -16,7 +18,9 @@ async function getAllRequests(req, res) {
 async function getRequestById(req, res) {
     try {
         const { id } = req.params;
-        const request = await RequestNeed.findById(id).populate('recipient').populate('requestedProducts.product');
+        const request = await RequestNeed.findById(id)
+            .populate('recipient')
+            .populate('requestedProducts');
 
         if (!request) {
             return res.status(404).json({ message: 'Request not found' });
@@ -32,7 +36,8 @@ async function getRequestById(req, res) {
 async function getRequestsByRecipientId(req, res) {
     try {
         const { recipientId } = req.params;
-        const requests = await RequestNeed.find({ recipient: recipientId }).populate('requestedProducts.product');
+        const requests = await RequestNeed.find({ recipient: recipientId })
+            .populate('requestedProducts');
 
         if (!requests.length) {
             return res.status(404).json({ message: 'No requests found for this recipient' });
@@ -48,7 +53,9 @@ async function getRequestsByRecipientId(req, res) {
 async function getRequestsByStatus(req, res) {
     try {
         const { status } = req.params;
-        const requests = await RequestNeed.find({ status }).populate('recipient').populate('requestedProducts.product');
+        const requests = await RequestNeed.find({ status })
+            .populate('recipient')
+            .populate('requestedProducts');
 
         if (!requests.length) {
             return res.status(404).json({ message: 'No requests found with this status' });
@@ -57,12 +64,10 @@ async function getRequestsByStatus(req, res) {
         res.status(200).json(requests);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
-
     }
 }
 
 // ✅ Create a new request
-
 async function createRequest(req, res) {
     console.log("Request body received:", req.body);
 
@@ -80,7 +85,7 @@ async function createRequest(req, res) {
             numberOfMeals
         } = req.body;
 
-        // Ensure requestedProducts is an array and handle parsing
+        // Ensure requestedProducts is an array and handle parsing if it's a string
         if (typeof requestedProducts === 'string') {
             try {
                 requestedProducts = JSON.parse(requestedProducts);
@@ -135,7 +140,7 @@ async function createRequest(req, res) {
             numberOfMeals: category === 'prepared_meals' ? parseInt(numberOfMeals, 10) : undefined
         });
 
-        // Validate numberOfMeals if category is 'prepared_meals'
+        // Validate and assign numberOfMeals for prepared meals
         if (category === 'prepared_meals') {
             const parsedNumberOfMeals = parseInt(numberOfMeals, 10);
             if (isNaN(parsedNumberOfMeals) || parsedNumberOfMeals <= 0) {
@@ -147,7 +152,7 @@ async function createRequest(req, res) {
         await newRequest.save(); // Save to obtain the request _id
         const requestId = newRequest._id;
 
-        // Assign request ID and auto-incremented product ID
+        // Assign request ID and auto-incremented product ID for each product
         for (let product of requestedProducts) {
             const counter = await Counter.findOneAndUpdate(
                 { _id: 'ProductRequestId' },
@@ -160,7 +165,7 @@ async function createRequest(req, res) {
 
         console.log("Processed requestedProducts:", requestedProducts);
 
-        // Insert products if there are any
+        // Insert products if there are any valid ones
         let productIds = [];
         if (requestedProducts.length > 0) {
             try {
@@ -189,20 +194,19 @@ async function createRequest(req, res) {
     }
 }
 
-
-
-
 // ✅ Update a request by ID
 async function updateRequest(req, res) {
     try {
         const { id } = req.params;
-        const { recipient, requestedProducts, status, linkedDonation } = req.body;
+        const {  requestedProducts, ...donationData } = req.body;
 
         const updatedRequest = await RequestNeed.findByIdAndUpdate(
             id,
-            { recipient, requestedProducts, status, linkedDonation },
+            {  requestedProducts, ...donationData},
             { new: true }
-        ).populate('recipient').populate('requestedProducts.product');
+        )
+        .populate('recipient')
+        .populate('requestedProducts');
 
         if (!updatedRequest) {
             return res.status(404).json({ message: 'Request not found' });

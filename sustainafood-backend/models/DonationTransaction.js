@@ -12,22 +12,7 @@ const TransactionStatus = {
 Object.freeze(TransactionStatus); // Prevents changes to the enum
 
 // Define the AllocatedProduct subdocument schema (embedded in DonationTransaction)
-const allocatedProductSchema = new Schema({
-    product: { 
-        type: Schema.Types.ObjectId, 
-        ref: 'Product', 
-        required: true 
-    },
-    quantity: { 
-        type: Number, 
-        required: true, 
-        min: [1, 'Quantity must be at least 1'],
-        validate: {
-            validator: Number.isInteger,
-            message: 'Quantity must be an integer'
-        }
-    }
-});
+
 
 // Define the DonationTransaction schema
 const donationTransactionSchema = new Schema({
@@ -46,7 +31,7 @@ const donationTransactionSchema = new Schema({
         ref: 'Donation', 
         required: true 
     },
-    allocatedProducts: [allocatedProductSchema],
+    allocatedProducts: { type: Schema.Types.ObjectId, ref: 'Product'},
     status: { 
         type: String, 
         enum: Object.values(TransactionStatus), 

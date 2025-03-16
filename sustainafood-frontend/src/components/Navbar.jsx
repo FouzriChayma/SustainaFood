@@ -93,6 +93,7 @@ const Navbar = () => {
               {dropdownOpen === "donations" && (
                 <div className="dropdown-content">
                   <Link to="/ListOfDonations">List of Donations</Link>
+                  <Link to="/ListOfRequests">List of Requests</Link>
                   {isRecipient && <Link to="/myrequest">My Requests</Link>}
                   {isDonner && <Link to="/mydonations">My Donations</Link>}
                 </div>

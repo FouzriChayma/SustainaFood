@@ -24,6 +24,7 @@ import ViewSupermarket from './pages/backoffice/view-supermarket';
 import ViewNGO from './pages/backoffice/view-ngo.jsx';
 import ViewTransporter from './pages/backoffice/view-transporter';
 
+
 import PrivateRoute from "./PrivateRoute";
 import NotFound from "./pages/Not-Found";
 import AccountSettings from "./pages/AccountSettings.js";
@@ -39,6 +40,7 @@ import DonationTransactionList from "./pages/backoffice/DonationTransactionList.
 import RequestTable from "./pages/backoffice/RequestTable.jsx";
 import ProductList from "./pages/backoffice/ProductList.jsx";
 import DetailsRequest from "./pages/DetailsRequest";
+import ListOfRequests from "./pages/ListOfRequests";
 const App = () => {
 
   return (
@@ -90,6 +92,7 @@ const App = () => {
 
       <Route element={<PrivateRoute roles={["ong", "restaurant", "supermarket", "student"]} />}>
       <Route path="/ListOfDonations" element={<ListOfDonations />} />
+      <Route path="/ListOfRequests" element={<ListOfRequests />} />
       <Route path="/AddDonation" element={<AddDonation />} />
       <Route path="/DetailsDonations/:id" element={<DetailsDonations />} />
       <Route path="/DetailsRequest/:id" element={<DetailsRequest />} />

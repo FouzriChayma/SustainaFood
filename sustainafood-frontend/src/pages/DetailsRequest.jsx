@@ -5,6 +5,26 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getRequestById, deleteRequest, updateRequest } from '../api/requestNeedsService';
 import { FaEdit, FaTrash, FaSave, FaTimes } from "react-icons/fa";
+import styled from 'styled-components';
+
+const Button = styled.button`
+  display: inline-block;
+  padding: 10px 16px;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  border-radius: 30px;
+  background: #228b22;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s ease-in-out;
+  margin: 10px 5px;
+
+  &:hover {
+    background: #1e7a1e;
+  }
+`;
 
 const DetailsRequest = () => {
   const { id } = useParams();
@@ -12,10 +32,8 @@ const DetailsRequest = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const userData = localStorage.getItem("user");
   const user = JSON.parse(localStorage.getItem("user"));
   const [userid, setUserid] = useState();
-  //const userId = user.id;
   const [isTheOwner, setIsTheOwner] = useState(false);
   const [editedRequest, setEditedRequest] = useState({
     title: "",
@@ -27,6 +45,11 @@ const DetailsRequest = () => {
     requestedProducts: [],
     numberOfMeals: ""
   });
+
+  // Define dropdown options
+  const weightUnits = ['kg', 'g', 'lb', 'oz'];
+  const statuses = ['available', 'pending', 'reserved'];
+
   useEffect(() => {
     if (typeof user.id === "number") {
       setUserid(user._id);
@@ -35,11 +58,9 @@ const DetailsRequest = () => {
     }
   }, [user]);
 
-  // Determine user roles if needed
   const isDonor = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
 
-  // Fetch request data when component mounts or id changes
   useEffect(() => {
     const fetchRequest = async () => {
       try {
@@ -65,7 +86,6 @@ const DetailsRequest = () => {
     fetchRequest();
   }, [id]);
 
-  // Check if the current user is the owner of the request (using the recipient field)
   useEffect(() => {
     if (request && userid) {
       if (request.recipient && request.recipient._id) {
@@ -76,7 +96,6 @@ const DetailsRequest = () => {
     }
   }, [request, userid]);
 
-  // Handle deletion of the request
   const handleDeleteRequest = () => {
     deleteRequest(id)
       .then(() => {
@@ -88,14 +107,11 @@ const DetailsRequest = () => {
       });
   };
 
-  // Handle saving the edited request
   const handleSaveRequest = () => {
     console.log('Sending update with data:', editedRequest);
     updateRequest(id, editedRequest)
       .then((response) => {
         console.log("Server response:", response.data);
-        // Redirect to the updated request details page
-        window.location.href = `/DetailsRequest/${id}`;
         setRequest(response.data.updatedRequest);
         setIsEditing(false);
       })
@@ -104,23 +120,20 @@ const DetailsRequest = () => {
       });
   };
 
-  // Update a specific product field in the edited request
   const handleProductChange = (index, field, value) => {
     const updatedProducts = [...editedRequest.requestedProducts];
-    if (field === 'totalQuantity') {
-      value = Number(value); // Ensure quantity is a number
+    if (field === 'totalQuantity' || field === 'weightPerUnit') {
+      value = Number(value); // Ensure numeric fields are numbers
     }
     updatedProducts[index] = { ...updatedProducts[index], [field]: value };
     setEditedRequest({ ...editedRequest, requestedProducts: updatedProducts });
   };
 
-  // Delete a specific product from the edited request
   const handleDeleteProduct = (index) => {
     const updatedProducts = editedRequest.requestedProducts.filter((_, i) => i !== index);
     setEditedRequest({ ...editedRequest, requestedProducts: updatedProducts });
   };
 
-  // Add a new product to the edited request
   const handleAddProduct = () => {
     const newProduct = {
       productType: '',
@@ -129,11 +142,25 @@ const DetailsRequest = () => {
       weightUnit: '',
       totalQuantity: 0,
       weightUnitTotale: '',
-      status: 'available'
+      status: 'available' // Default status
     };
     setEditedRequest({
       ...editedRequest,
       requestedProducts: [...editedRequest.requestedProducts, newProduct]
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedRequest({
+      title: request.title || "",
+      location: request.location || "",
+      expirationDate: request.expirationDate || "",
+      description: request.description || "",
+      category: request.category || "",
+      status: request.status || "",
+      requestedProducts: request.requestedProducts ? [...request.requestedProducts] : [],
+      numberOfMeals: request.numberOfMeals || ""
     });
   };
 
@@ -142,7 +169,6 @@ const DetailsRequest = () => {
   if (!request) return <div>No request found.</div>;
 
   const {
-    _id,
     title,
     location,
     expirationDate,
@@ -168,23 +194,21 @@ const DetailsRequest = () => {
                 style={{ fontSize: "1.5rem", fontWeight: "bold", width: "60%" }}
               />
             ) : (
-              <h3 className="donation-title" style={{ marginLeft: "35%" }}>
+              <h3 className="donation-title">
                 🛒 Request: {title || "No Title"}
               </h3>
             )}
             {isTheOwner && (
               <div>
-                <FaTrash
-                  onClick={handleDeleteRequest}
-                  style={{ color: "#c30010", cursor: "pointer", fontSize: "20px", marginLeft: "10px" }}
-                />
+                <FaTrash className='fa-trash' onClick={handleDeleteRequest} />
                 {isEditing ? (
-                  <FaSave
-                    onClick={handleSaveRequest}
-                    style={{ color: "green", cursor: "pointer", fontSize: "20px", marginLeft: "10px" }}
-                  />
+                  <>
+                    <FaSave className="fa-save" onClick={handleSaveRequest} />
+                    <FaTimes className="fa-times" onClick={handleCancelEdit} />
+                  </>
                 ) : (
                   <FaEdit
+                    className="fa-edit"
                     onClick={() => {
                       setIsEditing(true);
                       setEditedRequest({
@@ -192,15 +216,12 @@ const DetailsRequest = () => {
                         requestedProducts: request.requestedProducts ? [...request.requestedProducts] : []
                       });
                     }}
-                    style={{ color: "black", cursor: "pointer", fontSize: "20px", marginLeft: "10px" }}
                   />
                 )}
               </div>
             )}
           </div>
 
-          {/* Request Details */}
-        
           <p>
             <strong>📍 Location:</strong>{" "}
             {isEditing ? (
@@ -284,7 +305,6 @@ const DetailsRequest = () => {
             </p>
           )}
 
-          {/* Requested Products Section */}
           <h4>📦 Requested Products:</h4>
           <ul className="donation-ul">
             {isEditing ? (
@@ -310,13 +330,16 @@ const DetailsRequest = () => {
                     placeholder="⚖️ Weight per Unit"
                     style={{ marginLeft: "10px" }}
                   />
-                  <input
-                    type="text"
+                  <select
                     value={product.weightUnit}
                     onChange={(e) => handleProductChange(index, 'weightUnit', e.target.value)}
-                    placeholder="📏 Weight Unit"
-                    style={{ marginLeft: "10px" }}
-                  />
+                    style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}
+                  >
+                    <option value="">📏 Select Weight Unit</option>
+                    {weightUnits.map((unit) => (
+                      <option key={unit} value={unit}>{unit}</option>
+                    ))}
+                  </select>
                   <input
                     type="number"
                     value={product.totalQuantity}
@@ -324,20 +347,26 @@ const DetailsRequest = () => {
                     placeholder="🔢 Total Quantity"
                     style={{ marginLeft: "10px" }}
                   />
-                  <input
-                    type="text"
+                   <select
                     value={product.weightUnitTotale}
                     onChange={(e) => handleProductChange(index, 'weightUnitTotale', e.target.value)}
-                    placeholder="📐 Total Weight Unit"
-                    style={{ marginLeft: "10px" }}
-                  />
-                  <input
-                    type="text"
+                    style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}
+                  >
+                    <option value="">📏 Select Weight Unit Totale</option>
+                    {weightUnits.map((unit) => (
+                      <option key={unit} value={unit}>{unit}</option>
+                    ))}
+                  </select>
+               
+                  <select
                     value={product.status}
                     onChange={(e) => handleProductChange(index, 'status', e.target.value)}
-                    placeholder="🔄 Status"
-                    style={{ marginLeft: "10px" }}
-                  />
+                    style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}
+                  >
+                    {statuses.map((status) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
                   <FaTimes
                     onClick={() => handleDeleteProduct(index)}
                     style={{ color: "red", cursor: "pointer", marginLeft: "10px" }}
@@ -369,26 +398,22 @@ const DetailsRequest = () => {
             )}
           </ul>
 
-          {/* Add Product Button (visible in edit mode) */}
-          {isEditing && (
+         
+
+          <Button onClick={() => window.history.back()}>🔙 Go Back</Button>
+
+          {!isTheOwner && <Button className="btnseelist">Add Request</Button>}
+          {isTheOwner && !isEditing && (
+            <button className="add-product-btn">👀 View Request</button>
+          )}
+           {isEditing && (
             <button
               onClick={handleAddProduct}
-              style={{
-                marginTop: "10px",
-                padding: "5px 10px",
-                backgroundColor: "#007bff",
-                color: "white",
-                border: "none",
-                borderRadius: "5px"
-              }}
+             className='add-product-btn'
             >
-              Add Product
+             ➕ Add Product
             </button>
           )}
-
-          {/* Additional Action Buttons */}
-          {!isTheOwner && <button className="btnseelist">Add Request</button>}
-          {isTheOwner && <button className="btnseelist">View Request</button>}
         </div>
       </div>
       <Footer />

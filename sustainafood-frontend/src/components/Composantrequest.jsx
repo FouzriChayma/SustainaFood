@@ -1,14 +1,116 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import '../assets/styles/Composantdonation.css';
+import styled from 'styled-components';
+
+// Container for each card, ensuring same size across all cards
+const Card = styled.div`
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 400px;
+  min-height: 350px;
+  border-left: 6px solid #228b22;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0px 15px 30px rgba(0, 0, 0, 0.15);
+  }
+`;
+
+// Title with icon
+const Title = styled.h3`
+  color: #228b22;
+  font-size: 22px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+`;
+
+// Details section
+const Details = styled.p`
+  font-size: 16px;
+  color: #555;
+  margin: 5px 0;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+`;
+
+// Status Badge with dynamic colors
+const StatusBadge = styled.span`
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+  color: white;
+  background: ${({ status }) => {
+    switch (status) {
+      case 'Pending':
+        return 'orange';
+      case 'Accepted':
+        return '#228b22';
+      case 'Rejected':
+        return 'red';
+      default:
+        return '#888';
+    }
+  }};
+`;
+
+// Requested product list
+const ProductList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin-top: 10px;
+`;
+
+const ProductItem = styled.li`
+  background: #f5f5f5;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+// Button to view more details
+const SeeMoreButton = styled(Link)`
+  display: inline-block;
+  padding: 10px 16px;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  border-radius: 30px;
+  background: #228b22;
+  color: white;
+  text-decoration: none;
+  margin-top: 15px;
+  transition: background 0.3s;
+
+  &:hover {
+    background: #1e7a1e;
+  }
+`;
 
 export const Composantrequest = ({ request }) => {
-  // Vérification de base pour s'assurer que les données sont valides
-  if (!request || typeof request !== 'object') {
-    return <div>Les données de la demande sont invalides.</div>;
+  if (!request || typeof request !== 'object' || !request._id) {
+    return <div>Invalid request data.</div>;
   }
 
-  // Déstructuration de tous les attributs de RequestNeed
   const {
     _id,
     title,
@@ -16,68 +118,44 @@ export const Composantrequest = ({ request }) => {
     expirationDate,
     description,
     category,
-    recipient,
     status,
-    linkedDonation,
     requestedProducts,
     numberOfMeals,
   } = request;
 
-  // Vérification de l'identifiant
-  if (!_id) {
-    return <div>L’ID de la demande est manquant.</div>;
-  }
-
   return (
-    <div className="donation-cardlist">
-      <div className="donation-card-content">
-        {/* Section des informations de la demande */}
-        <h3 className="donation-title">🛒 Demande : {title || 'Sans titre'}</h3>
-        <p><strong>📍 Lieu :</strong> {location || 'Non spécifié'}</p>
-        <p>
-          <strong>📆 Date d’expiration :</strong>{' '}
-          {expirationDate ? new Date(expirationDate).toLocaleDateString() : 'Non définie'}
-        </p>
-        <p><strong>📝 Description :</strong> {description || 'Aucune description'}</p>
-        <p><strong>📂 Catégorie :</strong> {category || 'Non spécifiée'}</p>
-        <p><strong>🔄 Statut :</strong> {status || 'Inconnu'}</p>
-       
-       
+    <Card>
+      <div>
+        <Title>🛒 {title || 'Untitled Request'}</Title>
+        <Details>📍 <strong>Location:</strong> {location || 'Not specified'}</Details>
+        <Details>📆 <strong>Expiration:</strong> {expirationDate ? new Date(expirationDate).toLocaleDateString() : 'Not defined'}</Details>
+        <Details>📝 <strong>Description:</strong> {description || 'No description'}</Details>
+        <Details>📂 <strong>Category:</strong> {category || 'Not specified'}</Details>
+        <Details>🔄 <strong>Status:</strong> <StatusBadge status={status}>{status || 'Unknown'}</StatusBadge></Details>
 
-        {/* Section des produits demandés */}
-     {/* Section des produits demandés */}
-<h4>📦 Produits demandés :</h4>
-<ul className="donation-ul">
-  {Array.isArray(requestedProducts) && requestedProducts.length > 0 ? (
-    requestedProducts.map((product, index) => (
-      product && typeof product === 'object' ? (
-        <li className="donation-li-list" key={index}>
-          <span><strong>Type :</strong> {product.productType || 'Non spécifié'}</span> <br />
-          <span><strong>Description :</strong> {product.productDescription || 'Aucune'}</span> <br />
-          <span><strong>Poids :</strong> {product.weightPerUnit || 0} {product.weightUnit || ''}</span> <br />
-          <span><strong>Quantité totale :</strong> {product.totalQuantity || 0} {product.weightUnitTotale || ''}</span> <br />
-          <span><strong>Statut :</strong> {product.status || 'Inconnu'}</span> <br />
-        </li>
-      ) : (
-        <li className="donation-li-list" key={index}>
-          <span>Aucune donnée valide pour ce produit</span>
-        </li>
-      )
-    ))
-  ) : (
-    <li className="donation-li-list">
-      {category === 'prepared_meals' ? `🍽️ Nombre de repas : ${numberOfMeals || 'Non spécifié'}` : 'Aucun produit demandé'}
-    </li>
-  )}
-</ul>
-
-
-        {/* Lien pour voir plus de détails */}
-        <Link to={`/DetailsRequest/${_id}`} className="btnseemorelist">
-          Voir plus
-        </Link>
+        {/* Requested Products Section */}
+        <h4>📦 Requested Products:</h4>
+        <ProductList>
+          {Array.isArray(requestedProducts) && requestedProducts.length > 0 ? (
+            requestedProducts.map((product, index) => (
+              <ProductItem key={index}>
+                <span><strong>Type:</strong> {product.productType || 'Not specified'}</span>
+                <span><strong>Weight:</strong> {product.weightPerUnit || 0} {product.weightUnit || ''}</span>
+                <span><strong>Quantity:</strong> {product.totalQuantity || 0} {product.weightUnitTotale || ''}</span>
+                <span><strong>Status:</strong> {product.status || 'Unknown'}</span>
+              </ProductItem>
+            ))
+          ) : (
+            <ProductItem>
+              {category === 'prepared_meals' ? `🍽️ Number of meals: ${numberOfMeals || 'Not specified'}` : 'No requested products'}
+            </ProductItem>
+          )}
+        </ProductList>
       </div>
-    </div>
+
+      {/* Button to view more details */}
+      <SeeMoreButton to={`/DetailsRequest/${_id}`}>See more</SeeMoreButton>
+    </Card>
   );
 };
 

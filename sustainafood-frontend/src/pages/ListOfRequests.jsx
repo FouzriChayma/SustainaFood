@@ -113,6 +113,39 @@ const NoRequests = styled.p`
   color: #888;
 `;
 
+const PaginationControls = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 10px;
+
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: #228b22;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+
+    &:hover {
+      background: #56ab2f;
+    }
+
+    &:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+  }
+
+  span {
+    font-size: 16px;
+    color: #333;
+  }
+`;
+
 const fade = keyframes`
   0% { opacity: 0; }
   8% { opacity: 1; }
@@ -175,7 +208,7 @@ const CallToAction = styled.a`
 const SliderContainer = styled.div`
   position: relative;
   flex: 1 1 300px;
-  width: 400px; /* Adjusted for better image display */
+  width: 400px;
   height: 300px;
   border-radius: 20px;
   overflow: hidden;
@@ -185,7 +218,7 @@ const SliderContainer = styled.div`
 const SlideImage = styled.img`
   position: absolute;
   top: 0;
-  left: 0; /* Corrected positioning */
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -200,7 +233,7 @@ const Slide1 = styled(SlideImage)`
   animation-delay: 0s;
 `;
 const Slide2 = styled(SlideImage)`
-  animation-delay: 2.4s; /* Adjusted for smoother transitions */
+  animation-delay: 2.4s;
 `;
 const Slide3 = styled(SlideImage)`
   animation-delay: 4.8s;
@@ -238,13 +271,15 @@ const ListOfRequests = () => {
   const [sortOption, setSortOption] = useState("date");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(6);
 
   useEffect(() => {
     const fetchRequests = async () => {
       try {
         const response = await getrequests();
         setRequests(response.data);
-        setFilteredRequests(response.data); // Initialize filteredRequests
+        setFilteredRequests(response.data);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching requests:", error);
@@ -282,7 +317,14 @@ const ListOfRequests = () => {
     });
 
     setFilteredRequests(updatedRequests);
+    setCurrentPage(1); // Reset to page 1 when filters change
   }, [searchQuery, sortOption, statusFilter, categoryFilter, requests]);
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentRequests = filteredRequests.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
 
   return (
     <>
@@ -340,20 +382,29 @@ const ListOfRequests = () => {
               <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
                 <option value="all">📦 All Categories</option>
                 <option value="prepared_meals">🍽️ Prepared Meals</option>
-                <option value="packaged_products">🛒 packaged products</option>
+                <option value="packaged_products">🛒 Packaged Products</option>
               </Select>
             </Controls>
             <ContentList>
               {loading ? (
                 <LoadingMessage>Loading...</LoadingMessage>
-              ) : filteredRequests.length > 0 ? (
-                filteredRequests.map((requestItem) => (
+              ) : currentRequests.length > 0 ? (
+                currentRequests.map((requestItem) => (
                   <Composantrequest key={requestItem._id} request={requestItem} />
                 ))
               ) : (
                 <NoRequests>No matching requests found.</NoRequests>
               )}
             </ContentList>
+            <PaginationControls>
+              <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
+                Previous
+              </button>
+              <span>Page {currentPage} of {totalPages}</span>
+              <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>
+                Next
+              </button>
+            </PaginationControls>
           </Container>
         </SectionWrapper>
       </HomeContainer>

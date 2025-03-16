@@ -5,7 +5,7 @@ import Composantrequest from "../components/Composantrequest";
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import styled, { createGlobalStyle } from 'styled-components';
-import { FaSearch, FaFilter } from "react-icons/fa"; // Importing Icons
+import { FaSearch, FaFilter } from "react-icons/fa";
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -27,7 +27,6 @@ const Title = styled.h1`
   margin-bottom: 20px;
 `;
 
-// 🎨 Styled Search Box
 const SearchContainer = styled.div`
   display: flex;
   align-items: center;
@@ -59,7 +58,6 @@ const SearchInput = styled.input`
   background: transparent;
 `;
 
-// 🎯 Stylish Filters & Sorting
 const Controls = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -107,6 +105,39 @@ const NoRequests = styled.p`
   color: #888;
 `;
 
+const PaginationControls = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 10px;
+
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: #228b22;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+
+    &:hover {
+      background: #56ab2f;
+    }
+
+    &:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+  }
+
+  span {
+    font-size: 16px;
+    color: #333;
+  }
+`;
+
 export default function MyRequest() {
   const [requests, setRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
@@ -117,6 +148,8 @@ export default function MyRequest() {
   const [sortOption, setSortOption] = useState("date");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(6); // Adjust this number as needed
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -139,7 +172,6 @@ export default function MyRequest() {
     fetchRequests();
   }, [authUser]);
 
-  // 🔍 Search, Sort, & Filter Logic
   useEffect(() => {
     let updatedRequests = [...requests];
 
@@ -168,7 +200,14 @@ export default function MyRequest() {
     });
 
     setFilteredRequests(updatedRequests);
+    setCurrentPage(1); // Reset to page 1 when filters change
   }, [searchQuery, sortOption, statusFilter, categoryFilter, requests]);
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentRequests = filteredRequests.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
 
   return (
     <>
@@ -215,14 +254,31 @@ export default function MyRequest() {
         <ContentList>
           {loading ? (
             <LoadingMessage>Loading...</LoadingMessage>
-          ) : filteredRequests.length > 0 ? (
-            filteredRequests.map((requestItem) => (
+          ) : currentRequests.length > 0 ? (
+            currentRequests.map((requestItem) => (
               <Composantrequest key={requestItem._id} request={requestItem} />
             ))
           ) : (
             <NoRequests>No matching requests found.</NoRequests>
           )}
         </ContentList>
+
+        {/* Pagination Controls */}
+        <PaginationControls>
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </button>
+          <span>Page {currentPage} of {totalPages}</span>
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </PaginationControls>
       </Container>
       <Footer />
     </>

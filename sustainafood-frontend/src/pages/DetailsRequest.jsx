@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import { getRequestById, deleteRequest, updateRequest } from '../api/requestNeedsService';
 import { FaEdit, FaTrash, FaSave, FaTimes } from "react-icons/fa";
 import styled from 'styled-components';
+import logo from "../assets/images/LogoCh.png";
 
 const Button = styled.button`
   display: inline-block;
@@ -25,6 +26,7 @@ const Button = styled.button`
     background: #1e7a1e;
   }
 `;
+
 
 const DetailsRequest = () => {
   const { id } = useParams();
@@ -184,7 +186,10 @@ const DetailsRequest = () => {
       <Navbar />
       <div className="donation-cardlist">
         <div className="donation-card-content">
+        <img src={logo} alt="Logo" className="adddonation-logo" style={{marginLeft: "47%"}} />
+
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+
             {isEditing ? (
               <input
                 type="text"

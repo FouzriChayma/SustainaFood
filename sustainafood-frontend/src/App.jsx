@@ -31,7 +31,7 @@ import AccountSettings from "./pages/AccountSettings.js";
 import ListOfDonations from "./pages/ListOfDonations";
 import AddDonation from "./pages/AddDonation";
 import MyRequest from "./pages/MyRequest.jsx";
-import MyDonations from "./pages/MyDonations"; 
+import MyDonations from "./pages/mydonations.jsx"; 
 import TwoFAVerification from "./pages/TwoFAVerification";
 
 import DetailsDonations from "./pages/DetailsDonations";

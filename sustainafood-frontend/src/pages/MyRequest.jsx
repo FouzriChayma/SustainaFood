@@ -236,18 +236,17 @@ export default function MyRequest() {
           </Select>
 
           <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="all">🟢 All Statuses</option>
-            <option value="Pending">🕒 Pending</option>
-            <option value="Accepted">✅ Accepted</option>
-            <option value="Rejected">❌ Rejected</option>
+          <option value="all">🟢 All Statuses</option>
+                <option value="pending">🕒 Pending</option>
+                <option value="approved">✅ Accepted</option>
+                <option value="rejected">❌ Rejected</option>
           </Select>
 
           <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-            <option value="all">📦 All Categories</option>
-            <option value="prepared_meals">🍽️ Prepared Meals</option>
-            <option value="groceries">🛒 Groceries</option>
-            <option value="hygiene">🧼 Hygiene</option>
-          </Select>
+          <option value="all">📦 All Categories</option>
+                <option value="prepared_meals">🍽️ Prepared Meals</option>
+                <option value="packaged_products">🛒 Packaged Products</option>
+              </Select>
         </Controls>
 
         {/* 🔄 Display Requests */}

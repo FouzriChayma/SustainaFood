@@ -56,11 +56,11 @@ const StatusBadge = styled.span`
   color: white;
   background: ${({ status }) => {
     switch (status) {
-      case 'Pending':
+      case 'pending':
         return 'orange';
-      case 'Accepted':
+      case 'approved':
         return '#228b22';
-      case 'Rejected':
+      case 'rejected':
         return 'red';
       default:
         return '#888';

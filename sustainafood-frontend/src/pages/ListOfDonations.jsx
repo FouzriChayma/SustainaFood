@@ -1,4 +1,3 @@
-// ListOfDonations.jsx
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
@@ -10,11 +9,12 @@ import donation3 from '../assets/images/donation3.jpg';
 import donation4 from '../assets/images/donation4.png';
 import donation5 from '../assets/images/fooddonation.png';
 import Composantdonation from '../components/Composantdonation';
-import '../assets/styles/ListOfDonations.css';
 import { getDonations } from "../api/donationService";
 import donation from '../assets/images/fooddonation1.png';
 import patternBg from '../assets/images/bg.png';
+import { FaSearch, FaFilter } from "react-icons/fa";
 
+// Global styles
 const GlobalStyle = createGlobalStyle`
   body {
     margin: 0;
@@ -24,6 +24,7 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
+// Animation for slider
 const fade = keyframes`
   0% { opacity: 0; }
   8% { opacity: 1; }
@@ -32,6 +33,7 @@ const fade = keyframes`
   100% { opacity: 0; }
 `;
 
+// Layout components
 const HomeContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -86,7 +88,7 @@ const CallToAction = styled.a`
 const SliderContainer = styled.div`
   position: relative;
   flex: 1 1 300px;
-  width: 70px;
+  width: 400px;
   height: 300px;
   border-radius: 20px;
   overflow: hidden;
@@ -96,8 +98,8 @@ const SliderContainer = styled.div`
 const SlideImage = styled.img`
   position: absolute;
   top: 0;
-  left: 100px;
-  width: 400px;
+  left: 0;
+  width: 100%;
   height: 100%;
   object-fit: cover;
   border-radius: 20px;
@@ -111,19 +113,19 @@ const Slide1 = styled(SlideImage)`
   animation-delay: 0s;
 `;
 const Slide2 = styled(SlideImage)`
-  animation-delay: 4s;
+  animation-delay: 2.4s;
 `;
 const Slide3 = styled(SlideImage)`
-  animation-delay: 8s;
+  animation-delay: 4.8s;
 `;
 const Slide4 = styled(SlideImage)`
-  animation-delay: 12s;
+  animation-delay: 7.2s;
 `;
 const Slide5 = styled(SlideImage)`
-  animation-delay: 16s;
+  animation-delay: 9.6s;
 `;
 const Slide = styled(SlideImage)`
-  animation-delay: 20s;
+  animation-delay: 12s;
 `;
 
 const Wave = styled.svg`
@@ -137,38 +139,203 @@ const Wave = styled.svg`
 
 const SectionWrapper = styled.section`
   padding: 60px 80px;
-  background: ${props => props.bgColor || '#fff'};
-  text-align: ${props => props.align || 'center'};
+  background: #fff;
+  text-align: center;
 `;
 
-const SectionTitle = styled.h2`
-  font-size: 36px;
+// Donation list styled components (transformed from ListOfRequests)
+const Container = styled.div`
+  padding: 40px 60px;
+  text-align: center;
+`;
+
+const Title = styled.h1`
   color: #228b22;
-  margin-bottom: 40px;
+  font-size: 40px;
+  margin-bottom: 20px;
+`;
+
+const SearchContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  padding: 8px;
+  border-radius: 25px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 320px;
+  margin: auto;
+  transition: all 0.3s ease-in-out;
+
+  &:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+`;
+
+const SearchIcon = styled(FaSearch)`
+  color: #555;
+  margin-right: 8px;
+`;
+
+const SearchInput = styled.input`
+  border: none;
+  outline: none;
+  font-size: 16px;
+  width: 100%;
+  padding: 8px;
+  background: transparent;
+`;
+
+const Controls = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  margin: 20px 0;
+`;
+
+const FilterIcon = styled(FaFilter)`
+  margin-right: 8px;
+`;
+
+const Select = styled.select`
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 25px;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: 0.3s;
+  cursor: pointer;
+  background: white;
+  color: #333;
+  font-weight: bold;
+
+  &:hover {
+    border-color: #228b22;
+    transform: scale(1.05);
+  }
+`;
+
+const ContentList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+`;
+
+const LoadingMessage = styled.div`
+  font-size: 18px;
+  color: #555;
+`;
+
+const NoDonations = styled.p`
+  font-size: 18px;
+  color: #888;
+`;
+
+const PaginationControls = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 10px;
+
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: #228b22;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+
+    &:hover {
+      background: #56ab2f;
+    }
+
+    &:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+  }
+
+  span {
+    font-size: 16px;
+    color: #333;
+  }
 `;
 
 const ListOfDonations = () => {
   const [donations, setDonations] = useState([]);
+  const [filteredDonations, setFilteredDonations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOption, setSortOption] = useState("date");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(6);
 
   useEffect(() => {
     const fetchDonations = async () => {
       try {
         const response = await getDonations();
         setDonations(response.data);
+        setFilteredDonations(response.data);
+        setLoading(false);
         console.log("Donations fetched:", response.data);
       } catch (error) {
         console.error("Backend Error:", error);
+        setLoading(false);
       }
     };
     fetchDonations();
   }, []);
+
+  useEffect(() => {
+    let updatedDonations = [...donations];
+
+    if (searchQuery) {
+      updatedDonations = updatedDonations.filter((donation) =>
+        donation.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    if (statusFilter !== "all") {
+      updatedDonations = updatedDonations.filter((donation) => donation.status === statusFilter);
+    }
+
+    if (categoryFilter !== "all") {
+      updatedDonations = updatedDonations.filter((donation) => donation.category === categoryFilter);
+    }
+
+    updatedDonations.sort((a, b) => {
+      if (sortOption === "title") {
+        return a.title.localeCompare(b.title);
+      } else if (sortOption === "status") {
+        return a.status.localeCompare(b.status);
+      } else {
+        return new Date(a.expirationDate) - new Date(b.expirationDate);
+      }
+    });
+
+    setFilteredDonations(updatedDonations);
+    setCurrentPage(1); // Reset to page 1 when filters change
+  }, [searchQuery, sortOption, statusFilter, categoryFilter, donations]);
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentDonations = filteredDonations.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredDonations.length / itemsPerPage);
 
   return (
     <>
       <GlobalStyle />
       <Navbar />
       <HomeContainer>
-        {/* HERO SECTION */}
+        {/* Hero Section */}
         <HeroSection>
           <HeroText>
             <h1>List Of Donations in SustainaFood</h1>
@@ -193,40 +360,59 @@ const ListOfDonations = () => {
             />
           </Wave>
         </HeroSection>
-        {/* SECTION DES DONATIONS */}
+
+        {/* Donations List Section */}
         <SectionWrapper>
-          <div className="container-listdonation">
-            <header>
-              <div className="profile-headerLIST">
-                <h1 style={{ color: '#228b22', fontSize: '40px' }}>List Of Donations</h1>
-                <div className="date-switcher">
-                  <div className="groupsearch">
-                    <svg className="iconsearch" aria-hidden="true" viewBox="0 0 24 24">
-                      <g>
-                        <path d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-7.5-3.365-7.5-7.5z" />
-                      </g>
-                    </svg>
-                    <input placeholder="Search" type="search" className="inputsearch" />
-                  </div>
-                </div>
-              </div>
-            </header>
-            <div className='contentlist'>
-              <div style={{ marginBottom: "40px" }}>
-                <div className="donor-profile">
-                  <div className="projects">
-                    {donations.length > 0 ? (
-                      donations.map((donationItem) => (
-                        <Composantdonation key={donationItem._id} donation={donationItem} />
-                      ))
-                    ) : (
-                      <p>No donations found.</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Container>
+            <Title>List Of Donations</Title>
+            <SearchContainer>
+              <SearchIcon />
+              <SearchInput
+                type="text"
+                placeholder="Search donations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </SearchContainer>
+            <Controls>
+              <Select value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
+                <option value="date">📆 Sort by Expiration Date</option>
+                <option value="title">🔠 Sort by Title</option>
+                <option value="status">🔄 Sort by Status</option>
+              </Select>
+              <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="all">🟢 All Statuses</option>
+                <option value="pending">🕒 Pending</option>
+                <option value="approved">✅ Accepted</option>
+                <option value="rejected">❌ Rejected</option>
+              </Select>
+              <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+                <option value="all">📦 All Categories</option>
+                <option value="prepared_meals">🍽️ Prepared Meals</option>
+                <option value="packaged_products">🛒 Packaged Products</option>
+              </Select>
+            </Controls>
+            <ContentList>
+              {loading ? (
+                <LoadingMessage>Loading...</LoadingMessage>
+              ) : currentDonations.length > 0 ? (
+                currentDonations.map((donationItem) => (
+                  <Composantdonation key={donationItem._id} donation={donationItem} />
+                ))
+              ) : (
+                <NoDonations>No matching donations found.</NoDonations>
+              )}
+            </ContentList>
+            <PaginationControls>
+              <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
+                Previous
+              </button>
+              <span>Page {currentPage} of {totalPages}</span>
+              <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>
+                Next
+              </button>
+            </PaginationControls>
+          </Container>
         </SectionWrapper>
       </HomeContainer>
       <Footer />

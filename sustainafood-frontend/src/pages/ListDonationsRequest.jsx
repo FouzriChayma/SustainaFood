@@ -28,14 +28,12 @@ const DonationContainer = styled.div`
 `;
 
 const Controls = styled.div`
-  display: flex;
   justify-content: flex-end;
   gap: 15px;
   margin: 20px 0;
 `;
 
 const Select = styled.select`
-  padding: 10px;
   font-size: 16px;
   border-radius: 25px;
   border: 1px solid #ccc;
@@ -45,7 +43,7 @@ const Select = styled.select`
   background: white;
   color: #333;
   font-weight: bold;
-
+    padding: 10px 10px 10px 3px;
   &:hover {
     border-color: #228b22;
     transform: scale(1.05);
@@ -266,6 +264,7 @@ const DonationTitle = styled.h1`
   color: #228b22;
   font-size: 40px;
   margin-bottom: 20px;
+  text-align: center;
 `;
 const SearchContainer = styled.div`
   display: flex;
@@ -310,7 +309,7 @@ export const ListDonationsRequest = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(3);
   const [filterOption, setFilterOption] = useState('all'); // 'all' or 'full'
   const [sortOption, setSortOption] = useState('date');
   const [searchQuery, setSearchQuery] = useState('');
@@ -417,19 +416,22 @@ export const ListDonationsRequest = () => {
       <GlobalStyle />
       <Navbar />
       <DonationContainer>
-      <DonationTitle>Donations for Request: {request.title}</DonationTitle>
-
+      <DonationTitle>
+  🤝 Donations for Request: <br />
+  <span className="request-title">{request.title}</span>
+</DonationTitle>
+<Controls>
 <SearchContainer>
   <SearchIcon />
   <SearchInput
     type="text"
-    placeholder="Search by Millie Bobby Brownby product name..."
+    placeholder="Search by product name..."
     value={searchQuery}
     onChange={(e) => setSearchQuery(e.target.value)}
   />
 </SearchContainer>
 
-<Controls>
+
 
 
   <Select value={filterOption} onChange={(e) => setFilterOption(e.target.value)}>

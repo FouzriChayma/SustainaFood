@@ -3,8 +3,8 @@ const Product = require('../models/Product');
 const Counter = require('../models/Counter');
 const Donation = require('../models/Donation'); // Added import for Donation
 const DonationTransaction = require('../models/DonationTransaction');
-
-// ✅ Get all requests
+const nodemailer = require("nodemailer");
+const path = require("path");
 async function getAllRequests(req, res) {
     try {
         const requests = await RequestNeed.find()
@@ -242,7 +242,10 @@ async function addDonationToRequest(req, res) {
       const { requestId } = req.params;
       const { products, donor, expirationDate } = req.body;
   
-      const request = await RequestNeed.findById(requestId).populate('requestedProducts');
+      // Fetch the request and populate requestedProducts and recipient
+      const request = await RequestNeed.findById(requestId)
+        .populate('requestedProducts')
+        .populate('recipient'); // Assuming 'recipient' is a field in RequestNeed referencing the User model
       if (!request) {
         return res.status(404).json({ message: 'Request not found' });
       }
@@ -251,6 +254,7 @@ async function addDonationToRequest(req, res) {
       console.log('Request numberOfMeals:', request.numberOfMeals);
       console.log('Request linkedDonation:', request.linkedDonation);
   
+      // Validate products against the request
       const productMap = new Map(request.requestedProducts.map(p => [p._id.toString(), p.totalQuantity]));
       const donationProducts = products.map(({ product, quantity }) => {
         if (!productMap.has(product)) {
@@ -259,10 +263,11 @@ async function addDonationToRequest(req, res) {
         const maxQty = productMap.get(product);
         return {
           product,
-          quantity: Math.min(quantity, maxQty)
+          quantity: Math.min(quantity, maxQty),
         };
       });
   
+      // Create the new donation
       const newDonation = new Donation({
         title: request.title,
         donor: donor || req.user.id,
@@ -272,26 +277,108 @@ async function addDonationToRequest(req, res) {
         products: donationProducts,
         numberOfMeals: request.category === 'prepared_meals' ? (request.numberOfMeals || 1) : undefined,
         expirationDate: expirationDate || request.expirationDate,
-        linkedRequests: [requestId]
+        linkedRequests: [requestId],
       });
   
       const savedDonation = await newDonation.save();
   
+      // Update the request's linkedDonation field
       if (request.linkedDonation === null || request.linkedDonation === undefined) {
         await RequestNeed.updateOne({ _id: requestId }, { $set: { linkedDonation: [] } });
       }
   
       await RequestNeed.updateOne({ _id: requestId }, { $push: { linkedDonation: savedDonation._id } });
   
+      // Fetch the recipient's email and send notification
+      const recipient = request.recipient; // Assuming recipient is populated
+      if (!recipient || !recipient.email) {
+        console.warn('Recipient email not found for request:', requestId);
+      } else {
+        // Populate the donor and products in the saved donation to get names
+        const populatedDonation = await Donation.findById(savedDonation._id)
+          .populate('donor') // Populate donor to get the name
+          .populate('products.product'); // Populate products to get product names
+  
+        // Configure email transporter
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+          tls: {
+            rejectUnauthorized: false, // Disable SSL verification
+          },
+        });
+  
+        // Email details
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: recipient.email,
+          subject: `New Donation Added to Your Request: ${request.title}`,
+          text: `Dear ${recipient.name || 'Recipient'},
+  
+  A new donation has been added to your request titled "${request.title}".
+  
+  Donation Details:
+  - Title: ${populatedDonation.title}
+  - Donor: ${populatedDonation.donor?.name || 'Unknown Donor'}
+  - Products: ${populatedDonation.products
+            .map(p => `${p.product?.name || 'Unknown Product'} (Quantity: ${p.quantity})`)
+            .join(', ')}
+  - Expiration Date: ${populatedDonation.expirationDate ? new Date(populatedDonation.expirationDate).toLocaleDateString() : 'Not set'}
+  
+  Thank you for using our platform!
+  
+  Best regards,
+  Your Platform Team`,
+          html: `
+            <div style="font-family: Arial, sans-serif; color: black;">
+              <div style="text-align: center; margin-bottom: 20px;">
+                <img src="cid:logo" alt="Platform Logo" style="max-width: 150px; height: auto;" />
+              </div>
+              <h2 style="color: #228b22;">New Donation Added to Your Request</h2>
+              <p>Dear ${recipient.name || 'Recipient'},</p>
+              <p>A new donation has been added to your request titled "<strong>${request.title}</strong>".</p>
+              <h3>Donation Details:</h3>
+              <ul>
+                <li><strong>Title:</strong> ${populatedDonation.title}</li>
+                <li><strong>Donor:</strong> ${populatedDonation.donor?.name || 'Unknown Donor'}</li>
+                <li><strong>Products:</strong> ${populatedDonation.products
+                  .map(p => `${p.product?.name || 'Unknown Product'} (Quantity: ${p.quantity})`)
+                  .join(', ')}</li>
+                <li><strong>Expiration Date:</strong> ${populatedDonation.expirationDate ? new Date(populatedDonation.expirationDate).toLocaleDateString() : 'Not set'}</li>
+              </ul>
+              <p>Thank you for using our platform!</p>
+              <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
+            </div>
+          `,
+          attachments: [
+            {
+              filename: 'logo.png',
+              path: path.join(__dirname, '../uploads/logo.png'), // Adjust path to match your logo file
+              cid: 'logo', // Content-ID to reference in the HTML
+            },
+          ],
+        };
+  
+        // Send email
+        await transporter.sendMail(mailOptions);
+        console.log(`Email sent to ${recipient.email}`);
+      }
+  
       res.status(201).json({
         message: 'Donation added to request successfully',
-        donation: savedDonation
+        donation: savedDonation,
       });
     } catch (error) {
       console.error('Donation Error:', error);
       res.status(500).json({ message: 'Failed to add donation to request', error: error.message });
     }
   }
+
+  
+  
 module.exports = {
     addDonationToRequest,
     getAllRequests,

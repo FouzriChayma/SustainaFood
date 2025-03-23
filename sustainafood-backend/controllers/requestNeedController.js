@@ -1,6 +1,8 @@
 const RequestNeed = require('../models/RequestNeed');
 const Product = require('../models/Product');
 const Counter = require('../models/Counter');
+const Donation = require('../models/Donation'); // Added import for Donation
+const DonationTransaction = require('../models/DonationTransaction');
 
 // ✅ Get all requests
 async function getAllRequests(req, res) {
@@ -232,10 +234,74 @@ async function deleteRequest(req, res) {
     } catch (error) {
         res.status(500).json({ message: 'Failed to delete request', error });
     }
+   
 }
 
-
+async function addDonationToRequest(req, res) {
+    try {
+      const { requestId } = req.params;
+      const { products, donor, expirationDate } = req.body;
+  
+      const request = await RequestNeed.findById(requestId).populate('requestedProducts');
+      if (!request) {
+        return res.status(404).json({ message: 'Request not found' });
+      }
+  
+      console.log('Request category:', request.category);
+      console.log('Request numberOfMeals:', request.numberOfMeals);
+      console.log('Request linkedDonation:', request.linkedDonation);
+  
+      const productMap = new Map(request.requestedProducts.map(p => [p._id.toString(), p.totalQuantity]));
+      const donationProducts = products.map(({ product, quantity }) => {
+        if (!productMap.has(product)) {
+          throw new Error(`Product ${product} not found in request`);
+        }
+        const maxQty = productMap.get(product);
+        return {
+          product,
+          quantity: Math.min(quantity, maxQty)
+        };
+      });
+  
+      const newDonation = new Donation({
+        title: request.title,
+        donor: donor || req.user.id,
+        description: `Donation for request ${request.title}`,
+        category: request.category,
+        location: request.location,
+        products: donationProducts,
+        numberOfMeals: request.category === 'prepared_meals' ? (request.numberOfMeals || 1) : undefined,
+        expirationDate: expirationDate || request.expirationDate,
+        linkedRequests: [requestId]
+      });
+  
+      const savedDonation = await newDonation.save();
+  
+      // Step 1: Ensure linkedDonation is an array if null
+      if (request.linkedDonation === null || request.linkedDonation === undefined) {
+        await RequestNeed.updateOne(
+          { _id: requestId },
+          { $set: { linkedDonation: [] } }
+        );
+      }
+  
+      // Step 2: Push the new donation ID
+      await RequestNeed.updateOne(
+        { _id: requestId },
+        { $push: { linkedDonation: savedDonation._id } }
+      );
+  
+      res.status(201).json({
+        message: 'Donation added to request successfully',
+        donation: savedDonation
+      });
+    } catch (error) {
+      console.error('Donation Error:', error);
+      res.status(500).json({ message: 'Failed to add donation to request', error: error.message });
+    }
+  }
 module.exports = {
+    addDonationToRequest,
     getAllRequests,
     getRequestById,
     getRequestsByRecipientId,

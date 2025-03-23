@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const Counter = require('./Counter');
 
-// Define Enums
 const Category = {
     PREPARED_MEALS: 'prepared_meals',
     PACKAGED_PRODUCTS: 'packaged_products'
@@ -17,50 +16,47 @@ const Status = {
 };
 Object.freeze(Status);
 
-// Define Donation Schema
 const donationSchema = new Schema({
-    id: { type: Number, unique: true }, // Auto-incremented custom ID
-    donor: { type: Schema.Types.ObjectId, ref: 'User', required: true }, // Renamed from 'user'
+    id: { type: Number, unique: true },
+    donor: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     title: { type: String, required: true, minlength: 3, maxlength: 100 },
     description: { type: String, maxlength: 500 },
-    category: { type: String, enum: Object.values(Category), required: true }, // Lowercase naming
-    products: [{ type: Schema.Types.ObjectId, ref: 'Product', required: [
-        function() { return this.category === 'packaged_products'; }, 
-        'Number of meals is required for prepared meals'
-      ], }],
-    numberOfMeals: { 
+    category: { type: String, enum: Object.values(Category), required: true },
+    products: [{
+        product: { type: Schema.Types.ObjectId, ref: 'Product', required: true }, // Reference to Product
+        quantity: { type: Number, required: true, min: 0 } // Donated quantity
+    }],
+    numberOfMeals: {
         type: Number,
         required: [
-          function() { return this.category === 'prepared_meals'; }, 
-          'Number of meals is required for prepared meals'
+            function() { return this.category === 'prepared_meals'; },
+            'Number of meals is required for prepared meals'
         ],
         min: [1, 'Number of meals cannot be negative'],
         validate: {
-          validator: Number.isInteger,
-          message: 'Number of meals must be an integer'
+            validator: Number.isInteger,
+            message: 'Number of meals must be an integer'
         }
-      },
+    },
     location: { type: String, required: true },
     expirationDate: {
         type: Date,
         required: true,
         validate: {
-            validator: (date) => date > new Date(), // Ensure future date
+            validator: (date) => date > new Date(),
             message: 'Expiration date must be in the future'
         }
     },
     status: { type: String, enum: Object.values(Status), default: Status.PENDING, required: true },
-    linkedRequests: [{ type: Schema.Types.ObjectId, ref: 'RequestNeed' }] // Added from concept
+    linkedRequests: [{ type: Schema.Types.ObjectId, ref: 'RequestNeed' }]
 }, {
-    timestamps: true // Adds createdAt and updatedAt automatically
+    timestamps: true
 });
 
-// Indexes for performance
 donationSchema.index({ status: 1 });
 donationSchema.index({ category: 1 });
 donationSchema.index({ expirationDate: 1 });
 
-// Pre-save hook for auto-incrementing ID
 donationSchema.pre('save', async function(next) {
     if (this.isNew) {
         try {
@@ -77,6 +73,5 @@ donationSchema.pre('save', async function(next) {
     next();
 });
 
-// Create and export the Donation model
 const Donation = mongoose.model('Donation', donationSchema);
 module.exports = Donation;

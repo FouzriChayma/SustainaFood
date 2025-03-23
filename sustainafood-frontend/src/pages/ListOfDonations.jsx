@@ -13,6 +13,9 @@ import { getDonations } from "../api/donationService";
 import donation from '../assets/images/fooddonation1.png';
 import patternBg from '../assets/images/bg.png';
 import { FaSearch, FaFilter } from "react-icons/fa";
+import { useAuth } from "../contexts/AuthContext";
+import { getUserById } from "../api/userService";
+
 
 // Global styles
 const GlobalStyle = createGlobalStyle`
@@ -276,7 +279,37 @@ const ListOfDonations = () => {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(6);
+  const { user: authUser, token, logout } = useAuth();
 
+  const [user, setUser] = useState(authUser);
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (typeof authUser.id === "number") {
+        if (!authUser || !authUser._id) return;
+        try {
+          const response = await getUserById(authUser._id);
+          setUser(response.data);
+        } catch (error) {
+          console.error("Backend Error:", error);
+        }
+      }
+      else if (typeof authUser.id === "string") {
+        if (!authUser || !authUser.id) return;
+        try {
+          const response = await getUserById(authUser.id);
+          setUser(response.data);
+        } catch (error) {
+          console.error("Backend Error:", error);
+        }
+      }
+    };
+
+    if (authUser && (authUser._id || authUser.id)) {
+      fetchUser();
+    }
+  }, [authUser]);
+  const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
+  const isRecipient = user?.role === "ong" || user?.role === "student";
   useEffect(() => {
     const fetchDonations = async () => {
       try {
@@ -342,7 +375,7 @@ const ListOfDonations = () => {
             <p>
               Give if you can, receive if you need—together, we reduce food waste and spread hope!
             </p>
-            <CallToAction href="/AddDonation">Add Your Donation</CallToAction>
+            {isDonner &&    <CallToAction href="/AddDonation">Add Your Donation</CallToAction>}
           </HeroText>
           <SliderContainer>
             <Slide1 src={donation1} alt="Donation 1" />

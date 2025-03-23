@@ -2,6 +2,8 @@
     background: white;
     padding: 20px 20px 60px 20px; /* Extra padding at bottom for button area */
     border-radius: 10px;
+    border-left: 3px solid #228b22;
+
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
     width: 100%;
     position: relative;
@@ -13,6 +15,8 @@
   
   .donation-card-content {
     flex: 1;
+    border-left: 3px solid #228b22;
+
   }
   
   .donation-title {
@@ -136,7 +140,8 @@
   }
   
   .donation-li-list strong {
-    color: #007bff;
+    color: #228b22;
+
   }
   
   /* Buttons */
@@ -240,12 +245,13 @@
   
   /* Add Product Button */
   button[onClick="handleAddProduct"] {
-    background-color: #007bff;
+    background-color: #228b22;
+    
     color: white;
   }
   
   button[onClick="handleAddProduct"]:hover {
-    background-color: #0056b3;
+    background-color: #228b22;
   }
   
   /* Loader */
@@ -284,7 +290,7 @@
   }
   
   .donation-li-list strong {
-    color: #007bff;
+    color: #228b22;
   }
   
   /* 🛠 BUTTON STYLES */
@@ -366,7 +372,7 @@
   
   /* ➕ Add Product Button */
   .add-product-btn {
-    background-color: #17a2b8;
+    background-color: #228b22;
     color: white;
     display: inline-block;
     padding: 10px 16px;
@@ -377,7 +383,7 @@
   margin-right: 10px;}
   
   .add-product-btn:hover {
-    background-color: #138496;
+    background-color: #1e571e;
   }
   
   /* 🛑 Hide View Request When Editing */

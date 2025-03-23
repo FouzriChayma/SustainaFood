@@ -10,6 +10,6 @@ router.get('/status/:status', requestNeedController.getRequestsByStatus);
 router.post('/', requestNeedController.createRequest);
 router.put('/:id', requestNeedController.updateRequest);
 router.delete('/:id', requestNeedController.deleteRequest);
-router.post('/addDonationToRequest/:requestId/donations',authMiddleware, requestNeedController.addDonationToRequest);
+router.post('/addDonationToRequest/:requestId/donations', requestNeedController.addDonationToRequest);
 
 module.exports = router;

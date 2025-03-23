@@ -7,24 +7,30 @@ export const createrequests=async(requestData)=>{
     });
   };
   export const addDonationToRequest = async (requestId, donationData) => {
-    const token = localStorage.getItem("token");
-    //const  = user?.token; // Adjust based on your user object structure
-  
+    const token = localStorage.getItem('token');
     if (!token) {
-      throw new Error('User not authenticated');
+      throw new Error('User not authenticated - No token found');
     }
-  console.log(donationData);
-    const response = await axios.post(
-      `http://localhost:3000/request/addDonationToRequest/${requestId}/donations`,
-      donationData, // Send full donationData object
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+  
+    console.log('Sending donation data:', donationData);
+    console.log('Token:', token);
+  
+    try {
+      const response = await axios.post(
+        `http://localhost:3000/request/addDonationToRequest/${requestId}/donations`,
+        donationData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
         }
-      }
-    );
-    return response.data;
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error in addDonationToRequest:', error.response?.data || error.message);
+      throw error.response?.data || error;
+    }
   };
   
   export const getrequests = async () => {

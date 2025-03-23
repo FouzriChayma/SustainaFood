@@ -7,6 +7,8 @@ import { getRequestById, deleteRequest, updateRequest,addDonationToRequest } fro
 import { FaEdit, FaTrash, FaSave, FaTimes } from "react-icons/fa";
 import styled from 'styled-components';
 import logo from "../assets/images/LogoCh.png";
+import { Link, useNavigate } from "react-router-dom";
+
 
 // Styled Components for Buttons
 const Button = styled.button`
@@ -25,8 +27,8 @@ const Button = styled.button`
 
   // Variant-specific styles
   ${({ variant }) => variant === 'add' && `
-    background: #007bff;
-    &:hover { background: #0056b3; transform: translateY(-2px); }
+    background: #228b22;
+    &:hover { background: #228b22; transform: translateY(-2px); }
   `}
   ${({ variant }) => variant === 'cancel' && `
     background: #dc3545;
@@ -37,8 +39,8 @@ const Button = styled.button`
     &:hover { background: #218838; transform: translateY(-2px); }
   `}
   ${({ variant }) => variant === 'donate' && `
-    background: #17a2b8; // Changed to a teal color for donation buttons
-    &:hover { background: #138496; transform: translateY(-2px); }
+    background: #228b22; // Changed to a teal color for donation buttons
+    &:hover { background: #228b22; transform: translateY(-2px); }
   `}
   ${({ variant }) => variant === 'back' && `
     background: #6c757d;
@@ -92,6 +94,7 @@ const DonationForm = styled.div`
 `;
 
 const DetailsRequest = () => {
+
   const { id } = useParams();
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -238,44 +241,53 @@ const DetailsRequest = () => {
   };
   const handleSubmitDonation = async () => {
     try {
+      const token = localStorage.getItem('token');
+      console.log('Token before request:', token);
+  
       const donationProducts = request.requestedProducts.map((product, index) => ({
         product: product._id ? product._id.toString() : null,
-        quantity: Number(donationQuantities[index]) || 0
-      }));
+        quantity: Number(donationQuantities[index]) || 0,
+      })).filter(p => p.quantity > 0);
   
       const donationData = {
         products: donationProducts,
-        donor: user.id,
-        expirationDate: request.expirationDate || new Date().toISOString()
+        donor: user._id,
+        expirationDate: request.expirationDate || new Date().toISOString(),
       };
   
-      console.log('Request data:', JSON.stringify(request, null, 2));
-      console.log('Sending donation:', JSON.stringify(donationData, null, 2));
-      console.log('User:', user);
-  
+      console.log('Sending donation:', donationData);
       const response = await addDonationToRequest(id, donationData);
       console.log('Donation submitted:', response.donation);
   
       setIsAddingDonation(false);
       setDonationQuantities(request.requestedProducts.map(() => 0));
-      setRequest({ ...request, donations: [...(request.donations || []), response.donation] });
+      setRequest(prev => ({
+        ...prev,
+        donations: [...(prev.donations || []), response.donation],
+      }));
     } catch (error) {
-      console.error('Error submitting donation:', error.response?.data || error.message);
-      alert('Failed to submit donation');
+      console.error('Error submitting donation:', error);
+      alert(`Failed to submit donation: ${error.message || 'Unknown error'}`);
     }
   };
   
   const handleDonateAll = async () => {
     try {
+      const token = localStorage.getItem('token');
+      console.log('Token before request:', token);
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+  
       const donationProducts = request.requestedProducts.map((product) => ({
         product: product._id ? product._id.toString() : null,
-        quantity: Number(product.totalQuantity) || 0
+        quantity: Number(product.totalQuantity) || 0,
       }));
   
       const donationData = {
         products: donationProducts,
-        donor: user.id,
-        expirationDate: request.expirationDate || new Date().toISOString()
+        donor: user._id,
+        expirationDate: request.expirationDate || new Date().toISOString(),
       };
   
       console.log('Request data:', JSON.stringify(request, null, 2));
@@ -287,13 +299,16 @@ const DetailsRequest = () => {
       setIsAddingDonation(false);
       setRequest(prevRequest => ({
         ...prevRequest,
-        donations: [...(prevRequest.donations || []), response.donation]
+        donations: [...(prevRequest.donations || []), response.donation],
       }));
     } catch (error) {
       console.error('Error donating all:', error.response?.data || error.message);
-      alert('Failed to donate all');
+      alert(`Failed to donate all: ${error.message || 'Unknown error'}`);
     }
   };
+  
+  // In the JSX:
+  <Button variant="donate" onClick={handleDonateAll}>Donate all</Button>
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
   if (!request) return <div>No request found.</div>;
@@ -439,8 +454,15 @@ const DetailsRequest = () => {
           )}
          
           {isTheOwner && !isEditing && (
-            <Button variant="submit" className="add-product-btn">👀 View Request</Button>
-          )}
+            <Button
+  variant="submit"
+  className="add-product-btn"
+  as={Link}
+  to={`/ListDonationsRequest/${id}`} // Dynamically insert the request ID
+  style={{ textDecoration: 'none' }}
+>
+  👀 View Request
+</Button>          )}
           {isEditing && (
             <Button variant="add" onClick={handleAddProduct} className="add-product-btn">
               ➕ Add Product

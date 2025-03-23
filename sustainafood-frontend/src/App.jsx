@@ -24,7 +24,7 @@ import ViewRestaurant from './pages/backoffice/view-restaurant';
 import ViewSupermarket from './pages/backoffice/view-supermarket';
 import ViewNGO from './pages/backoffice/view-ngo.jsx';
 import ViewTransporter from './pages/backoffice/view-transporter';
-
+import ListDonationsRequest from './pages/ListDonationsRequest';
 
 import PrivateRoute from "./PrivateRoute";
 import NotFound from "./pages/Not-Found";
@@ -101,6 +101,7 @@ const App = () => {
          {/* Private Routes for ong,student */}
       <Route element={<PrivateRoute roles={["ong", "student"]} />}>
       <Route path="/myrequest" element={<MyRequest />} />
+      <Route path="/ListDonationsRequest/:id" element={<ListDonationsRequest />}/>
       
       </Route>
       <Route element={<PrivateRoute roles={["supermarket","restaurant"]} />}>

@@ -277,19 +277,11 @@ async function addDonationToRequest(req, res) {
   
       const savedDonation = await newDonation.save();
   
-      // Step 1: Ensure linkedDonation is an array if null
       if (request.linkedDonation === null || request.linkedDonation === undefined) {
-        await RequestNeed.updateOne(
-          { _id: requestId },
-          { $set: { linkedDonation: [] } }
-        );
+        await RequestNeed.updateOne({ _id: requestId }, { $set: { linkedDonation: [] } });
       }
   
-      // Step 2: Push the new donation ID
-      await RequestNeed.updateOne(
-        { _id: requestId },
-        { $push: { linkedDonation: savedDonation._id } }
-      );
+      await RequestNeed.updateOne({ _id: requestId }, { $push: { linkedDonation: savedDonation._id } });
   
       res.status(201).json({
         message: 'Donation added to request successfully',

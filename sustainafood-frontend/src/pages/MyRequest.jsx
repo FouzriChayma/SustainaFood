@@ -254,7 +254,7 @@ export default function MyRequest() {
           {loading ? (
             <LoadingMessage>Loading...</LoadingMessage>
           ) : currentRequests.length > 0 ? (
-            currentRequests.map((requestItem) => (
+            currentRequests.slice(0, 2).map((requestItem) => (
               <Composantrequest key={requestItem._id} request={requestItem} />
             ))
           ) : (

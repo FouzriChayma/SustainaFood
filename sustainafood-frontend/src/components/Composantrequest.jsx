@@ -137,7 +137,7 @@ export const Composantrequest = ({ request }) => {
         <h4>📦 Requested Products:</h4>
         <ProductList>
           {Array.isArray(requestedProducts) && requestedProducts.length > 0 ? (
-            requestedProducts.map((product, index) => (
+            requestedProducts.slice(0, 2).map((product, index) => (
               <ProductItem key={index}>
                 <span><strong>Type:</strong> {product.productType || 'Not specified'}</span>
                 <span><strong>Weight:</strong> {product.weightPerUnit || 0} {product.weightUnit || ''}</span>

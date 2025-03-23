@@ -64,29 +64,34 @@ const requestNeedSchema = new Schema({
         default: RequestStatus.PENDING, 
         required: [true, 'Status is required'] 
     },
-    linkedDonation: { 
+    linkedDonation:[ { 
         type: Schema.Types.ObjectId, 
         ref: 'Donation', 
-        required: false 
-    },
+        required: false ,
+        default: []
+    }],
     requestedProducts: [{ type: Schema.Types.ObjectId, ref: 'Product',  required: [
         function() { return this.category === 'packaged_products'; }, 
         'Number of meals is required for prepared meals'
       ], }],
 
 
-    numberOfMeals: { 
+      numberOfMeals: {
         type: Number,
         required: [
-          function() { return this.category === 'prepared_meals'; }, 
-          'Number of meals is required for prepared meals'
+            function() { return this.category === 'prepared_meals'; },
+            'Number of meals is required for prepared meals'
         ],
         min: [1, 'Number of meals cannot be negative'],
         validate: {
-          validator: Number.isInteger,
-          message: 'Number of meals must be an integer'
+            validator: function(value) {
+                // Skip validation if value is null/undefined and not required
+                if (value == null && this.category !== 'prepared_meals') return true;
+                return Number.isInteger(value);
+            },
+            message: 'Number of meals must be an integer'
         }
-      },
+    }
 }, {
     timestamps: { 
         createdAt: 'created_at', 

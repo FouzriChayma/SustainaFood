@@ -233,5 +233,7 @@ async function deleteDonation  (req, res) {
     } catch (error) {
         res.status(500).json({ message: 'Failed to delete donation', error });
     }
+   
+
 };
-module.exports = {getDonationsByUserId, getAllDonations, getDonationById, getDonationsByDate, getDonationsByType, getDonationsByCategory, createDonation, updateDonation, deleteDonation };
+module.exports = {getDonationsByUserId ,getAllDonations, getDonationById, getDonationsByDate, getDonationsByType, getDonationsByCategory, createDonation, updateDonation, deleteDonation };

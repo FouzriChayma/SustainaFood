@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import '../assets/styles/Composantdonation.css';
+import '../assets/styles/DetailsDonations.css'; // Ensure this path is correct
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getDonationById, deleteDonation, updateDonation } from '../api/donationService';
 import { FaEdit, FaTrash, FaSave, FaTimes } from "react-icons/fa";
-//import {toLowerCase} from "lodash";
+
 const DetailsDonations = () => {
   const { id } = useParams();
   const [donation, setDonation] = useState(null);
@@ -14,7 +14,6 @@ const DetailsDonations = () => {
   const [isEditing, setIsEditing] = useState(false);
   const user = JSON.parse(localStorage.getItem("user"));
   const [userid, setUserid] = useState();
-
   const [isTheOwner, setIsTheOwner] = useState(false);
   const [editedDonation, setEditedDonation] = useState({
     title: "",
@@ -23,11 +22,12 @@ const DetailsDonations = () => {
     type: "",
     category: "",
     description: "",
-   // delivery: "",
     products: [],
   });
+
   const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
+
   useEffect(() => {
     if (typeof user.id === "number") {
       setUserid(user._id);
@@ -36,7 +36,6 @@ const DetailsDonations = () => {
     }
   }, [user]);
 
-  // Fetch donation data when the component mounts or ID changes
   useEffect(() => {
     const fetchDonation = async () => {
       try {
@@ -62,11 +61,8 @@ const DetailsDonations = () => {
     fetchDonation();
   }, [id]);
 
-  // Check if the current user is the owner of the donation
   useEffect(() => {
-    console.log("Donation:", donation);
     if (donation && userid) {
-      // If donation.user is a string, compare it directly; if it's an object, use its _id property.
       if (donation.donor && donation.donor._id) {
         setIsTheOwner(userid === donation.donor._id);
       } else {
@@ -75,32 +71,20 @@ const DetailsDonations = () => {
     }
   }, [donation, userid]);
 
-  // Handle deletion of the donation
   const handleDeleteDonation = () => {
     deleteDonation(id)
       .then(() => {
-        console.log("Donation deleted successfully");
-        // Revenir à la page précédente
         window.history.back();
       })
       .catch((error) => {
         console.error("Error deleting donation:", error);
       });
   };
-  
 
-  // Handle saving the edited donation
   const handleSaveDonation = () => {
-    console.log('Sending update with data:', editedDonation);
-    
     updateDonation(id, editedDonation)
       .then((response) => {
-        console.log("Server response:", response.data);
-        
-        // Redirect to the updated donation details page
         window.location.href = `/DetailsDonations/${id}`;
-  
-        // Update local state with the returned donation data.
         setDonation(response.data.updatedDonation);
         setIsEditing(false);
       })
@@ -108,25 +92,21 @@ const DetailsDonations = () => {
         console.error("Error updating donation:", error.response?.data || error);
       });
   };
-  
 
-  // Update a specific product field in the edited donation
   const handleProductChange = (index, field, value) => {
     const updatedProducts = [...editedDonation.products];
     if (field === 'totalQuantity') {
-      value = Number(value); // Ensure quantity is a number
+      value = Number(value);
     }
     updatedProducts[index] = { ...updatedProducts[index], [field]: value };
     setEditedDonation({ ...editedDonation, products: updatedProducts });
   };
 
-  // Delete a specific product from the edited donation
   const handleDeleteProduct = (index) => {
     const updatedProducts = editedDonation.products.filter((_, i) => i !== index);
     setEditedDonation({ ...editedDonation, products: updatedProducts });
   };
 
-  // Add a new product to the edited donation
   const handleAddProduct = () => {
     const newProduct = { productDescription: '', totalQuantity: 0, status: 'available' };
     setEditedDonation({
@@ -135,162 +115,181 @@ const DetailsDonations = () => {
     });
   };
 
-  // Handle loading and error states
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
-  if (!donation) return <div>No donation found.</div>;
+  if (loading) return <div className="details-donation-loading">Loading...</div>;
+  if (error) return <div className="details-donation-error">{error}</div>;
+  if (!donation) return <div className="details-donation-error">No donation found.</div>;
 
-  const { title, location, expirationDate, delivery, products } = donation;
+  const { title, location, expirationDate, products } = donation;
 
   return (
     <>
       <Navbar />
-      <div className="donation-cardlist">
-        <div className="donation-card-content">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            {isEditing ? (
-              <input
-                type="text"
-                value={editedDonation.title}
-                onChange={(e) => setEditedDonation({ ...editedDonation, title: e.target.value })}
-                style={{ fontSize: "1.5rem", fontWeight: "bold", width: "60%" }}
-              />
-            ) : (
-              <h3 className="donation-title" style={{ marginLeft: "35%" }}>
-                🛒 {title || "Donation Title"}
-              </h3>
-            )}
-            {isTheOwner && (
-              <div>
-                <FaTrash
-                  onClick={handleDeleteDonation}
-                  style={{ color: "#c30010", cursor: "pointer", fontSize: "20px", marginLeft: "10px" }}
+      <div className="details-donation-page">
+        <div className="details-donation-container">
+          <div className="details-donation-header">
+            <div className="details-donation-title-container">
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editedDonation.title}
+                  onChange={(e) => setEditedDonation({ ...editedDonation, title: e.target.value })}
+                  className="details-donation-edit-input"
                 />
-                {isEditing ? (
-                  <FaSave
-                    onClick={handleSaveDonation}
-                    style={{ color: "green", cursor: "pointer", fontSize: "20px", marginLeft: "10px" }}
-                  />
-                ) : (
-                  <FaEdit
-                    onClick={() => {
-                      setIsEditing(true);
-                      // Copy donation data into editedDonation state, including a shallow copy of products.
-                      setEditedDonation({ ...donation, products: donation.products ? [...donation.products] : [] });
-                    }}
-                    style={{ color: "black", cursor: "pointer", fontSize: "20px", marginLeft: "10px" }}
-                  />
-                )}
-              </div>
-            )}
+              ) : (
+                <h1 className="details-donation-title">🛒 {title || "Donation Title"}</h1>
+              )}
+              {isTheOwner && (
+                <div className="details-donation-actions">
+                  <button className="details-donation-action-icon delete" onClick={handleDeleteDonation}>
+                    <FaTrash />
+                  </button>
+                  {isEditing ? (
+                    <button className="details-donation-action-icon" onClick={handleSaveDonation}>
+                      <FaSave />
+                    </button>
+                  ) : (
+                    <button className="details-donation-action-icon" onClick={() => setIsEditing(true)}>
+                      <FaEdit />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Donation Details */}
-          <p>
-            <strong>📍 Location:</strong>{" "}
-            {isEditing ? (
-              <input
-                type="text"
-                value={editedDonation.location}
-                onChange={(e) => setEditedDonation({ ...editedDonation, location: e.target.value })}
-              />
-            ) : (
-              location || "Unknown location"
-            )}
-          </p>
-          <p>
-            <strong>📆 Expiration Date:</strong>{" "}
-            {isEditing ? (
-              <input
-                type="date"
-                value={
-                  editedDonation.expirationDate
-                    ? new Date(editedDonation.expirationDate).toISOString().split('T')[0]
-                    : ''
-                }
-                onChange={(e) => setEditedDonation({ ...editedDonation, expirationDate: e.target.value })}
-              />
-            ) : (
-              expirationDate ? new Date(expirationDate).toLocaleDateString() : "N/A"
-            )}
-          </p>
-         {/* Delivery <p>
-            <strong>🚚 Delivery:</strong>{" "}
-            {isEditing ? (
-              <input
-                type="text"
-                value={editedDonation.delivery}
-                onChange={(e) => setEditedDonation({ ...editedDonation, delivery: e.target.value })}
-              />
-            ) : (
-              delivery || "N/A"
-            )}
-          </p> */}
+          <div className="details-donation-content">
+          <div className="details-donation-info-grid">
+  <div className="details-donation-info-item">
+    <div className="details-donation-info-icon">📍</div>
+    <div className="details-donation-info-content">
+      <div className="details-donation-info-label">Location</div>
+      {isEditing ? (
+        <input
+          type="text"
+          value={editedDonation.location}
+          onChange={(e) => {
+            console.log("Location changed:", e.target.value); // Debugging
+            setEditedDonation({ ...editedDonation, location: e.target.value });
+          }}
+          className="details-donation-edit-input"
+          placeholder="Enter location"
+        />
+      ) : (
+        <div className="details-donation-info-value">{location || "Unknown location"}</div>
+      )}
+    </div>
+  </div>
 
-          {/* Product List */}
-          <h4>📦 Available Products:</h4>
-          <ul className="donation-ul">
-            {isEditing ? (
-              editedDonation.products.map((product, index) => (
-                <li key={index} style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
-                  <input
-                    type="text"
-                    value={product.productDescription}
-                    onChange={(e) => handleProductChange(index, 'productDescription', e.target.value)}
-                    placeholder="Product Description"
-                  />
-                  <input
-                    type="number"
-                    value={product.totalQuantity}
-                    onChange={(e) => handleProductChange(index, 'totalQuantity', e.target.value)}
-                    placeholder="Quantity"
-                    style={{ marginLeft: "10px" }}
-                  />
-                  <select
-                    value={product.status}
-                    onChange={(e) => handleProductChange(index, 'status', e.target.value)}
-                    style={{ marginLeft: "10px" }}
-                  >
-                    <option value="available">Available</option>
-                    <option value="pending">Pending</option>
-                    <option value="delivered">Delivered</option>
-                  </select>
-                  <FaTimes
-                    onClick={() => handleDeleteProduct(index)}
-                    style={{ color: "red", cursor: "pointer", marginLeft: "10px" }}
-                  />
-                </li>
-              ))
-            ) : (
-              products && products.length > 0 ? (
-                products.map((product, index) => (
-                  <li className="donation-li-list" key={index}>
-                    <span role="img" aria-label="product">🥫</span>{" "}
-                    <strong>{product.productDescription}</strong> - {product.totalQuantity}{" "}
-                    <span className={`status ${product.status}`}>
-                      {product.status}
-                    </span>
-                  </li>
-                ))
-              ) : (
-                <li className="donation-li-list">No products available</li>
-              )
-            )}
-          </ul>
+  <div className="details-donation-info-item">
+    <div className="details-donation-info-icon">📆</div>
+    <div className="details-donation-info-content">
+      <div className="details-donation-info-label">Expiration Date</div>
+      {isEditing ? (
+        <input
+          type="date"
+          value={
+            editedDonation.expirationDate
+              ? new Date(editedDonation.expirationDate).toISOString().split("T")[0]
+              : ""
+          }
+          onChange={(e) => {
+            console.log("Expiration Date changed:", e.target.value); // Debugging
+            setEditedDonation({ ...editedDonation, expirationDate: e.target.value });
+          }}
+          className="details-donation-edit-date"
+        />
+      ) : (
+        <div className="details-donation-info-value">
+          {expirationDate ? new Date(expirationDate).toLocaleDateString() : "N/A"}
+        </div>
+      )}
+    </div>
+  </div>
+</div>
 
-          {/* Add Product Button (visible only in edit mode) */}
-          {isEditing && (
-            <button
-              onClick={handleAddProduct}
-              style={{ marginTop: "10px", padding: "5px 10px", backgroundColor: "#007bff", color: "white", border: "none", borderRadius: "5px" }}
-            >
-              Add Product
-            </button>
-          )}
+            <div className="details-donation-products-section">
+              <h2 className="details-donation-section-title">📦 Available Products</h2>
+              <ul className="details-donation-products-list">
+                {isEditing ? (
+                  editedDonation.products.map((product, index) => (
+                    <li key={index} className="details-donation-product-item">
+                      <div className="details-donation-product-info">
+                        <div className="details-donation-product-icon">🥫</div>
+                        <div className="details-donation-product-details">
+                          <input
+                            type="text"
+                            value={product.productDescription}
+                            onChange={(e) => handleProductChange(index, 'productDescription', e.target.value)}
+                            className="details-donation-edit-input"
+                            placeholder="Product Description"
+                          />
+                          <input
+                            type="number"
+                            value={product.totalQuantity}
+                            onChange={(e) => handleProductChange(index, 'totalQuantity', e.target.value)}
+                            className="details-donation-edit-input"
+                            placeholder="Quantity"
+                          />
+                          <select
+                            value={product.status}
+                            onChange={(e) => handleProductChange(index, 'status', e.target.value)}
+                            className="details-donation-edit-select"
+                          >
+                            <option value="available">Available</option>
+                            <option value="pending">Pending</option>
+                            <option value="delivered">Delivered</option>
+                          </select>
+                        </div>
+                      </div>
+                      <button
+                        className="details-donation-delete-product-button"
+                        onClick={() => handleDeleteProduct(index)}
+                      >
+                        <FaTimes />
+                      </button>
+                    </li>
+                  ))
+                ) : (
+                  products && products.length > 0 ? (
+                    products.map((product, index) => (
+                      <li key={index} className="details-donation-product-item">
+                        <div className="details-donation-product-info">
+                          <div className="details-donation-product-icon">🥫</div>
+                          <div className="details-donation-product-details">
+                            <div className="details-donation-product-name">{product.productDescription}</div>
+                            <div className="details-donation-product-quantity">{product.totalQuantity}</div>
+                            <div className={`details-donation-product-status ${product.status}`}>
+                              {product.status}
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="details-donation-product-item">No products available</li>
+                  )
+                )}
+              </ul>
 
-          {/* Additional Action Buttons */}
-          {!isTheOwner && <button className="btnseelist">Add Request</button>}
-          {isTheOwner && <button className="btnseelist">See Request</button>}
+              {isEditing && (
+                <button
+                  onClick={handleAddProduct}
+                  className="details-donation-add-product-button"
+                >
+                  Add Product
+                </button>
+              )}
+            </div>
+
+            <div className="details-donation-actions-container">
+              {!isTheOwner && (
+                <button className="details-donation-request-button">Add Request</button>
+              )}
+              {isTheOwner && (
+                <button className="details-donation-request-button">See Request</button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
       <Footer />

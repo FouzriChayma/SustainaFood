@@ -113,4 +113,84 @@
     box-shadow: 0 0 10px #4c8bf580;
   }
   
+  /* ✅ Empêcher le tableau de dépasser */
+.product-table-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto; /* Permet un défilement horizontal si nécessaire */
+  margin-top: 20px;
+  border-radius: 8px;
+  padding: 10px;
+  background: white;
+}
+
+/* ✅ Adapter la largeur du tableau */
+.product-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* Fixer la largeur des colonnes */
+}
+
+/* ✅ Rendre les colonnes plus lisibles */
+.product-table th, 
+.product-table td {
+  padding: 8px;
+  border: 1px solid #ccc;
+  text-align: center;
+  white-space: nowrap; /* Empêcher les sauts de ligne */
+  overflow: hidden;
+  text-overflow: ellipsis; /* Ajouter "..." si le texte est trop long */
+}
+
+/* ✅ Style des en-têtes */
+.product-table th {
+  background: #8dc73f; /* Vert pour l'en-tête */
+  color: white;
+  font-weight: bold;
+}
+
+/* ✅ Ajuster les colonnes trop grandes */
+.product-table th:nth-child(1), /* Name */
+.product-table th:nth-child(3), /* Quantity */
+.product-table th:nth-child(5), /* Status */
+.product-table th:nth-child(7), /* Weight Unit */
+.product-table th:nth-child(8), /* Total Weight */
+.product-table th:nth-child(9) { /* Actions */
+  width: 10%; /* Réduction de la largeur */
+}
+
+.product-table th:nth-child(2), /* Weight per Unit */
+.product-table th:nth-child(4), /* Product Description */
+.product-table th:nth-child(6) { /* Product Type */
+  width: 15%; /* Augmentation de la largeur */
+}
+
+/* ✅ Alignement des icônes d'actions */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+/* ✅ Correction du bouton rouge flottant */
+.red-edit-button {
+  position: relative;
+  z-index: 1;
+}
+
+/* ✅ Ajustement responsive */
+@media screen and (max-width: 768px) {
+  .product-table-container {
+      padding: 5px;
+  }
+
+  .product-table th, 
+  .product-table td {
+      font-size: 12px; /* Texte plus petit sur mobile */
+      padding: 5px;
+  }
   
+  .action-buttons {
+      flex-direction: column;
+  }
+}

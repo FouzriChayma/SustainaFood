@@ -1,7 +1,7 @@
 /* ===== Global Styles ===== */
 body {
   margin: 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
   background-color: #f0f8f0;
   box-sizing: border-box;
 }
@@ -46,20 +46,18 @@ body {
   font-size: 16px;
   outline: none;
   transition: all 0.3s ease;
+  padding-left: 40px;
 }
 
 .inputsearch:focus {
   border-color: #56ab2f;
   box-shadow: 0px 0px 8px rgba(34, 139, 34, 0.3);
-  text-align: center; /* Centrer le texte */
-
-
 }
 
 .iconsearch {
   position: absolute;
-  /* left: 10px; */
-  width: 25px;
+  left: 12px;
+  width: 20px;
   height: 20px;
   fill: #228b22;
 }
@@ -68,40 +66,67 @@ body {
 .contentlist {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 20px;
+  width: 100%;
 }
 
-.contentlist div {
-  background: #fffdfd;
+.contentlist > div {
+  background: transparent;
   padding: 0px;
   border-radius: 10px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease;
+  width: 100%;
 }
 
-.contentlist div:hover {
-  transform: scale(1.02);
+.donor-profile .projects {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  width: 100%;
+}
+
+/* Grid layout for donation cards on larger screens */
+@media (min-width: 768px) {
+  .donor-profile .projects {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* ===== Responsive Design ===== */
 @media (max-width: 1024px) {
   .container-listdonation {
-      width: 95%;
+    width: 95%;
   }
 }
 
 @media (max-width: 768px) {
   .profile-headerLIST {
-      flex-direction: column;
-      text-align: center;
-      gap: 15px;
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
   }
 
   .inputsearch {
-      width: 100%;
+    width: 100%;
+  }
+
+  .donor-profile .projects {
+    grid-template-columns: 1fr;
   }
 }
-///////////////////////////////////
+
+@media (max-width: 480px) {
+  .donation-card-footer {
+    justify-content: center;
+  }
+
+  .btnseemorelist,
+  .btnseelist {
+    width: 100%;
+    text-align: center;
+  }
+}
+
 /* Style du select avec position à droite */
 .sort-select {
   width: 20px;
@@ -122,3 +147,4 @@ body {
   border-color: #228b22;
   outline: none;
 }
+

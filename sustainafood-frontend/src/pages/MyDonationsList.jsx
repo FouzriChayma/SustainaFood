@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { getRequestsByRecipientId } from "../api/requestNeedsService";
+import { getDonationByUserId } from "../api/donationService";
 import { useAuth } from "../contexts/AuthContext";
-import Composantrequest from "../components/Composantrequest";
+import Composantdonation from "../components/Composantdonation";
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import styled, { createGlobalStyle } from 'styled-components';
@@ -100,7 +100,7 @@ const LoadingMessage = styled.div`
   color: #555;
 `;
 
-const NoRequests = styled.p`
+const NoDonations = styled.p`
   font-size: 18px;
   color: #888;
 `;
@@ -138,12 +138,13 @@ const PaginationControls = styled.div`
   }
 `;
 
-export default function MyRequest() {
-  const [requests, setRequests] = useState([]);
-  const [filteredRequests, setFilteredRequests] = useState([]);
+export default function MyDonationsList() {
+  const [donations, setDonations] = useState([]);
+  const [filteredDonations, setFilteredDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user: authUser } = useAuth();
-
+  const user = JSON.parse(localStorage.getItem('user'));
+  const userid = user ? (user._id || user.id) : null; 
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState("date");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -151,45 +152,47 @@ export default function MyRequest() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(6); // Adjust this number as needed
 
+  // Fetch donations
   useEffect(() => {
-    const fetchRequests = async () => {
-      if (!authUser || !authUser._id) {
+    const fetchDonations = async () => {
+      if (!userid) {
+        setError('User ID not found');
         setLoading(false);
         return;
       }
 
       try {
-        const response = await getRequestsByRecipientId(authUser._id);
-        setRequests(response.data);
-        setFilteredRequests(response.data);
-        setLoading(false);
-      } catch (error) {
-        console.error("Backend error:", error);
+        const response = await getDonationByUserId(userid);
+        setDonations(response.data);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Error fetching donation data');
+      } finally {
         setLoading(false);
       }
     };
 
-    fetchRequests();
-  }, [authUser]);
+    fetchDonations();
+  }, [userid]);
+
 
   useEffect(() => {
-    let updatedRequests = [...requests];
+    let updatedDonations = [...donations];
 
     if (searchQuery) {
-      updatedRequests = updatedRequests.filter((request) =>
-        request.title.toLowerCase().includes(searchQuery.toLowerCase())
+      updatedDonations = updatedDonations.filter((donation) =>
+        donation.title.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     if (statusFilter !== "all") {
-      updatedRequests = updatedRequests.filter((request) => request.status === statusFilter);
+      updatedDonations = updatedDonations.filter((donation) => donation.status === statusFilter);
     }
 
     if (categoryFilter !== "all") {
-      updatedRequests = updatedRequests.filter((request) => request.category === categoryFilter);
+      updatedDonations = updatedDonations.filter((donation) => donation.category === categoryFilter);
     }
 
-    updatedRequests.sort((a, b) => {
+    updatedDonations.sort((a, b) => {
       if (sortOption === "title") {
         return a.title.localeCompare(b.title);
       } else if (sortOption === "status") {
@@ -199,29 +202,29 @@ export default function MyRequest() {
       }
     });
 
-    setFilteredRequests(updatedRequests);
+    setFilteredDonations(updatedDonations);
     setCurrentPage(1); // Reset to page 1 when filters change
-  }, [searchQuery, sortOption, statusFilter, categoryFilter, requests]);
+  }, [searchQuery, sortOption, statusFilter, categoryFilter, donations]);
 
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentRequests = filteredRequests.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+  const currentDonations = filteredDonations.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredDonations.length / itemsPerPage);
 
   return (
     <>
       <GlobalStyle />
       <Navbar />
       <Container>
-        <Title>My Requests</Title>
+        <Title>My Donations</Title>
 
         {/* 🔍 Stylish Search Bar */}
         <SearchContainer>
           <SearchIcon />
           <SearchInput
             type="text"
-            placeholder="Search requests..."
+            placeholder="Search donations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -236,29 +239,29 @@ export default function MyRequest() {
           </Select>
 
           <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="all">🟢 All Statuses</option>
-                <option value="pending">🕒 Pending</option>
-                <option value="approved">✅ Accepted</option>
-                <option value="rejected">❌ Rejected</option>
+            <option value="all">🟢 All Statuses</option>
+            <option value="pending">🕒 Pending</option>
+            <option value="approved">✅ Accepted</option>
+            <option value="rejected">❌ Rejected</option>
           </Select>
 
           <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-          <option value="all">📦 All Categories</option>
-                <option value="prepared_meals">🍽️ Prepared Meals</option>
-                <option value="packaged_products">🛒 Packaged Products</option>
-              </Select>
+            <option value="all">📦 All Categories</option>
+            <option value="prepared_meals">🍽️ Prepared Meals</option>
+            <option value="packaged_products">🛒 Packaged Products</option>
+          </Select>
         </Controls>
 
-        {/* 🔄 Display Requests */}
+        {/* 🔄 Display Donations */}
         <ContentList>
           {loading ? (
             <LoadingMessage>Loading...</LoadingMessage>
-          ) : currentRequests.length > 0 ? (
-            currentRequests.map((requestItem) => (
-              <Composantrequest key={requestItem._id} request={requestItem} />
+          ) : currentDonations.length > 0 ? (
+            currentDonations.map((donationItem) => (
+              <Composantdonation key={donationItem._id} donation={donationItem} />
             ))
           ) : (
-            <NoRequests>No matching requests found.</NoRequests>
+            <NoDonations>No matching donations found.</NoDonations>
           )}
         </ContentList>
 

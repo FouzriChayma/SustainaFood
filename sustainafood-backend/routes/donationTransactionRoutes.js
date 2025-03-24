@@ -29,5 +29,6 @@ router.delete('/:id', donationTransactionController.deleteDonationTransaction);
 router.get('/recipient/:recipientId', donationTransactionController.getTransactionsByRecipientId);
 router.put('/:transactionId/accept', donationTransactionController.acceptDonationTransaction);
 router.put('/:transactionId/reject', donationTransactionController.rejectDonationTransaction);
-
+// New endpoint to create and accept a transaction from a donation
+router.post('/create-and-accept', donationTransactionController.createAndAcceptDonationTransaction);
 module.exports = router;

@@ -185,58 +185,33 @@ async function getTransactionsByRecipientId(req, res) {
 async function acceptDonationTransaction(req, res) {
     try {
         const { transactionId } = req.params;
-        
-        // Find the transaction
         const transaction = await DonationTransaction.findById(transactionId)
             .populate('requestNeed')
             .populate('donation')
             .populate('allocatedProducts.product');
 
-        if (!transaction) {
-            return res.status(404).json({ message: 'Transaction not found' });
-        }
+        if (!transaction) return res.status(404).json({ message: 'Transaction not found' });
+        if (transaction.status !== 'pending') return res.status(400).json({ message: `Transaction cannot be accepted in its current state (${transaction.status})` });
 
-        // Check if the transaction is in a state that can be accepted
-        if (transaction.status !== TransactionStatus.PENDING) {
-            return res.status(400).json({ 
-                message: `Transaction cannot be accepted in its current state (${transaction.status})`
-            });
-        }
-
-        // Update product quantities in the request
+        const donation = transaction.donation;
         for (const allocatedProduct of transaction.allocatedProducts) {
-            const product = await Product.findById(allocatedProduct.product._id);
-            if (!product) continue;
-
-            // Reduce the available quantity
-            product.totalQuantity -= allocatedProduct.quantity;
-            
-            // If quantity reaches zero, mark as out of stock
-            if (product.totalQuantity <= 0) {
-                product.status = ProductStatus.OUT_OF_STOCK;
-                product.totalQuantity = 0;
+            const donationProduct = donation.products.find(p => p.product.toString() === allocatedProduct.product._id.toString());
+            if (donationProduct) {
+                donationProduct.quantity -= allocatedProduct.quantity;
+                if (donationProduct.quantity < 0) donationProduct.quantity = 0;
             }
-            
-            await product.save();
         }
+        await donation.save();
 
-        // Update the transaction status
-        transaction.status = TransactionStatus.APPROVED;
+        transaction.status = 'approved';
         transaction.responseDate = new Date();
         await transaction.save();
 
-        // Check if the request is now fully fulfilled
         await checkRequestFulfillment(transaction.requestNeed._id);
 
-        res.status(200).json({ 
-            message: 'Donation accepted successfully', 
-            transaction 
-        });
+        res.status(200).json({ message: 'Donation accepted successfully', transaction });
     } catch (error) {
-        res.status(500).json({ 
-            message: 'Failed to accept donation', 
-            error: error.message 
-        });
+        res.status(500).json({ message: 'Failed to accept donation', error: error.message });
     }
 }
 
@@ -277,28 +252,87 @@ async function rejectDonationTransaction(req, res) {
         });
     }
 }
-
-// Helper function to check if a request is fully fulfilled
-async function checkRequestFulfillment(requestId) {
+// controllers/donationTransactionController.js
+// controllers/donationTransactionController.js
+async function createAndAcceptDonationTransaction(req, res) {
     try {
-        const request = await RequestNeed.findById(requestId)
-            .populate('requestedProducts');
+        const { donationId, requestNeedId } = req.body;
+        const user = req.user;
 
-        if (!request) return;
+        console.log('Creating transaction with:', { donationId, requestNeedId, userId: user?._id });
 
-        // Check if all requested products are fulfilled
-        const allFulfilled = request.requestedProducts.every(product => 
-            product.status === ProductStatus.OUT_OF_STOCK
+        const donation = await Donation.findById(donationId);
+        if (!donation) return res.status(404).json({ message: 'Donation not found' });
+
+        const requestNeed = await RequestNeed.findById(requestNeedId);
+        if (!requestNeed) return res.status(404).json({ message: 'RequestNeed not found' });
+
+        const recipientId = requestNeed.recipient || user._id;
+
+        // Manually fetch and increment the counter
+        const counter = await Counter.findOneAndUpdate(
+            { _id: 'DonationTransactionId' },
+            { $inc: { seq: 1 } },
+            { new: true, upsert: true }
         );
+        const transactionId = counter.seq;
 
-        if (allFulfilled) {
-            request.status = RequestStatus.FULFILLED;
-            await request.save();
-        }
+        const transaction = new DonationTransaction({
+            id: transactionId, // Explicitly set id
+            donation: donationId,
+            requestNeed: requestNeedId,
+            donor: donation.donor,
+            recipient: recipientId,
+            allocatedProducts: donation.products.map(p => ({
+                product: p.product,
+                quantity: p.quantity
+            })),
+            status: 'approved',
+            responseDate: new Date()
+        });
+
+        console.log('Transaction before save:', transaction.toObject());
+        await transaction.save();
+        console.log('Transaction saved:', transaction.toObject());
+
+        donation.status = 'approved';
+        await donation.save();
+
+        await checkRequestFulfillment(requestNeedId);
+
+        res.status(201).json({ message: 'Transaction created and accepted successfully', transaction });
     } catch (error) {
-        console.error('Error checking request fulfillment:', error);
+        console.error('Error creating and accepting transaction:', error);
+        res.status(500).json({ message: 'Failed to create and accept transaction', error: error.message });
     }
 }
+  
+  async function checkRequestFulfillment(requestId) {
+    const request = await RequestNeed.findById(requestId).populate('requestedProducts');
+    const transactions = await DonationTransaction.find({ 
+      requestNeed: requestId, 
+      status: 'approved' 
+    }).populate('allocatedProducts.product');
+  
+    const requestedMap = new Map(request.requestedProducts.map(p => [p._id.toString(), p.totalQuantity]));
+    const allocatedMap = new Map();
+  
+    transactions.forEach(t => {
+      t.allocatedProducts.forEach(ap => {
+        const productId = ap.product._id.toString();
+        allocatedMap.set(productId, (allocatedMap.get(productId) || 0) + ap.quantity);
+      });
+    });
+  
+    const allFulfilled = [...requestedMap].every(([productId, requestedQty]) => 
+      (allocatedMap.get(productId) || 0) >= requestedQty
+    );
+  
+    if (allFulfilled) {
+      request.status = 'fulfilled';
+      await request.save();
+    }
+  }
 module.exports = {
     getAllDonationTransactions,
     getDonationTransactionById,
@@ -310,5 +344,6 @@ module.exports = {
     deleteDonationTransaction,
     getTransactionsByRecipientId,
     acceptDonationTransaction,
-    rejectDonationTransaction
+    rejectDonationTransaction,
+    createAndAcceptDonationTransaction,
 };

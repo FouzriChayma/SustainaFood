@@ -251,7 +251,7 @@ const DetailsRequest = () => {
   
       const donationData = {
         products: donationProducts,
-        donor: user._id,
+        donor: user?._id || user?.id,
         expirationDate: request.expirationDate || new Date().toISOString(),
       };
   

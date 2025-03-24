@@ -37,7 +37,12 @@ export const createrequests=async(requestData)=>{
     return axios.get(`http://localhost:3000/request/`);
   };
   export const getRequestsByRecipientId = async (id) => {
-    return axios.get(`http://localhost:3000/request/recipient/${id}`);
+    const token = localStorage.getItem('token');
+    return axios.get(`http://localhost:3000/request/recipient/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
   };
   export const getRequestById = async (id) => {
     try {

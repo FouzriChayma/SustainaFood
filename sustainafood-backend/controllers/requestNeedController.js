@@ -377,7 +377,37 @@ async function addDonationToRequest(req, res) {
     }
   }
 
-  
+  async function getRequestWithDonations(req, res) {
+    try {
+        const { requestId } = req.params;
+        
+        // Get the request with its donations and transactions
+        const request = await RequestNeed.findById(requestId)
+            .populate('recipient')
+            .populate('requestedProducts')
+            .populate('linkedDonation');
+
+        if (!request) {
+            return res.status(404).json({ message: 'Request not found' });
+        }
+
+        // Get all transactions related to this request
+        const transactions = await DonationTransaction.find({ requestNeed: requestId })
+            .populate('donation')
+            .populate('allocatedProducts.product')
+            .populate('donor');
+
+        res.status(200).json({
+            request,
+            transactions
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            message: 'Server error', 
+            error: error.message 
+        });
+    }
+}
   
 module.exports = {
     addDonationToRequest,
@@ -387,5 +417,6 @@ module.exports = {
     getRequestsByStatus,
     createRequest,
     updateRequest,
-    deleteRequest
+    deleteRequest,
+    getRequestWithDonations,
 };

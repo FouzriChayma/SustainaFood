@@ -138,10 +138,12 @@ const PaginationControls = styled.div`
   }
 `;
 
+
 export default function MyRequest() {
   const [requests, setRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { user: authUser } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -149,25 +151,36 @@ export default function MyRequest() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(6); // Adjust this number as needed
-
+  const [itemsPerPage] = useState(6);
   useEffect(() => {
-    const fetchRequests = async () => {
-      if (!authUser || !authUser._id) {
-        setLoading(false);
-        return;
-      }
+    console.log("Current authUser:", authUser);
+    console.log("LocalStorage user:", localStorage.getItem("user"));
+    console.log("LocalStorage token:", localStorage.getItem("token"));
+  }, []);
+  useEffect(() => {
+    // In MyRequest.js
+const fetchRequests = async () => {
+  // Get the user ID - try different possible properties
+  const userId = authUser?._id || authUser?.id || authUser?.user?._id;
+  
+  if (!userId) {
+    console.log("No user ID found in authUser:", authUser);
+    setError("User not properly authenticated");
+    setLoading(false);
+    return;
+  }
 
-      try {
-        const response = await getRequestsByRecipientId(authUser._id);
-        setRequests(response.data);
-        setFilteredRequests(response.data);
-        setLoading(false);
-      } catch (error) {
-        console.error("Backend error:", error);
-        setLoading(false);
-      }
-    };
+  try {
+    setLoading(true);
+    const response = await getRequestsByRecipientId(userId);
+    setRequests(response.data);
+    setFilteredRequests(response.data);
+  } catch (error) {
+    setError("Failed to load requests");
+  } finally {
+    setLoading(false);
+  }
+};
 
     fetchRequests();
   }, [authUser]);
@@ -175,6 +188,7 @@ export default function MyRequest() {
   useEffect(() => {
     let updatedRequests = [...requests];
 
+    // Apply filters
     if (searchQuery) {
       updatedRequests = updatedRequests.filter((request) =>
         request.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -189,6 +203,7 @@ export default function MyRequest() {
       updatedRequests = updatedRequests.filter((request) => request.category === categoryFilter);
     }
 
+    // Apply sorting
     updatedRequests.sort((a, b) => {
       if (sortOption === "title") {
         return a.title.localeCompare(b.title);
@@ -200,10 +215,10 @@ export default function MyRequest() {
     });
 
     setFilteredRequests(updatedRequests);
-    setCurrentPage(1); // Reset to page 1 when filters change
+    setCurrentPage(1);
   }, [searchQuery, sortOption, statusFilter, categoryFilter, requests]);
 
-  // Pagination logic
+  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentRequests = filteredRequests.slice(indexOfFirstItem, indexOfLastItem);
@@ -216,7 +231,8 @@ export default function MyRequest() {
       <Container>
         <Title>My Requests</Title>
 
-        {/* 🔍 Stylish Search Bar */}
+        {error && <div style={{ color: 'red', textAlign: 'center' }}>{error}</div>}
+
         <SearchContainer>
           <SearchIcon />
           <SearchInput
@@ -227,7 +243,6 @@ export default function MyRequest() {
           />
         </SearchContainer>
 
-        {/* 🎯 Advanced Filters & Sorting */}
         <Controls>
           <Select value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
             <option value="date">📆 Sort by Expiration Date</option>
@@ -236,48 +251,48 @@ export default function MyRequest() {
           </Select>
 
           <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="all">🟢 All Statuses</option>
-                <option value="pending">🕒 Pending</option>
-                <option value="approved">✅ Accepted</option>
-                <option value="rejected">❌ Rejected</option>
+            <option value="all">🟢 All Statuses</option>
+            <option value="pending">🕒 Pending</option>
+            <option value="approved">✅ Accepted</option>
+            <option value="rejected">❌ Rejected</option>
           </Select>
 
           <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-          <option value="all">📦 All Categories</option>
-                <option value="prepared_meals">🍽️ Prepared Meals</option>
-                <option value="packaged_products">🛒 Packaged Products</option>
-              </Select>
+            <option value="all">📦 All Categories</option>
+            <option value="prepared_meals">🍽️ Prepared Meals</option>
+            <option value="packaged_products">🛒 Packaged Products</option>
+          </Select>
         </Controls>
 
-        {/* 🔄 Display Requests */}
         <ContentList>
           {loading ? (
-            <LoadingMessage>Loading...</LoadingMessage>
+            <LoadingMessage>Loading your requests...</LoadingMessage>
           ) : currentRequests.length > 0 ? (
-            currentRequests.slice(0, 2).map((requestItem) => (
+            currentRequests.map((requestItem) => (
               <Composantrequest key={requestItem._id} request={requestItem} />
             ))
           ) : (
-            <NoRequests>No matching requests found.</NoRequests>
+            <NoRequests>No requests found. Create your first request!</NoRequests>
           )}
         </ContentList>
 
-        {/* Pagination Controls */}
-        <PaginationControls>
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </button>
-          <span>Page {currentPage} of {totalPages}</span>
-          <button
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </button>
-        </PaginationControls>
+        {filteredRequests.length > itemsPerPage && (
+          <PaginationControls>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+            <span>Page {currentPage} of {totalPages}</span>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+          </PaginationControls>
+        )}
       </Container>
       <Footer />
     </>

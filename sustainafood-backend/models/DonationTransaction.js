@@ -5,6 +5,8 @@ const Counter = require('./Counter'); // Assumes a Counter model for auto-increm
 // Define the status enum
 const TransactionStatus = {
     PENDING: 'pending',
+    APPROVED: 'approved',
+    REJECTED: 'rejected',
     IN_PROGRESS: 'in_progress',
     COMPLETED: 'completed',
     CANCELLED: 'cancelled'
@@ -31,15 +33,35 @@ const donationTransactionSchema = new Schema({
         ref: 'Donation', 
         required: true 
     },
-    allocatedProducts: { type: Schema.Types.ObjectId, ref: 'Product'},
+    allocatedProducts: [{
+        product: { type: Schema.Types.ObjectId, ref: 'Product' },
+        quantity: { type: Number, required: true, min: 1 }
+    }],
     status: { 
         type: String, 
         enum: Object.values(TransactionStatus), 
         default: TransactionStatus.PENDING, 
         required: true 
+    },
+    recipient: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    donor: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    responseDate: {
+        type: Date
+    },
+    rejectionReason: {
+        type: String,
+        maxlength: 500
     }
 }, {
-    timestamps: true // Automatically adds createdAt and updatedAt
+    timestamps: true
 });
 
 // Pre-save hook to auto-increment the ID

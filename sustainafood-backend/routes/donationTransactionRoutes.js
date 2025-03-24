@@ -26,4 +26,8 @@ router.put('/:id', donationTransactionController.updateDonationTransaction);
 // ✅ Delete a donation transaction by ID
 router.delete('/:id', donationTransactionController.deleteDonationTransaction);
 
+router.get('/recipient/:recipientId', donationTransactionController.getTransactionsByRecipientId);
+router.put('/:transactionId/accept', donationTransactionController.acceptDonationTransaction);
+router.put('/:transactionId/reject', donationTransactionController.rejectDonationTransaction);
+
 module.exports = router;

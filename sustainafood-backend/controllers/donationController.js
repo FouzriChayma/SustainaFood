@@ -250,4 +250,21 @@ async function deleteDonation  (req, res) {
    
 
 };
-module.exports = {getDonationByRequestId,getDonationsByUserId ,getAllDonations, getDonationById, getDonationsByDate, getDonationsByType, getDonationsByCategory, createDonation, updateDonation, deleteDonation };
+
+async function getDonationsByStatus(req, res) {
+    try {
+        const { status } = req.params;
+        const donations = await Donation.find({ status })
+            .populate('donor')
+            .populate('products.product');
+
+        if (!donations.length) {
+            return res.status(404).json({ message: 'No donations found with this status' });
+        }
+
+        res.status(200).json(donations);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error });
+    }
+}
+module.exports = {getDonationByRequestId,getDonationsByUserId ,getAllDonations, getDonationById, getDonationsByDate, getDonationsByType, getDonationsByCategory, createDonation, updateDonation, deleteDonation , getDonationsByStatus };

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import '../assets/styles/DetailsDonations.css'; // Ensure this path is correct
+import '../assets/styles/DetailsDonations.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getDonationById, deleteDonation, updateDonation } from '../api/donationService';
+import { createProduct, updateProduct, getProductById } from '../api/productService';
 import { FaEdit, FaTrash, FaSave, FaTimes } from "react-icons/fa";
 
 const DetailsDonations = () => {
@@ -15,6 +16,7 @@ const DetailsDonations = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const [userid, setUserid] = useState();
   const [isTheOwner, setIsTheOwner] = useState(false);
+
   const [editedDonation, setEditedDonation] = useState({
     title: "",
     location: "",
@@ -29,9 +31,9 @@ const DetailsDonations = () => {
   const isRecipient = user?.role === "ong" || user?.role === "student";
 
   useEffect(() => {
-    if (typeof user.id === "number") {
+    if (typeof user?.id === "number") {
       setUserid(user._id);
-    } else if (typeof user.id === "string") {
+    } else if (typeof user?.id === "string") {
       setUserid(user.id);
     }
   }, [user]);
@@ -40,7 +42,11 @@ const DetailsDonations = () => {
     const fetchDonation = async () => {
       try {
         const response = await getDonationById(id);
+        console.log("API Response:", response);
         const fetchedDonation = response.data;
+        console.log("Fetched Donation:", fetchedDonation);
+        console.log("Products:", fetchedDonation.products);
+
         setDonation(fetchedDonation);
         setEditedDonation({
           title: fetchedDonation.title || "",
@@ -49,8 +55,18 @@ const DetailsDonations = () => {
           type: fetchedDonation.type || "",
           category: fetchedDonation.category || "",
           description: fetchedDonation.description || "",
-         // delivery: fetchedDonation.delivery || "",
-          products: fetchedDonation.products || [],
+          products: fetchedDonation.products && Array.isArray(fetchedDonation.products)
+            ? fetchedDonation.products.map(item => ({
+              product: item.product,
+              name: item.product?.name || '',
+              quantity: item.quantity || 0, // Donated amount
+              totalQuantity: item.product?.totalQuantity || 0, // Total stock
+              status: item.product?.status || 'available',
+              productDescription: item.product?.productDescription || 'Default description',
+              productType: item.product?.productType || 'Other',
+              _id: item.product?._id,
+              }))
+            : [],
         });
       } catch (err) {
         setError(err.response?.data?.message || 'Error fetching donation data');
@@ -81,34 +97,110 @@ const DetailsDonations = () => {
       });
   };
 
-  const handleSaveDonation = () => {
-    updateDonation(id, editedDonation)
-      .then((response) => {
-        window.location.href = `/DetailsDonations/${id}`;
-        setDonation(response.data.updatedDonation);
-        setIsEditing(false);
-      })
-      .catch((error) => {
-        console.error("Error updating donation:", error.response?.data || error);
-      });
+  const handleSaveDonation = async () => {
+    try {
+      // Validate required fields for products
+      const invalidProduct = editedDonation.products.find(
+        (item) => !item.name?.trim() || !item.productDescription?.trim() || !item.productType?.trim()
+      );
+      if (invalidProduct) {
+        setError('Please fill in all required fields for all products.');
+        return;
+      }
+  
+      // Validate expirationDate
+      if (new Date(editedDonation.expirationDate) <= new Date()) {
+        setError('Expiration date must be in the future.');
+        return;
+      }
+  
+      // Process products
+      const updatedProducts = await Promise.all(
+        editedDonation.products.map(async (item) => {
+          if (!item.product) {
+            // New product
+            const newProduct = {
+              name: item.name,
+              status: item.status || 'available',
+              productType: item.productType,
+              productDescription: item.productDescription,
+              totalQuantity: item.quantity, // Stock in Product
+              donation: id,
+            };
+            const response = await createProduct(newProduct);
+            return { product: response.data._id, quantity: item.quantity };
+          } else {
+            // Existing product
+            const existingProductResponse = await getProductById(item.product._id || item.product);
+            const existingProduct = existingProductResponse.data;
+            const updatedProduct = {
+              ...existingProduct,
+              name: item.name !== existingProduct.name ? item.name : existingProduct.name,
+              status: item.status !== existingProduct.status ? item.status : existingProduct.status,
+              productDescription:
+                item.productDescription !== existingProduct.productDescription
+                  ? item.productDescription
+                  : existingProduct.productDescription,
+              productType:
+                item.productType !== existingProduct.productType
+                  ? item.productType
+                  : existingProduct.productType,
+              totalQuantity:
+                item.quantity !== existingProduct.totalQuantity
+                  ? item.quantity
+                  : existingProduct.totalQuantity,
+            };
+            await updateProduct(item.product._id || item.product, updatedProduct);
+            return { product: item.product._id || item.product, quantity: item.quantity };
+          }
+        })
+      );
+  
+      // Prepare donation data
+      const updatedData = {
+        ...editedDonation,
+        products: updatedProducts,
+      };
+  
+      // Update donation
+      const response = await updateDonation(id, updatedData);
+      setDonation(response.data);
+      setIsEditing(false);
+      window.location.href = `/DetailsDonations/${id}`;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update donation';
+      console.error('Error updating donation:', errorMessage, error);
+      setError(errorMessage);
+    }
   };
 
   const handleProductChange = (index, field, value) => {
     const updatedProducts = [...editedDonation.products];
-    if (field === 'totalQuantity') {
+    if (field === 'quantity') {
       value = Number(value);
     }
     updatedProducts[index] = { ...updatedProducts[index], [field]: value };
     setEditedDonation({ ...editedDonation, products: updatedProducts });
   };
 
-  const handleDeleteProduct = (index) => {
+  const handleDeleteProduct = async (index) => {
+    const productToDelete = editedDonation.products[index];
+    if (productToDelete.product) {
+      await deleteProduct(productToDelete.product._id || productToDelete.product);
+    }
     const updatedProducts = editedDonation.products.filter((_, i) => i !== index);
     setEditedDonation({ ...editedDonation, products: updatedProducts });
   };
 
   const handleAddProduct = () => {
-    const newProduct = { productDescription: '', totalQuantity: 0, status: 'available' };
+    const newProduct = {
+      product: null,
+      name: '',
+      quantity: 0,
+      status: 'available',
+      productDescription: 'New product description',
+      productType: 'Other',
+    };
     setEditedDonation({
       ...editedDonation,
       products: [...editedDonation.products, newProduct],
@@ -158,54 +250,54 @@ const DetailsDonations = () => {
           </div>
 
           <div className="details-donation-content">
-          <div className="details-donation-info-grid">
-  <div className="details-donation-info-item">
-    <div className="details-donation-info-icon">📍</div>
-    <div className="details-donation-info-content">
-      <div className="details-donation-info-label">Location</div>
-      {isEditing ? (
-        <input
-          type="text"
-          value={editedDonation.location}
-          onChange={(e) => {
-            console.log("Location changed:", e.target.value); // Debugging
-            setEditedDonation({ ...editedDonation, location: e.target.value });
-          }}
-          className="details-donation-edit-input"
-          placeholder="Enter location"
-        />
-      ) : (
-        <div className="details-donation-info-value">{location || "Unknown location"}</div>
-      )}
-    </div>
-  </div>
+            <div className="details-donation-info-grid">
+              <div className="details-donation-info-item">
+                <div className="details-donation-info-icon">📍</div>
+                <div className="details-donation-info-content">
+                  <div className="details-donation-info-label">Location</div>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedDonation.location}
+                      onChange={(e) => {
+                        console.log("Location changed:", e.target.value);
+                        setEditedDonation({ ...editedDonation, location: e.target.value });
+                      }}
+                      className="details-donation-edit-input"
+                      placeholder="Enter location"
+                    />
+                  ) : (
+                    <div className="details-donation-info-value">{location || "Unknown location"}</div>
+                  )}
+                </div>
+              </div>
 
-  <div className="details-donation-info-item">
-    <div className="details-donation-info-icon">📆</div>
-    <div className="details-donation-info-content">
-      <div className="details-donation-info-label">Expiration Date</div>
-      {isEditing ? (
-        <input
-          type="date"
-          value={
-            editedDonation.expirationDate
-              ? new Date(editedDonation.expirationDate).toISOString().split("T")[0]
-              : ""
-          }
-          onChange={(e) => {
-            console.log("Expiration Date changed:", e.target.value); // Debugging
-            setEditedDonation({ ...editedDonation, expirationDate: e.target.value });
-          }}
-          className="details-donation-edit-date"
-        />
-      ) : (
-        <div className="details-donation-info-value">
-          {expirationDate ? new Date(expirationDate).toLocaleDateString() : "N/A"}
-        </div>
-      )}
-    </div>
-  </div>
-</div>
+              <div className="details-donation-info-item">
+                <div className="details-donation-info-icon">📆</div>
+                <div className="details-donation-info-content">
+                  <div className="details-donation-info-label">Expiration Date</div>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      value={
+                        editedDonation.expirationDate
+                          ? new Date(editedDonation.expirationDate).toISOString().split("T")[0]
+                          : ""
+                      }
+                      onChange={(e) => {
+                        console.log("Expiration Date changed:", e.target.value);
+                        setEditedDonation({ ...editedDonation, expirationDate: e.target.value });
+                      }}
+                      className="details-donation-edit-date"
+                    />
+                  ) : (
+                    <div className="details-donation-info-value">
+                      {expirationDate ? new Date(expirationDate).toLocaleDateString() : "N/A"}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
             <div className="details-donation-products-section">
               <h2 className="details-donation-section-title">📦 Available Products</h2>
@@ -218,20 +310,49 @@ const DetailsDonations = () => {
                         <div className="details-donation-product-details">
                           <input
                             type="text"
-                            value={product.productDescription}
+                            value={product.name || ''}
+                            onChange={(e) => handleProductChange(index, 'name', e.target.value)}
+                            className="details-donation-edit-input"
+                            placeholder="Product Name"
+                          />
+                          <input
+                            type="text"
+                            value={product.productDescription || ''}
                             onChange={(e) => handleProductChange(index, 'productDescription', e.target.value)}
                             className="details-donation-edit-input"
                             placeholder="Product Description"
                           />
+                          <select
+                            value={product.productType || 'Other'}
+                            onChange={(e) => handleProductChange(index, 'productType', e.target.value)}
+                            className="details-donation-edit-select"
+                          >
+                            <option value="Canned_Goods">Canned Goods</option>
+                            <option value="Dry_Goods">Dry Goods</option>
+                            <option value="Beverages">Beverages</option>
+                            <option value="Snacks">Snacks</option>
+                            <option value="Cereals">Cereals</option>
+                            <option value="Baked_Goods">Baked Goods</option>
+                            <option value="Condiments">Condiments</option>
+                            <option value="Vegetables">Vegetables</option>
+                            <option value="Fruits">Fruits</option>
+                            <option value="Meat">Meat</option>
+                            <option value="Fish">Fish</option>
+                            <option value="Dairy">Dairy</option>
+                            <option value="Eggs">Eggs</option>
+                            <option value="Baby_Food">Baby Food</option>
+                            <option value="Pet_Food">Pet Food</option>
+                            <option value="Other">Other</option>
+                          </select>
                           <input
                             type="number"
-                            value={product.totalQuantity}
-                            onChange={(e) => handleProductChange(index, 'totalQuantity', e.target.value)}
+                            value={product.quantity || 0}
+                            onChange={(e) => handleProductChange(index, 'quantity', e.target.value)}
                             className="details-donation-edit-input"
                             placeholder="Quantity"
                           />
                           <select
-                            value={product.status}
+                            value={product.status || 'available'}
                             onChange={(e) => handleProductChange(index, 'status', e.target.value)}
                             className="details-donation-edit-select"
                           >
@@ -250,16 +371,16 @@ const DetailsDonations = () => {
                     </li>
                   ))
                 ) : (
-                  products && products.length > 0 ? (
+                  products && Array.isArray(products) && products.length > 0 ? (
                     products.map((product, index) => (
                       <li key={index} className="details-donation-product-item">
                         <div className="details-donation-product-info">
                           <div className="details-donation-product-icon">🥫</div>
                           <div className="details-donation-product-details">
-                            <div className="details-donation-product-name">{product.productDescription}</div>
-                            <div className="details-donation-product-quantity">{product.totalQuantity}</div>
-                            <div className={`details-donation-product-status ${product.status}`}>
-                              {product.status}
+                            <div className="details-donation-product-name">{product.product.name || 'Unknown Product'}</div>
+                            <div className="details-donation-product-quantity">{product.quantity || 0}</div>
+                            <div className={`details-donation-product-status ${product.product.status || 'available'}`}>
+                              {product.product.status || ''}
                             </div>
                           </div>
                         </div>

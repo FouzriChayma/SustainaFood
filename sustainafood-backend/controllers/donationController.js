@@ -200,33 +200,50 @@ async function createDonation(req, res) {
   
 
 
+
 // ✅ Update a donation (also updates related products)
-async function updateDonation (req, res) {
-    try {
-        const { id } = req.params;
-        const { products, ...donationData } = req.body;
+async function updateDonation(req, res) {
+  try {
+    const { id } = req.params;
+    const { products, ...donationData } = req.body;
 
-        // Update donation details
-        const updatedDonation = await Donation.findByIdAndUpdate(id, donationData, { new: true });
-
-        if (!updatedDonation) {
-            return res.status(404).json({ message: 'Donation not found' });
-        }
-
-        // Update or replace products
-        if (products) {
-            await Product.deleteMany({ _id: { $in: updatedDonation.products } }); // Remove old products
-            const newProducts = await Product.insertMany(products);
-            updatedDonation.products = newProducts.map(product => product._id);
-            await updatedDonation.save();
-        }
-
-        res.status(200).json({ message: 'Donation updated successfully', updatedDonation });
-    } catch (error) {
-        res.status(500).json({ message: 'Failed to update donation', error });
+    // Validate the donation ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid donation ID' });
     }
-};
 
+    // Validate products array
+    if (!Array.isArray(products)) {
+      return res.status(400).json({ message: 'Products must be an array' });
+    }
+    for (const item of products) {
+      if (!mongoose.Types.ObjectId.isValid(item.product)) {
+        return res.status(400).json({ message: `Invalid product ID: ${item.product}` });
+      }
+      if (typeof item.quantity !== 'number' || item.quantity < 0) {
+        return res.status(400).json({ message: `Invalid quantity for product ${item.product}: ${item.quantity}` });
+      }
+    }
+
+    // Update the donation
+    const updatedDonation = await Donation.findByIdAndUpdate(
+      id,
+      { ...donationData, products },
+      { new: true }
+    )
+      .populate('donor')
+      .populate('products.product');
+
+    if (!updatedDonation) {
+      return res.status(404).json({ message: 'Donation not found' });
+    }
+
+    res.status(200).json({ message: 'Donation updated successfully', data: updatedDonation });
+  } catch (error) {
+    console.error('Error updating donation:', error);
+    res.status(500).json({ message: 'Failed to update donation', error: error.message });
+  }
+}
 // ✅ Delete a donation (also deletes related products)
 async function deleteDonation  (req, res) {
     try {

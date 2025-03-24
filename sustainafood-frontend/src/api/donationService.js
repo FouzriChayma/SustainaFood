@@ -39,13 +39,18 @@ export const getDonationByRequestId = async (requestId) => {
   export const deleteDonation = async (id) => {
     return axios.delete(`http://localhost:3000/donation/${id}`);
   };
-  export const updateDonation = async (id, donationData) => {
-    console.log(donationData);
-    return axios.put(`http://localhost:3000/donation/${id}`, donationData, {
+// donationService.js
+export const updateDonation = async (id, donationData) => {
+  try {
+    return await axios.put(`http://localhost:3000/donation/${id}`, donationData, {
       headers: {
         "Content-Type": "application/json",
       },
     });
-  };
+  } catch (error) {
+    console.error("Error updating donation:", error.response?.data || error.message);
+    throw error;
+  }
+};
   
   

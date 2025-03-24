@@ -67,21 +67,39 @@ async function getProductsByStatus(req, res) {
 
 async function createProduct(req, res) {
   try {
+    console.log('Received request to create product:', req.body);
     const { name, productType, productDescription, weightPerUnit, weightUnit, totalQuantity, donation, status } = req.body;
 
     // Validate required fields
     if (!name || !productType || !productDescription || !donation || !status) {
+      console.log('Validation failed: Missing required fields');
       return res.status(400).json({ message: 'Please fill in all required fields.' });
     }
 
     // Check if an image file was uploaded
     let imagePath = null;
     if (req.files && req.files.image && req.files.image[0]) {
-      imagePath = req.files.image[0].path; // Get the file path from Multer
+      imagePath = req.files.image[0].path;
+      console.log('Image uploaded:', imagePath);
     }
+
+    // Generate the ID using the Counter model
+    console.log('Generating ID for new Product');
+    const counter = await Counter.findOneAndUpdate(
+      { _id: 'ProductId' },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+    if (!counter) {
+      console.log('Counter not found or created for ProductId');
+      throw new Error('Counter not found or created for ProductId');
+    }
+    const productId = counter.seq;
+    console.log(`Assigned ID: ${productId} to new Product`);
 
     // Build the product object
     const productData = {
+      id: productId,
       name,
       productType,
       productDescription,
@@ -90,14 +108,17 @@ async function createProduct(req, res) {
       totalQuantity,
       donation,
       status,
-      image: imagePath // Add the image path to the product data
+      image: imagePath,
+      isArchived: false,
     };
 
     // Create the product
+    console.log('Saving new product:', productData);
     const newProduct = new Product(productData);
     await newProduct.save();
 
-    res.status(201).json({ message: 'Product created successfully', newProduct });
+    console.log('Product created successfully:', newProduct);
+    res.status(201).json(newProduct);
   } catch (error) {
     console.error("Error in createProduct:", error);
     res.status(400).json({ message: 'Failed to create product', error: error.message });

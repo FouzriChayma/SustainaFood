@@ -4,23 +4,39 @@ const Counter = require('./Counter'); // Assumes a Counter model exists for auto
 
 // Define enums for productType
 const ProductType = {
-    CANNED_GOODS: 'Canned_Goods',    // For packaged products
-    DRY_GOODS: 'Dry_Goods',          // For packaged products
-    BEVERAGES: 'Beverages',          // For packaged products
-    SNACKS: 'Snacks',                // For packaged products
-    SOUP: 'Soup',                    // For prepared meals
-    MAIN_COURSE: 'Main_Course',      // For prepared meals
-    DESSERT: 'Dessert', 
-    DRINKS: 'Drinks',   
-    VEGETABLES: 'Vegetables',
-    FRUITS: 'Fruits',
-    MEAT: 'Meat',
-    FISH: 'Fish',
-    FASTFOOD: 'Fastfood',
-    OTHER: 'Other'                   // Flexible for both
+    // Packaged Products - Non-Perishable
+    CANNED_GOODS: 'Canned_Goods',        // e.g., canned beans, soups
+    DRY_GOODS: 'Dry_Goods',              // e.g., rice, pasta
+    BEVERAGES: 'Beverages',              // e.g., bottled water, juice
+    SNACKS: 'Snacks',                    // e.g., chips, granola bars
+    CEREALS: 'Cereals',                  // e.g., oatmeal, cornflakes (new)
+    BAKED_GOODS: 'Baked_Goods',          // e.g., packaged bread, cookies (new)
+    CONDIMENTS: 'Condiments',            // e.g., ketchup, sauces (new)
+
+    // Fresh Products
+    VEGETABLES: 'Vegetables',            // e.g., carrots, potatoes
+    FRUITS: 'Fruits',                    // e.g., apples, bananas
+    MEAT: 'Meat',                        // e.g., fresh beef, chicken
+    FISH: 'Fish',                        // e.g., fresh salmon, tuna
+    DAIRY: 'Dairy',                      // e.g., milk, cheese (new)
+    EGGS: 'Eggs',                        // e.g., fresh eggs (new)
+
+    // Miscellaneous
+    BABY_FOOD: 'Baby_Food',              // e.g., formula, purees (new)
+    PET_FOOD: 'Pet_Food',                // e.g., dog/cat food (new)
+    OTHER: 'Other'                       // Catch-all for uncategorized items                // Flexible for both
 };
 Object.freeze(ProductType); // Prevents changes to the enum
-
+const MealType = {
+    BREAKFAST: 'Breakfast',
+    LUNCH: 'Lunch',
+    DINNER: 'Dinner',
+    SNACK: 'Snack',
+    DESSERT: 'Dessert',
+    SOUP: 'Soup',
+    OTHER: 'Other'
+};
+Object.freeze(MealType);
 // Define enums for weight units
 const WeightUnit = {
     KG: 'kg',
@@ -63,6 +79,10 @@ const productSchema = new Schema({
         type: String, 
         enum: Object.values(ProductType), 
         required: true 
+    }, 
+    MealType: { 
+        type: String, 
+        enum: Object.values(MealType), 
     }, // Must be one of the ProductType values
     productDescription: { 
         type: String, 

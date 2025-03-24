@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
 import { loginUser } from "../api/userService"; // Ensure this is correctly imported
 import { useGoogleLogin } from "@react-oauth/google";
+import { createuser,getUserById } from '../api/userService'; // Exemple d'import
+
 import "../assets/styles/log.css";
 import logo from "../assets/images/LogoCh.png";
 import loginImg from "../assets/images/Login-PNG-HD-Image.png";
@@ -61,13 +63,15 @@ const Login = () => {
     };
 
     const handleGoogleLogin = useGoogleLogin({
-        flow: "implicit",
+        flow: "implicit", // Au lieu de "implicit"
         onSuccess: async (tokenResponse) => {
             try {
                 if (!tokenResponse || !tokenResponse.access_token) {
                     setError("Google login error.");
+                    console.error("Token Response Error:", error);
                     return;
                 }
+                
 
                 const userInfoResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
                     headers: { Authorization: `Bearer ${tokenResponse.access_token}` },

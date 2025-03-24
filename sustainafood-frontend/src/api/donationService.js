@@ -10,6 +10,7 @@ export const addDonation = async (donationrData) => {
   export const getDonations = async () => {
     return axios.get(`http://localhost:3000/donation/`);
   };
+  
   export const getDonationById = async (id) => {
     try {
         return await axios.get(`http://localhost:3000/donation/${id}`);
@@ -17,6 +18,15 @@ export const addDonation = async (donationrData) => {
         console.error("Error fetching donation:", error);
         throw error;
     }
+};
+export const getDonationByRequestId = async (requestId) => {
+  try {
+    const response = await axios.get(`http://localhost:3000/donation/donations/${requestId}`);
+    return response.data; // Return the actual data from the response
+  } catch (error) {
+    console.error('Error fetching donation:', error.response?.data || error.message);
+    throw error; // Re-throw the error for the caller to handle
+  }
 };
 
   export const getDonationByUserId = async (id) => {

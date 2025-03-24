@@ -76,6 +76,7 @@ export const AddDonation = () => {
     "Other",
   ];
   const weightUnits = ["kg", "g", "lb", "oz", "ml", "l"];
+  const statuses = ["available", "pending", "reserved", "out_of_stock"];
 
   useEffect(() => {
     if (typeof user.id === "number") {
@@ -382,7 +383,7 @@ export const AddDonation = () => {
                   <input
                     name="radio-group"
                     id="radio-form"
-                    className="radio-button__input-adddonation"
+                    class fiscalName="radio-button__input-adddonation"
                     type="radio"
                     checked={productEntryMode === "form"}
                     onChange={() => setProductEntryMode("form")}
@@ -394,7 +395,7 @@ export const AddDonation = () => {
                 </div>
               </div>
 
-              {productEntryMode === "csv" && (
+              {productEntryMode === "csv" && products.length === 0 && (
                 <>
                   <input
                     ref={fileInputRef}
@@ -408,7 +409,13 @@ export const AddDonation = () => {
                     className="container-btn-file"
                     onClick={() => fileInputRef.current.click()}
                   >
-                    <svg fill="#fff" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 50 50">
+                    <svg
+                      fill="#fff"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 50 50"
+                    >
                       <path d="M 25 2 C 12.309295 2 2 12.309295 2 25 C 2 37.690705 12.309295 48 25 48 C 37.690705 48 48 37.690705 48 25 C 48 12.309295 37.690705 2 25 2 z M 25 4 C 36.609824 4 46 13.390176 46 25 C 46 36.609824 36.609824 46 25 46 C 13.390176 46 4 36.609824 4 25 C 4 13.390176 13.390176 4 25 4 z M 24 13 L 24 24 L 13 24 L 13 26 L 24 26 L 24 37 L 26 37 L 26 26 L 37 26 L 37 24 L 26 24 L 26 13 L 24 13 z" />
                     </svg>
                     Upload List of Products
@@ -433,14 +440,18 @@ export const AddDonation = () => {
                         onChange={(e) => handleManualProductChange(index, "productType", e.target.value)}
                       >
                         {productTypes.map((pt) => (
-                          <option key={pt} value={pt}>{pt}</option>
+                          <option key={pt} value={pt}>
+                            {pt}
+                          </option>
                         ))}
                       </select>
                       <textarea
                         className="signup-input"
                         placeholder="Product Description"
                         value={product.productDescription}
-                        onChange={(e) => handleManualProductChange(index, "productDescription", e.target.value)}
+                        onChange={(e) =>
+                          handleManualProductChange(index, "productDescription", e.target.value)
+                        }
                       />
                       <input
                         type="number"
@@ -455,16 +466,22 @@ export const AddDonation = () => {
                         onChange={(e) => handleManualProductChange(index, "weightUnit", e.target.value)}
                       >
                         {weightUnits.map((wu) => (
-                          <option key={wu} value={wu}>{wu}</option>
+                          <option key={wu} value={wu}>
+                            {wu}
+                          </option>
                         ))}
                       </select>
                       <select
                         className="signup-input"
                         value={product.weightUnitTotale}
-                        onChange={(e) => handleManualProductChange(index, "weightUnitTotale", e.target.value)}
+                        onChange={(e) =>
+                          handleManualProductChange(index, "weightUnitTotale", e.target.value)
+                        }
                       >
                         {weightUnits.map((wu) => (
-                          <option key={wu} value={wu}>{wu}</option>
+                          <option key={wu} value={wu}>
+                            {wu}
+                          </option>
                         ))}
                       </select>
                       <input
@@ -511,17 +528,8 @@ export const AddDonation = () => {
             <>
               <p style={{ marginLeft: "-656px", color: "#8dc73f" }}>List of products uploaded</p>
               <div className="file-actions" style={{ marginLeft: "812px" }}>
-                <button
-                  type="button"
-                  className="delete-btn"
-                  style={{ color: "black" }}
-                  onClick={() => fileInputRef.current.click()}
-                >
-                  <FaEdit />
-                </button>
-                <button type="button" className="delete-btn" onClick={handleDeleteList}>
-                  <FaTrash />
-                </button>
+                <FaEdit className="fa-edit" onClick={() => fileInputRef.current.click()} />
+                <FaTrash className="fa-trash" onClick={handleDeleteList} />
               </div>
               <table className="product-table">
                 <thead>
@@ -538,12 +546,62 @@ export const AddDonation = () => {
                       {editableRow === rowIndex ? (
                         Object.keys(row).map((key) => (
                           <td key={key}>
-                            <input
-                              type="text"
-                              value={editedProduct[key] || ""}
-                              onChange={(e) => handleRowInputChange(e, key)}
-                              className="edit-input"
-                            />
+                            {key === "productType" ? (
+                              <select
+                                value={editedProduct[key] || ""}
+                                onChange={(e) => handleRowInputChange(e, key)}
+                                className="edit-input"
+                              >
+                                {productTypes.map((pt) => (
+                                  <option key={pt} value={pt}>
+                                    {pt}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : key === "weightUnit" ? (
+                              <select
+                                value={editedProduct[key] || ""}
+                                onChange={(e) => handleRowInputChange(e, key)}
+                                className="edit-input"
+                              >
+                                {weightUnits.map((wu) => (
+                                  <option key={wu} value={wu}>
+                                    {wu}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : key === "weightUnitTotale" ? (
+                              <select
+                                value={editedProduct[key] || ""}
+                                onChange={(e) => handleRowInputChange(e, key)}
+                                className="edit-input"
+                              >
+                                {weightUnits.map((wu) => (
+                                  <option key={wu} value={wu}>
+                                    {wu}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : key === "status" ? (
+                              <select
+                                value={editedProduct[key] || ""}
+                                onChange={(e) => handleRowInputChange(e, key)}
+                                className="edit-input"
+                              >
+                                {statuses.map((status) => (
+                                  <option key={status} value={status}>
+                                    {status}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                type={key === "weightPerUnit" || key === "totalQuantity" ? "number" : "text"}
+                                value={editedProduct[key] || ""}
+                                onChange={(e) => handleRowInputChange(e, key)}
+                                className="edit-input"
+                              />
+                            )}
                           </td>
                         ))
                       ) : (
@@ -553,17 +611,16 @@ export const AddDonation = () => {
                       )}
                       <td>
                         {editableRow === rowIndex ? (
-                          <FaSave
-                            onClick={() => handleSaveRow(rowIndex)}
-                            style={{ color: "black", cursor: "pointer", fontSize: "20px" }}
-                          />
+                          <FaSave className="fa-save" onClick={() => handleSaveRow(rowIndex)} />
                         ) : (
                           <FaEdit
+                            className="fa-edit"
                             onClick={() => handleEditRow(rowIndex)}
                             style={{ color: "black", cursor: "pointer", fontSize: "20px" }}
                           />
                         )}
                         <FaTrash
+                          className="fa-trash"
                           onClick={() => handleDeleteRow(rowIndex)}
                           style={{ color: "red", cursor: "pointer", fontSize: "20px", marginLeft: "10px" }}
                         />

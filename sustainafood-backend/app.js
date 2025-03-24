@@ -43,7 +43,7 @@ app.use('/request', requestNeedRoutes);
 // Database Connection
 if (process.env.NODE_ENV !== 'test') {//pour la db de test
 var mongoConfig = require('./config/database.json');
-
+app.use(cors());
 mongoose.connect(mongoConfig.url)
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch(err => console.error("❌ MongoDB connection error:", err));

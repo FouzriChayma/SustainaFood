@@ -1,28 +1,28 @@
 const Donation = require('../models/Donation');
 const Product = require('../models/Product'); // Import Product model
 const Counter = require('../models/Counter');
-
+const mongoose = require('mongoose');
 
 // ✅ Get all donations
-async function getAllDonations (req, res)  {
+async function getAllDonations(req, res) {
     try {
-        const donations = await Donation.find().populate('donor').populate('products');
+        const donations = await Donation.find()
+            .populate('donor')
+            .populate('products.product'); // Changé de 'products' à 'products.product'
         res.status(200).json(donations);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
     }
-};
+}
 
 // ✅ Get donation by ID
 async function getDonationById(req, res) {
     try {
         const { id } = req.params;
-       
-
         const donation = await Donation.findById(id)
             .populate('donor')
-            .populate('products');
-            console.log(donation);
+            .populate('products.product'); // Changé de 'products' à 'products.product'
+        console.log(donation);
 
         if (!donation) {
             return res.status(404).json({ message: 'Donation not found' });
@@ -33,76 +33,83 @@ async function getDonationById(req, res) {
         console.error("Error fetching donation:", error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
-};
-
+}
 
 // ✅ Get donations by User ID
-async function getDonationsByUserId(req, res)  {
+async function getDonationsByUserId(req, res) {
     try {
         const { userId } = req.params;
-        const donations = await Donation.find({ donor: userId }).populate('products');
-
+        const donations = await Donation.find({ donor: userId })
+            .populate('products.product'); // Changé de 'products' à 'products.product'
         if (!donations.length) {
             return res.status(404).json({ message: 'No donations found for this user' });
         }
-
         res.status(200).json(donations);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
     }
-};
+}
 
 // ✅ Get donations by Date
-async function getDonationsByDate(req, res)  {
+async function getDonationsByDate(req, res) {
     try {
         const { date } = req.params;
-        const donations = await Donation.find({ expirationDate: new Date(date) }).populate('products');
-
+        const donations = await Donation.find({ expirationDate: new Date(date) })
+            .populate('products.product'); // Changé de 'products' à 'products.product'
         if (!donations.length) {
             return res.status(404).json({ message: 'No donations found for this date' });
         }
-
         res.status(200).json(donations);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
     }
-};
-
+}
 // ✅ Get donations by Type (donation/request)
-async function getDonationsByType (req, res)  {
+async function getDonationsByType(req, res) {
     try {
         const { type } = req.params;
-        const donations = await Donation.find({ Type: type }).populate('products');
-
+        const donations = await Donation.find({ Type: type })
+            .populate('products.product'); // Changé de 'products' à 'products.product'
         if (!donations.length) {
             return res.status(404).json({ message: 'No donations found for this type' });
         }
-
         res.status(200).json(donations);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
     }
-};
+}
 
-// ✅ Get donations by Category (Prepared_Meals, Packaged_Products)
-async function getDonationsByCategory (req, res)  {
+async function getDonationsByCategory(req, res) {
     try {
         const { category } = req.params;
-        const donations = await Donation.find({ Category: category }).populate('products');
-
+        const donations = await Donation.find({ Category: category })
+            .populate('products.product'); // Changé de 'products' à 'products.product'
         if (!donations.length) {
             return res.status(404).json({ message: 'No donations found for this category' });
         }
-
         res.status(200).json(donations);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
     }
-};
-
+}
+async function getDonationByRequestId(req, res) {
+    try {
+      const { requestId } = req.params;
+      const donation = await Donation.find({ linkedRequests: requestId }) // Use linkedRequests field
+        .populate('products.product'); // Populate nested product details
+  
+      if (!donation) {
+        return res.status(404).json({ message: 'No donation found for this request' });
+      }
+  
+      res.status(200).json(donation); // Return the donation data
+    } catch (error) {
+      console.error('Error fetching donation by request ID:', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
 // ✅ Create a new donation (also creates related products)
 async function createDonation(req, res) {
-    console.log("body donation back", req.body);
     try {
       let {
         title,
@@ -114,11 +121,10 @@ async function createDonation(req, res) {
         donor,
         products,
         numberOfMeals,
-        //delivery,
         status
       } = req.body;
-      
-      // Ensure products is an array
+  
+      // Vérifier que products est un tableau
       if (!Array.isArray(products)) {
         if (typeof products === 'string') {
           products = JSON.parse(products);
@@ -126,8 +132,8 @@ async function createDonation(req, res) {
           products = [];
         }
       }
-      
-      // Optional: filter out empty products
+  
+      // Filtrer les produits invalides
       products = products.filter(product =>
         product.productType &&
         product.weightPerUnit &&
@@ -135,26 +141,25 @@ async function createDonation(req, res) {
         product.productDescription &&
         product.status
       );
-      
-      // Create the donation without products first (to get its _id)
+  
+      // Créer le don initial sans produits
       const newDonation = new Donation({
         title,
         location,
         expirationDate: new Date(expirationDate),
         description,
-        category: category ? category : undefined,
-        type: Type ? Type : undefined,
+        category: category || undefined,
+        type: Type || undefined,
         donor,
         numberOfMeals,
-        products: [], // Initially empty
-       // delivery,
+        products: [],
         status
       });
-      
-      await newDonation.save(); // Save to obtain the donation _id
+  
+      await newDonation.save();
       const donationId = newDonation._id;
-      
-      // For each product, assign the donation ID and an auto-incremented product ID
+  
+      // Assigner un identifiant unique aux produits et les lier au don
       for (let product of products) {
         const counter = await Counter.findOneAndUpdate(
           { _id: 'ProductId' },
@@ -164,20 +169,29 @@ async function createDonation(req, res) {
         product.id = counter.seq;
         product.donation = donationId;
       }
-      
-      // Create the products in the database
+  
+      // Insérer les produits dans la collection Product
       const createdProducts = await Product.insertMany(products);
       const productIds = createdProducts.map(product => product._id);
-      
-      // Update the donation with the created product IDs
-      newDonation.products = productIds;
+  
+      // Mettre à jour le champ products du don avec les références et totalQuantity
+      newDonation.products = createdProducts.map((createdProduct, index) => ({
+        product: createdProduct._id,
+        quantity: products[index].totalQuantity
+      }));
+  
+      // Sauvegarder les modifications du don
       await newDonation.save();
-      
+  
       res.status(201).json({ message: 'Donation created successfully', newDonation });
     } catch (error) {
-      console.error("Donation Creation Error:", error);
+      // Gestion des erreurs : supprimer le don si une erreur survient après sa création
+      if (newDonation) {
+        await Donation.deleteOne({ _id: newDonation._id });
+      }
+      console.error("Erreur lors de la création du don :", error);
       res.status(400).json({
-        message: "Failed to create donation",
+        message: "Échec de la création du don",
         error: error.message || error
       });
     }
@@ -233,5 +247,7 @@ async function deleteDonation  (req, res) {
     } catch (error) {
         res.status(500).json({ message: 'Failed to delete donation', error });
     }
+   
+
 };
-module.exports = {getDonationsByUserId, getAllDonations, getDonationById, getDonationsByDate, getDonationsByType, getDonationsByCategory, createDonation, updateDonation, deleteDonation };
+module.exports = {getDonationByRequestId,getDonationsByUserId ,getAllDonations, getDonationById, getDonationsByDate, getDonationsByType, getDonationsByCategory, createDonation, updateDonation, deleteDonation };

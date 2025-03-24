@@ -8,8 +8,9 @@ import donation2 from '../assets/images/donation2.jpg';
 import donation3 from '../assets/images/donation3.jpg';
 import donation4 from '../assets/images/donation4.png';
 import donation5 from '../assets/images/fooddonation.png';
-import Composantdonation from '../components/Composantdonation';
-import { getDonations } from "../api/donationService";
+import Composantrequest from "../components/Composantrequest";
+import '../assets/styles/ListOfDonations.css';
+import { getrequests } from "../api/requestNeedsService";
 import donation from '../assets/images/fooddonation1.png';
 import patternBg from '../assets/images/bg.png';
 import { FaSearch, FaFilter } from "react-icons/fa";
@@ -17,7 +18,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { getUserById } from "../api/userService";
 
 
-// Global styles
 const GlobalStyle = createGlobalStyle`
   body {
     margin: 0;
@@ -27,7 +27,128 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
-// Animation for slider
+const Container = styled.div`
+  padding: 40px 60px;
+  text-align: center;
+`;
+
+const Title = styled.h1`
+  color: #228b22;
+  font-size: 40px;
+  margin-bottom: 20px;
+`;
+
+const SearchContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  padding: 8px;
+  border-radius: 25px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 320px;
+  margin: auto;
+  transition: all 0.3s ease-in-out;
+
+  &:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+`;
+
+const SearchIcon = styled(FaSearch)`
+  color: #555;
+  margin-right: 8px;
+`;
+
+const SearchInput = styled.input`
+  border: none;
+  outline: none;
+  font-size: 16px;
+  width: 100%;
+  padding: 8px;
+  background: transparent;
+`;
+
+const Controls = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  margin: 20px 0;
+`;
+
+const FilterIcon = styled(FaFilter)`
+  margin-right: 8px;
+`;
+
+const Select = styled.select`
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 25px;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: 0.3s;
+  cursor: pointer;
+  background: white;
+  color: #333;
+  font-weight: bold;
+
+  &:hover {
+    border-color: #228b22;
+    transform: scale(1.05);
+  }
+`;
+
+const ContentList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+`;
+
+const LoadingMessage = styled.div`
+  font-size: 18px;
+  color: #555;
+`;
+
+const NoRequests = styled.p`
+  font-size: 18px;
+  color: #888;
+`;
+
+const PaginationControls = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 10px;
+
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: #228b22;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+
+    &:hover {
+      background: #56ab2f;
+    }
+
+    &:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+  }
+
+  span {
+    font-size: 16px;
+    color: #333;
+  }
+`;
+
 const fade = keyframes`
   0% { opacity: 0; }
   8% { opacity: 1; }
@@ -36,7 +157,6 @@ const fade = keyframes`
   100% { opacity: 0; }
 `;
 
-// Layout components
 const HomeContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -142,138 +262,17 @@ const Wave = styled.svg`
 
 const SectionWrapper = styled.section`
   padding: 60px 80px;
-  background: #fff;
-  text-align: center;
+  background: ${props => props.bgColor || '#fff'};
+  text-align: ${props => props.align || 'center'};
 `;
 
-// Donation list styled components (transformed from ListOfRequests)
-const Container = styled.div`
-  padding: 40px 60px;
-  text-align: center;
-`;
+const ListOfRequests = () => {
+  const [requests, setRequests] = useState([]);
+  const [filteredRequests, setFilteredRequests] = useState([]);
 
-const Title = styled.h1`
-  color: #228b22;
-  font-size: 40px;
-  margin-bottom: 20px;
-`;
-
-const SearchContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  padding: 8px;
-  border-radius: 25px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  width: 320px;
-  margin: auto;
-  transition: all 0.3s ease-in-out;
-
-  &:hover {
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  }
-`;
-
-const SearchIcon = styled(FaSearch)`
-  color: #555;
-  margin-right: 8px;
-`;
-
-const SearchInput = styled.input`
-  border: none;
-  outline: none;
-  font-size: 16px;
-  width: 100%;
-  padding: 8px;
-  background: transparent;
-`;
-
-const Controls = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 15px;
-  margin: 20px 0;
-`;
-
-const FilterIcon = styled(FaFilter)`
-  margin-right: 8px;
-`;
-
-const Select = styled.select`
-  padding: 10px;
-  font-size: 16px;
-  border-radius: 25px;
-  border: 1px solid #ccc;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  transition: 0.3s;
-  cursor: pointer;
-  background: white;
-  color: #333;
-  font-weight: bold;
-
-  &:hover {
-    border-color: #228b22;
-    transform: scale(1.05);
-  }
-`;
-
-const ContentList = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 20px;
-`;
-
-const LoadingMessage = styled.div`
-  font-size: 18px;
-  color: #555;
-`;
-
-const NoDonations = styled.p`
-  font-size: 18px;
-  color: #888;
-`;
-
-const PaginationControls = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 20px;
-  gap: 10px;
-
-  button {
-    padding: 10px 20px;
-    font-size: 16px;
-    background: #228b22;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s;
-
-    &:hover {
-      background: #56ab2f;
-    }
-
-    &:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-  }
-
-  span {
-    font-size: 16px;
-    color: #333;
-  }
-`;
-
-const ListOfDonations = () => {
-  const [donations, setDonations] = useState([]);
-  const [filteredDonations, setFilteredDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+
   const [sortOption, setSortOption] = useState("date");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -310,40 +309,40 @@ const ListOfDonations = () => {
   }, [authUser]);
   const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
+
   useEffect(() => {
-    const fetchDonations = async () => {
+    const fetchRequests = async () => {
       try {
-        const response = await getDonations();
-        setDonations(response.data);
-        setFilteredDonations(response.data);
+        const response = await getrequests();
+        setRequests(response.data);
+        setFilteredRequests(response.data);
         setLoading(false);
-        console.log("Donations fetched:", response.data);
       } catch (error) {
-        console.error("Backend Error:", error);
+        console.error("Error fetching requests:", error);
         setLoading(false);
       }
     };
-    fetchDonations();
+    fetchRequests();
   }, []);
 
   useEffect(() => {
-    let updatedDonations = [...donations];
+    let updatedRequests = [...requests];
 
     if (searchQuery) {
-      updatedDonations = updatedDonations.filter((donation) =>
-        donation.title.toLowerCase().includes(searchQuery.toLowerCase())
+      updatedRequests = updatedRequests.filter((request) =>
+        request.title.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     if (statusFilter !== "all") {
-      updatedDonations = updatedDonations.filter((donation) => donation.status === statusFilter);
+      updatedRequests = updatedRequests.filter((request) => request.status === statusFilter);
     }
 
     if (categoryFilter !== "all") {
-      updatedDonations = updatedDonations.filter((donation) => donation.category === categoryFilter);
+      updatedRequests = updatedRequests.filter((request) => request.category === categoryFilter);
     }
 
-    updatedDonations.sort((a, b) => {
+    updatedRequests.sort((a, b) => {
       if (sortOption === "title") {
         return a.title.localeCompare(b.title);
       } else if (sortOption === "status") {
@@ -353,29 +352,28 @@ const ListOfDonations = () => {
       }
     });
 
-    setFilteredDonations(updatedDonations);
+    setFilteredRequests(updatedRequests);
     setCurrentPage(1); // Reset to page 1 when filters change
-  }, [searchQuery, sortOption, statusFilter, categoryFilter, donations]);
+  }, [searchQuery, sortOption, statusFilter, categoryFilter, requests]);
 
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentDonations = filteredDonations.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredDonations.length / itemsPerPage);
+  const currentRequests = filteredRequests.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
 
   return (
     <>
       <GlobalStyle />
       <Navbar />
       <HomeContainer>
-        {/* Hero Section */}
         <HeroSection>
           <HeroText>
-            <h1>List Of Donations in SustainaFood</h1>
+            <h1>List Of Requests in SustainaFood</h1>
             <p>
               Give if you can, receive if you need—together, we reduce food waste and spread hope!
             </p>
-            {isDonner &&    <CallToAction href="/AddDonation">Add Your Donation</CallToAction>}
+            {isRecipient &&  <CallToAction href="/AddDonation"  >Add Your Request</CallToAction>}
           </HeroText>
           <SliderContainer>
             <Slide1 src={donation1} alt="Donation 1" />
@@ -393,16 +391,14 @@ const ListOfDonations = () => {
             />
           </Wave>
         </HeroSection>
-
-        {/* Donations List Section */}
         <SectionWrapper>
           <Container>
-            <Title>List Of Donations</Title>
+            <Title>List Of Requests</Title>
             <SearchContainer>
               <SearchIcon />
               <SearchInput
                 type="text"
-                placeholder="Search donations..."
+                placeholder="Search requests..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -428,12 +424,12 @@ const ListOfDonations = () => {
             <ContentList>
               {loading ? (
                 <LoadingMessage>Loading...</LoadingMessage>
-              ) : currentDonations.length > 0 ? (
-                currentDonations.map((donationItem) => (
-                  <Composantdonation key={donationItem._id} donation={donationItem} />
+              ) : currentRequests.length > 0 ? (
+                currentRequests.map((requestItem) => (
+                  <Composantrequest key={requestItem._id} request={requestItem} />
                 ))
               ) : (
-                <NoDonations>No matching donations found.</NoDonations>
+                <NoRequests>No matching requests found.</NoRequests>
               )}
             </ContentList>
             <PaginationControls>
@@ -453,4 +449,4 @@ const ListOfDonations = () => {
   );
 };
 
-export default ListOfDonations;
+export default ListOfRequests;

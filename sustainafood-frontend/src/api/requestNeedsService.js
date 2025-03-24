@@ -6,6 +6,33 @@ export const createrequests=async(requestData)=>{
       },
     });
   };
+  export const addDonationToRequest = async (requestId, donationData) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('User not authenticated - No token found');
+    }
+  
+    console.log('Sending donation data:', donationData);
+    console.log('Token:', token);
+  
+    try {
+      const response = await axios.post(
+        `http://localhost:3000/request/addDonationToRequest/${requestId}/donations`,
+        donationData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error in addDonationToRequest:', error.response?.data || error.message);
+      throw error.response?.data || error;
+    }
+  };
+  
   export const getrequests = async () => {
     return axios.get(`http://localhost:3000/request/`);
   };

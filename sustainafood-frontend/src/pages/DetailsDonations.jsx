@@ -4,7 +4,7 @@ import '../assets/styles/DetailsDonations.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getDonationById, deleteDonation, updateDonation } from '../api/donationService';
-import { createProduct, updateProduct, getProductById } from '../api/productService';
+import { createProduct, updateProduct, getProductById , deleteProduct} from '../api/productService';
 import { FaEdit, FaTrash, FaSave, FaTimes } from "react-icons/fa";
 
 const DetailsDonations = () => {
@@ -184,12 +184,20 @@ const DetailsDonations = () => {
   };
 
   const handleDeleteProduct = async (index) => {
-    const productToDelete = editedDonation.products[index];
-    if (productToDelete.product) {
-      await deleteProduct(productToDelete.product._id || productToDelete.product);
+    if (window.confirm("Are you sure you want to delete this product?")) {
+      const productToDelete = editedDonation.products[index];
+      if (productToDelete.product) {
+        try {
+          await deleteProduct(productToDelete.product._id);
+        } catch (error) {
+          console.error("Error deleting product:", error);
+          setError("Failed to delete product. Please try again.");
+          return;
+        }
+      }
+      const updatedProducts = editedDonation.products.filter((_, i) => i !== index);
+      setEditedDonation({ ...editedDonation, products: updatedProducts });
     }
-    const updatedProducts = editedDonation.products.filter((_, i) => i !== index);
-    setEditedDonation({ ...editedDonation, products: updatedProducts });
   };
 
   const handleAddProduct = () => {

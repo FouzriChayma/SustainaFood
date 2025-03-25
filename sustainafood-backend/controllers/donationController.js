@@ -110,97 +110,93 @@ async function getDonationByRequestId(req, res) {
   }
 // ✅ Create a new donation (also creates related products)
 async function createDonation(req, res) {
-    try {
-      let {
-        title,
-        location,
-        expirationDate,
-        description,
-        category,
-        Type,
-        donor,
-        products,
-        numberOfMeals,
-        status
-      } = req.body;
-  
-      // Vérifier que products est un tableau
-      if (!Array.isArray(products)) {
-        if (typeof products === 'string') {
-          products = JSON.parse(products);
-        } else {
-          products = [];
-        }
+  let newDonation; // Declare outside try block
+  try {
+    let {
+      title,
+      location,
+      expirationDate,
+      description,
+      category,
+      Type,
+      donor,
+      products,
+      numberOfMeals,
+      status
+    } = req.body;
+
+    // Vérifier que products est un tableau
+    if (!Array.isArray(products)) {
+      if (typeof products === 'string') {
+        products = JSON.parse(products);
+      } else {
+        products = [];
       }
-  
-      // Filtrer les produits invalides
-      products = products.filter(product =>
-        product.productType &&
-        product.weightPerUnit &&
-        product.totalQuantity &&
-        product.productDescription &&
-        product.status
-      );
-  
-      // Créer le don initial sans produits
-      const newDonation = new Donation({
-        title,
-        location,
-        expirationDate: new Date(expirationDate),
-        description,
-        category: category || undefined,
-        type: Type || undefined,
-        donor,
-        numberOfMeals,
-        products: [],
-        status
-      });
-  
-      await newDonation.save();
-      const donationId = newDonation._id;
-  
-      // Assigner un identifiant unique aux produits et les lier au don
-      for (let product of products) {
-        const counter = await Counter.findOneAndUpdate(
-          { _id: 'ProductId' },
-          { $inc: { seq: 1 } },
-          { new: true, upsert: true }
-        );
-        product.id = counter.seq;
-        product.donation = donationId;
-      }
-  
-      // Insérer les produits dans la collection Product
-      const createdProducts = await Product.insertMany(products);
-      const productIds = createdProducts.map(product => product._id);
-  
-      // Mettre à jour le champ products du don avec les références et totalQuantity
-      newDonation.products = createdProducts.map((createdProduct, index) => ({
-        product: createdProduct._id,
-        quantity: products[index].totalQuantity
-      }));
-  
-      // Sauvegarder les modifications du don
-      await newDonation.save();
-  
-      res.status(201).json({ message: 'Donation created successfully', newDonation });
-    } catch (error) {
-      // Gestion des erreurs : supprimer le don si une erreur survient après sa création
-      if (newDonation) {
-        await Donation.deleteOne({ _id: newDonation._id });
-      }
-      console.error("Erreur lors de la création du don :", error);
-      res.status(400).json({
-        message: "Échec de la création du don",
-        error: error.message || error
-      });
     }
+
+    // Filtrer les produits invalides
+    products = products.filter(product =>
+      product.productType &&
+      product.weightPerUnit &&
+      product.totalQuantity &&
+      product.productDescription &&
+      product.status
+    );
+
+    // Créer le don initial sans produits
+    newDonation = new Donation({
+      title,
+      location,
+      expirationDate: new Date(expirationDate),
+      description,
+      category: category || undefined,
+      type: Type || undefined,
+      donor,
+      numberOfMeals,
+      products: [],
+      status
+    });
+
+    await newDonation.save();
+    const donationId = newDonation._id;
+
+    // Assigner un identifiant unique aux produits et les lier au don
+    for (let product of products) {
+      const counter = await Counter.findOneAndUpdate(
+        { _id: 'ProductId' },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      product.id = counter.seq;
+      product.donation = donationId;
+    }
+
+    // Insérer les produits dans la collection Product
+    const createdProducts = await Product.insertMany(products);
+    const productIds = createdProducts.map(product => product._id);
+
+    // Mettre à jour le champ products du don avec les références et totalQuantity
+    newDonation.products = createdProducts.map((createdProduct, index) => ({
+      product: createdProduct._id,
+      quantity: products[index].totalQuantity
+    }));
+
+    // Sauvegarder les modifications du don
+    await newDonation.save();
+
+    res.status(201).json({ message: 'Donation created successfully', newDonation });
+  } catch (error) {
+    // Gestion des erreurs : supprimer le don si une erreur survient après sa création
+    if (newDonation) {
+      await Donation.deleteOne({ _id: newDonation._id });
+    }
+    console.error("Erreur lors de la création du don :", error);
+    res.status(400).json({
+      message: "Échec de la création du don",
+      error: error.message || error
+    });
   }
-  
-  
-
-
-
+}
 // ✅ Update a donation (also updates related products)
 async function updateDonation(req, res) {
   try {

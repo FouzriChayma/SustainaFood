@@ -42,7 +42,7 @@ async function getDonationById(req, res) {
 async function getDonationsByUserId(req, res) {
     try {
         const { userId } = req.params;
-        const donations = await Donation.find({ donor: userId })
+        const donations = await Donation.find({ donor: userId ,isaPost: true })
             .populate('products.product'); // Changé de 'products' à 'products.product'
         if (!donations.length) {
             return res.status(404).json({ message: 'No donations found for this user' });

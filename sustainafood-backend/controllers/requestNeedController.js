@@ -227,7 +227,7 @@ async function getRequestById(req, res) {
 async function getRequestsByRecipientId(req, res) {
     try {
         const { recipientId } = req.params;
-        const requests = await RequestNeed.find({ recipient: recipientId })
+        const requests = await RequestNeed.find({ recipient: recipientId, isaPost: true  })
             .populate('requestedProducts');
 
         if (!requests.length) {

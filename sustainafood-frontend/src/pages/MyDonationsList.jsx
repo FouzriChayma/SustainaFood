@@ -6,6 +6,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import styled, { createGlobalStyle } from 'styled-components';
 import { FaSearch, FaFilter } from "react-icons/fa";
+import { Link } from 'react-router-dom';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -36,7 +37,7 @@ const SearchContainer = styled.div`
   border-radius: 25px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   width: 320px;
-  margin: auto;
+   margin-right: 39%;
   transition: all 0.3s ease-in-out;
 
   &:hover {
@@ -137,6 +138,40 @@ const PaginationControls = styled.div`
     color: #333;
   }
 `;
+const TopControls = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* ou center selon ton besoin */
+  gap: 15px; /* Réduit l’espace entre les éléments */
+  margin-bottom: 20px; /* Ajuste l'espace sous ces éléments */
+  flex-wrap: wrap;
+`;
+const AddRequestButton =  styled(Link)`
+  text-decoration: none;
+
+   background: #228b22;
+  color: white;
+  transition: background 0.3s;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  
+   &:hover {
+    background: #1e7a1e;
+  }
+
+
+`;
+
 
 export default function MyDonationsList() {
   const [donations, setDonations] = useState([]);
@@ -218,7 +253,11 @@ export default function MyDonationsList() {
       <Navbar />
       <Container>
         <Title>My Donations</Title>
+        <TopControls>
 
+        <AddRequestButton  to="/AddDonation">
+        ✚ Add New Request
+        </AddRequestButton>
         {/* 🔍 Stylish Search Bar */}
         <SearchContainer>
           <SearchIcon />
@@ -229,6 +268,8 @@ export default function MyDonationsList() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </SearchContainer>
+        </TopControls>
+
 
         {/* 🎯 Advanced Filters & Sorting */}
         <Controls>

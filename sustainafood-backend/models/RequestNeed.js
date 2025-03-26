@@ -23,6 +23,7 @@ Object.freeze(Category);
 
 // Define the RequestNeed schema
 const requestNeedSchema = new Schema({
+    isaPost: { type: Boolean, default: true },
     id: { type: Number },
     title: {
         type: String,

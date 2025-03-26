@@ -21,6 +21,7 @@ Object.freeze(Status);
 
 // Define Donation Schema
 const donationSchema = new Schema({
+    isaPost: { type: Boolean, default: true },
     id: { type: Number, unique: true }, // Auto-incremented custom ID
     donor: { type: Schema.Types.ObjectId, ref: 'User', required: true }, // Renamed from 'user'
     title: { type: String, required: true, minlength: 3, maxlength: 100 },

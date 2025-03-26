@@ -3,17 +3,20 @@ const Product = require('../models/Product');
 const Counter = require('../models/Counter');
 const mongoose = require('mongoose');
 
-// ✅ Get all donations
 async function getAllDonations(req, res) {
-    try {
-        const donations = await Donation.find()
-            .populate('donor')
-            .populate('products.product');
-        res.status(200).json(donations);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
-    }
+  try {
+    const donations = await Donation.find({ isaPost: true }) // Filtrer pour récupérer seulement les documents où isaPost est true
+      .populate('donor')
+      .populate('products.product')
+      .populate('linkedRequests');
+
+    res.status(200).json(donations);
+    console.log(donations);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
 }
+
 
 // ✅ Get donation by ID
 async function getDonationById(req, res) {
@@ -39,7 +42,7 @@ async function getDonationById(req, res) {
 async function getDonationsByUserId(req, res) {
     try {
         const { userId } = req.params;
-        const donations = await Donation.find({ donor: userId })
+        const donations = await Donation.find({ donor: userId ,isaPost: true })
             .populate('products.product');
         if (!donations.length) {
             return res.status(404).json({ message: 'No donations found for this user' });

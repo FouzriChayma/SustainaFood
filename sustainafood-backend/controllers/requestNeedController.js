@@ -91,6 +91,7 @@ async function createRequestNeedForExistingDonation(req, res) {
             requestedProducts: validatedProducts,
             status: 'pending',
             linkedDonation: [donationId],
+            isaPost:false,
             numberOfMeals: donation.category === 'prepared_meals' ? totalMeals : undefined,
         });
 
@@ -195,7 +196,7 @@ Your Platform Team`,
 
 async function getAllRequests(req, res) {
     try {
-        const requests = await RequestNeed.find()
+        const requests = await RequestNeed.find({ isaPost: true })
             .populate('recipient')
             .populate('requestedProducts');
         res.status(200).json(requests);
@@ -465,6 +466,7 @@ async function addDonationToRequest(req, res) {
         products: donationProducts,
         numberOfMeals: request.category === 'prepared_meals' ? (request.numberOfMeals || 1) : undefined,
         expirationDate: expirationDate || request.expirationDate,
+        isaPost:false,
         linkedRequests: [requestId],
       });
   

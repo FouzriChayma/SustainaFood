@@ -3,17 +3,20 @@ const Product = require('../models/Product'); // Import Product model
 const Counter = require('../models/Counter');
 const mongoose = require('mongoose');
 
-// ✅ Get all donations
 async function getAllDonations(req, res) {
-    try {
-        const donations = await Donation.find()
-            .populate('donor')
-            .populate('products.product'); // Changé de 'products' à 'products.product'
-        res.status(200).json(donations);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
-    }
+  try {
+    const donations = await Donation.find({ isaPost: true }) // Filtrer pour récupérer seulement les documents où isaPost est true
+      .populate('donor')
+      .populate('products.product')
+      .populate('linkedRequests');
+
+    res.status(200).json(donations);
+    console.log(donations);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
 }
+
 
 // ✅ Get donation by ID
 async function getDonationById(req, res) {

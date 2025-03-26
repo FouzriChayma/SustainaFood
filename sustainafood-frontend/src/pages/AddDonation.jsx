@@ -67,7 +67,6 @@ export const AddDonation = () => {
     "Soup",
     "Main_Course",
     "Dessert",
-    "Drinks",
     "Vegetables",
     "Fruits",
     "Meat",

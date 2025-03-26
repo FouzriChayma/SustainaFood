@@ -5,6 +5,194 @@ const Donation = require('../models/Donation'); // Added import for Donation
 const DonationTransaction = require('../models/DonationTransaction');
 const nodemailer = require("nodemailer");
 const path = require("path");
+const mongoose = require('mongoose');
+const User = require('../models/User');
+
+
+
+
+// ✅ Create a RequestNeed for an existing Donation
+async function createRequestNeedForExistingDonation(req, res) {
+    try {
+        const { donationId } = req.params;
+        const { recipientId, requestedProducts, description } = req.body;
+
+        // Validate input
+        if (!donationId || !mongoose.Types.ObjectId.isValid(donationId)) {
+            return res.status(400).json({ message: 'Invalid donation ID' });
+        }
+        if (!recipientId || !mongoose.Types.ObjectId.isValid(recipientId)) {
+            return res.status(400).json({ message: 'Invalid recipient ID' });
+        }
+        if (!requestedProducts || !Array.isArray(requestedProducts)) {
+            return res.status(400).json({ message: 'requestedProducts must be an array' });
+        }
+
+        // Fetch the donation and populate its products
+        const donation = await Donation.findById(donationId)
+            .populate('products.product')
+            .populate('donor');
+        if (!donation) {
+            return res.status(404).json({ message: 'Donation not found' });
+        }
+
+        // Validate donation state
+        if (donation.status !== 'pending') {
+            return res.status(400).json({ message: 'Donation is not available for requests (status must be pending)' });
+        }
+        if (new Date(donation.expirationDate) <= new Date()) {
+            return res.status(400).json({ message: 'Donation has expired' });
+        }
+
+        // Fetch the recipient to validate their role
+        const recipient = await User.findById(recipientId);
+        if (!recipient) {
+            return res.status(404).json({ message: 'Recipient not found' });
+        }
+        if (!['ong', 'student'].includes(recipient.role)) {
+            return res.status(403).json({ message: 'Only users with role "ong" or "student" can create requests' });
+        }
+
+        // Validate requestedProducts against the donation's products
+        const donationProductMap = new Map(
+            donation.products.map(p => [p.product._id.toString(), { quantity: p.quantity, product: p.product }])
+        );
+        const validatedProducts = [];
+        let totalMeals = 0;
+
+        for (const { product: productId, quantity } of requestedProducts) {
+            if (!mongoose.Types.ObjectId.isValid(productId)) {
+                return res.status(400).json({ message: `Invalid product ID: ${productId}` });
+            }
+            if (!donationProductMap.has(productId)) {
+                return res.status(400).json({ message: `Product ${productId} is not part of this donation` });
+            }
+
+            const availableQuantity = donationProductMap.get(productId).quantity;
+            if (!Number.isInteger(quantity) || quantity <= 0) {
+                return res.status(400).json({ message: `Quantity for product ${productId} must be a positive integer` });
+            }
+            if (quantity > availableQuantity) {
+                return res.status(400).json({ message: `Requested quantity (${quantity}) for product ${productId} exceeds available quantity (${availableQuantity})` });
+            }
+
+            validatedProducts.push(productId);
+            totalMeals += quantity;
+        }
+
+        // Create the new RequestNeed
+        const newRequest = new RequestNeed({
+            title: `Request for ${donation.title}`,
+            location: donation.location,
+            expirationDate: donation.expirationDate,
+            description: description || '',
+            category: donation.category,
+            recipient: recipientId,
+            requestedProducts: validatedProducts,
+            status: 'pending',
+            linkedDonation: [donationId],
+            numberOfMeals: donation.category === 'prepared_meals' ? totalMeals : undefined,
+        });
+
+        await newRequest.save();
+
+        // Update the Donation to link the new request
+        await Donation.findByIdAndUpdate(
+            donationId,
+            { $push: { linkedRequests: newRequest._id } },
+            { new: true }
+        );
+
+        // Fetch the populated request for the response
+        const populatedRequest = await RequestNeed.findById(newRequest._id)
+            .populate('recipient')
+            .populate('requestedProducts');
+
+        // Send notification to donor
+        if (donation.donor && donation.donor.email) {
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS,
+                },
+                tls: {
+                    rejectUnauthorized: false,
+                },
+            });
+
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: donation.donor.email,
+                subject: `New Request for Your Donation: ${donation.title}`,
+                text: `Dear ${donation.donor.name || 'Donor'},
+
+A new request has been made for your donation titled "${donation.title}".
+
+Request Details:
+- Title: ${newRequest.title}
+- Recipient: ${recipient.name || 'Unknown Recipient'}
+- Requested Products: ${requestedProducts.map(rp => {
+                    const product = donationProductMap.get(rp.product).product;
+                    return `${product.name} (Quantity: ${rp.quantity})`;
+                }).join(', ')}
+- Expiration Date: ${newRequest.expirationDate.toLocaleDateString()}
+
+You can review the request in your dashboard.
+
+Best regards,
+Your Platform Team`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; color: black;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <img src="cid:logo" alt="Platform Logo" style="max-width: 150px; height: auto;" />
+                        </div>
+                        <h2 style="color: #228b22;">New Request for Your Donation</h2>
+                        <p>Dear ${donation.donor.name || 'Donor'},</p>
+                        <p>A new request has been made for your donation titled "<strong>${donation.title}</strong>".</p>
+                        <h3>Request Details:</h3>
+                        <ul>
+                            <li><strong>Title:</strong> ${newRequest.title}</li>
+                            <li><strong>Recipient:</strong> ${recipient.name || 'Unknown Recipient'}</li>
+                            <li><strong>Requested Products:</strong> ${requestedProducts.map(rp => {
+                                const product = donationProductMap.get(rp.product).product;
+                                return `${product.name} (Quantity: ${rp.quantity})`;
+                            }).join(', ')}</li>
+                            <li><strong>Expiration Date:</strong> ${newRequest.expirationDate.toLocaleDateString()}</li>
+                        </ul>
+                        <p>You can review the request in your dashboard.</p>
+                        <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
+                    </div>
+                `,
+                attachments: [
+                    {
+                        filename: 'logo.png',
+                        path: path.join(__dirname, '../uploads/logo.png'),
+                        cid: 'logo',
+                    },
+                ],
+            };
+
+            await transporter.sendMail(mailOptions);
+            console.log(`Email sent to ${donation.donor.email}`);
+        }
+
+        res.status(201).json({
+            message: 'Request created successfully for the donation',
+            request: populatedRequest,
+        });
+    } catch (error) {
+        console.error('Create Request Error:', error);
+        res.status(500).json({
+            message: 'Failed to create request for the donation',
+            error: error.message,
+        });
+    }
+}
+
+
+
+
 async function getAllRequests(req, res) {
     try {
         const requests = await RequestNeed.find()
@@ -418,5 +606,6 @@ module.exports = {
     createRequest,
     updateRequest,
     deleteRequest,
+    createRequestNeedForExistingDonation,
     getRequestWithDonations,
 };

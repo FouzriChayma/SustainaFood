@@ -6,6 +6,25 @@ export const createrequests=async(requestData)=>{
       },
     });
   };
+  export const createRequestNeedForExistingDonation = async (donationId, requestData) => {
+    console.log('Sending request data:', requestData);
+
+    try {
+        const response = await axios.post(
+            `http://localhost:3000/request/requestdonation/${donationId}`,
+            requestData,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Error in createRequestNeedForExistingDonation:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
   export const addDonationToRequest = async (requestId, donationData) => {
     const token = localStorage.getItem('token');
     if (!token) {

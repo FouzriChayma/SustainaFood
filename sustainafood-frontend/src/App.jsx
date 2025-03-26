@@ -1,6 +1,5 @@
 import React from "react";
-
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Outlet, Navigate } from "react-router-dom";
 import Home from './pages/Home';
 import EditProfile from './pages/Editprofile';
 import Profile from './pages/Profile';
@@ -42,6 +41,9 @@ import RequestTable from "./pages/backoffice/RequestTable.jsx";
 import ProductList from "./pages/backoffice/ProductList.jsx";
 import DetailsRequest from "./pages/DetailsRequest";
 import ListOfRequests from "./pages/ListOfRequests";
+import RequestDetails from "./pages/backoffice/RequestDetails.jsx";
+import ProductDetail from "./pages/backoffice/ProductDetail.jsx";
+import DonationDetails from "./pages/backoffice/DonationDetails.jsx";
 const App = () => {
 
   return (
@@ -77,9 +79,10 @@ const App = () => {
         <Route path="/DonationTransList" element={<DonationTransactionList/>} />
         <Route path="/food-donation/requests" element={<RequestTable />} />
         <Route path="/food-donation/product" element={<ProductList />} />
-
-        
-
+        <Route path="/requests/view/:id" element={<RequestDetails />} /> {/* Route pour les détails */}
+        <Route path="/products/view/:id" element={<ProductDetail />} /> {/* Route pour les détails */}
+        <Route path="/donations/view/:id" element={<DonationDetails />} />
+           <Route path="/ListDonationsRequest/:id" element={<ListDonationsRequest />}/>
       </Route>
 
       {/* Private Routes for other roles (if needed) */}
@@ -101,8 +104,7 @@ const App = () => {
          {/* Private Routes for ong,student */}
       <Route element={<PrivateRoute roles={["ong", "student"]} />}>
       <Route path="/myrequest" element={<MyRequest />} />
-      <Route path="/ListDonationsRequest/:id" element={<ListDonationsRequest />}/>
-      
+   
       </Route>
       <Route element={<PrivateRoute roles={["supermarket","restaurant"]} />}>
   <Route path="/mydonations" element={<MyDonations />} />
@@ -110,7 +112,6 @@ const App = () => {
 
        {/* NotFound Route - This should be the last route */}
        <Route path="*" element={<NotFound />} />
-
 
 
     </Routes>

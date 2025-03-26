@@ -139,23 +139,27 @@ export const Composantdonation = ({ donation }) => {
           {Array.isArray(products) && products.length > 0 ? (
             products.slice(0, 2).map((product, index) => (
               <ProductItem key={index}>
-              {product.product && typeof product.product === 'object' ? (
-                <>
-                  <span><strong>Name:</strong> {product.product.name || 'N/A'}</span>
-                  <span><strong>Type:</strong> {product.product.productType || 'N/A'}</span>
-                  <span>
-                    <strong>Weight:</strong>{' '}
-                    {product.product.weightPerUnit
-                      ? `${product.product.weightPerUnit} ${product.product.weightUnit || ''}`
-                      : 'N/A'}
-                  </span>
-                  <span><strong>Status:</strong> {product.product.status || 'N/A'}</span>
-                  <span><strong>Quantity:</strong> {product.quantity || 0}</span>
-                </>
-              ) : (
-                <span>No product data available</span>
-              )}
-            </ProductItem>
+                {product.productType && product.productDescription ? (
+                  <>
+                    <span>
+                      <strong>Type:</strong> {product.productType || 'Not specified'}
+                    </span>
+                    <span>
+                      <strong>Description:</strong> {product.productDescription || 'Not specified'}
+                    </span>
+                    <span>
+                      <strong>Quantity:</strong>{' '}
+                      {product.totalQuantity || product.quantity || 0}{' '}
+                      {product.weightUnitTotale || product.weightUnit || ''}
+                    </span>
+                    <span>
+                      <strong>Status:</strong> {product.status || 'Unknown'}
+                    </span>
+                  </>
+                ) : (
+                  <span>No product data</span>
+                )}
+              </ProductItem>
             ))
           ) : (
             <ProductItem>No products available</ProductItem>

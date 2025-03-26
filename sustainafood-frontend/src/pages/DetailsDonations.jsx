@@ -1,13 +1,41 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import '../assets/styles/DetailsDonations.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getDonationById, deleteDonation, updateDonation } from '../api/donationService';
 import { createProduct, updateProduct, getProductById, deleteProduct } from '../api/productService';
 import { createRequestNeedForExistingDonation } from '../api/requestNeedsService';
+import { FaEdit, FaTrash, FaSave, FaTimes, FaEye } from "react-icons/fa";
+import styled from 'styled-components';
+import logo from "../assets/images/LogoCh.png";
 
-import { FaEdit, FaTrash, FaSave, FaTimes } from "react-icons/fa";
+// Styled Components for Buttons
+const Button = styled.button`
+  display: inline-block;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 8px;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  ${({ variant }) => variant === 'add' && `background: #228b22; &:hover { background: #1e7a1e; }`}
+  ${({ variant }) => variant === 'cancel' && `background: #dc3545; &:hover { background: #b02a37; }`}
+  ${({ variant }) => variant === 'submit' && `background: #28a745; &:hover { background: #218838; }`}
+  ${({ variant }) => variant === 'request' && `background: #007bff; &:hover { background: #0056b3; }`}
+  ${({ variant }) => variant === 'back' && `background: #6c757d; &:hover { background: #5a6268; }`}
+
+  &:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+`;
 
 const DetailsDonations = () => {
   const { id } = useParams();
@@ -20,6 +48,7 @@ const DetailsDonations = () => {
   const [isTheOwner, setIsTheOwner] = useState(false);
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [requestedProducts, setRequestedProducts] = useState([]);
+  const navigate = useNavigate();
 
   const [editedDonation, setEditedDonation] = useState({
     title: "",
@@ -30,9 +59,6 @@ const DetailsDonations = () => {
     description: "",
     products: [],
   });
-
-  const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
-  const isRecipient = user?.role === "ong" || user?.role === "student";
 
   useEffect(() => {
     if (typeof user?.id === "number") {
@@ -241,6 +267,7 @@ const DetailsDonations = () => {
       await createRequestNeedForExistingDonation(id, requestData);
       setShowRequestForm(false);
       alert('Request submitted successfully!');
+      navigate("/ListOfDonations");
     } catch (error) {
       setError('Failed to create request: ' + (error.response?.data?.message || error.message));
     }
@@ -341,7 +368,7 @@ const DetailsDonations = () => {
                   editedDonation.products.map((product, index) => (
                     <li key={index} className="details-donation-product-item">
                       <div className="details-donation-product-info">
-                        <div className="details-donation-product-icon">🥫</div>
+                        <div className="details-donation-product-icon">📦</div>
                         <div className="details-donation-product-details">
                           <input
                             type="text"
@@ -410,7 +437,7 @@ const DetailsDonations = () => {
                     products.map((product, index) => (
                       <li key={index} className="details-donation-product-item">
                         <div className="details-donation-product-info">
-                          <div className="details-donation-product-icon">🥫</div>
+                          <div className="details-donation-product-icon">📦</div>
                           <div className="details-donation-product-details">
                             <div className="details-donation-product-name">{product.product.name || 'Unknown Product'}</div>
                             <div className="details-donation-product-quantity">{product.quantity || 0}</div>
@@ -478,7 +505,8 @@ const DetailsDonations = () => {
                 </div>
               )}
               {isTheOwner && (
-                <button className="details-donation-request-button">See Request</button>
+                <button className="details-donation-request-button" as={Link}
+                to={`/ListDonationsRequest/${id}`}>See Request</button>
               )}
             </div>
           </div>

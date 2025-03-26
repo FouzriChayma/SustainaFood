@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
-import { FaFilePdf, FaSort } from "react-icons/fa";
-import axios from "axios";
+import { FaFilePdf, FaEye } from "react-icons/fa";
 import ReactPaginate from "react-paginate";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import "../../assets/styles/backoffcss/ProductList.css";
+import { getAllProducts } from "../../api/productservice";
+import { getrequests } from "../../api/requestNeedsService"; // Importez getrequests
+import { Link } from 'react-router-dom';
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState("name"); // Default sort field
-  const [sortOrder, setSortOrder] = useState("asc"); // Default sort order
+  const [sortField, setSortField] = useState("name");
+  const [sortOrder, setSortOrder] = useState("asc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const productsPerPage = 5;
@@ -24,9 +25,29 @@ const ProductList = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:3000/product/all");
-        console.log("API Response Data:", response.data);
-        setProducts(response.data);
+        const productsResponse = await getAllProducts();
+        const requestsResponse = await getrequests(); // Récupérer les requêtes
+        console.log("Products API Response Data:", productsResponse.data);
+        console.log("Requests API Response Data:", requestsResponse.data);
+
+        // Filtrer les requêtes pour ne garder que les "prepared_meals"
+        const preparedMeals = requestsResponse.data.filter(req => req.category === "prepared_meals");
+
+        // Formatter les "prepared_meals" pour qu'ils aient la même structure que les produits
+        const formattedMeals = preparedMeals.map(meal => ({
+          id: meal._id,
+          name: meal.mealName,
+          productType: meal.mealType, // Assigner mealType à productType
+          status: meal.status,
+          productDescription: meal.mealDescription,
+          weightPerUnit: meal.numberOfMeals,
+          weightUnit: "meals",
+          isPreparedMeal: true // Ajouter un indicateur pour distinguer les "prepared_meals" des produits
+        }));
+
+        // Combiner les produits et les "prepared_meals"
+        const allProducts = [...productsResponse.data, ...formattedMeals];
+        setProducts(allProducts);
         setLoading(false);
       } catch (error) {
         setLoading(false);
@@ -37,36 +58,27 @@ const ProductList = () => {
     fetchProducts();
   }, []);
 
-  const filteredProducts = products.filter((product) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      product.name?.toLowerCase().includes(query) ||
-      product.productType?.toLowerCase().includes(query) ||
-      product.status?.toLowerCase().includes(query)
-    );
-  });
+  const filteredProducts = products;
 
-  // Sorting Logic
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     let comparison = 0;
 
     if (sortField === "name") {
-      comparison = (a.name || "").localeCompare(b.name || ""); // handles null/undefined names
+      comparison = (a.name || "").localeCompare(b.name || "");
     } else if (sortField === "productType") {
       comparison = (a.productType || "").localeCompare(b.productType || "");
     } else if (sortField === "status") {
       comparison = (a.status || "").localeCompare(b.status || "");
     } else if (sortField === "weight") {
-      const weightA = a.weightPerUnit || 0;  // Treat missing weight as 0
+      const weightA = a.weightPerUnit || 0;
       const weightB = b.weightPerUnit || 0;
-      comparison = weightA - weightB;       // Numeric comparison
+      comparison = weightA - weightB;
     } else if (sortField === "id") {
-        comparison = a.id - b.id;  // numeric comparison for IDs
+      comparison = a.id - b.id;
     }
 
     return sortOrder === "asc" ? comparison : comparison * -1;
   });
-
 
   const exportToPDF = () => {
     const doc = new jsPDF();
@@ -74,7 +86,7 @@ const ProductList = () => {
     doc.text("Product List", 10, 10);
 
     const tableColumn = ["ID", "Name", "Type", "Status", "Description", "Weight"];
-    const tableRows = sortedProducts.map((product) => [  // Use sortedProducts here
+    const tableRows = sortedProducts.map((product) => [
       product.id,
       product.name,
       product.productType,
@@ -120,7 +132,7 @@ const ProductList = () => {
     <div className="dashboard-container">
       <Sidebar />
       <div className="dashboard-content">
-        <Navbar setSearchQuery={setSearchQuery} />
+        <Navbar />
 
         <div className="product-list">
           <div className="header-container">
@@ -128,15 +140,6 @@ const ProductList = () => {
             <button className="export-pdf-btn" onClick={exportToPDF}>
               <FaFilePdf /> Export to PDF
             </button>
-          </div>
-
-          <div className="search-container">
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
           </div>
 
           <div className="sort-container">
@@ -179,6 +182,7 @@ const ProductList = () => {
                     <th>Status</th>
                     <th>Description</th>
                     <th>Weight</th>
+                    <th>Actions</th>{/* Nouvelle colonne */}
                   </tr>
                 </thead>
                 <tbody>
@@ -190,7 +194,13 @@ const ProductList = () => {
                       <td>{product.status}</td>
                       <td>{product.productDescription}</td>
                       <td>{product.weightPerUnit ? `${product.weightPerUnit} ${product.weightUnit}` : "N/A"}</td>
-                    
+                      <td>
+                        <Link to={`/products/view/${product.id}`}>
+                          <button>
+                            <FaEye />{/* Utilise l'icône FaEye de react-icons/fa */}
+                          </button>
+                        </Link>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

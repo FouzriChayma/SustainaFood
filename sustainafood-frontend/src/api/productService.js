@@ -1,9 +1,11 @@
 import axios from "axios";
 
+const PRODUCT_BASE_URL = 'http://localhost:3000/product';
+
 // ✅ Get all products
 export const getAllProducts = async () => {
   try {
-    return await axios.get(`http://localhost:3000/product/all`);
+    return await axios.get(`${PRODUCT_BASE_URL}/all`);
   } catch (error) {
     console.error("Error fetching all products:", error.response?.data || error.message);
     throw error;
@@ -13,7 +15,7 @@ export const getAllProducts = async () => {
 // ✅ Get product by ID
 export const getProductById = async (id) => {
   try {
-    return await axios.get(`http://localhost:3000/product/${id}`);
+    return await axios.get(`${PRODUCT_BASE_URL}/${id}`);
   } catch (error) {
     console.error("Error fetching product by ID:", error.response?.data || error.message);
     throw error;
@@ -23,7 +25,7 @@ export const getProductById = async (id) => {
 // ✅ Get products by Donation ID
 export const getProductsByDonationId = async (idDonation) => {
   try {
-    return await axios.get(`http://localhost:3000/product/donation/${idDonation}`);
+    return await axios.get(`${PRODUCT_BASE_URL}/donation/${idDonation}`);
   } catch (error) {
     console.error("Error fetching products by donation ID:", error.response?.data || error.message);
     throw error;
@@ -33,7 +35,7 @@ export const getProductsByDonationId = async (idDonation) => {
 // ✅ Get products by Status
 export const getProductsByStatus = async (status) => {
   try {
-    return await axios.get(`http://localhost:3000/product/status/${status}`);
+    return await axios.get(`${PRODUCT_BASE_URL}/status/${status}`);
   } catch (error) {
     console.error("Error fetching products by status:", error.response?.data || error.message);
     throw error;
@@ -53,14 +55,14 @@ export const createProduct = async (productData, imageFile = null) => {
         formData.append(key, productData[key]);
       });
 
-      return await axios.post("http://localhost:3000/product/create", formData, {
+      return await axios.post(`${PRODUCT_BASE_URL}/create`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
     } else {
       // If no image, send as JSON
-      return await axios.post("http://localhost:3000/product/create", productData, {
+      return await axios.post(`${PRODUCT_BASE_URL}/create`, productData, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -85,14 +87,14 @@ export const updateProduct = async (id, productData, imageFile = null) => {
         formData.append(key, productData[key]);
       });
 
-      return await axios.put(`http://localhost:3000/product/update/${id}`, formData, {
+      return await axios.put(`${PRODUCT_BASE_URL}/update/${id}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
     } else {
       // If no image, send as JSON
-      return await axios.put(`http://localhost:3000/product/update/${id}`, productData, {
+      return await axios.put(`${PRODUCT_BASE_URL}/update/${id}`, productData, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -107,7 +109,7 @@ export const updateProduct = async (id, productData, imageFile = null) => {
 // ✅ Delete a product by ID
 export const deleteProduct = async (id) => {
   try {
-    return await axios.delete(`http://localhost:3000/product/delete/${id}`);
+    return await axios.delete(`${PRODUCT_BASE_URL}/delete/${id}`);
   } catch (error) {
     console.error("Error deleting product:", error.response?.data || error.message);
     throw error;

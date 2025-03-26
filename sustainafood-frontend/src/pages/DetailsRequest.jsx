@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import '../assets/styles/Composantdonation.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { getRequestById, deleteRequest, updateRequest,addDonationToRequest } from '../api/requestNeedsService';
-import { FaEdit, FaTrash, FaSave, FaTimes } from "react-icons/fa";
+import { getRequestById, deleteRequest, updateRequest, addDonationToRequest } from '../api/requestNeedsService';
+import { FaEdit, FaTrash, FaSave, FaTimes, FaEye } from "react-icons/fa";
 import styled from 'styled-components';
 import logo from "../assets/images/LogoCh.png";
-import { Link, useNavigate } from "react-router-dom";
-
+import { useNavigate } from "react-router-dom";
 
 // Styled Components for Buttons
 const Button = styled.button`
@@ -55,8 +54,6 @@ const Button = styled.button`
 
 // Styled Component for Donation Form
 const DonationForm = styled.div`
-
-
   h4 {
     color: #228b22;
     font-size: 25px;
@@ -94,7 +91,6 @@ const DonationForm = styled.div`
 `;
 
 const DetailsRequest = () => {
-
   const { id } = useParams();
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -118,6 +114,7 @@ const DetailsRequest = () => {
 
   const weightUnits = ['kg', 'g', 'lb', 'oz'];
   const statuses = ['available', 'pending', 'reserved'];
+    const navigate = useNavigate();
 
   useEffect(() => {
     if (typeof user.id === "number") {
@@ -143,7 +140,7 @@ const DetailsRequest = () => {
           description: fetchedRequest.description || "",
           category: fetchedRequest.category || "",
           status: fetchedRequest.status || "",
-          requestedProducts: fetchedRequest.requestedProducts || [],
+          requestedProducts: fetchedRequest.requestedProducts ? [...fetchedRequest.requestedProducts] : [],
           numberOfMeals: fetchedRequest.numberOfMeals || ""
         });
         setDonationQuantities(fetchedRequest.requestedProducts.map(() => 0));
@@ -412,7 +409,9 @@ const DetailsRequest = () => {
                 ))
               ) : (
                 <li className="donation-li-list">
-                  {category === 'prepared_meals' ? `🍽️ Number of Meals: ${numberOfMeals || 'Not specified'}` : 'No product requested'}
+                  {category === 'prepared_meals'
+                    ? `🍽️ Number of Meals: ${numberOfMeals || 'Not specified'}`
+                    : 'No product requested'}
                 </li>
               )
             )}

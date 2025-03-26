@@ -4,28 +4,39 @@ import Navbar from "../../components/backoffcom/Navbar";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import ReactPaginate from "react-paginate";
-import { FaFilePdf } from "react-icons/fa";
-import axios from "axios";
+import { FaFilePdf, FaEye } from "react-icons/fa";
+import { getrequests } from "../../api/requestNeedsService";
 import "../../assets/styles/backoffcss/RequestTable.css";
+import { Link } from "react-router-dom";
+import axios from "axios";
 
 const RequestTable = () => {
   const [requests, setRequests] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState("recipient"); // Default sort field
-  const [sortOrder, setSortOrder] = useState("asc"); // Default sort order
+  const [sortField, setSortField] = useState("title");
+  const [sortOrder, setSortOrder] = useState("asc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const requestsPerPage = 5;
 
-  const pagesVisited = currentPage * requestsPerPage;
+  // Sanitize data function
+  const sanitizeRequest = (request) => {
+    return {
+      ...request,
+      title: request.title ? request.title.trim() : "",
+      category: request.category ? request.category.trim() : "",
+      description: request.description ? request.description.trim() : "",
+    };
+  };
 
   useEffect(() => {
     const fetchRequests = async () => {
       try {
         setLoading(true);
         const response = await axios.get("http://localhost:3000/request");
-        setRequests(response.data);
+        const sanitizedData = response.data.map(sanitizeRequest);
+        setRequests(sanitizedData);
         setLoading(false);
       } catch (error) {
         setLoading(false);
@@ -36,56 +47,84 @@ const RequestTable = () => {
     fetchRequests();
   }, []);
 
-  const filteredRequests = requests.filter((request) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      request.recipient?.toLowerCase().includes(query) ||
-      request.status?.toLowerCase().includes(query) ||
-      request.date?.toLowerCase().includes(query)
-    );
-  });
-
-  // Sorting Logic
-  const sortedRequests = [...filteredRequests].sort((a, b) => {
+  const sortedRequests = [...requests].sort((a, b) => {
     let comparison = 0;
-
-    if (sortField === "recipient") {
-      comparison = (a.recipient || "").localeCompare(b.recipient || "");
+    if (sortField === "title") {
+      comparison = (a.title || "").localeCompare(b.title || "");
     } else if (sortField === "status") {
       comparison = (a.status || "").localeCompare(b.status || "");
-    } else if (sortField === "date") {
-       // Handle date sorting, ensuring valid Date objects are used
-       const dateA = a.date ? new Date(a.date) : null;
-       const dateB = b.date ? new Date(b.date) : null;
-
-       if (dateA && dateB) {
-           comparison = dateA.getTime() - dateB.getTime(); // Compare timestamps
-       } else if (dateA) {
-           comparison = -1; // Treat a null date as earlier
-       } else if (dateB) {
-           comparison = 1;  // Treat a null date as earlier
-       } else {
-           comparison = 0;  // Both are null, so equal
-       }
-    } else if (sortField === "id") {
-        comparison = (a._id || "").localeCompare(b._id || ""); // sort by _id
+    } else if (sortField === "expirationDate") {
+      const dateA = a.expirationDate ? new Date(a.expirationDate) : null;
+      const dateB = b.expirationDate ? new Date(b.expirationDate) : null;
+      if (dateA && dateB) {
+        comparison = dateA.getTime() - dateB.getTime();
+      } else if (dateA) {
+        comparison = -1;
+      } else if (dateB) {
+        comparison = 1;
+      } else {
+        comparison = 0;
+      }
+    } else if (sortField === "_id") {
+      comparison = (a._id || "").localeCompare(b._id || "");
+    } else if (sortField === "category") {
+      comparison = (a.category || "").localeCompare(b.category || "");
     }
-
     return sortOrder === "asc" ? comparison : comparison * -1;
   });
+
+  const pagesVisited = currentPage * requestsPerPage;
+  const displayRequests = sortedRequests.slice(
+    pagesVisited,
+    pagesVisited + requestsPerPage
+  );
+  const pageCount = Math.ceil(requests.length / requestsPerPage);
+
+  const changePage = ({ selected }) => {
+    setCurrentPage(selected);
+  };
+
+  const handleSortChange = (e) => {
+    setSortField(e.target.value);
+  };
+
+  const handleSortOrderChange = (e) => {
+    setSortOrder(e.target.value);
+  };
 
   const exportToPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.text("Request List", 10, 10);
 
-    const tableColumn = ["ID", "Recipient", "Products", "Status", "Date"];
-    const tableRows = sortedRequests.map((request) => [  // Use sortedRequests here
+    const tableColumn = [
+      "ID",
+      "Title",
+      "Category",
+      "Expiration Date",
+      "Status",
+      "Description",
+      "Products",
+        "Location",  
+    ];
+
+    const tableRows = sortedRequests.map((request) => [
       request._id,
-      request.recipient,
-      request.requestedProducts.map(p => `${p._id} (x${p.quantity})`).join(", "),
+      request.title.trim(), // Trim on rendering
+      request.category.trim(), // Trim on rendering
+      new Date(request.expirationDate).toLocaleDateString(),
       request.status,
-      request.date,
+      request.description.trim(), // Trim on rendering
+      request.category === "prepared_meals"
+        ? `Name: ${request.mealName || "N/A"}, Description: ${
+            request.mealDescription || "N/A"
+          }, Number of Meals: ${request.numberOfMeals || "N/A"}, Meal Type: ${request.mealType || "N/A"}`
+        : request.requestedProducts && request.requestedProducts.length > 0
+        ? request.requestedProducts
+            .map((p) => `${p.name.trim()} (${p.productDescription.trim()})`) 
+            .join(", ")
+        : "No Products",
+      request.location || "N/A",  
     ]);
 
     autoTable(doc, {
@@ -106,21 +145,6 @@ const RequestTable = () => {
     doc.save("Request_List.pdf");
   };
 
-  const displayRequests = sortedRequests.slice(pagesVisited, pagesVisited + requestsPerPage);
-  const pageCount = Math.ceil(filteredRequests.length / requestsPerPage);
-
-  const changePage = ({ selected }) => {
-    setCurrentPage(selected);
-  };
-
-  const handleSortChange = (e) => {
-    setSortField(e.target.value);
-  };
-
-  const handleSortOrderChange = (e) => {
-    setSortOrder(e.target.value);
-  };
-
   return (
     <div className="dashboard-container">
       <Sidebar />
@@ -131,32 +155,24 @@ const RequestTable = () => {
           <div className="header-container">
             <h2>Request Management</h2>
             <button className="export-pdf-btn" onClick={exportToPDF}>
-              <FaFilePdf /> Export to PDF
+              <FaFilePdf />
+              Export to PDF
             </button>
           </div>
 
-          <div className="search-container">
-            <input
-              type="text"
-              placeholder="Search requests..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <div className="sort-container">
+              <div className="sort-container">
             <label htmlFor="sortField">Sort By:</label>
             <select
               id="sortField"
               value={sortField}
               onChange={handleSortChange}
             >
-              <option value="recipient">Recipient</option>
+              <option value="title">Title</option>
+              <option value="category">Category</option>
+              <option value="expirationDate">Expiration Date</option>
               <option value="status">Status</option>
-              <option value="date">Date</option>
-              <option value="id">ID</option>
+              <option value="_id">ID</option>
             </select>
-
             <label htmlFor="sortOrder">Order:</label>
             <select
               id="sortOrder"
@@ -178,27 +194,52 @@ const RequestTable = () => {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Recipient</th>
-                    <th>Products</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Expiration Date</th>
                     <th>Status</th>
-                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Products</th>
+                    <th>Location</th>
+                                        <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {displayRequests.map((request) => (
                     <tr key={request._id}>
                       <td>{request._id}</td>
-                      <td>{request.recipient}</td>
+                      <td>{request.title}</td>
+                      <td>{request.category}</td>
                       <td>
-                        {request.requestedProducts.map(p => `${p._id} (x${p.quantity})`).join(", ")}
+                          {new Date(
+                            request.expirationDate
+                          ).toLocaleDateString()}
                       </td>
                       <td>{request.status}</td>
-                      <td>{request.date}</td>
+                      <td>{request.description}</td>
+     <td>
+{request.category === "prepared_meals" ? (
+    <div>
+       Name: {request.mealName || "N/A"},
+       Description: {request.mealDescription || "N/A"}
+     
+    </div>
+  ) : (
+    <div>requsted product: {request.requestedProducts.length}</div>
+  )}
+</td>
+                      <td>{request.location || "N/A"}</td>
+                                            <td className="action-buttons">
+                        <button className="view-btn">
+                          <Link to={`/requests/view/${request._id}`}>
+                            <FaEye />
+                          </Link>
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-
               <ReactPaginate
                 previousLabel={"Previous"}
                 nextLabel={"Next"}

@@ -21,6 +21,7 @@ Object.freeze(Status);
 
 // Define Donation Schema
 const donationSchema = new Schema({
+
     isaPost: { type: Boolean, default: true },
     id: { type: Number, unique: true }, // Auto-incremented custom ID
     donor: { type: Schema.Types.ObjectId, ref: 'User', required: true }, // Renamed from 'user'
@@ -31,6 +32,10 @@ const donationSchema = new Schema({
         product: { type: Schema.Types.ObjectId, ref: 'Product', required: true }, // Reference to Product
         quantity: { type: Number, required: true, min: 0 } // Donated quantity
     }],
+    meals:[{type:Schema.Types.ObjectId,ref:'Meals',  required: [
+        function() { return this.category === 'prepared_meals'; },
+        'List of meals is required for prepared meals'
+    ]}],
     numberOfMeals: {
         type: Number,
         required: [

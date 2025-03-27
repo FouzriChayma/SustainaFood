@@ -116,9 +116,14 @@ export const Composantdonation = ({ donation }) => {
     title,
     location,
     expirationDate,
-    products,
+    products = [],
+    meals = [],
     status,
   } = donation;
+
+  // Log pour vérifier les données
+  console.log("Products:", products);
+  console.log("Meals:", meals);
 
   return (
     <Card>
@@ -133,41 +138,40 @@ export const Composantdonation = ({ donation }) => {
           🔄 <strong>Status:</strong> <StatusBadge status={status}>{status || 'Unknown'}</StatusBadge>
         </Details>
 
-        {/* Available Products Section */}
-        <h4>📦 Available Products:</h4>
-        <ProductList>
-          {Array.isArray(products) && products.length > 0 ? (
-            products.slice(0, 2).map((product, index) => (
-              <ProductItem key={index}>
-                {product.productType && product.productDescription ? (
-                  <>
-                    <span>
-                      <strong>Type:</strong> {product.productType || 'Not specified'}
-                    </span>
-                    <span>
-                      <strong>Description:</strong> {product.productDescription || 'Not specified'}
-                    </span>
-                    <span>
-                      <strong>Quantity:</strong>{' '}
-                      {product.totalQuantity || product.quantity || 0}{' '}
-                      {product.weightUnitTotale || product.weightUnit || ''}
-                    </span>
-                    <span>
-                      <strong>Status:</strong> {product.status || 'Unknown'}
-                    </span>
-                  </>
-                ) : (
-                  <span>No product data</span>
-                )}
-              </ProductItem>
-            ))
-          ) : (
-            <ProductItem>No products available</ProductItem>
-          )}
-        </ProductList>
+        {/* Affichage conditionnel des produits ou des meals */}
+        {Array.isArray(products) && products.length > 0 ? (
+          <>
+            <h4>📦 Available Products:</h4>
+            <ProductList>
+              {products.slice(0, 2).map((producte, index) => (
+                <ProductItem key={index}>
+                  <span><strong>Name:</strong>{producte.product.name}</span>
+                  <span><strong>Type:</strong> {producte.product.productType || 'Not specified'}</span>
+                  <span><strong>Description:</strong> {producte.product.productDescription || 'Not specified'}</span>
+                  <span><strong>Quantity:</strong> {producte.product.totalQuantity || producte.quantity || 0} {producte.product.weightUnitTotale || producte.product.weightUnit || ''}</span>
+                  <span><strong>Status:</strong> {producte.product.status || 'Unknown'}</span>
+                </ProductItem>
+              ))}
+            </ProductList>
+          </>
+        ) : Array.isArray(meals) && meals.length > 0 ? (
+          <>
+            <h4>🍽️ Available Meals:</h4>
+            <ProductList>
+              {meals.slice(0, 2).map((meal, index) => (
+                <ProductItem key={index}>
+                  <span><strong>Name:</strong> {meal.mealName || 'Not specified'}</span>
+                  <span><strong>Description:</strong> {meal.mealDescription || 'Not specified'}</span>
+                  <span><strong>Quantity:</strong> {meal.totalQuantity || meal.quantity || 0}</span>
+                </ProductItem>
+              ))}
+            </ProductList>
+          </>
+        ) : (
+          <ProductItem>Aucun produit ni repas disponible</ProductItem>
+        )}
       </div>
 
-      {/* Button to view more details */}
       <SeeMoreButton to={`/DetailsDonations/${_id}`}>See More</SeeMoreButton>
     </Card>
   );

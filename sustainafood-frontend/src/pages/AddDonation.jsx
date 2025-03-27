@@ -9,13 +9,14 @@ import { FaEdit, FaTrash, FaSave } from "react-icons/fa";
 import { addDonation } from "../api/donationService";
 import { createrequests } from "../api/requestNeedsService";
 import { useAuth } from "../contexts/AuthContext";
-import { useAlert } from "../contexts/AlertContext"; // Importez le hook useAlert
+import { useAlert } from "../contexts/AlertContext";
 
 export const AddDonation = () => {
   const { authUser } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
-  const { showAlert } = useAlert(); // Remplacez l'état local par le contexte
+  const mealsFileInputRef = useRef(null); // Separate ref for meals CSV
+  const { showAlert } = useAlert();
 
   // Donation/Request fields
   const [title, setTitle] = useState("");
@@ -30,8 +31,9 @@ export const AddDonation = () => {
   const [error, setError] = useState(null);
   const [errors, setErrors] = useState({});
 
-  // Products state
+  // Products and Meals state
   const [products, setProducts] = useState([]);
+  const [meals, setMeals] = useState([]);
   const [manualProducts, setManualProducts] = useState([
     {
       name: "",
@@ -45,13 +47,22 @@ export const AddDonation = () => {
       status: "available",
     },
   ]);
+  const [manualMeals, setManualMeals] = useState([
+    {
+      mealName: "",
+      mealDescription: "",
+      mealType: "Lunch",
+    },
+  ]);
 
-  // Editing state for CSV table
+  // Editing state for CSV tables (shared for products and meals)
   const [editableRow, setEditableRow] = useState(null);
-  const [editedProduct, setEditedProduct] = useState({});
+  const [editedItem, setEditedItem] = useState({}); // Renamed to be generic for products or meals
+  const [editableType, setEditableType] = useState(null); // 'products' or 'meals' to differentiate
 
   // Toggle between CSV and manual entry
   const [productEntryMode, setProductEntryMode] = useState("csv");
+  const [mealsEntryMode, setMealsEntryMode] = useState("csv");
 
   // User data
   const user = JSON.parse(localStorage.getItem("user"));
@@ -77,11 +88,12 @@ export const AddDonation = () => {
   ];
   const weightUnits = ["kg", "g", "lb", "oz", "ml", "l"];
   const statuses = ["available", "pending", "reserved", "out_of_stock"];
+  const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack", "Dessert", "Other"]; // Added for meals
 
   useEffect(() => {
-    if (typeof user.id === "number") {
+    if (typeof user?.id === "number") {
       setUserid(user._id);
-    } else if (typeof user.id === "string") {
+    } else if (typeof user?.id === "string") {
       setUserid(user.id);
     }
   }, [user]);
@@ -94,7 +106,19 @@ export const AddDonation = () => {
         header: true,
         skipEmptyLines: true,
       });
-      showAlert("warning", "Product list reset due to category change.");
+      showAlert("success", "Products uploaded successfully.");
+    }
+  };
+
+  const handleFileUploadMeals = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      Papa.parse(file, {
+        complete: (result) => setMeals(result.data),
+        header: true,
+        skipEmptyLines: true,
+      });
+      showAlert("success", "Meals uploaded successfully.");
     }
   };
 
@@ -121,6 +145,18 @@ export const AddDonation = () => {
       if (!numberOfMeals || numberOfMeals <= 0) {
         tempErrors.numberOfMeals = "Number of meals is required and must be greater than 0";
       }
+      if (isDonner) {
+        if (mealsEntryMode === "csv" && meals.length === 0) {
+          tempErrors.meals = "Meals list is required when uploading via CSV";
+        } else if (mealsEntryMode === "form") {
+          const invalidMeals = manualMeals.filter(
+            (meal) => !meal.mealName.trim() || !meal.mealType || !meal.mealDescription.trim()
+          );
+          if (invalidMeals.length > 0) {
+            tempErrors.meals = "All meals must have a name, type, and description";
+          }
+        }
+      }
     }
 
     if (category === "packaged_products") {
@@ -139,7 +175,8 @@ export const AddDonation = () => {
             (p.totalQuantity && (isNaN(p.totalQuantity) || p.totalQuantity < 0))
         );
         if (invalidProducts.length > 0) {
-          tempErrors.products = "All manual products must have valid name (min 2 chars), type, description (max 500 chars), and status. Weight and quantity must be positive numbers if provided.";
+          tempErrors.products =
+            "All manual products must have valid name (min 2 chars), type, description (max 500 chars), and status. Weight and quantity must be positive numbers if provided.";
         }
       }
     }
@@ -148,39 +185,64 @@ export const AddDonation = () => {
     return Object.keys(tempErrors).length === 0;
   };
 
-  const handleEditRow = (index) => {
+  const handleEditRow = (index, type) => {
     setEditableRow(index);
-    setEditedProduct({ ...products[index] });
-    showAlert("warning", "Editing product row.");
+    setEditableType(type);
+    setEditedItem(type === "products" ? { ...products[index] } : { ...meals[index] });
+    showAlert("warning", `Editing ${type === "products" ? "product" : "meal"} row.`);
   };
 
   const handleRowInputChange = (e, key) => {
-    setEditedProduct((prev) => ({ ...prev, [key]: e.target.value }));
+    setEditedItem((prev) => ({ ...prev, [key]: e.target.value }));
   };
 
   const handleSaveRow = (index) => {
-    const updatedProducts = [...products];
-    updatedProducts[index] = editedProduct;
-    setProducts(updatedProducts);
+    if (editableType === "products") {
+      const updatedProducts = [...products];
+      updatedProducts[index] = editedItem;
+      setProducts(updatedProducts);
+      showAlert("success", "Product updated successfully!");
+    } else if (editableType === "meals") {
+      const updatedMeals = [...meals];
+      updatedMeals[index] = editedItem;
+      setMeals(updatedMeals);
+      showAlert("success", "Meal updated successfully!");
+    }
     setEditableRow(null);
-    setEditedProduct({});
-    showAlert("success", "Product updated successfully!");
+    setEditedItem({});
+    setEditableType(null);
   };
 
-  const handleDeleteRow = (index) => {
-    setProducts(products.filter((_, i) => i !== index));
-    showAlert("success", "Product removed from list.");
+  const handleDeleteRow = (index, type) => {
+    if (type === "products") {
+      setProducts(products.filter((_, i) => i !== index));
+      showAlert("success", "Product removed from list.");
+    } else if (type === "meals") {
+      setMeals(meals.filter((_, i) => i !== index));
+      showAlert("success", "Meal removed from list.");
+    }
   };
 
-  const handleDeleteList = () => {
-    setProducts([]);
-    showAlert("success", "Product list cleared.");
+  const handleDeleteList = (type) => {
+    if (type === "products") {
+      setProducts([]);
+      showAlert("success", "Product list cleared.");
+    } else if (type === "meals") {
+      setMeals([]);
+      showAlert("success", "Meal list cleared.");
+    }
   };
 
   const handleManualProductChange = (index, field, value) => {
     const updated = [...manualProducts];
     updated[index][field] = value;
     setManualProducts(updated);
+  };
+
+  const handleManualMealChange = (index, field, value) => {
+    const updated = [...manualMeals];
+    updated[index][field] = value;
+    setManualMeals(updated);
   };
 
   const handleAddManualProduct = () => {
@@ -201,9 +263,26 @@ export const AddDonation = () => {
     showAlert("success", "New product entry added.");
   };
 
+  const handleAddManualMeal = () => {
+    setManualMeals([
+      ...manualMeals,
+      {
+        mealName: "",
+        mealDescription: "",
+        mealType: "",
+      },
+    ]);
+    showAlert("success", "New meal entry added.");
+  };
+
   const handleRemoveManualProduct = (index) => {
     setManualProducts(manualProducts.filter((_, i) => i !== index));
     showAlert("success", "Manual product removed.");
+  };
+
+  const handleRemoveManualMeal = (index) => {
+    setManualMeals(manualMeals.filter((_, i) => i !== index));
+    showAlert("success", "Manual meal removed.");
   };
 
   const handleSubmit = async (e) => {
@@ -218,57 +297,46 @@ export const AddDonation = () => {
     donationData.append("category", category);
     donationData.append("created_at", new Date().toISOString());
     donationData.append("updated_at", new Date().toISOString());
+    donationData.append("status", "pending");
 
-    if (isDonner) {
-      donationData.append("type", type);
-      donationData.append("donor", userid);
-      donationData.append("status", "pending");
-
-      if (category === "prepared_meals") {
-        donationData.append("numberOfMeals", numberOfMeals);
+    if (category === "prepared_meals") {
+      donationData.append("numberOfMeals", numberOfMeals);
+      if (isDonner && mealsEntryMode === "form") {
+        donationData.append("meals", JSON.stringify(manualMeals));
+      } else if (isDonner && mealsEntryMode === "csv") {
+        donationData.append("meals", JSON.stringify(meals));
       }
+    }
 
-      if (category === "packaged_products") {
-        const productsToSend = productEntryMode === "csv" ? products : manualProducts;
-        if (productsToSend.length) {
-          donationData.append("products", JSON.stringify(productsToSend));
-        }
+    if (category === "packaged_products") {
+      const productsToSend = productEntryMode === "csv" ? products : manualProducts;
+      if (isDonner) {
+        donationData.append("products", JSON.stringify(productsToSend));
+      } else if (isRecipient) {
+        donationData.append("requestedProducts", JSON.stringify(productsToSend));
       }
+    }
 
-      try {
-        const response = await addDonation(donationData);
+    try {
+      let response;
+      if (isDonner) {
+        donationData.append("type", type);
+        donationData.append("donor", userid);
+        response = await addDonation(donationData);
         console.log("Donation created successfully:", response.data);
         showAlert("success", "Donation created successfully!");
-        window.history.back()
-            } catch (err) {
-        console.error("Error creating donation:", err);
-        showAlert("error", err.response?.data?.message || "An error occurred while creating the donation.");
-        setError(err.response?.data?.message || "An error occurred while creating the donation.");
-      }
-    } else if (isRecipient) {
-      donationData.append("recipient", userid);
-      donationData.append("status", "pending");
-
-      if (category === "prepared_meals") {
-        donationData.append("numberOfMeals", numberOfMeals);
-      }
-
-      if (category === "packaged_products") {
-        const productsToSend = productEntryMode === "csv" ? products : manualProducts;
-        if (productsToSend.length) {
-          donationData.append("requestedProducts", JSON.stringify(productsToSend));
-        }
-      }
-
-      try {
-        const response = await createrequests(donationData);
+      } else if (isRecipient) {
+        donationData.append("recipient", userid);
+        response = await createrequests(donationData);
         console.log("Request created successfully:", response.data);
         showAlert("success", "Request created successfully!");
-        window.history.back()      } catch (err) {
-        console.error("Error creating request:", err);
-        showAlert("error", err.response?.data?.message || "An error occurred while creating the request.");
-        setError(err.response?.data?.message || "An error occurred while creating the request.");
       }
+      navigate("/ListOfDonations");
+    } catch (err) {
+      console.error("Error creating donation/request:", err);
+      const errorMessage = err.response?.data?.message || "An error occurred while creating the donation/request.";
+      setError(errorMessage);
+      showAlert("error", errorMessage);
     }
   };
 
@@ -286,6 +354,16 @@ export const AddDonation = () => {
           totalQuantity: "",
           image: "",
           status: "available",
+        },
+      ]);
+    }
+    if (category !== "prepared_meals") {
+      setMeals([]);
+      setManualMeals([
+        {
+          mealName: "",
+          mealDescription: "",
+          mealType: "Lunch",
         },
       ]);
     }
@@ -329,12 +407,7 @@ export const AddDonation = () => {
           />
           {errors.expirationDate && <p className="error-message">{errors.expirationDate}</p>}
 
-          {isDonner && (
-            <select className="signup-input" value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="donation">Donation</option>
-              <option value="request">Request</option>
-            </select>
-          )}
+     
 
           <select
             className="signup-input"
@@ -346,16 +419,20 @@ export const AddDonation = () => {
           </select>
 
           {category === "prepared_meals" && (
-            <input
-              className="signup-input"
-              type="number"
-              placeholder="Number of Meals"
-              value={numberOfMeals}
-              onChange={(e) => setNumberOfMeals(e.target.value)}
-              required
-            />
+            <>
+             
+              <input
+                className="signup-input"
+                type="number"
+                placeholder="Number of Meals"
+                value={numberOfMeals}
+                onChange={(e) => setNumberOfMeals(e.target.value)}
+                required
+              />
+              {errors.numberOfMeals && <p className="error-message">{errors.numberOfMeals}</p>}
+
+            </>
           )}
-          {errors.numberOfMeals && <p className="error-message">{errors.numberOfMeals}</p>}
 
           <textarea
             className="signup-input"
@@ -365,34 +442,215 @@ export const AddDonation = () => {
             required
           />
           {errors.description && <p className="error-message">{errors.description}</p>}
+          {category === "prepared_meals" && (
+            <>
+              {isDonner && (
+                <div className="radio-buttons-container-adddonation">
+                  <div className="radio-button-adddonation">
+                    <input
+                      name="radio-group-meals"
+                      id="radio-csv-meals"
+                      className="radio-button__input-adddonation"
+                      type="radio"
+                      checked={mealsEntryMode === "csv"}
+                      onChange={() => setMealsEntryMode("csv")}
+                    />
+                    <label htmlFor="radio-csv-meals" className="radio-button__label-adddonation">
+                      <span className="radio-button__custom-adddonation"></span>
+                      CSV File
+                    </label>
+                  </div>
+                  <div className="radio-button-adddonation">
+                    <input
+                      name="radio-group-meals"
+                      id="radio-form-meals"
+                      className="radio-button__input-adddonation"
+                      type="radio"
+                      checked={mealsEntryMode === "form"}
+                      onChange={() => setMealsEntryMode("form")}
+                    />
+                    <label htmlFor="radio-form-meals" className="radio-button__label-adddonation">
+                      <span className="radio-button__custom-adddonation"></span>
+                      Form
+                    </label>
+                  </div>
+                </div>
+              )}
+          
+              {isDonner && mealsEntryMode === "csv" && meals.length === 0 && (
+                <>
+                  <input
+                    ref={mealsFileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileUploadMeals}
+                    style={{ display: "none" }}
+                  />
+                  <button
+                    type="button"
+                    className="container-btn-file"
+                    onClick={() => mealsFileInputRef.current.click()}
+                  >
+                    <svg
+                      fill="#fff"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 50 50"
+                    >
+                      <path d="M 25 2 C 12.309295 2 2 12.309295 2 25 C 2 37.690705 12.309295 48 25 48 C 37.690705 48 48 37.690705 48 25 C 48 12.309295 37.690705 2 25 2 z M 25 4 C 36.609824 4 46 13.390176 46 25 C 46 36.609824 36.609824 46 25 46 C 13.390176 46 4 36.609824 4 25 C 4 13.390176 13.390176 4 25 4 z M 24 13 L 24 24 L 13 24 L 13 26 L 24 26 L 24 37 L 26 37 L 26 26 L 37 26 L 37 24 L 26 24 L 26 13 L 24 13 z" />
+                    </svg>
+                    Upload List of Meals
+                  </button>
+                </>
+              )}
+
+              {isDonner && mealsEntryMode === "csv" && meals.length > 0 && (
+                <>
+                  <p style={{ marginLeft: "-656px", color: "#8dc73f" }}>List of meals uploaded</p>
+                  <div className="file-actions" style={{ marginLeft: "812px" }}>
+                    <FaEdit className="fa-edit" onClick={() => mealsFileInputRef.current.click()} />
+                    <FaTrash className="fa-trash" onClick={() => handleDeleteList("meals")} />
+                  </div>
+                  <table className="product-table">
+                    <thead>
+                      <tr>
+                        {Object.keys(meals[0]).map((key) => (
+                          <th key={key}>{key}</th>
+                        ))}
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {meals.map((row, rowIndex) => (
+                        <tr key={rowIndex}>
+                          {editableRow === rowIndex && editableType === "meals" ? (
+                            Object.keys(row).map((key) => (
+                              <td key={key}>
+                                {key === "mealType" ? (
+                                  <select
+                                    value={editedItem[key] || ""}
+                                    onChange={(e) => handleRowInputChange(e, key)}
+                                    className="edit-input"
+                                  >
+                                    {mealTypes.map((mt) => (
+                                      <option key={mt} value={mt}>
+                                        {mt}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <input
+                                    type="text"
+                                    value={editedItem[key] || ""}
+                                    onChange={(e) => handleRowInputChange(e, key)}
+                                    className="edit-input"
+                                  />
+                                )}
+                              </td>
+                            ))
+                          ) : (
+                            Object.values(row).map((value, colIndex) => (
+                              <td key={colIndex}>{value}</td>
+                            ))
+                          )}
+                          <td>
+                            {editableRow === rowIndex && editableType === "meals" ? (
+                              <FaSave className="fa-save" onClick={() => handleSaveRow(rowIndex)} />
+                            ) : (
+                              <FaEdit
+                                className="fa-edit"
+                                onClick={() => handleEditRow(rowIndex, "meals")}
+                                style={{ color: "black", cursor: "pointer", fontSize: "20px" }}
+                              />
+                            )}
+                            <FaTrash
+                              className="fa-trash"
+                              onClick={() => handleDeleteRow(rowIndex, "meals")}
+                              style={{ color: "red", cursor: "pointer", fontSize: "20px", marginLeft: "10px" }}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
+
+              {isDonner && mealsEntryMode === "form" && (
+                <div className="manual-product-entry">
+                  {manualMeals.map((meal, index) => (
+                    <div key={index} className="manual-product-row">
+                      <input
+                        type="text"
+                        placeholder="Meal Name"
+                        value={meal.mealName}
+                        onChange={(e) => handleManualMealChange(index, "mealName", e.target.value)}
+                        className="signup-input"
+                      />
+                      <textarea
+                        className="signup-input"
+                        placeholder="Meal Description"
+                        value={meal.mealDescription}
+                        onChange={(e) =>
+                          handleManualMealChange(index, "mealDescription", e.target.value)
+                        }
+                      />
+                   <select
+                        value={meal.mealType || ""} // Default to empty string if undefined
+                        onChange={(e) => handleManualMealChange(index, "mealType", e.target.value)}
+                        className="signup-input"
+                      >
+                        <option value="" disabled>Select Meal Type</option>
+                        {mealTypes.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                      {manualMeals.length > 1 && (
+                        <button type="button" onClick={() => handleRemoveManualMeal(index)}>
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button type="button" onClick={handleAddManualMeal} className="signup-button">
+                    Add Another Meal
+                  </button>
+                </div>
+              )}
+              {errors.meals && <p className="error-message">{errors.meals}</p>}
+            </>
+          )}
 
           {category === "packaged_products" && (
             <>
               <div className="radio-buttons-container-adddonation">
                 <div className="radio-button-adddonation">
                   <input
-                    name="radio-group"
-                    id="radio-csv"
+                    name="radio-group-products"
+                    id="radio-csv-products"
                     className="radio-button__input-adddonation"
                     type="radio"
                     checked={productEntryMode === "csv"}
                     onChange={() => setProductEntryMode("csv")}
                   />
-                  <label htmlFor="radio-csv" className="radio-button__label-adddonation">
+                  <label htmlFor="radio-csv-products" className="radio-button__label-adddonation">
                     <span className="radio-button__custom-adddonation"></span>
                     CSV File
                   </label>
                 </div>
                 <div className="radio-button-adddonation">
                   <input
-                    name="radio-group"
-                    id="radio-form"
+                    name="radio-group-products"
+                    id="radio-form-products"
                     className="radio-button__input-adddonation"
                     type="radio"
                     checked={productEntryMode === "form"}
                     onChange={() => setProductEntryMode("form")}
                   />
-                  <label htmlFor="radio-form" className="radio-button__label-adddonation">
+                  <label htmlFor="radio-form-products" className="radio-button__label-adddonation">
                     <span className="radio-button__custom-adddonation"></span>
                     Form
                   </label>
@@ -524,115 +782,116 @@ export const AddDonation = () => {
                   </button>
                 </div>
               )}
-              {errors.products && <p className="error-message">{errors.products}</p>}
-            </>
-          )}
 
-          {products.length > 0 && productEntryMode === "csv" && (
-            <>
-              <p style={{ marginLeft: "-656px", color: "#8dc73f" }}>List of products uploaded</p>
-              <div className="file-actions" style={{ marginLeft: "812px" }}>
-                <FaEdit className="fa-edit" onClick={() => fileInputRef.current.click()} />
-                <FaTrash className="fa-trash" onClick={handleDeleteList} />
-              </div>
-              <table className="product-table">
-                <thead>
-                  <tr>
-                    {Object.keys(products[0]).map((key) => (
-                      <th key={key}>{key}</th>
-                    ))}
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map((row, rowIndex) => (
-                    <tr key={rowIndex}>
-                      {editableRow === rowIndex ? (
-                        Object.keys(row).map((key) => (
-                          <td key={key}>
-                            {key === "productType" ? (
-                              <select
-                                value={editedProduct[key] || ""}
-                                onChange={(e) => handleRowInputChange(e, key)}
-                                className="edit-input"
-                              >
-                                {productTypes.map((pt) => (
-                                  <option key={pt} value={pt}>
-                                    {pt}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : key === "weightUnit" ? (
-                              <select
-                                value={editedProduct[key] || ""}
-                                onChange={(e) => handleRowInputChange(e, key)}
-                                className="edit-input"
-                              >
-                                {weightUnits.map((wu) => (
-                                  <option key={wu} value={wu}>
-                                    {wu}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : key === "weightUnitTotale" ? (
-                              <select
-                                value={editedProduct[key] || ""}
-                                onChange={(e) => handleRowInputChange(e, key)}
-                                className="edit-input"
-                              >
-                                {weightUnits.map((wu) => (
-                                  <option key={wu} value={wu}>
-                                    {wu}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : key === "status" ? (
-                              <select
-                                value={editedProduct[key] || ""}
-                                onChange={(e) => handleRowInputChange(e, key)}
-                                className="edit-input"
-                              >
-                                {statuses.map((status) => (
-                                  <option key={status} value={status}>
-                                    {status}
-                                  </option>
-                                ))}
-                              </select>
+              {productEntryMode === "csv" && products.length > 0 && (
+                <>
+                  <p style={{ marginLeft: "-656px", color: "#8dc73f" }}>List of products uploaded</p>
+                  <div className="file-actions" style={{ marginLeft: "812px" }}>
+                    <FaEdit className="fa-edit" onClick={() => fileInputRef.current.click()} />
+                    <FaTrash className="fa-trash" onClick={() => handleDeleteList("products")} />
+                  </div>
+                  <table className="product-table">
+                    <thead>
+                      <tr>
+                        {Object.keys(products[0]).map((key) => (
+                          <th key={key}>{key}</th>
+                        ))}
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {products.map((row, rowIndex) => (
+                        <tr key={rowIndex}>
+                          {editableRow === rowIndex && editableType === "products" ? (
+                            Object.keys(row).map((key) => (
+                              <td key={key}>
+                                {key === "productType" ? (
+                                  <select
+                                    value={editedItem[key] || ""}
+                                    onChange={(e) => handleRowInputChange(e, key)}
+                                    className="edit-input"
+                                  >
+                                    {productTypes.map((pt) => (
+                                      <option key={pt} value={pt}>
+                                        {pt}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : key === "weightUnit" ? (
+                                  <select
+                                    value={editedItem[key] || ""}
+                                    onChange={(e) => handleRowInputChange(e, key)}
+                                    className="edit-input"
+                                  >
+                                    {weightUnits.map((wu) => (
+                                      <option key={wu} value={wu}>
+                                        {wu}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : key === "weightUnitTotale" ? (
+                                  <select
+                                    value={editedItem[key] || ""}
+                                    onChange={(e) => handleRowInputChange(e, key)}
+                                    className="edit-input"
+                                  >
+                                    {weightUnits.map((wu) => (
+                                      <option key={wu} value={wu}>
+                                        {wu}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : key === "status" ? (
+                                  <select
+                                    value={editedItem[key] || ""}
+                                    onChange={(e) => handleRowInputChange(e, key)}
+                                    className="edit-input"
+                                  >
+                                    {statuses.map((status) => (
+                                      <option key={status} value={status}>
+                                        {status}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <input
+                                    type={key === "weightPerUnit" || key === "totalQuantity" ? "number" : "text"}
+                                    value={editedItem[key] || ""}
+                                    onChange={(e) => handleRowInputChange(e, key)}
+                                    className="edit-input"
+                                  />
+                                )}
+                              </td>
+                            ))
+                          ) : (
+                            Object.values(row).map((value, colIndex) => (
+                              <td key={colIndex}>{value}</td>
+                            ))
+                          )}
+                          <td>
+                            {editableRow === rowIndex && editableType === "products" ? (
+                              <FaSave className="fa-save" onClick={() => handleSaveRow(rowIndex)} />
                             ) : (
-                              <input
-                                type={key === "weightPerUnit" || key === "totalQuantity" ? "number" : "text"}
-                                value={editedProduct[key] || ""}
-                                onChange={(e) => handleRowInputChange(e, key)}
-                                className="edit-input"
+                              <FaEdit
+                                className="fa-edit"
+                                onClick={() => handleEditRow(rowIndex, "products")}
+                                style={{ color: "black", cursor: "pointer", fontSize: "20px" }}
                               />
                             )}
+                            <FaTrash
+                              className="fa-trash"
+                              onClick={() => handleDeleteRow(rowIndex, "products")}
+                              style={{ color: "red", cursor: "pointer", fontSize: "20px", marginLeft: "10px" }}
+                            />
                           </td>
-                        ))
-                      ) : (
-                        Object.values(row).map((value, colIndex) => (
-                          <td key={colIndex}>{value}</td>
-                        ))
-                      )}
-                      <td>
-                        {editableRow === rowIndex ? (
-                          <FaSave className="fa-save" onClick={() => handleSaveRow(rowIndex)} />
-                        ) : (
-                          <FaEdit
-                            className="fa-edit"
-                            onClick={() => handleEditRow(rowIndex)}
-                            style={{ color: "black", cursor: "pointer", fontSize: "20px" }}
-                          />
-                        )}
-                        <FaTrash
-                          className="fa-trash"
-                          onClick={() => handleDeleteRow(rowIndex)}
-                          style={{ color: "red", cursor: "pointer", fontSize: "20px", marginLeft: "10px" }}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
+
+              {errors.products && <p className="error-message">{errors.products}</p>}
             </>
           )}
 

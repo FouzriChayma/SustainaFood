@@ -93,13 +93,7 @@ const requestNeedSchema = new Schema({
             message: 'Number of meals must be an integer'
         }
     },
-    mealName: { type: String },  
-    mealDescription: { type: String }, 
-    mealType: {  // ADD THIS LINE
-        type: String,
-        // Optionally, add an enum to restrict possible meal types
-       
-    }
+ 
 }, {
     timestamps: { 
         createdAt: 'created_at', 

@@ -147,6 +147,7 @@ export const rejectDonationTransaction = async (transactionId, reason) => {
     }
 };
 
+
 // Create and accept a donation transaction
 export const createAndAcceptDonationTransaction = async (donationId, requestNeedId) => {
     try {
@@ -198,7 +199,33 @@ export const getTransactionsByRecipientId = async (recipientId) => {
         throw error;
     }
 };
-
+// Reject a donation directly
+export const rejectDonation = async (donationId, reason) => {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) throw new Error('No authentication token found');
+        
+        const response = await axios.put(
+            `${API_BASE}/donation/${donationId}/reject`,
+            { rejectionReason: reason },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        console.log(`Full API Response (rejectDonation ${donationId}):`, response);
+        return response.data;
+    } catch (error) {
+        console.error(`Error rejecting donation with ID ${donationId}:`, {
+            message: error.message,
+            response: error.response ? error.response.data : null,
+            status: error.response ? error.response.status : null,
+        });
+        throw error;
+    }
+};
 export default {
     getAllDonationTransactions,
     getDonationTransactionById,
@@ -211,5 +238,6 @@ export default {
     acceptDonationTransaction,
     rejectDonationTransaction,
     createAndAcceptDonationTransaction,
-    getTransactionsByRecipientId
+    getTransactionsByRecipientId,
+    rejectDonation,
 };

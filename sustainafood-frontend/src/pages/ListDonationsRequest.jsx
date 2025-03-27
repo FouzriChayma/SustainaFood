@@ -6,7 +6,7 @@ import Footer from '../components/Footer';
 import { getDonationByRequestId } from '../api/donationService';
 import { getRequestById } from '../api/requestNeedsService';
 import { getUserById } from '../api/userService';
-import { createAndAcceptDonationTransaction } from '../api/donationTransactionService';
+import { createAndAcceptDonationTransaction , rejectDonation } from '../api/donationTransactionService';
 import imgmouna from '../assets/images/imgmouna.png';
 import styled, { createGlobalStyle } from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
@@ -515,7 +515,10 @@ const ListDonationsRequest = () => {
 
     try {
       setProcessing(prev => ({ ...prev, [donationId]: 'rejecting' }));
-      // For rejection, we won't create a transaction, just update the donation status
+      // Call the backend to update the donation status
+      await rejectDonation(donationId, rejectionReason);
+
+      // Update the local state to reflect the rejection
       setDonations(prev => prev.map(d => 
         d._id === donationId ? { ...d, status: 'rejected' } : d
       ));
@@ -644,7 +647,7 @@ const ListDonationsRequest = () => {
                               <span><strong>Weight:</strong> {item.product?.weightPerUnit ? `${item.product.weightPerUnit} ${item.product.weightUnit || ''}` : 'N/A'}</span>
                             </ProductDetails>
                             <ProductQuantity>
-                              <strong>Quantity:</strong> {item.quantity || 0} / {requestedProduct?.totalQuantity || 'N/A'}
+                              <strong>Quantity Given:</strong> {item.quantity || 0} 
                             </ProductQuantity>
                           </ProductItem>
                         );

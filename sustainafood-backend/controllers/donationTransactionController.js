@@ -216,30 +216,37 @@ async function acceptDonationTransaction(req, res) {
 }
 
 // ✅ Reject a donation transaction
+// ✅ Reject a donation transaction
 async function rejectDonationTransaction(req, res) {
     try {
         const { transactionId } = req.params;
         const { rejectionReason } = req.body;
 
         // Find the transaction
-        const transaction = await DonationTransaction.findById(transactionId);
-
+        const transaction = await DonationTransaction.findById(transactionId).populate('donation');
         if (!transaction) {
             return res.status(404).json({ message: 'Transaction not found' });
         }
 
         // Check if the transaction is in a state that can be rejected
-        if (transaction.status !== TransactionStatus.PENDING) {
+        if (transaction.status !== 'pending') {
             return res.status(400).json({ 
                 message: `Transaction cannot be rejected in its current state (${transaction.status})`
             });
         }
 
         // Update the transaction status
-        transaction.status = TransactionStatus.REJECTED;
+        transaction.status = 'rejected';
         transaction.responseDate = new Date();
         transaction.rejectionReason = rejectionReason || 'No reason provided';
         await transaction.save();
+
+        // Update the associated Donation status
+        const donation = transaction.donation;
+        if (donation) {
+            donation.status = 'rejected';
+            await donation.save();
+        }
 
         res.status(200).json({ 
             message: 'Donation rejected successfully', 
@@ -261,48 +268,117 @@ async function createAndAcceptDonationTransaction(req, res) {
 
         console.log('Creating transaction with:', { donationId, requestNeedId, userId: user?._id });
 
-        const donation = await Donation.findById(donationId);
-        if (!donation) return res.status(404).json({ message: 'Donation not found' });
+        // Validate input
+        if (!donationId || !requestNeedId) {
+            return res.status(400).json({ message: 'donationId and requestNeedId are required' });
+        }
 
+        // Fetch donation
+        const donation = await Donation.findById(donationId).populate('products.product');
+        if (!donation) return res.status(404).json({ message: 'Donation not found' });
+        console.log('Donation fetched:', JSON.stringify(donation, null, 2));
+
+        // Fetch request need
         const requestNeed = await RequestNeed.findById(requestNeedId);
         if (!requestNeed) return res.status(404).json({ message: 'RequestNeed not found' });
+        console.log('RequestNeed fetched:', JSON.stringify(requestNeed, null, 2));
 
         const recipientId = requestNeed.recipient || user._id;
 
-        // Manually fetch and increment the counter
+        // Validate donation status
+        if (donation.status !== 'pending') {
+            return res.status(400).json({ message: `Donation cannot be used in its current state (${donation.status})` });
+        }
+
+        // Fetch products linked to the request
+        const requestProducts = await Product.find({ _id: { $in: requestNeed.requestedProducts } });
+        if (!requestProducts.length) {
+            return res.status(400).json({ message: 'No products found for this request' });
+        }
+        console.log('Request products fetched:', JSON.stringify(requestProducts, null, 2));
+
+        // Map donation and request products
+        const donationMap = new Map(donation.products.map(p => [p.product._id.toString(), p.quantity]));
+        console.log('Donation products map:', [...donationMap]);
+
+        const requestMap = new Map(requestProducts.map(p => [p._id.toString(), p.totalQuantity]));
+        console.log('Request products map:', [...requestMap]);
+
+        // Calculate allocated products and update quantities
+        const allocatedProducts = [];
+        const updatedProducts = [];
+        for (const [productId, totalQuantity] of requestMap) {
+            const availableQty = donationMap.get(productId) || 0;
+            if (availableQty > 0 && totalQuantity > 0) {
+                const allocatedQty = Math.min(availableQty, totalQuantity);
+                allocatedProducts.push({
+                    product: productId,
+                    quantity: allocatedQty
+                });
+
+                // Update Product totalQuantity
+                const product = requestProducts.find(p => p._id.toString() === productId);
+                product.totalQuantity -= allocatedQty;
+                if (product.totalQuantity < 0) product.totalQuantity = 0;
+                updatedProducts.push(product);
+                console.log(`Updated product ${productId} totalQuantity: ${product.totalQuantity}`);
+
+               
+            }
+        }
+
+        if (!allocatedProducts.length) {
+            return res.status(400).json({ message: 'No matching products available to allocate' });
+        }
+        console.log('Allocated products:', allocatedProducts);
+
+        // Save updated donation
+        donation.status = 'approved';
+        await donation.save();
+        console.log('Donation saved successfully');
+
+        // Save updated products
+        for (const product of updatedProducts) {
+            await product.save();
+            console.log(`Product ${product._id} saved with totalQuantity: ${product.totalQuantity}`);
+        }
+
+        // Update request status
+        const isFullyFulfilled = requestProducts.every(p => p.totalQuantity === 0);
+        requestNeed.status = isFullyFulfilled ? 'fulfilled' : 'partially_fulfilled';
+        await requestNeed.save();
+        console.log('RequestNeed saved successfully with status:', requestNeed.status);
+
+        // Create transaction
         const counter = await Counter.findOneAndUpdate(
             { _id: 'DonationTransactionId' },
             { $inc: { seq: 1 } },
             { new: true, upsert: true }
         );
+        if (!counter) throw new Error('Failed to increment DonationTransactionId counter');
         const transactionId = counter.seq;
 
         const transaction = new DonationTransaction({
-            id: transactionId, // Explicitly set id
+            id: transactionId,
             donation: donationId,
             requestNeed: requestNeedId,
             donor: donation.donor,
             recipient: recipientId,
-            allocatedProducts: donation.products.map(p => ({
-                product: p.product,
-                quantity: p.quantity
-            })),
+            allocatedProducts,
             status: 'approved',
             responseDate: new Date()
         });
 
-        console.log('Transaction before save:', transaction.toObject());
         await transaction.save();
-        console.log('Transaction saved:', transaction.toObject());
+        console.log('Transaction saved successfully:', transaction);
 
-        donation.status = 'approved';
-        await donation.save();
-
-        await checkRequestFulfillment(requestNeedId);
-
-        res.status(201).json({ message: 'Transaction created and accepted successfully', transaction });
+        res.status(201).json({ 
+            message: 'Transaction created and accepted successfully', 
+            transaction,
+            updatedRequest: requestNeed 
+        });
     } catch (error) {
-        console.error('Error creating and accepting transaction:', error);
+        console.error('Error creating and accepting transaction:', error.stack);
         res.status(500).json({ message: 'Failed to create and accept transaction', error: error.message });
     }
 }
@@ -333,6 +409,42 @@ async function createAndAcceptDonationTransaction(req, res) {
       await request.save();
     }
   }
+
+// ✅ Reject a donation directly (without a transaction)
+async function rejectDonation(req, res) {
+    try {
+        const { donationId } = req.params;
+        const { rejectionReason } = req.body;
+
+        // Find the donation
+        const donation = await Donation.findById(donationId);
+        if (!donation) {
+            return res.status(404).json({ message: 'Donation not found' });
+        }
+
+        // Check if the donation is in a state that can be rejected
+        if (donation.status !== 'pending') {
+            return res.status(400).json({ 
+                message: `Donation cannot be rejected in its current state (${donation.status})`
+            });
+        }
+
+        // Update the donation status
+        donation.status = 'rejected';
+        donation.rejectionReason = rejectionReason || 'No reason provided'; // Optional: store the rejection reason in the Donation model
+        await donation.save();
+
+        res.status(200).json({ 
+            message: 'Donation rejected successfully', 
+            donation 
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            message: 'Failed to reject donation', 
+            error: error.message 
+        });
+    }
+}
 module.exports = {
     getAllDonationTransactions,
     getDonationTransactionById,
@@ -346,4 +458,5 @@ module.exports = {
     acceptDonationTransaction,
     rejectDonationTransaction,
     createAndAcceptDonationTransaction,
+    rejectDonation,
 };

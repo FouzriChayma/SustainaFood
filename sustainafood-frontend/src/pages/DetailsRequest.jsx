@@ -464,14 +464,14 @@ const DetailsRequest = () => {
          
           {isTheOwner && !isEditing && (
             <Button
-  variant="submit"
-  className="add-product-btn"
-  as={Link}
-  to={`/ListDonationsRequest/${id}`} // Dynamically insert the request ID
-  style={{ textDecoration: 'none' }}
->
-  👀 View Request
-</Button>          )}
+            variant="submit"
+            className="add-product-btn"
+            as={Link}
+            to={`/ListDonationsRequest/${id}`} // Dynamically insert the request ID
+            style={{ textDecoration: 'none' }}
+          >
+            👀 View Request
+          </Button>          )}
           {isEditing && (
             <Button variant="add" onClick={handleAddProduct} className="add-product-btn">
               ➕ Add Product

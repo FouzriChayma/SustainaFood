@@ -142,45 +142,58 @@ async function updateDonation(req, res) {
       return res.status(400).json({ message: 'Invalid donation ID' });
     }
 
-    // Validate products array
-    if (!Array.isArray(products)) {
-      return res.status(400).json({ message: 'Products must be an array' });
-    }
-    for (const item of products) {
-      if (!mongoose.Types.ObjectId.isValid(item.product)) {
-        return res.status(400).json({ message: `Invalid product ID: ${item.product}` });
-      }
-      if (typeof item.quantity !== 'number' || item.quantity < 0) {
-        return res.status(400).json({ message: `Invalid quantity for product ${item.product}: ${item.quantity}` });
-      }
+    // Fetch the existing donation to preserve unchanged fields
+    const existingDonation = await Donation.findById(id);
+    if (!existingDonation) {
+      return res.status(404).json({ message: 'Donation not found' });
     }
 
-    // Validate meals array
-    if (!Array.isArray(meals)) {
-      return res.status(400).json({ message: 'Meals must be an array' });
-    }
-    for (const meal of meals) {
-      if (!meal.mealName || !meal.mealDescription || !meal.mealType) {
-        return res.status(400).json({ message: 'Each meal must have a name, description, and type' });
+    // Validate and process products if provided
+    let updatedProducts = existingDonation.products; // Default to existing products
+    if (products !== undefined) {
+      if (!Array.isArray(products)) {
+        return res.status(400).json({ message: 'Products must be a valid array' });
       }
-    }
-
-    // Update meals
-    const updatedMeals = await Promise.all(
-      meals.map(async (meal) => {
-        if (meal._id) {
-          return await Meal.findByIdAndUpdate(meal._id, meal, { new: true });
-        } else {
-          return await Meal.create(meal);
+      for (const item of products) {
+        if (!item.product || !mongoose.Types.ObjectId.isValid(item.product)) {
+          return res.status(400).json({ message: `Invalid product ID: ${item.product}` });
         }
-      })
-    );
-    const mealIds = updatedMeals.map(meal => meal._id);
+        if (typeof item.quantity !== 'number' || item.quantity < 0) {
+          return res.status(400).json({ message: `Invalid quantity for product ${item.product}: ${item.quantity}` });
+        }
+      }
+      updatedProducts = products; // Use provided products if valid
+    }
+
+    // Validate and process meals if provided
+    let updatedMealIds = existingDonation.meals; // Default to existing meals
+    if (meals !== undefined) {
+      if (!Array.isArray(meals)) {
+        return res.status(400).json({ message: 'Meals must be a valid array' });
+      }
+      for (const meal of meals) {
+        if (!meal.mealName || !meal.mealDescription || !meal.mealType) {
+          return res.status(400).json({ message: 'Each meal must have a name, description, and type' });
+        }
+      }
+
+      // Update or create meals
+      const updatedMeals = await Promise.all(
+        meals.map(async (meal) => {
+          if (meal._id && mongoose.Types.ObjectId.isValid(meal._id)) {
+            return await Meal.findByIdAndUpdate(meal._id, meal, { new: true });
+          } else {
+            return await Meal.create(meal);
+          }
+        })
+      );
+      updatedMealIds = updatedMeals.map(meal => meal._id);
+    }
 
     // Update the donation
     const updatedDonation = await Donation.findByIdAndUpdate(
       id,
-      { ...donationData, products, meals: mealIds },
+      { ...donationData, products: updatedProducts, meals: updatedMealIds },
       { new: true }
     )
       .populate('donor')
@@ -197,7 +210,6 @@ async function updateDonation(req, res) {
     res.status(500).json({ message: 'Failed to update donation', error: error.message });
   }
 }
-
 // ✅ Delete a donation (also deletes related products)
 // ✅ Delete a Donation
 async function deleteDonation(req, res) {

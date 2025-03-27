@@ -8,7 +8,7 @@ const RequestStatus = {
     APPROVED: 'approved',
     REJECTED: 'rejected',
     FULFILLED: 'fulfilled',
-    PARTIALLY_FULFILLED: 'partially_fulfilled' // Add this
+    PARTIALLY_FULFILLED: 'partially_fulfilled',
 };
 Object.freeze(RequestStatus);
 

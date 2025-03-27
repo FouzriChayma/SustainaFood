@@ -142,18 +142,34 @@ export const Composantdonation = ({ donation }) => {
         {/* Affichage conditionnel des produits ou des meals */}
         {Array.isArray(products) && products.length > 0 ? (
           <>
-            <h4>📦 Available Products:</h4>
-            <ProductList>
-              {products.slice(0, 2).map((producte, index) => (
-                <ProductItem key={index}>
-                  <span><strong>Name:</strong>{producte.product.name}</span>
-                  <span><strong>Type:</strong> {producte.product.productType || 'Not specified'}</span>
-                  <span><strong>Description:</strong> {producte.product.productDescription || 'Not specified'}</span>
-                  <span><strong>Quantity:</strong> {producte.product.totalQuantity || producte.quantity || 0} {producte.product.weightUnitTotale || producte.product.weightUnit || ''}</span>
-                  <span><strong>Status:</strong> {producte.product.status || 'Unknown'}</span>
-                </ProductItem>
-              ))}
-            </ProductList>
+            {/* Available Products Section */}
+        <h4>📦 Available Products:</h4>
+        <ProductList>
+          {Array.isArray(products) && products.length > 0 ? (
+            products.slice(0, 2).map((product, index) => (
+              <ProductItem key={index}>
+              {product.product && typeof product.product === 'object' ? (
+                <>
+                  <span><strong>Name:</strong> {product.product.name || 'N/A'}</span>
+                  <span><strong>Type:</strong> {product.product.productType || 'N/A'}</span>
+                  <span>
+                    <strong>Weight:</strong>{' '}
+                    {product.product.weightPerUnit
+                      ? `${product.product.weightPerUnit} ${product.product.weightUnit || ''}`
+                      : 'N/A'}
+                  </span>
+                  <span><strong>Status:</strong> {product.product.status || 'N/A'}</span>
+                  <span><strong>Quantity:</strong> {product.quantity || 0}</span>
+                </>
+              ) : (
+                <span>No product data available</span>
+              )}
+            </ProductItem>
+            ))
+          ) : (
+            <ProductItem>No products available</ProductItem>
+          )}
+        </ProductList>
           </>
         ) : Array.isArray(meals) && meals.length > 0 ? (
           <>

@@ -6,7 +6,6 @@ import "../assets/styles/Notfound.css" // Import the styles for the NotFound pag
 const NotFound = () => {
     return (
       <div className="notfound-container">
-        <Navbar />
   
         <div className="notfound-content">
           <div className="notfound-card">
@@ -45,7 +44,6 @@ const NotFound = () => {
           </div>
         </div>
   
-        <Footer />
       </div>
     )
   }

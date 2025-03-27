@@ -412,7 +412,7 @@ const DetailsDonations = () => {
         donation: id,
         requestedProducts: editedDonation.donationType === 'products' ? requestedItems : [],
         requestedMeals: editedDonation.donationType === 'meals' ? editedDonation.meals.map(item => ({ meal: item.id })) : [],
-        recipient: user?._id || user?.id,
+        recipientId: user?._id || user?.id,
         expirationDate: donation.expirationDate || new Date().toISOString(),
       };
 
@@ -440,7 +440,7 @@ const DetailsDonations = () => {
         donation: id,
         requestedProducts: editedDonation.donationType === 'products' ? requestedItems : [],
         requestedMeals: editedDonation.donationType === 'meals' ? editedDonation.meals.map(item => ({ meal: item.id })) : [],
-        recipient: user?._id || user?.id,
+        recipientId: user?._id || user?.id,
         expirationDate: donation.expirationDate || new Date().toISOString(),
       };
 

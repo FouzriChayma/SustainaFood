@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import '../assets/styles/Composantdonation.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { getRequestById, deleteRequest, updateRequest,addDonationToRequest } from '../api/requestNeedsService';
-import { FaEdit, FaTrash, FaSave, FaTimes } from "react-icons/fa";
+import { getRequestById, deleteRequest, updateRequest, addDonationToRequest } from '../api/requestNeedsService';
+import { FaEdit, FaTrash, FaSave, FaTimes, FaEye } from "react-icons/fa";
 import styled from 'styled-components';
 import logo from "../assets/images/LogoCh.png";
-import { Link, useNavigate } from "react-router-dom";
+import {  useNavigate } from "react-router-dom";
 
+import { useAlert } from '../contexts/AlertContext';
 
 // Styled Components for Buttons
 const Button = styled.button`
@@ -55,8 +56,6 @@ const Button = styled.button`
 
 // Styled Component for Donation Form
 const DonationForm = styled.div`
-
-
   h4 {
     color: #228b22;
     font-size: 25px;
@@ -118,6 +117,7 @@ const DetailsRequest = () => {
 
   const weightUnits = ['kg', 'g', 'lb', 'oz'];
   const statuses = ['available', 'pending', 'reserved'];
+    const navigate = useNavigate();
 
   useEffect(() => {
     if (typeof user.id === "number") {
@@ -129,6 +129,7 @@ const DetailsRequest = () => {
 
   const isDonor = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
+  const { showAlert } = useAlert(); // Added useAlert
 
   useEffect(() => {
     const fetchRequest = async () => {
@@ -143,7 +144,7 @@ const DetailsRequest = () => {
           description: fetchedRequest.description || "",
           category: fetchedRequest.category || "",
           status: fetchedRequest.status || "",
-          requestedProducts: fetchedRequest.requestedProducts || [],
+          requestedProducts: fetchedRequest.requestedProducts ? [...fetchedRequest.requestedProducts] : [],
           numberOfMeals: fetchedRequest.numberOfMeals || ""
         });
         setDonationQuantities(fetchedRequest.requestedProducts.map(() => 0));
@@ -169,11 +170,12 @@ const DetailsRequest = () => {
   const handleDeleteRequest = () => {
     deleteRequest(id)
       .then(() => {
-        console.log("Request successfully deleted");
+        showAlert('success', 'Request successfully deleted');
         window.history.back();
       })
       .catch((error) => {
         console.error("Error deleting request:", error);
+        showAlert('error', 'Failed to delete request');
       });
   };
 
@@ -184,9 +186,11 @@ const DetailsRequest = () => {
         console.log("Server response:", response.data);
         setRequest(response.data.updatedRequest);
         setIsEditing(false);
+        showAlert('success', 'Request updated successfully');
       })
       .catch((error) => {
         console.error("Error updating request:", error.response?.data || error);
+        showAlert('error', 'Failed to update request');
       });
   };
 
@@ -243,31 +247,32 @@ const DetailsRequest = () => {
     try {
       const token = localStorage.getItem('token');
       console.log('Token before request:', token);
-  
+
       const donationProducts = request.requestedProducts.map((product, index) => ({
         product: product._id ? product._id.toString() : null,
         quantity: Number(donationQuantities[index]) || 0,
       })).filter(p => p.quantity > 0);
-  
+
       const donationData = {
         products: donationProducts,
         donor: user?._id || user?.id,
         expirationDate: request.expirationDate || new Date().toISOString(),
       };
-  
+
       console.log('Sending donation:', donationData);
       const response = await addDonationToRequest(id, donationData);
       console.log('Donation submitted:', response.donation);
-  
+
       setIsAddingDonation(false);
       setDonationQuantities(request.requestedProducts.map(() => 0));
       setRequest(prev => ({
         ...prev,
         donations: [...(prev.donations || []), response.donation],
       }));
+      showAlert('success', 'Donation submitted successfully');
     } catch (error) {
       console.error('Error submitting donation:', error);
-      alert(`Failed to submit donation: ${error.message || 'Unknown error'}`);
+      showAlert('error', `Failed to submit donation: ${error.message || 'Unknown error'}`);
     }
   };
   
@@ -278,34 +283,36 @@ const DetailsRequest = () => {
       if (!token) {
         throw new Error('No authentication token found');
       }
-  
+
       const donationProducts = request.requestedProducts.map((product) => ({
         product: product._id ? product._id.toString() : null,
         quantity: Number(product.totalQuantity) || 0,
       }));
-  
+
       const donationData = {
         products: donationProducts,
         donor: user._id,
         expirationDate: request.expirationDate || new Date().toISOString(),
       };
-  
+
       console.log('Request data:', JSON.stringify(request, null, 2));
       console.log('Sending donation:', JSON.stringify(donationData, null, 2));
-  
+
       const response = await addDonationToRequest(id, donationData);
       console.log('Donated all:', response.donation);
-  
+
       setIsAddingDonation(false);
       setRequest(prevRequest => ({
         ...prevRequest,
         donations: [...(prevRequest.donations || []), response.donation],
       }));
+      showAlert('success', 'Donated all products successfully');
     } catch (error) {
       console.error('Error donating all:', error.response?.data || error.message);
-      alert(`Failed to donate all: ${error.message || 'Unknown error'}`);
+      showAlert('error', `Failed to donate all: ${error.message || 'Unknown error'}`);
     }
   };
+
   
   // In the JSX:
   <Button variant="donate" onClick={handleDonateAll}>Donate all</Button>
@@ -412,7 +419,9 @@ const DetailsRequest = () => {
                 ))
               ) : (
                 <li className="donation-li-list">
-                  {category === 'prepared_meals' ? `🍽️ Number of Meals: ${numberOfMeals || 'Not specified'}` : 'No product requested'}
+                  {category === 'prepared_meals'
+                    ? `🍽️ Number of Meals: ${numberOfMeals || 'Not specified'}`
+                    : 'No product requested'}
                 </li>
               )
             )}
@@ -455,14 +464,14 @@ const DetailsRequest = () => {
          
           {isTheOwner && !isEditing && (
             <Button
-  variant="submit"
-  className="add-product-btn"
-  as={Link}
-  to={`/ListDonationsRequest/${id}`} // Dynamically insert the request ID
-  style={{ textDecoration: 'none' }}
->
-  👀 View Request
-</Button>          )}
+            variant="submit"
+            className="add-product-btn"
+            as={Link}
+            to={`/ListDonationsRequest/${id}`} // Dynamically insert the request ID
+            style={{ textDecoration: 'none' }}
+          >
+            👀 View Request
+          </Button>          )}
           {isEditing && (
             <Button variant="add" onClick={handleAddProduct} className="add-product-btn">
               ➕ Add Product

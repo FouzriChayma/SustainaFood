@@ -1,23 +1,22 @@
 import axios from "axios";
 
 export const addDonation = async (donationrData) => {
-    return await axios.post('http://localhost:3000/donation/', donationrData, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-  };
-  export const getDonations = async () => {
-    return axios.get(`http://localhost:3000/donation/`);
-  };
-  
-  export const getDonationById = async (id) => {
-    try {
-        return await axios.get(`http://localhost:3000/donation/${id}`);
-    } catch (error) {
-        console.error("Error fetching donation:", error);
-        throw error;
-    }
+  return await axios.post('http://localhost:3000/donation/', donationrData, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
+export const getDonations = async () => {
+  return axios.get(`http://localhost:3000/donation/`);
+};
+export const getDonationById = async (id) => {
+  try {
+    return await axios.get(`http://localhost:3000/donation/${id}`);
+  } catch (error) {
+    console.error("Error fetching donation:", error);
+    throw error;
+  }
 };
 export const getDonationByRequestId = async (requestId) => {
   try {
@@ -29,23 +28,26 @@ export const getDonationByRequestId = async (requestId) => {
   }
 };
 
-  export const getDonationByUserId = async (id) => {
-    return axios.get(`http://localhost:3000/donation/user/${id}`);
-  };
-  export const getDonationsByUserId=async(id)=>{
-    
-    return axios.get(`http://localhost:3000/donation/user/${id}`);
-  }
-  export const deleteDonation = async (id) => {
-    return axios.delete(`http://localhost:3000/donation/${id}`);
-  };
-  export const updateDonation = async (id, donationData) => {
-    console.log(donationData);
-    return axios.put(`http://localhost:3000/donation/${id}`, donationData, {
+export const getDonationByUserId = async (id) => {
+  return axios.get(`http://localhost:3000/donation/user/${id}`);
+};
+export const getDonationsByUserId = async (id) => {
+
+  return axios.get(`http://localhost:3000/donation/user/${id}`);
+}
+export const deleteDonation = async (id) => {
+  return axios.delete(`http://localhost:3000/donation/${id}`);
+};
+// donationService.js
+export const updateDonation = async (id, donationData) => {
+  try {
+    return await axios.put(`http://localhost:3000/donation/${id}`, donationData, {
       headers: {
         "Content-Type": "application/json",
       },
     });
-  };
-  
-  
+  } catch (error) {
+    console.error("Error updating donation:", error.response?.data || error.message);
+    throw error;
+  }
+};

@@ -24,6 +24,7 @@ Object.freeze(Category);
 
 // Define the RequestNeed schema
 const requestNeedSchema = new Schema({
+    isaPost: { type: Boolean, default: true },
     id: { type: Number },
     title: {
         type: String,
@@ -73,7 +74,7 @@ const requestNeedSchema = new Schema({
     }],
     requestedProducts: [{ type: Schema.Types.ObjectId, ref: 'Product',  required: [
         function() { return this.category === 'packaged_products'; }, 
-        'Number of meals is required for prepared meals'
+        'required for prepared meals'
       ], }],
 
 
@@ -81,7 +82,7 @@ const requestNeedSchema = new Schema({
         type: Number,
         required: [
             function() { return this.category === 'prepared_meals'; },
-            'Number of meals is required for prepared meals'
+            'required for prepared meals'
         ],
         min: [1, 'Number of meals cannot be negative'],
         validate: {
@@ -92,7 +93,8 @@ const requestNeedSchema = new Schema({
             },
             message: 'Number of meals must be an integer'
         }
-    }
+    },
+ 
 }, {
     timestamps: { 
         createdAt: 'created_at', 

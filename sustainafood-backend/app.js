@@ -34,7 +34,7 @@ app.use(cors());
 // Routes
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-app.use('/product',productRouter);
+app.use('/product', productRouter);
 app.use('/donation',donationRouter);
 app.use('/auth', authRouter); // 🔹 Ajouter la route d'authentification
 

@@ -10,9 +10,7 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: #f4f6f8;
   min-height: 100vh;
-  padding: 40px 20px;
 `;
 
 const ProjectsContainer = styled.div`
@@ -26,7 +24,7 @@ const ProjectsContainer = styled.div`
 const ProjectCard = styled.div`
   background: white;
   border-radius: 12px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 8px 8px 99px rgba(0, 0, 0, 0.1);
   padding: 20px;
   transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
   
@@ -136,7 +134,7 @@ const ProfileHeader = styled.h3`
   margin-bottom: 20px;
 `;
 
-const Title = styled.h3`
+const Title = styled.h5`
   font-size: 22px;
   font-weight: bold;
   color: #228b22;

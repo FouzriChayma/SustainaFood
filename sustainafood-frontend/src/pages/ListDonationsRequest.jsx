@@ -10,6 +10,8 @@ import { createAndAcceptDonationTransaction , rejectDonation } from '../api/dona
 import imgmouna from '../assets/images/imgmouna.png';
 import styled, { createGlobalStyle } from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
+import { useAlert } from '../contexts/AlertContext';
+
 
 // Global Styles
 const GlobalStyle = createGlobalStyle`
@@ -379,6 +381,8 @@ const StatusBadge = styled.span`
 `;
 
 const ListDonationsRequest = () => {
+  const { showAlert } = useAlert(); // Added useAlert
+
   const { id } = useParams();
   const [donations, setDonations] = useState([]);
   const [filteredDonations, setFilteredDonations] = useState([]);
@@ -498,10 +502,12 @@ const ListDonationsRequest = () => {
       setDonations(prev => prev.map(d => 
         d._id === donationId ? { ...d, status: 'approved' } : d
       ));
-      alert('Donation accepted and transaction created successfully!');
+      showAlert('success','Donation accepted and transaction created successfully!');
     } catch (error) {
       console.error('Error accepting donation:', error.response?.data || error.message);
-      alert(error.response?.data?.message || 'Failed to accept donation');
+      showAlert('error', 'Failed to accept donation');
+
+      
     } finally {
       setProcessing(prev => ({ ...prev, [donationId]: false }));
     }
@@ -509,7 +515,8 @@ const ListDonationsRequest = () => {
 
   const handleRejectDonation = async (donationId) => {
     if (!rejectionReason) {
-      alert('Please provide a reason for rejection');
+      showAlert('warning', 'Please provide a reason for rejection');
+
       return;
     }
 
@@ -524,10 +531,12 @@ const ListDonationsRequest = () => {
       ));
       setCurrentRejectionId(null);
       setRejectionReason('');
-      alert('Donation rejected successfully!');
+   
+      showAlert('success', 'Donation rejected successfully!');
     } catch (error) {
       console.error('Error rejecting donation:', error.response?.data || error.message);
-      alert(error.response?.data?.message || 'Failed to reject donation');
+      showAlert('error', 'Failed to reject donation');
+
     } finally {
       setProcessing(prev => ({ ...prev, [donationId]: false }));
     }

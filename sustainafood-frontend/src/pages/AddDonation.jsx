@@ -9,11 +9,13 @@ import { FaEdit, FaTrash, FaSave } from "react-icons/fa";
 import { addDonation } from "../api/donationService";
 import { createrequests } from "../api/requestNeedsService";
 import { useAuth } from "../contexts/AuthContext";
+import { useAlert } from "../contexts/AlertContext"; // Importez le hook useAlert
 
 export const AddDonation = () => {
   const { authUser } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const { showAlert } = useAlert(); // Remplacez l'état local par le contexte
 
   // Donation/Request fields
   const [title, setTitle] = useState("");
@@ -29,7 +31,7 @@ export const AddDonation = () => {
   const [errors, setErrors] = useState({});
 
   // Products state
-  const [products, setProducts] = useState([]); // CSV products
+  const [products, setProducts] = useState([]);
   const [manualProducts, setManualProducts] = useState([
     {
       name: "",
@@ -42,14 +44,14 @@ export const AddDonation = () => {
       image: "",
       status: "available",
     },
-  ]); // Manual products
+  ]);
 
   // Editing state for CSV table
   const [editableRow, setEditableRow] = useState(null);
   const [editedProduct, setEditedProduct] = useState({});
 
   // Toggle between CSV and manual entry
-  const [productEntryMode, setProductEntryMode] = useState("csv"); // "csv" or "form"
+  const [productEntryMode, setProductEntryMode] = useState("csv");
 
   // User data
   const user = JSON.parse(localStorage.getItem("user"));
@@ -58,7 +60,6 @@ export const AddDonation = () => {
   const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
 
-  // Options for select fields
   const productTypes = [
     "Canned_Goods",
     "Dry_Goods",
@@ -85,7 +86,6 @@ export const AddDonation = () => {
     }
   }, [user]);
 
-  // CSV File Upload handler
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -94,10 +94,10 @@ export const AddDonation = () => {
         header: true,
         skipEmptyLines: true,
       });
+      showAlert("warning", "Product list reset due to category change.");
     }
   };
 
-  // Form validation
   const validateForm = () => {
     let tempErrors = {};
     if (!title.trim()) tempErrors.title = "Title is required";
@@ -148,10 +148,10 @@ export const AddDonation = () => {
     return Object.keys(tempErrors).length === 0;
   };
 
-  // CSV table handlers
   const handleEditRow = (index) => {
     setEditableRow(index);
     setEditedProduct({ ...products[index] });
+    showAlert("warning", "Editing product row.");
   };
 
   const handleRowInputChange = (e, key) => {
@@ -164,17 +164,19 @@ export const AddDonation = () => {
     setProducts(updatedProducts);
     setEditableRow(null);
     setEditedProduct({});
+    showAlert("success", "Product updated successfully!");
   };
 
   const handleDeleteRow = (index) => {
     setProducts(products.filter((_, i) => i !== index));
+    showAlert("success", "Product removed from list.");
   };
 
   const handleDeleteList = () => {
     setProducts([]);
+    showAlert("success", "Product list cleared.");
   };
 
-  // Manual product handlers
   const handleManualProductChange = (index, field, value) => {
     const updated = [...manualProducts];
     updated[index][field] = value;
@@ -196,13 +198,14 @@ export const AddDonation = () => {
         status: "available",
       },
     ]);
+    showAlert("success", "New product entry added.");
   };
 
   const handleRemoveManualProduct = (index) => {
     setManualProducts(manualProducts.filter((_, i) => i !== index));
+    showAlert("success", "Manual product removed.");
   };
 
-  // Submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -235,9 +238,11 @@ export const AddDonation = () => {
       try {
         const response = await addDonation(donationData);
         console.log("Donation created successfully:", response.data);
-        navigate("/ListOfDonations");
+        showAlert("success", "Donation created successfully!");
+        window.history.back()
       } catch (err) {
         console.error("Error creating donation:", err);
+        showAlert("error", err.response?.data?.message || "An error occurred while creating the donation.");
         setError(err.response?.data?.message || "An error occurred while creating the donation.");
       }
     } else if (isRecipient) {
@@ -258,15 +263,16 @@ export const AddDonation = () => {
       try {
         const response = await createrequests(donationData);
         console.log("Request created successfully:", response.data);
-        navigate("/ListOfDonations");
+        showAlert("success", "Request created successfully!");
+        window.history.back()
       } catch (err) {
         console.error("Error creating request:", err);
+        showAlert("error", err.response?.data?.message || "An error occurred while creating the request.");
         setError(err.response?.data?.message || "An error occurred while creating the request.");
       }
     }
   };
 
-  // Reset product states when category changes
   useEffect(() => {
     if (category !== "packaged_products") {
       setProducts([]);
@@ -382,7 +388,7 @@ export const AddDonation = () => {
                   <input
                     name="radio-group"
                     id="radio-form"
-                    class fiscalName="radio-button__input-adddonation"
+                    className="radio-button__input-adddonation"
                     type="radio"
                     checked={productEntryMode === "form"}
                     onChange={() => setProductEntryMode("form")}

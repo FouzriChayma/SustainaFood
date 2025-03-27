@@ -10,8 +10,11 @@ import { useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import { getUserById, updateUser } from "../api/userService"
 import { FaCamera } from "react-icons/fa"
+import { useAlert } from '../contexts/AlertContext';
 
 const EditProfile = () => {
+  const { showAlert } = useAlert(); // Added useAlert
+
   const [fileName, setFileName] = useState("")
   const [imagePreview, setImagePreview] = useState(null)
   const [studentCardPreview, setStudentCardPreview] = useState(null)
@@ -330,10 +333,12 @@ const EditProfile = () => {
 
     try {
       await updateUser(authUserId, data)
+      showAlert('success', 'Profile updated successfully');
+
       navigate("/profile")
     } catch (error) {
       console.error("Error updating profile:", error)
-      alert("Error occurred while updating. Please try again.")
+      showAlert('error', 'Failed to update profile');
     }
   }
 

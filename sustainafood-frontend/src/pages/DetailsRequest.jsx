@@ -7,7 +7,7 @@ import { getRequestById, deleteRequest, updateRequest, addDonationToRequest } fr
 import { FaEdit, FaTrash, FaSave, FaTimes, FaEye } from "react-icons/fa";
 import styled from 'styled-components';
 import logo from "../assets/images/LogoCh.png";
-import { Link, useNavigate } from "react-router-dom";
+import {  useNavigate } from "react-router-dom";
 
 import { useAlert } from '../contexts/AlertContext';
 

@@ -52,6 +52,7 @@ const AddDonation = () => {
   // Editing state for CSV table
   const [editableRow, setEditableRow] = useState(null);
   const [editedProduct, setEditedProduct] = useState({});
+  const [mealEntryMode, setMealEntryMode] = useState("form"); // "form" or "upload"
 
   // Toggle between CSV and manual entry
   const [productEntryMode, setProductEntryMode] = useState("csv"); // "csv" or "form"

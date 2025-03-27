@@ -3,8 +3,40 @@ const RequestNeed = require('../models/RequestNeed');
 const Donation = require('../models/Donation');
 const Product = require('../models/Product');
 const Counter = require('../models/Counter');
-
+const nodemailer = require("nodemailer");
+const path = require("path");
+const User = require('../models/User');  // Add this line
 // ✅ Get all donation transactions
+// Function to send email notifications
+async function sendEmail(to, subject, text, html, attachments = []) {
+    try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+            },
+            tls: {
+                rejectUnauthorized: false, // Disable SSL verification (use with caution)
+            },
+        });
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to,
+            subject,
+            text,
+            html,
+            attachments,
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`Email sent to ${to}`);
+    } catch (error) {
+        console.error(`Failed to send email to ${to}:`, error.message);
+        throw new Error(`Failed to send email: ${error.message}`);
+    }
+}
 async function getAllDonationTransactions(req, res) {
     try {
         const transactions = await DonationTransaction.find()
@@ -273,10 +305,14 @@ async function createAndAcceptDonationTransaction(req, res) {
             return res.status(400).json({ message: 'donationId and requestNeedId are required' });
         }
 
-        // Fetch donation
+        // Fetch donation and populate products
         const donation = await Donation.findById(donationId).populate('products.product');
         if (!donation) return res.status(404).json({ message: 'Donation not found' });
         console.log('Donation fetched:', JSON.stringify(donation, null, 2));
+
+        // Fetch the donor to get their email and name
+        const donor = await User.findById(donation.donor);
+        if (!donor) return res.status(404).json({ message: 'Donor not found' });
 
         // Fetch request need
         const requestNeed = await RequestNeed.findById(requestNeedId);
@@ -322,8 +358,6 @@ async function createAndAcceptDonationTransaction(req, res) {
                 if (product.totalQuantity < 0) product.totalQuantity = 0;
                 updatedProducts.push(product);
                 console.log(`Updated product ${productId} totalQuantity: ${product.totalQuantity}`);
-
-               
             }
         }
 
@@ -371,6 +405,63 @@ async function createAndAcceptDonationTransaction(req, res) {
 
         await transaction.save();
         console.log('Transaction saved successfully:', transaction);
+
+        // Send email notification to the donor
+        if (donor.email) {
+            const subject = `Your Donation "${donation.title}" Has Been Accepted`;
+            const text = `Dear ${donor.name || 'Donor'},
+
+Your donation titled "${donation.title}" has been accepted.
+
+Donation Details:
+- Title: ${donation.title}
+- Request: ${requestNeed.title}
+- Allocated Products: ${allocatedProducts.map(ap => {
+                const product = requestProducts.find(p => p._id.toString() === ap.product.toString());
+                return `${product?.name || 'Unknown Product'} (Quantity: ${ap.quantity})`;
+            }).join(', ')}
+- Accepted On: ${new Date().toLocaleDateString()}
+
+Thank you for your generosity!
+
+Best regards,
+Your Platform Team`;
+
+            const html = `
+                <div style="font-family: Arial, sans-serif; color: black;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <img src="cid:logo" alt="Platform Logo" style="max-width: 150px; height: auto;" />
+                    </div>
+                    <h2 style="color: #228b22;">Your Donation Has Been Accepted</h2>
+                    <p>Dear ${donor.name || 'Donor'},</p>
+                    <p>Your donation titled "<strong>${donation.title}</strong>" has been accepted.</p>
+                    <h3>Donation Details:</h3>
+                    <ul>
+                        <li><strong>Title:</strong> ${donation.title}</li>
+                        <li><strong>Request:</strong> ${requestNeed.title}</li>
+                        <li><strong>Allocated Products:</strong> ${allocatedProducts.map(ap => {
+                            const product = requestProducts.find(p => p._id.toString() === ap.product.toString());
+                            return `${product?.name || 'Unknown Product'} (Quantity: ${ap.quantity})`;
+                        }).join(', ')}</li>
+                        <li><strong>Accepted On:</strong> ${new Date().toLocaleDateString()}</li>
+                    </ul>
+                    <p>Thank you for your generosity!</p>
+                    <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
+                </div>
+            `;
+
+            const attachments = [
+                {
+                    filename: 'logo.png',
+                    path: path.join(__dirname, '../uploads/logo.png'), // Adjust path to your logo file
+                    cid: 'logo',
+                },
+            ];
+
+            await sendEmail(donor.email, subject, text, html, attachments);
+        } else {
+            console.warn(`Donor email not found for donor ID: ${donation.donor}`);
+        }
 
         res.status(201).json({ 
             message: 'Transaction created and accepted successfully', 
@@ -422,6 +513,10 @@ async function rejectDonation(req, res) {
             return res.status(404).json({ message: 'Donation not found' });
         }
 
+        // Fetch the donor to get their email and name
+        const donor = await User.findById(donation.donor);
+        if (!donor) return res.status(404).json({ message: 'Donor not found' });
+
         // Check if the donation is in a state that can be rejected
         if (donation.status !== 'pending') {
             return res.status(400).json({ 
@@ -431,8 +526,57 @@ async function rejectDonation(req, res) {
 
         // Update the donation status
         donation.status = 'rejected';
-        donation.rejectionReason = rejectionReason || 'No reason provided'; // Optional: store the rejection reason in the Donation model
+        donation.rejectionReason = rejectionReason || 'No reason provided';
         await donation.save();
+
+        // Send email notification to the donor
+        if (donor.email) {
+            const subject = `Your Donation "${donation.title}" Has Been Rejected`;
+            const text = `Dear ${donor.name || 'Donor'},
+
+We regret to inform you that your donation titled "${donation.title}" has been rejected.
+
+Donation Details:
+- Title: ${donation.title}
+- Rejection Reason: ${rejectionReason || 'No reason provided'}
+- Rejected On: ${new Date().toLocaleDateString()}
+
+If you have any questions, please contact our support team.
+
+Best regards,
+Your Platform Team`;
+
+            const html = `
+                <div style="font-family: Arial, sans-serif; color: black;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <img src="cid:logo" alt="Platform Logo" style="max-width: 150px; height: auto;" />
+                    </div>
+                    <h2 style="color: #dc3545;">Your Donation Has Been Rejected</h2>
+                    <p>Dear ${donor.name || 'Donor'},</p>
+                    <p>We regret to inform you that your donation titled "<strong>${donation.title}</strong>" has been rejected.</p>
+                    <h3>Donation Details:</h3>
+                    <ul>
+                        <li><strong>Title:</strong> ${donation.title}</li>
+                        <li><strong>Rejection Reason:</strong> ${rejectionReason || 'No reason provided'}</li>
+                        <li><strong>Rejected On:</strong> ${new Date().toLocaleDateString()}</li>
+                    </ul>
+                    <p>If you have any questions, please contact our support team.</p>
+                    <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
+                </div>
+            `;
+
+            const attachments = [
+                {
+                    filename: 'logo.png',
+                    path: path.join(__dirname, '../uploads/logo.png'), // Adjust path to your logo file
+                    cid: 'logo',
+                },
+            ];
+
+            await sendEmail(donor.email, subject, text, html, attachments);
+        } else {
+            console.warn(`Donor email not found for donor ID: ${donation.donor}`);
+        }
 
         res.status(200).json({ 
             message: 'Donation rejected successfully', 

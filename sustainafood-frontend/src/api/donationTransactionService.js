@@ -200,14 +200,14 @@ export const getTransactionsByRecipientId = async (recipientId) => {
     }
 };
 // Reject a donation directly
-export const rejectDonation = async (donationId, reason) => {
+export const rejectDonation = async (donationId, rejectionReason) => {
     try {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('No authentication token found');
         
         const response = await axios.put(
             `${API_BASE}/donation/${donationId}/reject`,
-            { rejectionReason: reason },
+            { rejectionReason: rejectionReason },
             {
                 headers: {
                     Authorization: `Bearer ${token}`,

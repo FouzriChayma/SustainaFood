@@ -224,6 +224,7 @@ const AddDonation = () => {
     donationData.append("category", category);
     donationData.append("created_at", new Date().toISOString());
     donationData.append("updated_at", new Date().toISOString());
+    donationData.append("status", "pending");
 
     if (category === "prepared_meals") {
       donationData.append("numberOfMeals", numberOfMeals);
@@ -232,64 +233,33 @@ const AddDonation = () => {
       donationData.append("mealType", mealType);
     }
 
-    if (isDonner) {
-      donationData.append("type", type);
-      donationData.append("donor", userid);
-      donationData.append("status", "pending");
-
-      if (category === "prepared_meals") {
-        donationData.append("numberOfMeals", numberOfMeals);
-      }
-
-      if (category === "packaged_products") {
-        const productsToSend = productEntryMode === "csv" ? products : manualProducts;
-        if (productsToSend.length) {
-          donationData.append("products", JSON.stringify(productsToSend));
-        }
-      }
-
-      try {
-        const response = await addDonation(donationData);
-        console.log("Donation created successfully:", response.data);
-        navigate("/ListOfDonations");
-      } catch (err) {
-        console.error("Error creating donation:", err);
-        setError(err.response?.data?.message || "An error occurred while creating the donation.");
-      }
-    } else if (isRecipient) {
-      donationData.append("recipient", userid);
-      donationData.append("status", "pending");
-    }
-
-
     if (category === "packaged_products") {
       const productsToSend = productEntryMode === "csv" ? products : manualProducts;
-      donationData.append("products", JSON.stringify(productsToSend)); // Always append products, even if empty array
-
+      donationData.append("products", JSON.stringify(productsToSend));
     }
 
     try {
       let response;
       if (isDonner) {
+        donationData.append("type", type);
+        donationData.append("donor", userid);
         response = await addDonation(donationData);
         console.log("Donation created successfully:", response.data);
-
-      } else {
+        showAlert("success", "Donation created successfully!");
+      } else if (isRecipient) {
+        donationData.append("recipient", userid);
         response = await createrequests(donationData);
         console.log("Request created successfully:", response.data);
-        navigate("/ListOfDonations");
-      } catch (err) {
-        console.error("Error creating request:", err);
-        setError(err.response?.data?.message || "An error occurred while creating the request.");
+        showAlert("success", "Request created successfully!");
       }
       navigate("/ListOfDonations");
     } catch (err) {
       console.error("Error creating donation/request:", err);
-      setError(err.response?.data?.message || "An error occurred while creating the donation/request.");
+      const errorMessage = err.response?.data?.message || "An error occurred while creating the donation/request.";
+      setError(errorMessage);
+      showAlert("error", errorMessage);
     }
-
   };
-
   useEffect(() => {
     if (category !== "packaged_products") {
       setProducts([]);

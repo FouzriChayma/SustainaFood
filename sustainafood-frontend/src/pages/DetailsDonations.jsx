@@ -5,7 +5,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getDonationById, deleteDonation, updateDonation } from '../api/donationService';
 import { createProduct, updateProduct, getProductById, deleteProduct } from '../api/productService';
-import { createRequestNeedForExistingDonation } from '../api/requestNeedsService'; // Re-added
+import { createRequestNeedForExistingDonation } from '../api/requestNeedsService';
 import { FaEdit, FaTrash, FaSave, FaTimes, FaEye } from "react-icons/fa";
 import styled from 'styled-components';
 import logo from "../assets/images/LogoCh.png";
@@ -98,12 +98,12 @@ const DetailsDonations = () => {
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingDonation, setIsAddingDonation] = useState(false);
-  const [isAddingRequest, setIsAddingRequest] = useState(false); // Added for request form
+  const [isAddingRequest, setIsAddingRequest] = useState(false);
   const user = JSON.parse(localStorage.getItem("user"));
   const [userid, setUserid] = useState();
   const [isTheOwner, setIsTheOwner] = useState(false);
   const [donationQuantities, setDonationQuantities] = useState([]);
-  const [requestQuantities, setRequestQuantities] = useState([]); // Added for request quantities
+  const [requestQuantities, setRequestQuantities] = useState([]);
   const navigate = useNavigate();
   const isDonor = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
@@ -117,6 +117,9 @@ const DetailsDonations = () => {
     category: "",
     description: "",
     products: [],
+    meals: [],
+    numberOfMeals: 0, // Added for schema compliance
+    donationType: 'products', // 'products' or 'meals'
   });
 
   useEffect(() => {
@@ -132,6 +135,10 @@ const DetailsDonations = () => {
       try {
         const response = await getDonationById(id);
         const fetchedDonation = response.data;
+        const hasProducts = fetchedDonation.products && fetchedDonation.products.length > 0;
+        const hasMeals = fetchedDonation.meals && fetchedDonation.meals.length > 0;
+        const donationType = hasMeals && !hasProducts ? 'meals' : 'products';
+
         setDonation(fetchedDonation);
         setEditedDonation({
           title: fetchedDonation.title || "",
@@ -140,21 +147,32 @@ const DetailsDonations = () => {
           type: fetchedDonation.type || "",
           category: fetchedDonation.category || "",
           description: fetchedDonation.description || "",
-          products: fetchedDonation.products && Array.isArray(fetchedDonation.products)
+          products: hasProducts
             ? fetchedDonation.products.map(item => ({
-                product: item.product?._id || item.product,
+                id: item.product?._id || item.product,
                 name: item.product?.name || '',
                 quantity: item.quantity || 0,
                 totalQuantity: item.product?.totalQuantity || 0,
                 status: item.product?.status || 'available',
                 productDescription: item.product?.productDescription || 'Default description',
                 productType: item.product?.productType || 'Other',
-                _id: item.product?._id,
+                weightPerUnit: item.product?.weightPerUnit || 0,
+                weightUnit: item.product?.weightUnit || 'kg',
               }))
             : [],
+          meals: hasMeals
+            ? fetchedDonation.meals.map(item => ({
+                id: item._id || item, // Just the ObjectId if not populated, or populated meal object
+                mealName: item.mealName || 'Unnamed Meal',
+                mealDescription: item.mealDescription || 'Default meal description',
+                mealType: item.mealType || 'Other',
+              }))
+            : [],
+          numberOfMeals: fetchedDonation.numberOfMeals || 0,
+          donationType,
         });
-        setDonationQuantities(fetchedDonation.products.map(() => 0));
-        setRequestQuantities(fetchedDonation.products.map(() => 0)); // Initialize request quantities
+        setDonationQuantities((hasProducts ? fetchedDonation.products : fetchedDonation.meals || []).map(() => 0));
+        setRequestQuantities((hasProducts ? fetchedDonation.products : fetchedDonation.meals || []).map(() => 0));
       } catch (err) {
         setError(err.response?.data?.message || 'Error fetching donation data');
       } finally {
@@ -186,56 +204,80 @@ const DetailsDonations = () => {
     const invalidProduct = editedDonation.products.find(
       (item) => !item.name?.trim() || !item.productDescription?.trim() || !item.productType?.trim()
     );
-    if (invalidProduct) {
-      showAlert('error', 'Please fill in all required fields for all products.');
+    const invalidMeal = editedDonation.meals.find(
+      (item) => !item.mealName?.trim() || !item.mealDescription?.trim() || !item.mealType?.trim()
+    );
+  
+    if (editedDonation.donationType === 'products' && invalidProduct) {
+      showAlert('error', 'Please fill in all required fields for products.');
       return;
     }
-
+    if (editedDonation.donationType === 'meals' && invalidMeal) {
+      showAlert('error', 'Please fill in all required fields for meals.');
+      return;
+    }
+    if (editedDonation.donationType === 'meals' && editedDonation.category === 'prepared_meals' && (!editedDonation.meals.length || editedDonation.numberOfMeals < 1)) {
+      showAlert('error', 'List of meals and a valid number of meals are required for prepared meals.');
+      return;
+    }
+  
     if (new Date(editedDonation.expirationDate) <= new Date()) {
       showAlert('error', 'Expiration date must be in the future.');
       return;
     }
-
-    const formattedProducts = editedDonation.products.map(product => ({
-      product: product._id || product.product,
-      quantity: Number(product.quantity) || 0,
-    }));
-
+  
     const donationData = {
       ...editedDonation,
-      products: formattedProducts,
+      products: editedDonation.donationType === 'products'
+        ? editedDonation.products.map(item => ({
+            product: item.id,
+            quantity: Number(item.quantity) || 0,
+          }))
+        : [],
+      meals: editedDonation.donationType === 'meals'
+        ? editedDonation.meals.map(item => item.id)
+        : [],
+      numberOfMeals: editedDonation.donationType === 'meals' ? Number(editedDonation.numberOfMeals) || 0 : 0,
     };
-
+  
     console.log('Sending update with data:', donationData);
+  
+    // Note: If you need to update/create meals, you'd need a separate API call here
     updateDonation(id, donationData)
       .then((response) => {
         console.log("Server response:", response.data);
-        window.location.reload()
+        window.location.reload();
         setDonation(response.data);
         setIsEditing(false);
         showAlert('success', 'Donation updated successfully');
       })
       .catch((error) => {
         console.error("Error updating donation:", error.response?.data || error);
-        showAlert('error', 'Failed to update donation');
+        showAlert('error', 'Failed to update donation: ' + (error.response?.data?.message || error.message));
       });
   };
 
   const handleProductChange = (index, field, value) => {
     const updatedProducts = [...editedDonation.products];
-    if (field === 'quantity' || field === 'totalQuantity') {
+    if (field === 'quantity' || field === 'totalQuantity' || field === 'weightPerUnit') {
       value = Number(value);
     }
     updatedProducts[index] = { ...updatedProducts[index], [field]: value };
     setEditedDonation({ ...editedDonation, products: updatedProducts });
   };
 
+  const handleMealChange = (index, field, value) => {
+    const updatedMeals = [...editedDonation.meals];
+    updatedMeals[index] = { ...updatedMeals[index], [field]: value };
+    setEditedDonation({ ...editedDonation, meals: updatedMeals });
+  };
+
   const handleDeleteProduct = async (index) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       const productToDelete = editedDonation.products[index];
-      if (productToDelete.product) {
+      if (productToDelete.id) {
         try {
-          await deleteProduct(productToDelete.product);
+          await deleteProduct(productToDelete.id);
         } catch (error) {
           console.error("Error deleting product:", error);
           showAlert('error', "Failed to delete product. Please try again.");
@@ -247,15 +289,24 @@ const DetailsDonations = () => {
     }
   };
 
+  const handleDeleteMeal = async (index) => {
+    if (window.confirm("Are you sure you want to delete this meal?")) {
+      const updatedMeals = editedDonation.meals.filter((_, i) => i !== index);
+      setEditedDonation({ ...editedDonation, meals: updatedMeals });
+    }
+  };
+
   const handleAddProduct = () => {
     const newProduct = {
-      product: null,
+      id: null,
       name: '',
       quantity: 0,
       totalQuantity: 0,
       status: 'available',
       productDescription: 'New product description',
       productType: 'Other',
+      weightPerUnit: 0,
+      weightUnit: 'kg',
     };
     setEditedDonation({
       ...editedDonation,
@@ -263,35 +314,47 @@ const DetailsDonations = () => {
     });
   };
 
+  const handleAddMeal = () => {
+    const newMeal = {
+      id: null,
+      mealName: '',
+      mealDescription: 'New meal description',
+      mealType: 'Other',
+    };
+    setEditedDonation({
+      ...editedDonation,
+      meals: [...editedDonation.meals, newMeal],
+    });
+  };
+
   const handleDonationQuantityChange = (index, value) => {
     const newQuantities = [...donationQuantities];
-    newQuantities[index] = Math.min(Number(value), donation.products[index].quantity);
+    const maxQuantity = donation.products ? donation.products[index]?.quantity || 0 : 0; // Only for products
+    newQuantities[index] = Math.min(Number(value), maxQuantity);
     setDonationQuantities(newQuantities);
   };
 
   const handleSubmitDonation = async () => {
     try {
       const token = localStorage.getItem('token');
-      console.log('Token before request:', token);
+      if (!token) throw new Error('No authentication token found');
 
-      const donationProducts = donation.products.map((product, index) => ({
-        product: product.product._id ? product.product._id.toString() : null,
+      const donationItems = donation.products?.map((item, index) => ({
+        product: item.product?._id || item.product,
         quantity: Number(donationQuantities[index]) || 0,
-      })).filter(p => p.quantity > 0);
+      })).filter(p => p.quantity > 0) || [];
 
       const donationData = {
         ...editedDonation,
-        products: donationProducts,
+        products: donationItems,
+        meals: editedDonation.donationType === 'meals' ? editedDonation.meals.map(item => item.id) : [],
         donor: user?._id || user?.id,
         expirationDate: donation.expirationDate || new Date().toISOString(),
       };
 
-      console.log('Sending donation update:', donationData);
       const response = await updateDonation(id, donationData);
-      console.log('Donation updated:', response.data);
-
       setIsAddingDonation(false);
-      setDonationQuantities(donation.products.map(() => 0));
+      setDonationQuantities(donation.products?.map(() => 0) || []);
       setDonation(response.data);
       showAlert('success', 'Donation updated successfully');
     } catch (error) {
@@ -303,66 +366,59 @@ const DetailsDonations = () => {
   const handleDonateAll = async () => {
     try {
       const token = localStorage.getItem('token');
-      console.log('Token before request:', token);
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
+      if (!token) throw new Error('No authentication token found');
 
-      const donationProducts = donation.products.map((product) => ({
-        product: product.product._id ? product.product._id.toString() : null,
-        quantity: Number(product.quantity) || 0,
-      }));
+      const donationItems = donation.products?.map(item => ({
+        product: item.product?._id || item.product,
+        quantity: Number(item.quantity) || 0,
+      })) || [];
 
       const donationData = {
         ...editedDonation,
-        products: donationProducts,
-        donor: user._id,
+        products: donationItems,
+        meals: editedDonation.donationType === 'meals' ? editedDonation.meals.map(item => item.id) : [],
+        donor: user?._id || user?.id,
         expirationDate: donation.expirationDate || new Date().toISOString(),
       };
 
-      console.log('Sending donation update:', JSON.stringify(donationData, null, 2));
       const response = await updateDonation(id, donationData);
-      console.log('Donated all:', response.data);
-
       setIsAddingDonation(false);
       setDonation(response.data);
-      showAlert('success', 'Donated all products successfully');
+      showAlert('success', 'Donated all items successfully');
     } catch (error) {
-      console.error('Error donating all:', error.response?.data || error.message);
+      console.error('Error donating all:', error);
       showAlert('error', `Failed to donate all: ${error.message || 'Unknown error'}`);
     }
   };
 
-  // New Request Logic
   const handleRequestQuantityChange = (index, value) => {
     const newQuantities = [...requestQuantities];
-    newQuantities[index] = Math.min(Number(value), donation.products[index].quantity);
+    const maxQuantity = donation.products ? donation.products[index]?.quantity || 0 : 0; // Only for products
+    newQuantities[index] = Math.min(Number(value), maxQuantity);
     setRequestQuantities(newQuantities);
   };
 
   const handleSubmitRequest = async () => {
     try {
       const token = localStorage.getItem('token');
-      console.log('Token before request:', token);
+      if (!token) throw new Error('No authentication token found');
 
-      const requestedProducts = donation.products.map((product, index) => ({
-        product: product.product._id ? product.product._id.toString() : null,
+      const requestedItems = donation.products?.map((item, index) => ({
+        product: item.product?._id || item.product,
         quantity: Number(requestQuantities[index]) || 0,
-      })).filter(p => p.quantity > 0);
+      })).filter(p => p.quantity > 0) || [];
 
       const requestData = {
         donation: id,
-        requestedProducts,
+        requestedProducts: editedDonation.donationType === 'products' ? requestedItems : [],
+        requestedMeals: editedDonation.donationType === 'meals' ? editedDonation.meals.map(item => ({ meal: item.id })) : [],
         recipient: user?._id || user?.id,
         expirationDate: donation.expirationDate || new Date().toISOString(),
       };
 
-      console.log('Sending request:', requestData);
       const response = await createRequestNeedForExistingDonation(id, requestData);
-      console.log('Request submitted:', response.data);
-
       setIsAddingRequest(false);
-      setRequestQuantities(donation.products.map(() => 0));
+      setRequestQuantities(donation.products?.map(() => 0) || []);
       showAlert('success', 'Request submitted successfully');
     } catch (error) {
       console.error('Error submitting request:', error);
@@ -373,32 +429,27 @@ const DetailsDonations = () => {
   const handleRequestAll = async () => {
     try {
       const token = localStorage.getItem('token');
-      console.log('Token before request:', token);
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
+      if (!token) throw new Error('No authentication token found');
 
-      const requestedProducts = donation.products.map((product) => ({
-        product: product.product._id ? product.product._id.toString() : null,
-        quantity: Number(product.quantity) || 0,
-      }));
+      const requestedItems = donation.products?.map(item => ({
+        product: item.product?._id || item.product,
+        quantity: Number(item.quantity) || 0,
+      })) || [];
 
       const requestData = {
         donation: id,
-        requestedProducts,
+        requestedProducts: editedDonation.donationType === 'products' ? requestedItems : [],
+        requestedMeals: editedDonation.donationType === 'meals' ? editedDonation.meals.map(item => ({ meal: item.id })) : [],
         recipient: user?._id || user?.id,
         expirationDate: donation.expirationDate || new Date().toISOString(),
       };
 
-      console.log('Sending request:', JSON.stringify(requestData, null, 2));
       const response = await createRequestNeedForExistingDonation(id, requestData);
-      console.log('Requested all:', response.data);
-
       setIsAddingRequest(false);
-      setRequestQuantities(donation.products.map(() => 0));
-      showAlert('success', 'Requested all products successfully');
+      setRequestQuantities(donation.products?.map(() => 0) || []);
+      showAlert('success', 'Requested all items successfully');
     } catch (error) {
-      console.error('Error requesting all:', error.response?.data || error.message);
+      console.error('Error requesting all:', error);
       showAlert('error', `Failed to request all: ${error.message || 'Unknown error'}`);
     }
   };
@@ -407,7 +458,7 @@ const DetailsDonations = () => {
   if (error) return <div>{error}</div>;
   if (!donation) return <div>No donation found.</div>;
 
-  const { title, location, expirationDate, products } = donation;
+  const { title, location, expirationDate, products, meals } = donation;
 
   return (
     <>
@@ -437,10 +488,7 @@ const DetailsDonations = () => {
                     <FaTimes className="fa-times" onClick={() => setIsEditing(false)} />
                   </>
                 ) : (
-                  <FaEdit
-                    className="fa-edit"
-                    onClick={() => setIsEditing(true)}
-                  />
+                  <FaEdit className="fa-edit" onClick={() => setIsEditing(true)} />
                 )}
               </div>
             )}
@@ -448,59 +496,118 @@ const DetailsDonations = () => {
 
           <p><strong>📍 Location:</strong> {isEditing ? <input type="text" value={editedDonation.location} onChange={(e) => setEditedDonation({ ...editedDonation, location: e.target.value })} placeholder="📍 Location" /> : location || "Unknown location"}</p>
           <p><strong>📆 Expiration Date:</strong> {isEditing ? <input type="date" value={editedDonation.expirationDate ? new Date(editedDonation.expirationDate).toISOString().split('T')[0] : ''} onChange={(e) => setEditedDonation({ ...editedDonation, expirationDate: e.target.value })} /> : expirationDate ? new Date(expirationDate).toLocaleDateString() : "Not set"}</p>
+      
+          {editedDonation.donationType === 'meals' && isEditing && editedDonation.category === 'prepared_meals' && (
+            <p>
+              <strong>🔢 Number of Meals:</strong>
+              <input
+                type="number"
+                min="1"
+                value={editedDonation.numberOfMeals}
+                onChange={(e) => setEditedDonation({ ...editedDonation, numberOfMeals: Number(e.target.value) })}
+                placeholder="Number of Meals"
+                style={{ marginLeft: "10px", width: "100px" }}
+              />
+            </p>
+          )}
 
-          <h4>📦 Products:</h4>
-          <ul className="donation-ul">
-            {isEditing ? (
-              editedDonation.products.map((product, index) => (
-                <li key={index} style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
-                  <input type="text" value={product.name} onChange={(e) => handleProductChange(index, 'name', e.target.value)} placeholder="🔖 Product Name" />
-                  <input type="text" value={product.productDescription} onChange={(e) => handleProductChange(index, 'productDescription', e.target.value)} placeholder="📝 Description" style={{ marginLeft: "10px" }} />
-                  <input type="number" value={product.quantity} onChange={(e) => handleProductChange(index, 'quantity', e.target.value)} placeholder="🔢 Quantity" style={{ marginLeft: "10px" }} />
-                  <select value={product.productType} onChange={(e) => handleProductChange(index, 'productType', e.target.value)} style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}>
-                    <option value="Canned_Goods">Canned Goods</option>
-                    <option value="Dry_Goods">Dry Goods</option>
-                    <option value="Beverages">Beverages</option>
-                    <option value="Snacks">Snacks</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  <select value={product.status} onChange={(e) => handleProductChange(index, 'status', e.target.value)} style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}>
-                    <option value="available">Available</option>
-                    <option value="pending">Pending</option>
-                    <option value="delivered">Delivered</option>
-                  </select>
-                  <FaTimes onClick={() => handleDeleteProduct(index)} style={{ color: "red", cursor: "pointer", marginLeft: "10px" }} />
-                </li>
-              ))
-            ) : (
-              products && products.length > 0 ? (
-                products.map((product, index) => (
-                  <li className="donation-li-list" key={index}>
-                    <span><strong>🔖 Name:</strong> {product.product.name || 'Not specified'}</span> <br />
-                    <span><strong>📝 Description:</strong> {product.product.productDescription || 'None'}</span> <br />
-                    <span><strong>🔢 Quantity:</strong> {product.quantity || 0}</span> <br />
-                    <span><strong>🔄 Status:</strong> {product.product.status || 'Unknown'}</span>
-                  </li>
-                ))
-              ) : (
-                <li className="donation-li-list">No products available</li>
-              )
-            )}
-          </ul>
+          {editedDonation.donationType === 'products' ? (
+            <>
+              <h4>📦 Products:</h4>
+              <ul className="donation-ul">
+                {isEditing ? (
+                  editedDonation.products.map((product, index) => (
+                    <li key={index} style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
+                      <input type="text" value={product.name} onChange={(e) => handleProductChange(index, 'name', e.target.value)} placeholder="🔖 Product Name" />
+                      <input type="text" value={product.productDescription} onChange={(e) => handleProductChange(index, 'productDescription', e.target.value)} placeholder="📝 Description" style={{ marginLeft: "10px" }} />
+                      <input type="number" value={product.quantity} onChange={(e) => handleProductChange(index, 'quantity', e.target.value)} placeholder="🔢 Quantity" style={{ marginLeft: "10px" }} />
+                      <input type="number" value={product.weightPerUnit} onChange={(e) => handleProductChange(index, 'weightPerUnit', e.target.value)} placeholder="⚖️ Weight" style={{ marginLeft: "10px" }} />
+                      <select value={product.weightUnit} onChange={(e) => handleProductChange(index, 'weightUnit', e.target.value)} style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}>
+                        <option value="kg">kg</option>
+                        <option value="g">g</option>
+                        <option value="lb">lb</option>
+                        <option value="oz">oz</option>
+                      </select>
+                      <select value={product.productType} onChange={(e) => handleProductChange(index, 'productType', e.target.value)} style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}>
+                        <option value="Canned_Goods">Canned Goods</option>
+                        <option value="Dry_Goods">Dry Goods</option>
+                        <option value="Beverages">Beverages</option>
+                        <option value="Snacks">Snacks</option>
+                        <option value="Other">Other</option>
+                      </select>
+                      <select value={product.status} onChange={(e) => handleProductChange(index, 'status', e.target.value)} style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}>
+                        <option value="available">Available</option>
+                        <option value="pending">Pending</option>
+                        <option value="delivered">Delivered</option>
+                      </select>
+                      <FaTimes onClick={() => handleDeleteProduct(index)} style={{ color: "red", cursor: "pointer", marginLeft: "10px" }} />
+                    </li>
+                  ))
+                ) : (
+                  products && products.length > 0 ? (
+                    products.map((product, index) => (
+                      <li className="donation-li-list" key={index}>
+                        <span><strong>🔖 Name:</strong> {product.product?.name || 'Not specified'}</span> <br />
+                        <span><strong>📝 Description:</strong> {product.product?.productDescription || 'None'}</span> <br />
+                        <span><strong>🔢 Quantity:</strong> {product.quantity || 0}</span> <br />
+                        <span><strong>⚖️ Weight:</strong> {product.product?.weightPerUnit || 0} {product.product?.weightUnit || 'kg'}</span> <br />
+                        <span><strong>🔄 Status:</strong> {product.product?.status || 'Unknown'}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="donation-li-list">No products available</li>
+                  )
+                )}
+              </ul>
+            </>
+          ) : (
+            <>
+              <h4>🍽️ Meals:</h4>
+              <ul className="donation-ul">
+                {isEditing ? (
+                  editedDonation.meals.map((meal, index) => (
+                    <li key={index} style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
+                      <input type="text" value={meal.mealName} onChange={(e) => handleMealChange(index, 'mealName', e.target.value)} placeholder="🍽️ Meal Name" />
+                      <input type="text" value={meal.mealDescription} onChange={(e) => handleMealChange(index, 'mealDescription', e.target.value)} placeholder="📝 Description" style={{ marginLeft: "10px" }} />
+                      <select value={meal.mealType} onChange={(e) => handleMealChange(index, 'mealType', e.target.value)} style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}>
+                        <option value="Breakfast">Breakfast</option>
+                        <option value="Lunch">Lunch</option>
+                        <option value="Dinner">Dinner</option>
+                        <option value="Snack">Snack</option>
+                        <option value="Other">Other</option>
+                      </select>
+                      <FaTimes onClick={() => handleDeleteMeal(index)} style={{ color: "red", cursor: "pointer", marginLeft: "10px" }} />
+                    </li>
+                  ))
+                ) : (
+                  meals && meals.length > 0 ? (
+                    meals.map((meal, index) => (
+                      <li className="donation-li-list" key={index}>
+                        <span><strong>🍽️ Name:</strong> {meal.mealName || 'Not specified'}</span> <br />
+                        <span><strong>📝 Description:</strong> {meal.mealDescription || 'None'}</span> <br />
+                        <span><strong>🍴 Type:</strong> {meal.mealType || 'Unknown'}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="donation-li-list">No meals available</li>
+                  )
+                )}
+              </ul>
+            </>
+          )}
 
-          {/* Donation Form */}
-          {isAddingDonation && (
+          {isAddingDonation && editedDonation.donationType === 'products' && (
             <DonationForm>
               <h4>Update Donation Quantities</h4>
-              {donation.products.map((product, index) => (
+              {donation.products.map((item, index) => (
                 <div key={index}>
                   <label>
-                    {product.product.name} - {product.product.productDescription} (Max: {product.quantity})
+                    {item.product?.name} - {item.product?.productDescription} (Max: {item.quantity})
                   </label>
                   <input
                     type="number"
                     min="0"
-                    max={product.quantity}
+                    max={item.quantity}
                     value={donationQuantities[index]}
                     onChange={(e) => handleDonationQuantityChange(index, e.target.value)}
                     placeholder="Quantity to update"
@@ -512,19 +619,18 @@ const DetailsDonations = () => {
             </DonationForm>
           )}
 
-          {/* Request Form */}
-          {isAddingRequest && (
+          {isAddingRequest && editedDonation.donationType === 'products' && (
             <DonationForm>
               <h4>Specify the Request</h4>
-              {donation.products.map((product, index) => (
+              {donation.products.map((item, index) => (
                 <div key={index}>
                   <label>
-                    {product.product.name} - {product.product.productDescription} (Max: {product.quantity})
+                    {item.product?.name} - {item.product?.productDescription} (Max: {item.quantity})
                   </label>
                   <input
                     type="number"
                     min="0"
-                    max={product.quantity}
+                    max={item.quantity}
                     value={requestQuantities[index]}
                     onChange={(e) => handleRequestQuantityChange(index, e.target.value)}
                     placeholder="Quantity to request"
@@ -539,15 +645,12 @@ const DetailsDonations = () => {
           <Button variant="back" onClick={() => window.history.back()}>🔙 Go Back</Button>
 
           {isTheOwner && !isEditing && (
-            <>
-           
-              <Button variant="submit" as={Link} to={`/ListDonationsRequest/${id}`}>
-                👀 See Requests
-              </Button>
-            </>
+            <Button variant="submit" as={Link} to={`/ListDonationsRequest/${id}`}>
+              👀 See Requests
+            </Button>
           )}
 
-          {!isTheOwner && isRecipient  && (
+          {!isTheOwner && isRecipient && (
             <Button
               variant={isAddingRequest ? "cancel" : "add"}
               onClick={() => setIsAddingRequest(!isAddingRequest)}
@@ -557,7 +660,9 @@ const DetailsDonations = () => {
           )}
 
           {isEditing && (
-            <Button variant="add" onClick={handleAddProduct}>➕ Add Product</Button>
+            <Button variant="add" onClick={editedDonation.donationType === 'products' ? handleAddProduct : handleAddMeal}>
+              ➕ Add {editedDonation.donationType === 'products' ? 'Product' : 'Meal'}
+            </Button>
           )}
         </div>
       </div>

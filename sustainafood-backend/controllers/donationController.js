@@ -142,14 +142,14 @@ async function updateDonation(req, res) {
       return res.status(400).json({ message: 'Invalid donation ID' });
     }
 
-    // Fetch the existing donation to preserve unchanged fields
+    // Fetch the existing donation
     const existingDonation = await Donation.findById(id);
     if (!existingDonation) {
       return res.status(404).json({ message: 'Donation not found' });
     }
 
     // Validate and process products if provided
-    let updatedProducts = existingDonation.products; // Default to existing products
+    let updatedProducts = existingDonation.products;
     if (products !== undefined) {
       if (!Array.isArray(products)) {
         return res.status(400).json({ message: 'Products must be a valid array' });
@@ -162,32 +162,21 @@ async function updateDonation(req, res) {
           return res.status(400).json({ message: `Invalid quantity for product ${item.product}: ${item.quantity}` });
         }
       }
-      updatedProducts = products; // Use provided products if valid
+      updatedProducts = products;
     }
 
     // Validate and process meals if provided
-    let updatedMealIds = existingDonation.meals; // Default to existing meals
+    let updatedMealIds = existingDonation.meals;
     if (meals !== undefined) {
       if (!Array.isArray(meals)) {
         return res.status(400).json({ message: 'Meals must be a valid array' });
       }
-      for (const meal of meals) {
-        if (!meal.mealName || !meal.mealDescription || !meal.mealType) {
-          return res.status(400).json({ message: 'Each meal must have a name, description, and type' });
+      for (const mealId of meals) {
+        if (!mongoose.Types.ObjectId.isValid(mealId)) {
+          return res.status(400).json({ message: `Invalid meal ID: ${mealId}` });
         }
       }
-
-      // Update or create meals
-      const updatedMeals = await Promise.all(
-        meals.map(async (meal) => {
-          if (meal._id && mongoose.Types.ObjectId.isValid(meal._id)) {
-            return await Meal.findByIdAndUpdate(meal._id, meal, { new: true });
-          } else {
-            return await Meal.create(meal);
-          }
-        })
-      );
-      updatedMealIds = updatedMeals.map(meal => meal._id);
+      updatedMealIds = meals; // Use provided meal IDs
     }
 
     // Update the donation
@@ -278,7 +267,7 @@ async function getDonationById(req, res) {
       const donation = await Donation.findById(id)
           .populate('donor')
           .populate('products.product')
-          .populate('meals.meal');
+          .populate('meals');
 
       if (!donation) {
           return res.status(404).json({ message: 'Donation not found' });
@@ -297,7 +286,7 @@ async function getDonationsByUserId(req, res) {
       const { userId } = req.params;
       const donations = await Donation.find({ donor: userId, isaPost: true })
           .populate('products.product')
-          .populate('meals.meal');
+          .populate('meals');
 
       if (donations.length === 0) {
           return res.status(404).json({ message: 'No donations found for this user' });

@@ -116,6 +116,7 @@ export const Composantdonation = ({ donation }) => {
     title,
     location,
     expirationDate,
+    numberOfMeals,  
     products = [],
     meals = [],
     status,
@@ -157,12 +158,13 @@ export const Composantdonation = ({ donation }) => {
         ) : Array.isArray(meals) && meals.length > 0 ? (
           <>
             <h4>🍽️ Available Meals:</h4>
+            <span><strong>Quantity:</strong> {numberOfMeals || 0}</span>
+
             <ProductList>
               {meals.slice(0, 2).map((meal, index) => (
                 <ProductItem key={index}>
                   <span><strong>Name:</strong> {meal.mealName || 'Not specified'}</span>
                   <span><strong>Description:</strong> {meal.mealDescription || 'Not specified'}</span>
-                  <span><strong>Quantity:</strong> {meal.totalQuantity || meal.quantity || 0}</span>
                 </ProductItem>
               ))}
             </ProductList>

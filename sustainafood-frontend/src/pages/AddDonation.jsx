@@ -11,11 +11,10 @@ import { createrequests } from "../api/requestNeedsService";
 import { useAuth } from "../contexts/AuthContext";
 import { useAlert } from "../contexts/AlertContext"; // Importez le hook useAlert
 
-export const AddDonation = () => {
+const AddDonation = () => {
   const { authUser } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
-  const { showAlert } = useAlert(); // Remplacez l'état local par le contexte
 
   // Donation/Request fields
   const [title, setTitle] = useState("");
@@ -25,6 +24,10 @@ export const AddDonation = () => {
   const [category, setCategory] = useState("prepared_meals");
   const [description, setDescription] = useState("");
   const [numberOfMeals, setNumberOfMeals] = useState("");
+  //Prepared meals state
+  const [mealName, setMealName] = useState(""); //name of the meal
+  const [mealDescription, setMealDescription] = useState(""); //meal description
+  const [mealType, setMealType] = useState("Breakfast");
 
   // Error handling
   const [error, setError] = useState(null);
@@ -51,7 +54,7 @@ export const AddDonation = () => {
   const [editedProduct, setEditedProduct] = useState({});
 
   // Toggle between CSV and manual entry
-  const [productEntryMode, setProductEntryMode] = useState("csv");
+  const [productEntryMode, setProductEntryMode] = useState("csv"); // "csv" or "form"
 
   // User data
   const user = JSON.parse(localStorage.getItem("user"));
@@ -68,6 +71,7 @@ export const AddDonation = () => {
     "Soup",
     "Main_Course",
     "Dessert",
+    "Drinks",
     "Vegetables",
     "Fruits",
     "Meat",
@@ -75,6 +79,7 @@ export const AddDonation = () => {
     "Fastfood",
     "Other",
   ];
+  const MealTypes = ["Breakfast", "Lunch", "Dinner", "Snack", "Dessert", "Soup", "Other"];
   const weightUnits = ["kg", "g", "lb", "oz", "ml", "l"];
   const statuses = ["available", "pending", "reserved", "out_of_stock"];
 
@@ -86,6 +91,7 @@ export const AddDonation = () => {
     }
   }, [user]);
 
+  // CSV File Upload handler
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -219,6 +225,13 @@ export const AddDonation = () => {
     donationData.append("created_at", new Date().toISOString());
     donationData.append("updated_at", new Date().toISOString());
 
+    if (category === "prepared_meals") {
+      donationData.append("numberOfMeals", numberOfMeals);
+      donationData.append("mealName", mealName);
+      donationData.append("mealDescription", mealDescription);
+      donationData.append("mealType", mealType);
+    }
+
     if (isDonner) {
       donationData.append("type", type);
       donationData.append("donor", userid);
@@ -238,39 +251,43 @@ export const AddDonation = () => {
       try {
         const response = await addDonation(donationData);
         console.log("Donation created successfully:", response.data);
-        showAlert("success", "Donation created successfully!");
-        window.history.back()
+        navigate("/ListOfDonations");
       } catch (err) {
         console.error("Error creating donation:", err);
-        showAlert("error", err.response?.data?.message || "An error occurred while creating the donation.");
         setError(err.response?.data?.message || "An error occurred while creating the donation.");
       }
     } else if (isRecipient) {
       donationData.append("recipient", userid);
       donationData.append("status", "pending");
+    }
 
-      if (category === "prepared_meals") {
-        donationData.append("numberOfMeals", numberOfMeals);
-      }
 
-      if (category === "packaged_products") {
-        const productsToSend = productEntryMode === "csv" ? products : manualProducts;
-        if (productsToSend.length) {
-          donationData.append("requestedProducts", JSON.stringify(productsToSend));
-        }
-      }
+    if (category === "packaged_products") {
+      const productsToSend = productEntryMode === "csv" ? products : manualProducts;
+      donationData.append("products", JSON.stringify(productsToSend)); // Always append products, even if empty array
 
-      try {
-        const response = await createrequests(donationData);
+    }
+
+    try {
+      let response;
+      if (isDonner) {
+        response = await addDonation(donationData);
+        console.log("Donation created successfully:", response.data);
+
+      } else {
+        response = await createrequests(donationData);
         console.log("Request created successfully:", response.data);
-        showAlert("success", "Request created successfully!");
-        window.history.back()
+        navigate("/ListOfDonations");
       } catch (err) {
         console.error("Error creating request:", err);
-        showAlert("error", err.response?.data?.message || "An error occurred while creating the request.");
         setError(err.response?.data?.message || "An error occurred while creating the request.");
       }
+      navigate("/ListOfDonations");
+    } catch (err) {
+      console.error("Error creating donation/request:", err);
+      setError(err.response?.data?.message || "An error occurred while creating the donation/request.");
     }
+
   };
 
   useEffect(() => {
@@ -347,16 +364,74 @@ export const AddDonation = () => {
           </select>
 
           {category === "prepared_meals" && (
-            <input
-              className="signup-input"
-              type="number"
-              placeholder="Number of Meals"
-              value={numberOfMeals}
-              onChange={(e) => setNumberOfMeals(e.target.value)}
-              required
-            />
+            <>
+              <div className="radio-buttons-container-adddonation">
+                <div className="radio-button-adddonation">
+                  <input
+                    type="radio"
+                    id="meal-form"
+                    name="mealEntryMode"
+                    value="form"
+                    checked={mealEntryMode === "form"}
+                    onChange={() => setMealEntryMode("form")}
+                  />
+                  <label htmlFor="meal-form">Form</label>
+                </div>
+                <div className="radio-button-adddonation">
+                  <input
+                    type="radio"
+                    id="meal-csv"
+                    name="mealEntryMode"
+                    value="csv"
+                    checked={mealEntryMode === "csv"}
+                    onChange={() => setMealEntryMode("csv")}
+                  />
+                  <label htmlFor="meal-csv">CSV File</label>
+                </div>
+              </div>
+
+              {mealEntryMode === "form" && (
+                <>
+                  <input
+                    className="signup-input"
+                    type="text"
+                    placeholder="Meal Name"
+                    value={mealName}
+                    onChange={(e) => setMealName(e.target.value)}
+                    required
+                  />
+                  <textarea
+                    className="signup-input"
+                    placeholder="Meal Description"
+                    value={mealDescription}
+                    onChange={(e) => setMealDescription(e.target.value)}
+                    required
+                  />
+                  <select
+                    className="signup-input"
+                    value={mealType}
+                    onChange={(e) => setMealType(e.target.value)}
+                  >
+                    {MealTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
+
+
+              <input
+                className="signup-input"
+                type="number"
+                placeholder="Number of Meals"
+                value={numberOfMeals}
+                onChange={(e) => setNumberOfMeals(e.target.value)}
+                required
+              />
+            </>
           )}
-          {errors.numberOfMeals && <p className="error-message">{errors.numberOfMeals}</p>}
 
           <textarea
             className="signup-input"

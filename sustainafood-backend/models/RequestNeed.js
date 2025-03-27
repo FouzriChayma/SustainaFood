@@ -73,7 +73,7 @@ const requestNeedSchema = new Schema({
     }],
     requestedProducts: [{ type: Schema.Types.ObjectId, ref: 'Product',  required: [
         function() { return this.category === 'packaged_products'; }, 
-        'Number of meals is required for prepared meals'
+        'required for prepared meals'
       ], }],
 
 
@@ -81,7 +81,7 @@ const requestNeedSchema = new Schema({
         type: Number,
         required: [
             function() { return this.category === 'prepared_meals'; },
-            'Number of meals is required for prepared meals'
+            'required for prepared meals'
         ],
         min: [1, 'Number of meals cannot be negative'],
         validate: {
@@ -92,6 +92,13 @@ const requestNeedSchema = new Schema({
             },
             message: 'Number of meals must be an integer'
         }
+    },
+    mealName: { type: String },  
+    mealDescription: { type: String }, 
+    mealType: {  // ADD THIS LINE
+        type: String,
+        // Optionally, add an enum to restrict possible meal types
+       
     }
 }, {
     timestamps: { 

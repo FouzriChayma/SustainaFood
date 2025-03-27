@@ -7,11 +7,238 @@ const nodemailer = require("nodemailer");
 const path = require("path");
 const mongoose = require('mongoose');
 const User = require('../models/User');
+const multer = require('multer'); // Import multer
+
+const upload = multer().none(); // Create multer instance to handle FormData
+
+// ✅ Get all requests
+async function getAllRequests(req, res) {
+    try {
+        const requests = await RequestNeed.find({}, 'title location expirationDate description category recipient status linkedDonation requestedProducts numberOfMeals mealName mealDescription mealType')
+            .populate('recipient')
+            .populate('requestedProducts');
+        res.status(200).json(requests);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error });
+    }
+}
+
+// ✅ Get request by ID
+async function getRequestById(req, res) {
+    try {
+        const { id } = req.params;
+        const request = await RequestNeed.findById(id, 'title location expirationDate description category recipient status linkedDonation requestedProducts numberOfMeals mealName mealDescription mealType')
+            .populate('recipient')
+            .populate('requestedProducts');
+
+        if (!request) {
+            return res.status(404).json({ message: 'Request not found' });
+        }
+
+        res.status(200).json(request);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error });
+    }
+}
+
+// ✅ Get requests by Recipient ID
+async function getRequestsByRecipientId(req, res) {
+    try {
+        const { recipientId } = req.params;
+        const requests = await RequestNeed.find({ recipient: recipientId })
+            .populate('requestedProducts');
+
+        if (!requests.length) {
+            return res.status(404).json({ message: 'No requests found for this recipient' });
+        }
+
+        res.status(200).json(requests);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error });
+    }
+}
+
+// ✅ Get requests by Status
+async function getRequestsByStatus(req, res) {
+    try {
+        const { status } = req.params;
+        const requests = await RequestNeed.find({ status })
+            .populate('recipient')
+            .populate('requestedProducts');
+
+        if (!requests.length) {
+            return res.status(404).json({ message: 'No requests found with this status' });
+        }
+
+        res.status(200).json(requests);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error });
+    }
+}
+
+// ✅ Create a new request
+async function createRequest(req, res) {
+    console.log("Request body received:", req.body);
+
+    upload(req, res, async (err) => { // Use multer middleware here
+        if (err) {
+            return res.status(500).json({ message: "Multer error", error: err.message });
+        }
+
+        try {
+            let {
+                title,
+                location,
+                expirationDate,
+                description,
+                category,
+                recipient,
+                requestedProducts,
+                status,
+                linkedDonation,
+                numberOfMeals,
+                mealName,
+                mealDescription,
+                mealType  // Add mealType here
+            } = req.body;
+
+            // Ensure requestedProducts is an array and handle parsing if it's a string
+            if (typeof requestedProducts === 'string') {
+                try {
+                    requestedProducts = JSON.parse(requestedProducts);
+                    // Trim keys to remove leading/trailing spaces
+                    requestedProducts = requestedProducts.map(product => {
+                        const trimmedProduct = {};
+                        for (let key in product) {
+                            const trimmedKey = key.trim();
+                            trimmedProduct[trimmedKey] = product[key];
+                        }
+                        return trimmedProduct;
+                    });
+                } catch (error) {
+                    return res.status(400).json({ message: "Invalid requestedProducts format" });
+                }
+            } else if (!Array.isArray(requestedProducts)) {
+                requestedProducts = [];
+            }
+
+            // Filter out incomplete product requests and log invalid ones
+            requestedProducts = requestedProducts.filter(product => {
+                const isValid = product.name &&
+                    product.weightPerUnit &&
+                    product.totalQuantity &&
+                    product.productDescription &&
+                    product.status &&
+                    product.productType &&
+                    product.weightUnit &&
+                    product.weightUnitTotale;
+                if (!isValid) {
+                    console.log("Filtered out invalid product:", product);
+                }
+                return isValid;
+            });
+
+            // Validate expirationDate
+            if (isNaN(new Date(expirationDate).getTime())) {
+                return res.status(400).json({ message: "Invalid expiration date format" });
+            }
+
+            // Create the request without products first
+            const newRequest = new RequestNeed({
+                title,
+                location,
+                expirationDate: new Date(expirationDate),
+                description,
+                category: category || undefined,
+                recipient,
+                status: status || "pending",
+                linkedDonation: linkedDonation || null,
+                numberOfMeals: category === 'prepared_meals' ? parseInt(numberOfMeals, 10) : undefined,
+                mealName: mealName || undefined,  // Use || undefined
+                mealDescription: mealDescription || undefined,  // Use || undefined
+                mealType: mealType || undefined,  // And mealType
+                requestedProducts : []
+            });
+
+            try {
+                await newRequest.save();
+                let productIds = [];
+                if (category === 'packaged_products' && requestedProducts.length > 0) {
+
+                    const productDocs = requestedProducts.map(product => ({
+                        ...product,
+                        request: newRequest._id // Assuming your schema has a 'requestId' field
+                    }));
+                    const createdProducts = await Product.insertMany(productDocs);
+                    productIds = createdProducts.map(product => product._id);
+                    newRequest.requestedProducts = productIds;
+
+                    await newRequest.save(); // Persist changes
 
 
+                }
 
 
-// ✅ Create a RequestNeed for an existing Donation
+                console.log("Created Products:", newRequest.requestedProducts);
+                return res.status(201).json({ message: 'Request created successfully', newRequest });
+
+            } catch (err) {
+                console.error("❌ Product Insertion Error:", err);
+                return res.status(500).json({ message: "Failed to insert request", error: err.message });
+            }
+
+
+        } catch (error) {
+            console.error("Request Creation Error:", error);
+            res.status(500).json({
+                message: "Failed to create request",
+                error: error.message || error
+            });
+        }
+    });
+}
+
+// ✅ Update a request by ID
+async function updateRequest(req, res) {
+    try {
+        const { id } = req.params;
+        const {  requestedProducts, ...requestData } = req.body;
+
+        const updatedRequest = await RequestNeed.findByIdAndUpdate(
+            id,
+            {  requestedProducts, ...requestData},
+            { new: true }
+        )
+        .populate('recipient')
+        .populate('requestedProducts');
+
+        if (!updatedRequest) {
+            return res.status(404).json({ message: 'Request not found' });
+        }
+
+        res.status(200).json({ message: 'Request updated successfully', updatedRequest });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to update request', error });
+    }
+}
+
+// ✅ Delete a request by ID
+async function deleteRequest(req, res) {
+    try {
+        const { id } = req.params;
+        const deletedRequest = await RequestNeed.findByIdAndDelete(id);
+
+        if (!deletedRequest) {
+            return res.status(404).json({ message: 'Request not found' });
+        }
+
+        res.status(200).json({ message: 'Request deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to delete request', error });
+    }
+   
+}
+
 async function createRequestNeedForExistingDonation(req, res) {
     try {
         const { donationId } = req.params;
@@ -566,8 +793,7 @@ async function addDonationToRequest(req, res) {
       res.status(500).json({ message: 'Failed to add donation to request', error: error.message });
     }
   }
-
-  async function getRequestWithDonations(req, res) {
+async function getRequestWithDonations(req, res) {
     try {
         const { requestId } = req.params;
         
@@ -598,7 +824,7 @@ async function addDonationToRequest(req, res) {
         });
     }
 }
-  
+
 module.exports = {
     addDonationToRequest,
     getAllRequests,

@@ -1,5 +1,5 @@
 const Donation = require('../models/Donation');
-const Product = require('../models/Product'); // Import Product model
+const Product = require('../models/Product');
 const Counter = require('../models/Counter');
 const mongoose = require('mongoose');
 
@@ -24,7 +24,7 @@ async function getDonationById(req, res) {
         const { id } = req.params;
         const donation = await Donation.findById(id)
             .populate('donor')
-            .populate('products.product'); // Changé de 'products' à 'products.product'
+            .populate('products.product');
         console.log(donation);
 
         if (!donation) {
@@ -43,7 +43,7 @@ async function getDonationsByUserId(req, res) {
     try {
         const { userId } = req.params;
         const donations = await Donation.find({ donor: userId ,isaPost: true })
-            .populate('products.product'); // Changé de 'products' à 'products.product'
+            .populate('products.product');
         if (!donations.length) {
             return res.status(404).json({ message: 'No donations found for this user' });
         }
@@ -58,7 +58,7 @@ async function getDonationsByDate(req, res) {
     try {
         const { date } = req.params;
         const donations = await Donation.find({ expirationDate: new Date(date) })
-            .populate('products.product'); // Changé de 'products' à 'products.product'
+            .populate('products.product');
         if (!donations.length) {
             return res.status(404).json({ message: 'No donations found for this date' });
         }
@@ -72,7 +72,7 @@ async function getDonationsByType(req, res) {
     try {
         const { type } = req.params;
         const donations = await Donation.find({ Type: type })
-            .populate('products.product'); // Changé de 'products' à 'products.product'
+            .populate('products.product');
         if (!donations.length) {
             return res.status(404).json({ message: 'No donations found for this type' });
         }
@@ -86,7 +86,7 @@ async function getDonationsByCategory(req, res) {
     try {
         const { category } = req.params;
         const donations = await Donation.find({ Category: category })
-            .populate('products.product'); // Changé de 'products' à 'products.product'
+            .populate('products.product');
         if (!donations.length) {
             return res.status(404).json({ message: 'No donations found for this category' });
         }

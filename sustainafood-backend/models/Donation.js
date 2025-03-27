@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const Counter = require('./Counter');
 
+// Define Enums
 const Category = {
     PREPARED_MEALS: 'prepared_meals',
     PACKAGED_PRODUCTS: 'packaged_products'
@@ -18,13 +19,14 @@ const Status = {
 };
 Object.freeze(Status);
 
+// Define Donation Schema
 const donationSchema = new Schema({
     isaPost: { type: Boolean, default: true },
-    id: { type: Number, unique: true },
-    donor: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    id: { type: Number, unique: true }, // Auto-incremented custom ID
+    donor: { type: Schema.Types.ObjectId, ref: 'User', required: true }, // Renamed from 'user'
     title: { type: String, required: true, minlength: 3, maxlength: 100 },
     description: { type: String, maxlength: 500 },
-    category: { type: String, enum: Object.values(Category), required: true },
+    category: { type: String, enum: Object.values(Category), required: true }, // Lowercase naming
     products: [{
         product: { type: Schema.Types.ObjectId, ref: 'Product', required: true }, // Reference to Product
         quantity: { type: Number, required: true, min: 0 } // Donated quantity
@@ -46,20 +48,25 @@ const donationSchema = new Schema({
         type: Date,
         required: true,
         validate: {
-            validator: (date) => date > new Date(),
+            validator: (date) => date > new Date(), // Ensure future date
             message: 'Expiration date must be in the future'
         }
     },
     status: { type: String, enum: Object.values(Status), default: Status.PENDING, required: true },
-    linkedRequests: [{ type: Schema.Types.ObjectId, ref: 'RequestNeed' }]
+    linkedRequests: [{ type: Schema.Types.ObjectId, ref: 'RequestNeed' }], // Added from concept
+    mealName: { type: String },  // Add mealName
+    mealDescription: { type: String },  // Add mealDescription
+    MealType: { type: String} //Add MealType
 }, {
-    timestamps: true
+    timestamps: true // Adds createdAt and updatedAt automatically
 });
 
+// Indexes for performance
 donationSchema.index({ status: 1 });
 donationSchema.index({ category: 1 });
 donationSchema.index({ expirationDate: 1 });
 
+// Pre-save hook for auto-incrementing ID
 donationSchema.pre('save', async function(next) {
     if (this.isNew) {
         try {
@@ -76,5 +83,6 @@ donationSchema.pre('save', async function(next) {
     next();
 });
 
+// Create and export the Donation model
 const Donation = mongoose.model('Donation', donationSchema);
 module.exports = Donation;

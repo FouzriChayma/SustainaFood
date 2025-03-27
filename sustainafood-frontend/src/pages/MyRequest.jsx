@@ -262,8 +262,7 @@ const fetchRequests = async () => {
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
 
   return (
-    <>
-      <GlobalStyle />
+ <>      
       <Navbar />
       <Container>
         <Title>My Requests</Title>
@@ -333,10 +332,9 @@ const fetchRequests = async () => {
             >
               Next
             </button>
-          </PaginationControls>
-        )}
-      </Container>
+          </PaginationControls>)}
+        </Container>
       <Footer />
-    </>
-  );
+      </>
+    );
 }

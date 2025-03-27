@@ -516,27 +516,25 @@ const ListDonationsRequest = () => {
   const handleRejectDonation = async (donationId) => {
     if (!rejectionReason) {
       showAlert('warning', 'Please provide a reason for rejection');
-
       return;
     }
-
+  
     try {
       setProcessing(prev => ({ ...prev, [donationId]: 'rejecting' }));
       // Call the backend to update the donation status
-      await rejectDonation(donationId, rejectionReason);
-
+      await rejectDonation(donationId, rejectionReason); 
+  
       // Update the local state to reflect the rejection
       setDonations(prev => prev.map(d => 
         d._id === donationId ? { ...d, status: 'rejected' } : d
       ));
       setCurrentRejectionId(null);
       setRejectionReason('');
-   
+     
       showAlert('success', 'Donation rejected successfully!');
     } catch (error) {
       console.error('Error rejecting donation:', error.response?.data || error.message);
       showAlert('error', 'Failed to reject donation');
-
     } finally {
       setProcessing(prev => ({ ...prev, [donationId]: false }));
     }

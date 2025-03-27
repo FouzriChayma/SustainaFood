@@ -4,7 +4,7 @@ import '../assets/styles/DetailsDonations.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getDonationById, deleteDonation, updateDonation } from '../api/donationService';
-import { createProduct, updateProduct, getProductById, deleteProduct } from '../api/productService';
+import { deleteProduct } from '../api/productService'; // Removed unused imports
 import { createRequestNeedForExistingDonation } from '../api/requestNeedsService';
 import { FaEdit, FaTrash, FaSave, FaTimes, FaEye } from "react-icons/fa";
 import styled from 'styled-components';
@@ -118,7 +118,7 @@ const DetailsDonations = () => {
     description: "",
     products: [],
     meals: [],
-    numberOfMeals: 0, // Added for schema compliance
+    numberOfMeals: 0,
     donationType: 'products', // 'products' or 'meals'
   });
 
@@ -149,7 +149,7 @@ const DetailsDonations = () => {
           description: fetchedDonation.description || "",
           products: hasProducts
             ? fetchedDonation.products.map(item => ({
-                id: item.product?._id || item.product,
+               id: item.product?.id || null,
                 name: item.product?.name || '',
                 quantity: item.quantity || 0,
                 totalQuantity: item.product?.totalQuantity || 0,
@@ -162,7 +162,7 @@ const DetailsDonations = () => {
             : [],
           meals: hasMeals
             ? fetchedDonation.meals.map(item => ({
-                id: item._id || item, // Just the ObjectId if not populated, or populated meal object
+              id: item.id || null,
                 mealName: item.mealName || 'Unnamed Meal',
                 mealDescription: item.mealDescription || 'Default meal description',
                 mealType: item.mealType || 'Other',
@@ -207,7 +207,7 @@ const DetailsDonations = () => {
     const invalidMeal = editedDonation.meals.find(
       (item) => !item.mealName?.trim() || !item.mealDescription?.trim() || !item.mealType?.trim()
     );
-  
+
     if (editedDonation.donationType === 'products' && invalidProduct) {
       showAlert('error', 'Please fill in all required fields for products.');
       return;
@@ -220,36 +220,47 @@ const DetailsDonations = () => {
       showAlert('error', 'List of meals and a valid number of meals are required for prepared meals.');
       return;
     }
-  
+
     if (new Date(editedDonation.expirationDate) <= new Date()) {
       showAlert('error', 'Expiration date must be in the future.');
       return;
     }
-  
+
     const donationData = {
       ...editedDonation,
       products: editedDonation.donationType === 'products'
         ? editedDonation.products.map(item => ({
-            product: item.id,
+            id: item.id || null, // Null for new products
+            name: item.name,
+            productDescription: item.productDescription,
+            productType: item.productType,
+            weightPerUnit: Number(item.weightPerUnit) || 0,
+            weightUnit: item.weightUnit,
+            totalQuantity: Number(item.totalQuantity) || 0,
+            status: item.status,
             quantity: Number(item.quantity) || 0,
           }))
         : [],
       meals: editedDonation.donationType === 'meals'
-        ? editedDonation.meals.map(item => item.id)
+        ? editedDonation.meals.map(item => ({
+            id: item.id || null, // Null for new meals
+            mealName: item.mealName,
+            mealDescription: item.mealDescription,
+            mealType: item.mealType,
+          }))
         : [],
       numberOfMeals: editedDonation.donationType === 'meals' ? Number(editedDonation.numberOfMeals) || 0 : 0,
     };
-  
+
     console.log('Sending update with data:', donationData);
-  
-    // Note: If you need to update/create meals, you'd need a separate API call here
+
     updateDonation(id, donationData)
       .then((response) => {
         console.log("Server response:", response.data);
-        window.location.reload();
-        setDonation(response.data);
+        setDonation(response.data.data); // Adjusted to match backend response structure
         setIsEditing(false);
         showAlert('success', 'Donation updated successfully');
+        window.location.reload(); // Optional: Refresh to ensure UI syncs with backend
       })
       .catch((error) => {
         console.error("Error updating donation:", error.response?.data || error);
@@ -329,7 +340,7 @@ const DetailsDonations = () => {
 
   const handleDonationQuantityChange = (index, value) => {
     const newQuantities = [...donationQuantities];
-    const maxQuantity = donation.products ? donation.products[index]?.quantity || 0 : 0; // Only for products
+    const maxQuantity = donation.products ? donation.products[index]?.quantity || 0 : 0;
     newQuantities[index] = Math.min(Number(value), maxQuantity);
     setDonationQuantities(newQuantities);
   };
@@ -340,14 +351,28 @@ const DetailsDonations = () => {
       if (!token) throw new Error('No authentication token found');
 
       const donationItems = donation.products?.map((item, index) => ({
-        product: item.product?._id || item.product,
+        id: item.product?._id || item.product,
+        name: item.product?.name,
+        productDescription: item.product?.productDescription,
+        productType: item.product?.productType,
+        weightPerUnit: Number(item.product?.weightPerUnit) || 0,
+        weightUnit: item.product?.weightUnit,
+        totalQuantity: Number(item.product?.totalQuantity) || 0,
+        status: item.product?.status,
         quantity: Number(donationQuantities[index]) || 0,
       })).filter(p => p.quantity > 0) || [];
 
       const donationData = {
         ...editedDonation,
         products: donationItems,
-        meals: editedDonation.donationType === 'meals' ? editedDonation.meals.map(item => item.id) : [],
+        meals: editedDonation.donationType === 'meals'
+          ? editedDonation.meals.map(item => ({
+              id: item.id || null,
+              mealName: item.mealName,
+              mealDescription: item.mealDescription,
+              mealType: item.mealType,
+            }))
+          : [],
         donor: user?._id || user?.id,
         expirationDate: donation.expirationDate || new Date().toISOString(),
       };
@@ -355,7 +380,7 @@ const DetailsDonations = () => {
       const response = await updateDonation(id, donationData);
       setIsAddingDonation(false);
       setDonationQuantities(donation.products?.map(() => 0) || []);
-      setDonation(response.data);
+      setDonation(response.data.data);
       showAlert('success', 'Donation updated successfully');
     } catch (error) {
       console.error('Error submitting donation:', error);
@@ -369,21 +394,35 @@ const DetailsDonations = () => {
       if (!token) throw new Error('No authentication token found');
 
       const donationItems = donation.products?.map(item => ({
-        product: item.product?._id || item.product,
+        id: item.product?._id || item.product,
+        name: item.product?.name,
+        productDescription: item.product?.productDescription,
+        productType: item.product?.productType,
+        weightPerUnit: Number(item.product?.weightPerUnit) || 0,
+        weightUnit: item.product?.weightUnit,
+        totalQuantity: Number(item.product?.totalQuantity) || 0,
+        status: item.product?.status,
         quantity: Number(item.quantity) || 0,
       })) || [];
 
       const donationData = {
         ...editedDonation,
         products: donationItems,
-        meals: editedDonation.donationType === 'meals' ? editedDonation.meals.map(item => item.id) : [],
+        meals: editedDonation.donationType === 'meals'
+          ? editedDonation.meals.map(item => ({
+              id: item.id || null,
+              mealName: item.mealName,
+              mealDescription: item.mealDescription,
+              mealType: item.mealType,
+            }))
+          : [],
         donor: user?._id || user?.id,
         expirationDate: donation.expirationDate || new Date().toISOString(),
       };
 
       const response = await updateDonation(id, donationData);
       setIsAddingDonation(false);
-      setDonation(response.data);
+      setDonation(response.data.data);
       showAlert('success', 'Donated all items successfully');
     } catch (error) {
       console.error('Error donating all:', error);
@@ -393,7 +432,7 @@ const DetailsDonations = () => {
 
   const handleRequestQuantityChange = (index, value) => {
     const newQuantities = [...requestQuantities];
-    const maxQuantity = donation.products ? donation.products[index]?.quantity || 0 : 0; // Only for products
+    const maxQuantity = donation.products ? donation.products[index]?.quantity || 0 : 0;
     newQuantities[index] = Math.min(Number(value), maxQuantity);
     setRequestQuantities(newQuantities);
   };

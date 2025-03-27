@@ -134,55 +134,159 @@ async function createDonation(req, res) {
 // ✅ Update a donation (also updates related products)
 async function updateDonation(req, res) {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // Donation ID
     const { products, meals, ...donationData } = req.body;
 
-    // Validate the donation ID
+    // **Validate Donation ID**
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid donation ID' });
     }
 
-    // Fetch the existing donation
-    const existingDonation = await Donation.findById(id);
+    // **Fetch Existing Donation**
+    const existingDonation = await Donation.findById(id).populate('meals');
     if (!existingDonation) {
       return res.status(404).json({ message: 'Donation not found' });
     }
 
-    // Validate and process products if provided
-    let updatedProducts = existingDonation.products;
+    // **Process Products**
+    let updatedProducts = existingDonation.products || []; // Default to existing products
     if (products !== undefined) {
       if (!Array.isArray(products)) {
-        return res.status(400).json({ message: 'Products must be a valid array' });
+        return res.status(400).json({ message: 'Products must be an array' });
       }
+      updatedProducts = [];
       for (const item of products) {
-        if (!item.product || !mongoose.Types.ObjectId.isValid(item.product)) {
-          return res.status(400).json({ message: `Invalid product ID: ${item.product}` });
+        // Validate quantity if provided
+        if (item.quantity !== undefined && (typeof item.quantity !== 'number' || item.quantity < 0)) {
+          return res.status(400).json({ message: 'Invalid quantity in products array' });
         }
-        if (typeof item.quantity !== 'number' || item.quantity < 0) {
-          return res.status(400).json({ message: `Invalid quantity for product ${item.product}: ${item.quantity}` });
+
+        let productId;
+        if (item.id) {
+          // **Update Existing Product**
+          const product = await Product.findOne({ id: item.id });
+          if (!product) {
+            return res.status(404).json({ message: `Product with id ${item.id} not found` });
+          }
+          // Update allowed fields if provided
+          product.name = item.name ?? product.name;
+          product.productDescription = item.productDescription ?? product.productDescription;
+          product.productType = item.productType ?? product.productType;
+          product.weightPerUnit = item.weightPerUnit ?? product.weightPerUnit;
+          product.weightUnit = item.weightUnit ?? product.weightUnit;
+          product.totalQuantity = item.totalQuantity ?? product.totalQuantity;
+          product.status = item.status ?? product.status;
+          await product.save();
+          productId = product._id;
+        } else {
+          // **Create New Product**
+          const counter = await Counter.findOneAndUpdate(
+            { _id: 'ProductId' },
+            { $inc: { seq: 1 } },
+            { new: true, upsert: true }
+          );
+          const newProduct = new Product({
+            id: counter.seq, // Manually set the auto-incremented id
+            name: item.name,
+            productDescription: item.productDescription,
+            productType: item.productType,
+            weightPerUnit: item.weightPerUnit,
+            weightUnit: item.weightUnit,
+            totalQuantity: item.totalQuantity,
+            status: item.status || 'available', // Default status
+            donation: id // Link to this donation
+          });
+          await newProduct.save();
+          productId = newProduct._id;
         }
+        // Add to donation’s products array with quantity
+        updatedProducts.push({ product: productId, quantity: item.quantity || 1 });
       }
-      updatedProducts = products;
     }
 
-    // Validate and process meals if provided
-    let updatedMealIds = existingDonation.meals;
+    // **Process Meals**
+    let updatedMeals = [];
     if (meals !== undefined) {
       if (!Array.isArray(meals)) {
-        return res.status(400).json({ message: 'Meals must be a valid array' });
+        return res.status(400).json({ message: 'Meals must be an array' });
       }
-      for (const mealId of meals) {
-        if (!mongoose.Types.ObjectId.isValid(mealId)) {
-          return res.status(400).json({ message: `Invalid meal ID: ${mealId}` });
+
+      // **Identify Meals to Delete**
+      const existingMealIds = existingDonation.meals.map(meal => meal.id.toString()); // Custom numeric id
+      const updatedMealIds = meals
+        .filter(item => item.id) // Only consider meals with an id (existing meals)
+        .map(item => item.id.toString());
+
+      // Meals that are in existingDonation.meals but not in the updated meals list should be deleted
+      const mealsToDelete = existingMealIds.filter(mealId => !updatedMealIds.includes(mealId));
+
+      // **Delete Removed Meals**
+      if (mealsToDelete.length > 0) {
+        await Meal.deleteMany({ id: { $in: mealsToDelete } });
+      }
+
+      // **Process Updated/New Meals**
+      updatedMeals = [];
+      for (const item of meals) {
+        let mealId;
+        if (item.id) {
+          // **Update Existing Meal**
+          const meal = await Meal.findOne({ id: item.id });
+          if (!meal) {
+            return res.status(404).json({ message: `Meal with id ${item.id} not found` });
+          }
+          // Update allowed fields if provided
+          meal.mealName = item.mealName ?? meal.mealName;
+          meal.mealDescription = item.mealDescription ?? meal.mealDescription;
+          meal.mealType = item.mealType ?? meal.mealType;
+          await meal.save();
+          mealId = meal._id;
+        } else {
+          // **Create New Meal**
+          const counter = await Counter.findOneAndUpdate(
+            { _id: 'mealId' },
+            { $inc: { seq: 1 } },
+            { new: true, upsert: true }
+          );
+          const newMeal = new Meal({
+            id: counter.seq, // Manually set the auto-incremented id
+            mealName: item.mealName,
+            mealDescription: item.mealDescription,
+            mealType: item.mealType,
+            donation: id // Link to this donation
+          });
+          await newMeal.save();
+          mealId = newMeal._id;
         }
+        // Add to donation’s meals array
+        updatedMeals.push(mealId);
       }
-      updatedMealIds = meals; // Use provided meal IDs
+    } else {
+      // If meals is undefined, keep the existing meals
+      updatedMeals = existingDonation.meals.map(meal => meal._id);
     }
 
-    // Update the donation
+    // **Update Donation Fields**
+    const allowedFields = [
+      'title',
+      'location',
+      'expirationDate',
+      'type',
+      'category',
+      'description',
+      'numberOfMeals'
+    ];
+    const updateData = {};
+    allowedFields.forEach((field) => {
+      if (donationData[field] !== undefined) {
+        updateData[field] = donationData[field];
+      }
+    });
+
+    // **Save Updated Donation**
     const updatedDonation = await Donation.findByIdAndUpdate(
       id,
-      { ...donationData, products: updatedProducts, meals: updatedMealIds },
+      { ...updateData, products: updatedProducts, meals: updatedMeals },
       { new: true }
     )
       .populate('donor')
@@ -193,10 +297,17 @@ async function updateDonation(req, res) {
       return res.status(404).json({ message: 'Donation not found' });
     }
 
-    res.status(200).json({ message: 'Donation updated successfully', data: updatedDonation });
+    // **Success Response**
+    res.status(200).json({
+      message: 'Donation updated successfully',
+      data: updatedDonation
+    });
   } catch (error) {
     console.error('Error updating donation:', error);
-    res.status(500).json({ message: 'Failed to update donation', error: error.message });
+    res.status(500).json({
+      message: 'Failed to update donation',
+      error: error.message
+    });
   }
 }
 // ✅ Delete a donation (also deletes related products)

@@ -49,6 +49,9 @@ const DetailsDonations = () => {
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [requestedProducts, setRequestedProducts] = useState([]);
   const navigate = useNavigate();
+  const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
+  const isRecipient = user?.role === "ong" || user?.role === "student";
+  const { showAlert } = useAlert(); // Added useAlert
 
   const [editedDonation, setEditedDonation] = useState({
     title: "",

@@ -129,6 +129,7 @@ const DetailsRequest = () => {
 
   const isDonor = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
+  const { showAlert } = useAlert(); // Added useAlert
 
   useEffect(() => {
     const fetchRequest = async () => {

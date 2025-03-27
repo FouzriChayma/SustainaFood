@@ -141,12 +141,9 @@ export const Composantrequest = ({ request }) => {
               <ProductList>
                   {category === 'prepared_meals' ? (
                       <>
-                          <ProductItem>Name: {mealName}</ProductItem>
-                          <ProductItem>Description: {mealDescription}</ProductItem>
+                       
                           <ProductItem>Number of Meals: {numberOfMeals || 'Not specified'}</ProductItem>
-                          <ProductItem>
-        <p style={{ all: 'initial' }}>Meal Type: {mealType || "N/A"}</p>
-      </ProductItem>                      </>
+                                </>
                   ) : requestedProducts && requestedProducts.length > 0 ? (
                       requestedProducts.map((product, index) => (
                           <ProductItem key={index}>

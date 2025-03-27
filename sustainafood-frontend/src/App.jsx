@@ -62,6 +62,8 @@ const App = () => {
         <Route path="/reset-code" element={<ResetCode />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/two-fa-verification" element={<TwoFAVerification />} />
+        <Route path="/ListDonationsRequest/:id" element={<ListDonationsRequest />} />
+
 
         {/* Routes privées pour les admins */}
         <Route element={<PrivateRoute roles={["admin"]} />}>
@@ -84,7 +86,6 @@ const App = () => {
           <Route path="/requests/view/:id" element={<RequestDetails />} />
           <Route path="/products/view/:id" element={<ProductDetail />} />
           <Route path="/donations/view/:id" element={<DonationDetails />} />
-          <Route path="/ListDonationsRequest/:id" element={<ListDonationsRequest />} />
         </Route>
 
         {/* Routes privées pour ong, restaurant, supermarket, student, transporter */}

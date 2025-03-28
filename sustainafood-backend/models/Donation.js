@@ -105,6 +105,16 @@ donationSchema.pre('save', async function(next) {
     }
     next();
 });
+// Pre-save hook to ensure numberOfMeals matches the sum of meal quantities
+donationSchema.pre('save', async function(next) {
+    if (this.category === 'prepared_meals') {
+        const totalMeals = this.meals.reduce((sum, mealEntry) => sum + (mealEntry.quantity || 0), 0);
+        if (totalMeals !== this.numberOfMeals) {
+            this.numberOfMeals = totalMeals; // Update numberOfMeals to match the sum
+        }
+    }
+    next();
+});
 
 // Create and export the Donation model
 const Donation = mongoose.model('Donation', donationSchema);

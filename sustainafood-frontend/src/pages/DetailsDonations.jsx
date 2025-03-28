@@ -123,6 +123,41 @@ const DetailsDonations = () => {
     donationType: 'products',
   });
 
+  // Define the structured productTypes array
+  const productTypes = [
+    {
+      category: "Non-Perishable",
+      items: [
+        { value: "Canned_Goods", label: "Canned Goods (e.g., beans, soups)" },
+        { value: "Dry_Goods", label: "Dry Goods (e.g., rice, pasta)" },
+        { value: "Beverages", label: "Beverages (e.g., bottled water, juice)" },
+        { value: "Snacks", label: "Snacks (e.g., chips, granola bars)" },
+        { value: "Cereals", label: "Cereals (e.g., oatmeal, cornflakes)" },
+        { value: "Baked_Goods", label: "Baked Goods (e.g., packaged bread, cookies)" },
+        { value: "Condiments", label: "Condiments (e.g., ketchup, sauces)" },
+      ],
+    },
+    {
+      category: "Perishable",
+      items: [
+        { value: "Vegetables", label: "Vegetables (e.g., carrots, potatoes)" },
+        { value: "Fruits", label: "Fruits (e.g., apples, bananas)" },
+        { value: "Meat", label: "Meat (e.g., fresh beef, chicken)" },
+        { value: "Fish", label: "Fish (e.g., fresh salmon, tuna)" },
+        { value: "Dairy", label: "Dairy (e.g., milk, cheese)" },
+        { value: "Eggs", label: "Eggs (e.g., fresh eggs)" },
+      ],
+    },
+    {
+      category: "Specialty",
+      items: [
+        { value: "Baby_Food", label: "Baby Food (e.g., formula, purees)" },
+        { value: "Pet_Food", label: "Pet Food (e.g., dog/cat food)" },
+        { value: "Other", label: "Other (Miscellaneous)" },
+      ],
+    },
+  ];
+
   useEffect(() => {
     if (typeof user?.id === "number") {
       setUserid(user._id);
@@ -167,7 +202,7 @@ const DetailsDonations = () => {
                 mealName: item.meal?.mealName || 'Unnamed Meal',
                 mealDescription: item.meal?.mealDescription || 'Default meal description',
                 mealType: item.meal?.mealType || 'Other',
-                quantity: item.quantity || 1, // Use the quantity from Donation.meals
+                quantity: item.quantity || 1,
               }))
             : [],
           numberOfMeals: fetchedDonation.numberOfMeals || 0,
@@ -225,7 +260,6 @@ const DetailsDonations = () => {
         showAlert('error', 'List of meals and a valid total number of meals are required for prepared meals.');
         return;
       }
-      // Update numberOfMeals to match the sum of meal quantities
       editedDonation.numberOfMeals = totalMeals;
     }
 
@@ -255,7 +289,7 @@ const DetailsDonations = () => {
             mealName: item.mealName,
             mealDescription: item.mealDescription,
             mealType: item.mealType,
-            quantity: Number(item.quantity) || 1, // Include quantity
+            quantity: Number(item.quantity) || 1,
           }))
         : [],
       numberOfMeals: editedDonation.donationType === 'meals' ? Number(editedDonation.numberOfMeals) || 0 : 0,
@@ -327,7 +361,7 @@ const DetailsDonations = () => {
       totalQuantity: 0,
       status: 'available',
       productDescription: 'New product description',
-      productType: 'Other',
+      productType: 'Canned_Goods',
       weightPerUnit: 0,
       weightUnit: 'kg',
     };
@@ -343,7 +377,7 @@ const DetailsDonations = () => {
       mealName: '',
       mealDescription: 'New meal description',
       mealType: 'Other',
-      quantity: 1, // Default quantity
+      quantity: 1,
     };
     setEditedDonation({
       ...editedDonation,
@@ -499,7 +533,7 @@ const DetailsDonations = () => {
       }
 
       const requestData = {
-        donationId: id, // Changed from 'donation' to 'donationId' to match backend
+        donationId: id,
         requestedProducts: editedDonation.donationType === 'products' ? requestedItems : [],
         requestedMeals: editedDonation.donationType === 'meals' ? requestedMealsItems : [],
         recipientId: user?._id || user?.id,
@@ -543,7 +577,7 @@ const DetailsDonations = () => {
         : 0;
 
       const requestData = {
-        donationId: id, // Changed from 'donation' to 'donationId'
+        donationId: id,
         requestedProducts: editedDonation.donationType === 'products' ? requestedItems : [],
         requestedMeals: editedDonation.donationType === 'meals' ? requestedMealsItems : [],
         recipientId: user?._id || user?.id,
@@ -619,29 +653,71 @@ const DetailsDonations = () => {
                 {isEditing ? (
                   editedDonation.products.map((product, index) => (
                     <li key={index} style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
-                      <input type="text" value={product.name} onChange={(e) => handleProductChange(index, 'name', e.target.value)} placeholder="🔖 Product Name" />
-                      <input type="text" value={product.productDescription} onChange={(e) => handleProductChange(index, 'productDescription', e.target.value)} placeholder="📝 Description" style={{ marginLeft: "10px" }} />
-                      <input type="number" value={product.quantity} onChange={(e) => handleProductChange(index, 'quantity', e.target.value)} placeholder="🔢 Quantity" style={{ marginLeft: "10px" }} />
-                      <input type="number" value={product.weightPerUnit} onChange={(e) => handleProductChange(index, 'weightPerUnit', e.target.value)} placeholder="⚖️ Weight" style={{ marginLeft: "10px" }} />
-                      <select value={product.weightUnit} onChange={(e) => handleProductChange(index, 'weightUnit', e.target.value)} style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}>
+                      <input
+                        type="text"
+                        value={product.name}
+                        onChange={(e) => handleProductChange(index, 'name', e.target.value)}
+                        placeholder="🔖 Product Name"
+                      />
+                      <input
+                        type="text"
+                        value={product.productDescription}
+                        onChange={(e) => handleProductChange(index, 'productDescription', e.target.value)}
+                        placeholder="📝 Description"
+                        style={{ marginLeft: "10px" }}
+                      />
+                      <input
+                        type="number"
+                        value={product.quantity}
+                        onChange={(e) => handleProductChange(index, 'quantity', e.target.value)}
+                        placeholder="🔢 Quantity"
+                        style={{ marginLeft: "10px" }}
+                      />
+                      <input
+                        type="number"
+                        value={product.weightPerUnit}
+                        onChange={(e) => handleProductChange(index, 'weightPerUnit', e.target.value)}
+                        placeholder="⚖️ Weight"
+                        style={{ marginLeft: "10px" }}
+                      />
+                      <select
+                        value={product.weightUnit}
+                        onChange={(e) => handleProductChange(index, 'weightUnit', e.target.value)}
+                        style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}
+                      >
                         <option value="kg">kg</option>
                         <option value="g">g</option>
                         <option value="lb">lb</option>
                         <option value="oz">oz</option>
                       </select>
-                      <select value={product.productType} onChange={(e) => handleProductChange(index, 'productType', e.target.value)} style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}>
-                        <option value="Canned_Goods">Canned Goods</option>
-                        <option value="Dry_Goods">Dry Goods</option>
-                        <option value="Beverages">Beverages</option>
-                        <option value="Snacks">Snacks</option>
-                        <option value="Other">Other</option>
+                      <select
+                        value={product.productType}
+                        onChange={(e) => handleProductChange(index, 'productType', e.target.value)}
+                        style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}
+                      >
+                        {productTypes.map((group, groupIndex) => (
+                          <optgroup key={groupIndex} label={group.category}>
+                            {group.items.map((item, itemIndex) => (
+                              <option key={itemIndex} value={item.value}>
+                                {item.label}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
                       </select>
-                      <select value={product.status} onChange={(e) => handleProductChange(index, 'status', e.target.value)} style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}>
+                      <select
+                        value={product.status}
+                        onChange={(e) => handleProductChange(index, 'status', e.target.value)}
+                        style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}
+                      >
                         <option value="available">Available</option>
                         <option value="pending">Pending</option>
                         <option value="delivered">Delivered</option>
                       </select>
-                      <FaTimes onClick={() => handleDeleteProduct(index)} style={{ color: "red", cursor: "pointer", marginLeft: "10px" }} />
+                      <FaTimes
+                        onClick={() => handleDeleteProduct(index)}
+                        style={{ color: "red", cursor: "pointer", marginLeft: "10px" }}
+                      />
                     </li>
                   ))
                 ) : (
@@ -668,17 +744,42 @@ const DetailsDonations = () => {
                 {isEditing ? (
                   editedDonation.meals.map((meal, index) => (
                     <li key={index} style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
-                      <input type="text" value={meal.mealName} onChange={(e) => handleMealChange(index, 'mealName', e.target.value)} placeholder="🍽️ Meal Name" />
-                      <input type="text" value={meal.mealDescription} onChange={(e) => handleMealChange(index, 'mealDescription', e.target.value)} placeholder="📝 Description" style={{ marginLeft: "10px" }} />
-                      <input type="number" min="1" value={meal.quantity} onChange={(e) => handleMealChange(index, 'quantity', e.target.value)} placeholder="🔢 Quantity" style={{ marginLeft: "10px" }} />
-                      <select value={meal.mealType} onChange={(e) => handleMealChange(index, 'mealType', e.target.value)} style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}>
+                      <input
+                        type="text"
+                        value={meal.mealName}
+                        onChange={(e) => handleMealChange(index, 'mealName', e.target.value)}
+                        placeholder="🍽️ Meal Name"
+                      />
+                      <input
+                        type="text"
+                        value={meal.mealDescription}
+                        onChange={(e) => handleMealChange(index, 'mealDescription', e.target.value)}
+                        placeholder="📝 Description"
+                        style={{ marginLeft: "10px" }}
+                      />
+                      <input
+                        type="number"
+                        min="1"
+                        value={meal.quantity}
+                        onChange={(e) => handleMealChange(index, 'quantity', e.target.value)}
+                        placeholder="🔢 Quantity"
+                        style={{ marginLeft: "10px" }}
+                      />
+                      <select
+                        value={meal.mealType}
+                        onChange={(e) => handleMealChange(index, 'mealType', e.target.value)}
+                        style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}
+                      >
                         <option value="Breakfast">Breakfast</option>
                         <option value="Lunch">Lunch</option>
                         <option value="Dinner">Dinner</option>
                         <option value="Snack">Snack</option>
                         <option value="Other">Other</option>
                       </select>
-                      <FaTimes onClick={() => handleDeleteMeal(index)} style={{ color: "red", cursor: "pointer", marginLeft: "10px" }} />
+                      <FaTimes
+                        onClick={() => handleDeleteMeal(index)}
+                        style={{ color: "red", cursor: "pointer", marginLeft: "10px" }}
+                      />
                     </li>
                   ))
                 ) : (

@@ -52,7 +52,8 @@ async function createDonation(req, res) {
       }
     }
 
-    // Log the parsed meals for debugging
+    // Log the parsed products and meals for debugging
+    console.log("Parsed Products:", products);
     console.log("Parsed Meals:", meals);
 
     // Validate mealType values
@@ -81,41 +82,48 @@ async function createDonation(req, res) {
           quantity: quantity
         };
       })
-      .filter(meal => meal); // Ensure no null/undefined entries
-
-    // Log the valid meals for debugging
-    console.log("Valid Meals After Filtering:", validMeals);
+      .filter(meal => meal);
 
     // Validate and filter products
     const validProducts = products
       .map((product, index) => {
+        if (!product.name || typeof product.name !== 'string' || !product.name.trim()) {
+          throw new Error(`Product at index ${index} is missing a valid name`);
+        }
         if (!product.productType || typeof product.productType !== 'string') {
           throw new Error(`Product at index ${index} is missing a valid productType`);
         }
+        if (!product.productDescription || typeof product.productDescription !== 'string' || !product.productDescription.trim()) {
+          throw new Error(`Product at index ${index} is missing a valid productDescription`);
+        }
         const weightPerUnit = parseFloat(product.weightPerUnit);
         if (isNaN(weightPerUnit) || weightPerUnit <= 0) {
-          throw new Error(`Product at index ${index} has an invalid weightPerUnit: ${product.weightPerUnit}`);
+          throw new Error(`Product at index ${index} has an invalid weightPerUnit: ${product.weightPerUnit}. Must be a positive number`);
         }
         const totalQuantity = parseInt(product.totalQuantity);
         if (isNaN(totalQuantity) || totalQuantity <= 0) {
-          throw new Error(`Product at index ${index} has an invalid totalQuantity: ${product.totalQuantity}`);
-        }
-        if (!product.productDescription || typeof product.productDescription !== 'string') {
-          throw new Error(`Product at index ${index} is missing a valid productDescription`);
+          throw new Error(`Product at index ${index} has an invalid totalQuantity: ${product.totalQuantity}. Must be a positive integer`);
         }
         if (!product.status || typeof product.status !== 'string') {
           throw new Error(`Product at index ${index} is missing a valid status`);
         }
         return {
+          name: product.name,
           productType: product.productType,
+          productDescription: product.productDescription,
           weightPerUnit: weightPerUnit,
           weightUnit: product.weightUnit || 'kg',
+          weightUnitTotale: product.weightUnitTotale || 'kg',
           totalQuantity: totalQuantity,
-          productDescription: product.productDescription,
+          image: product.image || '',
           status: product.status || 'available'
         };
       })
       .filter(product => product);
+
+    // Log the valid products and meals for debugging
+    console.log("Valid Products After Filtering:", validProducts);
+    console.log("Valid Meals After Filtering:", validMeals);
 
     // Validate required fields
     if (!title || typeof title !== 'string' || !title.trim()) {
@@ -136,6 +144,9 @@ async function createDonation(req, res) {
 
     if (category === 'prepared_meals' && validMeals.length === 0) {
       throw new Error('At least one valid meal is required for prepared_meals category');
+    }
+    if (category === 'packaged_products' && validProducts.length === 0) {
+      throw new Error('At least one valid product is required for packaged_products category');
     }
 
     // Calculate numberOfMeals
@@ -188,7 +199,7 @@ async function createDonation(req, res) {
         });
 
         await newMeal.save();
-        console.log(`Created Meal Document: ${newMeal._id}`); // Debugging
+        console.log(`Created Meal Document: ${newMeal._id}`);
         mealEntries.push({
           meal: newMeal._id,
           quantity: meal.quantity
@@ -197,7 +208,8 @@ async function createDonation(req, res) {
     }
 
     // Process products: Create Product documents and link them
-    if (validProducts.length > 0) {
+    let productEntries = [];
+    if (category === 'packaged_products' && validProducts.length > 0) {
       for (let product of validProducts) {
         const counter = await Counter.findOneAndUpdate(
           { _id: 'ProductId' },
@@ -209,19 +221,32 @@ async function createDonation(req, res) {
           throw new Error('Failed to generate product ID');
         }
 
-        product.id = counter.seq;
-        product.donation = newDonation._id;
-      }
+        const newProduct = new Product({
+          id: counter.seq,
+          name: product.name,
+          productType: product.productType,
+          productDescription: product.productDescription,
+          weightPerUnit: product.weightPerUnit,
+          weightUnit: product.weightUnit,
+          weightUnitTotale: product.weightUnitTotale,
+          totalQuantity: product.totalQuantity,
+          image: product.image,
+          status: product.status,
+          donation: newDonation._id
+        });
 
-      const createdProducts = await Product.insertMany(validProducts);
-      newDonation.products = createdProducts.map((createdProduct, index) => ({
-        product: createdProduct._id,
-        quantity: validProducts[index].totalQuantity
-      }));
+        await newProduct.save();
+        console.log(`Created Product Document: ${newProduct._id}`);
+        productEntries.push({
+          product: newProduct._id,
+          quantity: product.totalQuantity
+        });
+      }
     }
 
-    // Assign the meal entries to the donation
+    // Assign the meal and product entries to the donation
     newDonation.meals = mealEntries;
+    newDonation.products = productEntries;
 
     // Log the donation before saving
     console.log("Donation Before Save:", newDonation);

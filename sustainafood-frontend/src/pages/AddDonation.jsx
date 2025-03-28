@@ -68,8 +68,25 @@ export const AddDonation = () => {
   const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
 
-  const productTypes = ["Canned_Goods", "Dry_Goods", "Beverages", "Snacks", "Soup", "Main_Course", "Dessert", "Vegetables", "Fruits", "Meat", "Fish", "Fastfood", "Other"];
-  const weightUnits = ["kg", "g", "lb", "oz", "ml", "l"];
+  // Updated productTypes array with the specified values
+  const productTypes = [
+    "Canned_Goods",    // e.g., canned beans, soups
+    "Dry_Goods",       // e.g., rice, pasta
+    "Beverages",       // e.g., bottled water, juice
+    "Snacks",          // e.g., chips, granola bars
+    "Cereals",         // e.g., oatmeal, cornflakes
+    "Baked_Goods",     // e.g., packaged bread, cookies
+    "Condiments",      // e.g., ketchup, sauces
+    "Vegetables",      // e.g., carrots, potatoes
+    "Fruits",          // e.g., apples, bananas
+    "Meat",            // e.g., fresh beef, chicken
+    "Fish",            // e.g., fresh salmon, tuna
+    "Dairy",           // e.g., milk, cheese
+    "Eggs",            // e.g., fresh eggs
+    "Baby_Food",       // e.g., formula, purees
+    "Pet_Food",        // e.g., dog/cat food
+    "Other"            // Miscellaneous
+  ];const weightUnits = ["kg", "g", "lb", "oz", "ml", "l"];
   const statuses = ["available", "pending", "reserved", "out_of_stock"];
   const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack", "Dessert", "Other"];
 
@@ -109,7 +126,10 @@ export const AddDonation = () => {
     const file = event.target.files[0];
     if (file) {
       Papa.parse(file, {
-        complete: (result) => setProducts(result.data),
+        complete: (result) => {
+          console.log("Parsed CSV Products:", result.data); // Debugging
+          setProducts(result.data);
+        },
         header: true,
         skipEmptyLines: true,
       });
@@ -172,15 +192,17 @@ export const AddDonation = () => {
         tempErrors.products = "Please upload a CSV file with products";
       } else if (productEntryMode === "form") {
         const invalidProducts = manualProducts.filter(
-          p => !p.name.trim() || !p.productType || !p.productDescription || (p.totalQuantity && p.totalQuantity <= 0)
+          p => !p.name.trim() || !p.productType || !p.productDescription.trim() || !p.weightPerUnit || p.weightPerUnit <= 0 || !p.totalQuantity || p.totalQuantity <= 0
         );
         if (invalidProducts.length > 0) {
-          tempErrors.products = "All products must have valid details and quantity";
+          tempErrors.products = "All products must have a name, type, description, weight per unit, and total quantity greater than 0";
+          console.log("Invalid Products:", invalidProducts); // Debugging
         }
       }
     }
 
     setErrors(tempErrors);
+    console.log("Validation Errors:", tempErrors); // Debugging
     return Object.keys(tempErrors).length === 0;
   };
 
@@ -288,7 +310,10 @@ export const AddDonation = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      console.log("Form validation failed. Errors:", errors);
+      return;
+    }
 
     const donationData = new FormData();
     donationData.append("title", title);
@@ -303,26 +328,24 @@ export const AddDonation = () => {
     if (category === "prepared_meals" && isDonner) {
       donationData.append("numberOfMeals", numberOfMeals);
       const mealsToSend = mealsEntryMode === "form" ? manualMeals : meals;
-      // Ensure quantity is an integer and all fields are present
       const formattedMeals = mealsToSend.map(meal => ({
         mealName: meal.mealName,
         mealDescription: meal.mealDescription,
         mealType: meal.mealType,
-        quantity: parseInt(meal.quantity), // Ensure quantity is an integer
+        quantity: parseInt(meal.quantity),
       }));
-      console.log("Formatted Meals to Send:", formattedMeals); // Debugging
+      console.log("Formatted Meals to Send:", formattedMeals);
       donationData.append("meals", JSON.stringify(formattedMeals));
     }
 
     if (category === "packaged_products") {
       const productsToSend = productEntryMode === "csv" ? products : manualProducts;
-      // Ensure totalQuantity is an integer
       const formattedProducts = productsToSend.map(product => ({
         ...product,
         totalQuantity: parseInt(product.totalQuantity),
         weightPerUnit: parseFloat(product.weightPerUnit),
       }));
-      console.log("Formatted Products to Send:", formattedProducts); // Debugging
+      console.log("Formatted Products to Send:", formattedProducts);
       donationData.append(isDonner ? "products" : "requestedProducts", JSON.stringify(formattedProducts));
     }
 
@@ -331,14 +354,13 @@ export const AddDonation = () => {
       if (isDonner) {
         donationData.append("type", type);
         donationData.append("donor", userid);
-
-        console.log("Sending Donation Data:", [...donationData.entries()]); // Debugging
+        console.log("Sending Donation Data:", [...donationData.entries()]);
         response = await addDonation(donationData);
         console.log("Donation created successfully:", response.data);
         showAlert("success", "Donation created successfully!");
       } else if (isRecipient) {
         donationData.append("recipient", userid);
-        console.log("Sending Request Data:", [...donationData.entries()]); // Debugging
+        console.log("Sending Request Data:", [...donationData.entries()]);
         response = await createrequests(donationData);
         console.log("Request created successfully:", response.data);
         showAlert("success", "Request created successfully!");
@@ -589,11 +611,11 @@ export const AddDonation = () => {
                                     {productTypes.map(pt => <option key={pt} value={pt}>{pt}</option>)}
                                   </select>
                                 ) : key === "weightUnit" || key === "weightUnitTotale" ? (
-                                  <select value={editedItem[key] || ""} onChange={(e) => handleRowInputChange(e, "key")} className="edit-input">
+                                  <select value={editedItem[key] || ""} onChange={(e) => handleRowInputChange(e, key)} className="edit-input">
                                     {weightUnits.map(wu => <option key={wu} value={wu}>{wu}</option>)}
                                   </select>
                                 ) : key === "status" ? (
-                                  <select value={editedItem[key] || ""} onChange={(e) => handleRowInputChange(e, "key")} className="edit-input">
+                                  <select value={editedItem[key] || ""} onChange={(e) => handleRowInputChange(e, key)} className="edit-input">
                                     {statuses.map(status => <option key={status} value={status}>{status}</option>)}
                                   </select>
                                 ) : (

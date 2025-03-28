@@ -32,5 +32,4 @@ router.put('/:transactionId/reject', donationTransactionController.rejectDonatio
 // New endpoint to create and accept a transaction from a donation
 router.post('/create-and-accept', donationTransactionController.createAndAcceptDonationTransaction);
 router.put('/donation/:donationId/reject', donationTransactionController.rejectDonation);
-
 module.exports = router;

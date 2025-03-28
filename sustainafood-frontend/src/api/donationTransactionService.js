@@ -226,6 +226,14 @@ export const rejectDonation = async (donationId, rejectionReason) => {
         throw error;
     }
 };
+export const rejectRequest = async (requestId, reason) => {
+    const token = localStorage.getItem('token');
+    return await axios.put(
+      `${API_URL}/reject-request/${requestId}`,
+      { reason },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  };
 export default {
     getAllDonationTransactions,
     getDonationTransactionById,
@@ -240,4 +248,5 @@ export default {
     createAndAcceptDonationTransaction,
     getTransactionsByRecipientId,
     rejectDonation,
+    rejectRequest
 };

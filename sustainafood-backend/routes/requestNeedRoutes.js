@@ -13,5 +13,5 @@ router.delete('/:id', requestNeedController.deleteRequest);
 router.post('/addDonationToRequest/:requestId/donations', requestNeedController.addDonationToRequest);
 router.post('/requestdonation/:donationId', requestNeedController.createRequestNeedForExistingDonation);
 router.get('/:requestId/with-donations', requestNeedController.getRequestWithDonations);
-
+router.get('/donation/:donationId', requestNeedController.getRequestsByDonationId);
 module.exports = router;

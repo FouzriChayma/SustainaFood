@@ -10,7 +10,6 @@ import { FaEdit, FaTrash, FaSave, FaTimes, FaEye } from "react-icons/fa";
 import styled from 'styled-components';
 import logo from "../assets/images/LogoCh.png";
 import { useAlert } from '../contexts/AlertContext';
-
 // Styled Components for Buttons
 const Button = styled.button`
   display: inline-block;

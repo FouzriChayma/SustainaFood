@@ -93,3 +93,10 @@ export const updateRequest = async (id, RequestData) => {
     throw error;
   }
 };
+
+export const getRequestsByDonationId = async (donationId) => {
+  const token = localStorage.getItem('token');
+  return await axios.get(`http://localhost:3000/request/donation/${donationId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};

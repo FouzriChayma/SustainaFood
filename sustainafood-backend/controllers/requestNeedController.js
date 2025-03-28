@@ -980,6 +980,48 @@ async function getRequestWithDonations(req, res) {
     }
 }
 
+async function getRequestsByDonationId(req, res) {
+    try {
+      const { donationId } = req.params;
+      console.log(`Fetching requests for donationId: ${donationId}`);
+  
+      // Step 1: Find the requests
+      const requests = await RequestNeed.find({
+        $or: [
+          { linkedDonation: donationId },
+          { linkedDonation: { $in: [donationId] } }
+        ]
+      });
+  
+      console.log(`Found ${requests.length} requests for donationId: ${donationId}`);
+  
+      if (!requests.length) {
+        return res.status(404).json({ message: 'No requests found for this donation' });
+      }
+  
+      // Step 2: Populate recipient
+      await RequestNeed.populate(requests, { path: 'recipient' });
+  
+      // Step 3: Populate requestedProducts.product (if applicable)
+      await RequestNeed.populate(requests, { path: 'requestedProducts.product' });
+  
+      // Step 4: Populate requestedMeals.meal (if applicable)
+      await RequestNeed.populate(requests, {
+        path: 'requestedMeals',
+        populate: {
+          path: 'meal',
+          model: 'Meals'
+        },
+        options: { strictPopulate: false } // Disable strictPopulate
+      });
+  
+      res.status(200).json(requests);
+    } catch (error) {
+      console.error('Error in getRequestsByDonationId:', error.message, error.stack);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+
 module.exports = {
     addDonationToRequest,
     getAllRequests,
@@ -991,4 +1033,5 @@ module.exports = {
     deleteRequest,
     createRequestNeedForExistingDonation,
     getRequestWithDonations,
+    getRequestsByDonationId
 };

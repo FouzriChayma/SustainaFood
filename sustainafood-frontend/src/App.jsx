@@ -46,6 +46,8 @@ import RequestDetails from "./pages/backoffice/RequestDetails";
 import ProductDetail from "./pages/backoffice/ProductDetail";
 import DonationDetails from "./pages/backoffice/DonationDetails";
 
+
+import ListRequestsDonation from './pages/ListRequestsDonation';
 const App = () => {
   return (
     <AlertProvider>
@@ -113,6 +115,7 @@ const App = () => {
         {/* Routes privées pour supermarket, restaurant */}
         <Route element={<PrivateRoute roles={["supermarket", "restaurant"]} />}>
           <Route path="/mydonations" element={<MyDonations />} />
+          <Route path="/ListRequestsDonation/:donationId" element={<ListRequestsDonation />} />
         </Route>
 
         {/* Route pour les pages non trouvées */}

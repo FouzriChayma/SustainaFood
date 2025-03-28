@@ -9,6 +9,9 @@ const mealSchema = new Schema({
         unique: true, 
         required: true 
     }, 
+    quantity:{
+        type : Number,
+    },
     mealName: { 
         type: String,
         required: true // Suggested addition for data integrity

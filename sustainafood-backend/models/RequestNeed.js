@@ -74,8 +74,10 @@ const requestNeedSchema = new Schema({
     }],
     requestedProducts: [{ type: Schema.Types.ObjectId, ref: 'Product',  required: [
         function() { return this.category === 'packaged_products'; }, 
-        'required for prepared meals'
+        'required for products'
       ], }],
+
+      requestedMeals: [{ type: Schema.Types.ObjectId, ref: 'Meals' }],
 
 
       numberOfMeals: {

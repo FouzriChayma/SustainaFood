@@ -242,7 +242,7 @@ async function deleteRequest(req, res) {
 async function createRequestNeedForExistingDonation(req, res) {
     try {
         const { donationId } = req.params;
-        const { recipientId, requestedProducts, description } = req.body;
+        const { recipientId, requestedProducts, requestedMeals, description } = req.body;
 
         // Validate input
         if (!donationId || !mongoose.Types.ObjectId.isValid(donationId)) {
@@ -251,13 +251,11 @@ async function createRequestNeedForExistingDonation(req, res) {
         if (!recipientId || !mongoose.Types.ObjectId.isValid(recipientId)) {
             return res.status(400).json({ message: 'Invalid recipient ID' });
         }
-        if (!requestedProducts || !Array.isArray(requestedProducts)) {
-            return res.status(400).json({ message: 'requestedProducts must be an array' });
-        }
 
-        // Fetch the donation and populate its products
+        // Fetch the donation and populate its products and meals
         const donation = await Donation.findById(donationId)
             .populate('products.product')
+            .populate('meals')
             .populate('donor');
         if (!donation) {
             return res.status(404).json({ message: 'Donation not found' });
@@ -280,31 +278,75 @@ async function createRequestNeedForExistingDonation(req, res) {
             return res.status(403).json({ message: 'Only users with role "ong" or "student" can create requests' });
         }
 
-        // Validate requestedProducts against the donation's products
-        const donationProductMap = new Map(
-            donation.products.map(p => [p.product._id.toString(), { quantity: p.quantity, product: p.product }])
-        );
-        const validatedProducts = [];
+        // Determine the donation type (products or meals)
+        const isMealDonation = donation.category === 'prepared_meals';
+        let validatedProducts = [];
+        let validatedMeals = [];
         let totalMeals = 0;
 
-        for (const { product: productId, quantity } of requestedProducts) {
-            if (!mongoose.Types.ObjectId.isValid(productId)) {
-                return res.status(400).json({ message: `Invalid product ID: ${productId}` });
-            }
-            if (!donationProductMap.has(productId)) {
-                return res.status(400).json({ message: `Product ${productId} is not part of this donation` });
+        if (isMealDonation) {
+            // Validate requestedMeals
+            if (!requestedMeals || !Array.isArray(requestedMeals)) {
+                return res.status(400).json({ message: 'requestedMeals must be an array for meal donations' });
             }
 
-            const availableQuantity = donationProductMap.get(productId).quantity;
-            if (!Number.isInteger(quantity) || quantity <= 0) {
-                return res.status(400).json({ message: `Quantity for product ${productId} must be a positive integer` });
-            }
-            if (quantity > availableQuantity) {
-                return res.status(400).json({ message: `Requested quantity (${quantity}) for product ${productId} exceeds available quantity (${availableQuantity})` });
+            // Map of available meals (using meal._id as key)
+            const donationMealMap = new Map(
+                donation.meals.map(meal => [meal._id.toString(), { meal }])
+            );
+
+            // Since the schema doesn't support quantities per meal, we'll use the total quantity
+            // provided in the request and distribute it across the meals
+            const totalRequestedMeals = requestedMeals.reduce((sum, item) => sum + (item.quantity || 0), 0);
+
+            for (const { meal: mealId, quantity } of requestedMeals) {
+                if (!mongoose.Types.ObjectId.isValid(mealId)) {
+                    return res.status(400).json({ message: `Invalid meal ID: ${mealId}` });
+                }
+                if (!donationMealMap.has(mealId)) {
+                    return res.status(400).json({ message: `Meal ${mealId} is not part of this donation` });
+                }
+
+                if (!Number.isInteger(quantity) || quantity <= 0) {
+                    return res.status(400).json({ message: `Quantity for meal ${mealId} must be a positive integer` });
+                }
+
+                validatedMeals.push(mealId); // Only store the meal ID as per the current schema
             }
 
-            validatedProducts.push(productId);
-            totalMeals += quantity;
+            totalMeals = totalRequestedMeals;
+            if (totalMeals > donation.numberOfMeals) {
+                return res.status(400).json({ message: `Total requested meals (${totalMeals}) exceed available number of meals (${donation.numberOfMeals})` });
+            }
+        } else {
+            // Validate requestedProducts
+            if (!requestedProducts || !Array.isArray(requestedProducts)) {
+                return res.status(400).json({ message: 'requestedProducts must be an array for product donations' });
+            }
+
+            const donationProductMap = new Map(
+                donation.products.map(p => [p.product._id.toString(), { quantity: p.quantity, product: p.product }])
+            );
+
+            for (const { product: productId, quantity } of requestedProducts) {
+                if (!mongoose.Types.ObjectId.isValid(productId)) {
+                    return res.status(400).json({ message: `Invalid product ID: ${productId}` });
+                }
+                if (!donationProductMap.has(productId)) {
+                    return res.status(400).json({ message: `Product ${productId} is not part of this donation` });
+                }
+
+                const availableQuantity = donationProductMap.get(productId).quantity;
+                if (!Number.isInteger(quantity) || quantity <= 0) {
+                    return res.status(400).json({ message: `Quantity for product ${productId} must be a positive integer` });
+                }
+                if (quantity > availableQuantity) {
+                    return res.status(400).json({ message: `Requested quantity (${quantity}) for product ${productId} exceeds available quantity (${availableQuantity})` });
+                }
+
+                validatedProducts.push(productId);
+                totalMeals += quantity; // For consistency, though not used for products
+            }
         }
 
         // Create the new RequestNeed
@@ -315,11 +357,12 @@ async function createRequestNeedForExistingDonation(req, res) {
             description: description || '',
             category: donation.category,
             recipient: recipientId,
-            requestedProducts: validatedProducts,
+            requestedProducts: isMealDonation ? [] : validatedProducts,
+            requestedMeals: isMealDonation ? validatedMeals : [],
             status: 'pending',
             linkedDonation: [donationId],
-            isaPost:false,
-            numberOfMeals: donation.category === 'prepared_meals' ? totalMeals : undefined,
+            isaPost: false,
+            numberOfMeals: isMealDonation ? totalMeals : undefined,
         });
 
         await newRequest.save();
@@ -334,7 +377,8 @@ async function createRequestNeedForExistingDonation(req, res) {
         // Fetch the populated request for the response
         const populatedRequest = await RequestNeed.findById(newRequest._id)
             .populate('recipient')
-            .populate('requestedProducts');
+            .populate('requestedProducts')
+            .populate('requestedMeals');
 
         // Send notification to donor
         if (donation.donor && donation.donor.email) {
@@ -360,10 +404,16 @@ A new request has been made for your donation titled "${donation.title}".
 Request Details:
 - Title: ${newRequest.title}
 - Recipient: ${recipient.name || 'Unknown Recipient'}
-- Requested Products: ${requestedProducts.map(rp => {
-                    const product = donationProductMap.get(rp.product).product;
-                    return `${product.name} (Quantity: ${rp.quantity})`;
-                }).join(', ')}
+${isMealDonation ? 
+    `- Requested Meals: ${validatedMeals.map(mealId => {
+        const meal = donation.meals.find(m => m._id.toString() === mealId.toString());
+        return `${meal.mealName}`;
+    }).join(', ')} (Total: ${totalMeals})` :
+    `- Requested Products: ${validatedProducts.map(productId => {
+        const product = donationProductMap.get(productId.toString()).product;
+        return `${product.name}`;
+    }).join(', ')}`
+}
 - Expiration Date: ${newRequest.expirationDate.toLocaleDateString()}
 
 You can review the request in your dashboard.
@@ -382,10 +432,16 @@ Your Platform Team`,
                         <ul>
                             <li><strong>Title:</strong> ${newRequest.title}</li>
                             <li><strong>Recipient:</strong> ${recipient.name || 'Unknown Recipient'}</li>
-                            <li><strong>Requested Products:</strong> ${requestedProducts.map(rp => {
-                                const product = donationProductMap.get(rp.product).product;
-                                return `${product.name} (Quantity: ${rp.quantity})`;
-                            }).join(', ')}</li>
+                            ${isMealDonation ? 
+                                `<li><strong>Requested Meals:</strong> ${validatedMeals.map(mealId => {
+                                    const meal = donation.meals.find(m => m._id.toString() === mealId.toString());
+                                    return `${meal.mealName}`;
+                                }).join(', ')} (Total: ${totalMeals})</li>` :
+                                `<li><strong>Requested Products:</strong> ${validatedProducts.map(productId => {
+                                    const product = donationProductMap.get(productId.toString()).product;
+                                    return `${product.name}`;
+                                }).join(', ')}</li>`
+                            }
                             <li><strong>Expiration Date:</strong> ${newRequest.expirationDate.toLocaleDateString()}</li>
                         </ul>
                         <p>You can review the request in your dashboard.</p>

@@ -32,10 +32,28 @@ const donationSchema = new Schema({
         product: { type: Schema.Types.ObjectId, ref: 'Product', required: true }, // Reference to Product
         quantity: { type: Number, required: true, min: 0 } // Donated quantity
     }],
-    meals:[{type:Schema.Types.ObjectId,ref:'Meals',  required: [
-        function() { return this.category === 'prepared_meals'; },
-        'List of meals is required for prepared meals'
-    ]}],
+    meals: [{
+        meal: { 
+            type: Schema.Types.ObjectId, 
+            ref: 'Meals',
+            required: [
+                function() { return this.category === 'prepared_meals'; },
+                'Meal ID is required for prepared meals'
+            ]
+        },
+        quantity: { 
+            type: Number,
+            required: [
+                function() { return this.category === 'prepared_meals'; },
+                'Quantity is required for prepared meals'
+            ],
+            min: [1, 'Quantity must be at least 1'],
+            validate: {
+                validator: Number.isInteger,
+                message: 'Quantity must be an integer'
+            }
+        }
+    }],
     numberOfMeals: {
         type: Number,
         required: [

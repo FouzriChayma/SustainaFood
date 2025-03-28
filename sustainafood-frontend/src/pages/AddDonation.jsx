@@ -324,9 +324,11 @@ export const AddDonation = () => {
     donationData.append("created_at", new Date().toISOString());
     donationData.append("updated_at", new Date().toISOString());
     donationData.append("status", "pending");
+    
 
-    if (category === "prepared_meals" && isDonner) {
+    if (category === "prepared_meals" ){
       donationData.append("numberOfMeals", numberOfMeals);
+      if( isDonner) {
       const mealsToSend = mealsEntryMode === "form" ? manualMeals : meals;
       const formattedMeals = mealsToSend.map(meal => ({
         mealName: meal.mealName,
@@ -337,7 +339,7 @@ export const AddDonation = () => {
       console.log("Formatted Meals to Send:", formattedMeals);
       donationData.append("meals", JSON.stringify(formattedMeals));
     }
-
+  }
     if (category === "packaged_products") {
       const productsToSend = productEntryMode === "csv" ? products : manualProducts;
       const formattedProducts = productsToSend.map(product => ({
@@ -422,10 +424,22 @@ export const AddDonation = () => {
             <option value="prepared_meals">Prepared Meals</option>
             <option value="packaged_products">Packaged Products</option>
           </select>
-
+          {category === "prepared_meals" && isRecipient && (
+          <>
+            <input
+              className="signup-input"
+              type="number"
+              placeholder="Total Number of Meals"
+              value={numberOfMeals}
+              onChange={(e) => setNumberOfMeals(e.target.value)}
+              required
+            />
+            {errors.numberOfMeals && <p className="error-message">{errors.numberOfMeals}</p>}
+          </>
+                    )}
           <textarea className="signup-input" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} required />
           {errors.description && <p className="error-message">{errors.description}</p>}
-
+          
           {category === "prepared_meals" && isDonner && (
             <>
               <input className="signup-input" type="number" placeholder="Total Number of Meals" value={numberOfMeals} readOnly />

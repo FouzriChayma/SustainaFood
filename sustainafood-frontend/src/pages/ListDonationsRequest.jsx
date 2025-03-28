@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { getDonationByRequestId } from '../api/donationService';
+import { getDonationByRequestId , getDonationById } from '../api/donationService';
 import { getRequestById } from '../api/requestNeedsService';
 import { getUserById } from '../api/userService';
 import { createAndAcceptDonationTransaction , rejectDonation } from '../api/donationTransactionService';
@@ -494,20 +494,58 @@ const ListDonationsRequest = () => {
 
   const handleAcceptDonation = async (donationId) => {
     if (!window.confirm('Are you sure you want to accept this donation?')) return;
-
+  
     try {
       setProcessing(prev => ({ ...prev, [donationId]: 'accepting' }));
-      const response = await createAndAcceptDonationTransaction(donationId, id);
-
+  
+      // Optimistic update for donation status
       setDonations(prev => prev.map(d => 
         d._id === donationId ? { ...d, status: 'approved' } : d
       ));
-      showAlert('success','Donation accepted and transaction created successfully!');
+  
+      // Optimistic update for request numberOfMeals (assuming 2 meals are allocated)
+      setRequest(prev => ({
+        ...prev,
+        numberOfMeals: prev.numberOfMeals - 2 // Adjust based on actual allocated meals
+      }));
+  
+      // Create the transaction and update the donation on the backend
+      const response = await createAndAcceptDonationTransaction(donationId, id);
+      console.log('createAndAcceptDonationTransaction response:', response);
+  
+      // Fetch the updated donation data from the server
+      const updatedDonationResponse = await getDonationById(donationId);
+      console.log('getDonationById response:', updatedDonationResponse);
+      const updatedDonation = updatedDonationResponse.data;
+      console.log('Updated donation data:', updatedDonation);
+  
+      // Update the local state with the updated donation data
+      setDonations(prev => prev.map(d => 
+        d._id === donationId ? updatedDonation : d
+      ));
+  
+      // Fetch the updated request data from the server
+      const updatedRequestResponse = await getRequestById(id);
+      console.log('getRequestById response after transaction:', updatedRequestResponse);
+      const updatedRequest = updatedRequestResponse.data;
+      console.log('Updated request data:', updatedRequest);
+      setRequest(updatedRequest);
+  
+      // Set the filter to 'all' to ensure the updated donation is visible
+      setFilterOption('all');
+  
+      showAlert('success', 'Donation accepted and transaction created successfully!');
     } catch (error) {
       console.error('Error accepting donation:', error.response?.data || error.message);
-      showAlert('error', 'Failed to accept donation');
-
+      const errorMessage = error.response?.data?.message || 'An unexpected error occurred while accepting the donation.';
       
+      // Revert the optimistic updates on error
+      setDonations(prev => prev.map(d => 
+        d._id === donationId ? { ...d, status: 'pending' } : d
+      ));
+      setRequest(prev => ({ ...prev })); // Revert request state (you might need to store the original state)
+  
+      showAlert('error', errorMessage);
     } finally {
       setProcessing(prev => ({ ...prev, [donationId]: false }));
     }
@@ -634,8 +672,12 @@ const ListDonationsRequest = () => {
                       {donation.status || 'pending'}
                     </StatusBadge>
                   </DonationDetail>
-                  {donation.numberOfMeals && (
-                    <DonationDetail><strong>Number of Meals:</strong> {donation.numberOfMeals}</DonationDetail>
+                  {donation.category === 'prepared_meals' && (
+                    <>
+                      <DonationDetail>
+                        <strong>Total Meals Donated:</strong> {donation.numberOfMeals || 'N/A'}
+                      </DonationDetail>
+                    </>
                   )}
                 </DonationDetails>
                 <ProductSection>

@@ -66,6 +66,7 @@ const donationSchema = new Schema({
             message: 'Number of meals must be an integer'
         }
     },
+    remainingMeals: { type: Number, min: 0 }, // New field to track remaining meals
     location: { type: String, required: true },
     expirationDate: {
         type: Date,
@@ -109,9 +110,7 @@ donationSchema.pre('save', async function(next) {
 donationSchema.pre('save', async function(next) {
     if (this.category === 'prepared_meals') {
         const totalMeals = this.meals.reduce((sum, mealEntry) => sum + (mealEntry.quantity || 0), 0);
-        if (totalMeals !== this.numberOfMeals) {
-            this.numberOfMeals = totalMeals; // Update numberOfMeals to match the sum
-        }
+        
     }
     next();
 });

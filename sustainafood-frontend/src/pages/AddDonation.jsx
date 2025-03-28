@@ -49,7 +49,7 @@ export const AddDonation = () => {
     mealName: "",
     mealDescription: "",
     mealType: "Lunch",
-    quantity: "", // Added quantity field for each meal
+    quantity: "",
   }]);
 
   // Editing state
@@ -86,7 +86,8 @@ export const AddDonation = () => {
     "Baby_Food",       // e.g., formula, purees
     "Pet_Food",        // e.g., dog/cat food
     "Other"            // Miscellaneous
-  ];const weightUnits = ["kg", "g", "lb", "oz", "ml", "l"];
+  ];
+  const weightUnits = ["kg", "g", "lb", "oz", "ml", "l"];
   const statuses = ["available", "pending", "reserved", "out_of_stock"];
   const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack", "Dessert", "Other"];
 
@@ -115,8 +116,8 @@ export const AddDonation = () => {
   }, [user]);
 
   useEffect(() => {
-    // Calculate total meals from manualMeals when in form mode
-    if (isDonner && category === "prepared_meals" && mealsEntryMode === "form") {
+    // Calculate total meals from manualMeals when in form mode (for donors only)
+    if (category === "prepared_meals" && isDonner) {
       const total = manualMeals.reduce((sum, meal) => sum + (parseInt(meal.quantity) || 0), 0);
       setNumberOfMeals(total || "");
     }
@@ -171,18 +172,30 @@ export const AddDonation = () => {
     if (!description.trim()) tempErrors.description = "Description is required";
     else if (description.length < 10) tempErrors.description = "Description must be at least 10 characters long";
 
-    if (category === "prepared_meals" && isDonner) {
-      if (!numberOfMeals || numberOfMeals <= 0) {
-        tempErrors.numberOfMeals = "Number of meals must be greater than 0";
+    if (category === "prepared_meals") {
+      const parsedNumberOfMeals = parseInt(numberOfMeals, 10);
+      if (!numberOfMeals || isNaN(parsedNumberOfMeals) || parsedNumberOfMeals <= 0) {
+        tempErrors.numberOfMeals = "Number of meals must be a valid positive integer";
       }
-      if (mealsEntryMode === "csv" && meals.length === 0) {
-        tempErrors.meals = "Meals list is required when uploading via CSV";
-      } else if (mealsEntryMode === "form") {
-        const invalidMeals = manualMeals.filter(
-          meal => !meal.mealName.trim() || !meal.mealType || !meal.mealDescription.trim() || !meal.quantity || meal.quantity <= 0
-        );
-        if (invalidMeals.length > 0) {
-          tempErrors.meals = "All meals must have a name, type, description, and valid quantity";
+
+      // For donors, validate meal details
+      if (isDonner) {
+        if (mealsEntryMode === "csv" && meals.length === 0) {
+          tempErrors.meals = "Meals list is required when uploading via CSV";
+        } else if (mealsEntryMode === "form") {
+          const invalidMeals = manualMeals.filter(
+            meal => !meal.mealName.trim() || !meal.mealType || !meal.mealDescription.trim() || !meal.quantity || parseInt(meal.quantity) <= 0
+          );
+          if (invalidMeals.length > 0) {
+            tempErrors.meals = "All meals must have a name, type, description, and valid quantity";
+          }
+        }
+        // Validate that the total quantity of meals matches numberOfMeals
+        const totalMeals = mealsEntryMode === "form"
+          ? manualMeals.reduce((sum, meal) => sum + (parseInt(meal.quantity) || 0), 0)
+          : meals.reduce((sum, meal) => sum + (parseInt(meal.quantity) || 0), 0);
+        if (totalMeals !== parsedNumberOfMeals) {
+          tempErrors.numberOfMeals = `Total quantity of meals (${totalMeals}) must match the number of meals (${parsedNumberOfMeals})`;
         }
       }
     }
@@ -325,17 +338,20 @@ export const AddDonation = () => {
     donationData.append("updated_at", new Date().toISOString());
     donationData.append("status", "pending");
 
-    if (category === "prepared_meals" && isDonner) {
+    if (category === "prepared_meals") {
       donationData.append("numberOfMeals", numberOfMeals);
-      const mealsToSend = mealsEntryMode === "form" ? manualMeals : meals;
-      const formattedMeals = mealsToSend.map(meal => ({
-        mealName: meal.mealName,
-        mealDescription: meal.mealDescription,
-        mealType: meal.mealType,
-        quantity: parseInt(meal.quantity),
-      }));
-      console.log("Formatted Meals to Send:", formattedMeals);
-      donationData.append("meals", JSON.stringify(formattedMeals));
+      // For donors, send meal details; for recipients, only send numberOfMeals
+      if (isDonner) {
+        const mealsToSend = mealsEntryMode === "form" ? manualMeals : meals;
+        const formattedMeals = mealsToSend.map(meal => ({
+          mealName: meal.mealName,
+          mealDescription: meal.mealDescription,
+          mealType: meal.mealType,
+          quantity: parseInt(meal.quantity),
+        }));
+        console.log("Formatted Meals to Send:", formattedMeals);
+        donationData.append("meals", JSON.stringify(formattedMeals));
+      }
     }
 
     if (category === "packaged_products") {
@@ -426,106 +442,119 @@ export const AddDonation = () => {
           <textarea className="signup-input" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} required />
           {errors.description && <p className="error-message">{errors.description}</p>}
 
-          {category === "prepared_meals" && isDonner && (
+          {category === "prepared_meals" && (
             <>
-              <input className="signup-input" type="number" placeholder="Total Number of Meals" value={numberOfMeals} readOnly />
+              <input
+                className="signup-input"
+                type="number"
+                placeholder={isDonner ? "Total Number of Meals" : "Enter the total number of meals you need"}
+                value={numberOfMeals}
+                onChange={(e) => setNumberOfMeals(e.target.value)}
+                readOnly={isDonner} // readOnly for donors, editable for recipients
+                min="1"
+              />
               {errors.numberOfMeals && <p className="error-message">{errors.numberOfMeals}</p>}
 
-              <div className="radio-buttons-container-adddonation">
-                <div className="radio-button-adddonation">
-                  <input name="radio-group-meals" id="radio-csv-meals" className="radio-button__input-adddonation" type="radio" checked={mealsEntryMode === "csv"} onChange={() => setMealsEntryMode("csv")} />
-                  <label htmlFor="radio-csv-meals" className="radio-button__label-adddonation">
-                    <span className="radio-button__custom-adddonation"></span>CSV File
-                  </label>
-                </div>
-                <div className="radio-button-adddonation">
-                  <input name="radio-group-meals" id="radio-form-meals" className="radio-button__input-adddonation" type="radio" checked={mealsEntryMode === "form"} onChange={() => setMealsEntryMode("form")} />
-                  <label htmlFor="radio-form-meals" className="radio-button__label-adddonation">
-                    <span className="radio-button__custom-adddonation"></span>Form
-                  </label>
-                </div>
-              </div>
-
-              {mealsEntryMode === "csv" && meals.length === 0 && (
+              {/* Show meal details entry only for donors */}
+              {isDonner && (
                 <>
-                  <input ref={mealsFileInputRef} type="file" accept=".csv" onChange={handleFileUploadMeals} style={{ display: "none" }} />
-                  <button type="button" className="container-btn-file" onClick={() => mealsFileInputRef.current.click()}>
-                    <svg fill="#fff" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 50 50">
-                      <path d="M 25 2 C 12.309295 2 2 12.309295 2 25 C 2 37.690705 12.309295 48 25 48 C 37.690705 48 48 37.690705 48 25 C 48 12.309295 37.690705 2 25 2 z M 25 4 C 36.609824 4 46 13.390176 46 25 C 46 36.609824 36.609824 46 25 46 C 13.390176 46 4 36.609824 4 25 C 4 13.390176 13.390176 4 25 4 z M 24 13 L 24 24 L 13 24 L 13 26 L 24 26 L 24 37 L 26 37 L 26 26 L 37 26 L 37 24 L 26 24 L 26 13 L 24 13 z" />
-                    </svg>
-                    Upload List of Meals
-                  </button>
-                </>
-              )}
-
-              {mealsEntryMode === "csv" && meals.length > 0 && (
-                <>
-                  <p style={{ marginLeft: "-656px", color: "#8dc73f" }}>List of meals uploaded</p>
-                  <div className="file-actions" style={{ marginLeft: "812px" }}>
-                    <FaEdit className="fa-edit" onClick={() => mealsFileInputRef.current.click()} />
-                    <FaTrash className="fa-trash" onClick={() => handleDeleteList("meals")} />
-                  </div>
-                  <table className="product-table">
-                    <thead>
-                      <tr>
-                        <th>Meal Name</th>
-                        <th>Description</th>
-                        <th>Type</th>
-                        <th>Quantity</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {meals.map((row, rowIndex) => (
-                        <tr key={rowIndex}>
-                          {editableRow === rowIndex && editableType === "meals" ? (
-                            <>
-                              <td><input value={editedItem.mealName || ""} onChange={(e) => handleRowInputChange(e, "mealName")} className="edit-input" /></td>
-                              <td><input value={editedItem.mealDescription || ""} onChange={(e) => handleRowInputChange(e, "mealDescription")} className="edit-input" /></td>
-                              <td>
-                                <select value={editedItem.mealType || ""} onChange={(e) => handleRowInputChange(e, "mealType")} className="edit-input">
-                                  {mealTypes.map(mt => <option key={mt} value={mt}>{mt}</option>)}
-                                </select>
-                              </td>
-                              <td><input type="number" value={editedItem.quantity || ""} onChange={(e) => handleRowInputChange(e, "quantity")} className="edit-input" min="1" /></td>
-                              <td><FaSave className="fa-save" onClick={() => handleSaveRow(rowIndex)} /></td>
-                            </>
-                          ) : (
-                            <>
-                              <td>{row.mealName}</td>
-                              <td>{row.mealDescription}</td>
-                              <td>{row.mealType}</td>
-                              <td>{row.quantity}</td>
-                              <td>
-                                <FaEdit className="fa-edit" onClick={() => handleEditRow(rowIndex, "meals")} style={{ color: "black", cursor: "pointer", fontSize: "20px" }} />
-                                <FaTrash className="fa-trash" onClick={() => handleDeleteRow(rowIndex, "meals")} style={{ color: "red", cursor: "pointer", fontSize: "20px", marginLeft: "10px" }} />
-                              </td>
-                            </>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </>
-              )}
-
-              {mealsEntryMode === "form" && (
-                <div className="manual-product-entry">
-                  {manualMeals.map((meal, index) => (
-                    <div key={index} className="manual-product-row">
-                      <input type="text" placeholder="Meal Name" value={meal.mealName} onChange={(e) => handleManualMealChange(index, "mealName", e.target.value)} className="signup-input" />
-                      <textarea placeholder="Meal Description" value={meal.mealDescription} onChange={(e) => handleManualMealChange(index, "mealDescription", e.target.value)} className="signup-input" />
-                      <select value={meal.mealType} onChange={(e) => handleManualMealChange(index, "mealType", e.target.value)} className="signup-input">
-                        {mealTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                      </select>
-                      <input type="number" placeholder="Quantity" value={meal.quantity} onChange={(e) => handleManualMealChange(index, "quantity", e.target.value)} className="signup-input" min="1" />
-                      {manualMeals.length > 1 && <button type="button" onClick={() => handleRemoveManualMeal(index)}>Remove</button>}
+                  <div className="radio-buttons-container-adddonation">
+                    <div className="radio-button-adddonation">
+                      <input name="radio-group-meals" id="radio-csv-meals" className="radio-button__input-adddonation" type="radio" checked={mealsEntryMode === "csv"} onChange={() => setMealsEntryMode("csv")} />
+                      <label htmlFor="radio-csv-meals" className="radio-button__label-adddonation">
+                        <span className="radio-button__custom-adddonation"></span>CSV File
+                      </label>
                     </div>
-                  ))}
-                  <button type="button" onClick={handleAddManualMeal} className="signup-button">Add Another Meal</button>
-                </div>
+                    <div className="radio-button-adddonation">
+                      <input name="radio-group-meals" id="radio-form-meals" className="radio-button__input-adddonation" type="radio" checked={mealsEntryMode === "form"} onChange={() => setMealsEntryMode("form")} />
+                      <label htmlFor="radio-form-meals" className="radio-button__label-adddonation">
+                        <span className="radio-button__custom-adddonation"></span>Form
+                      </label>
+                    </div>
+                  </div>
+
+                  {mealsEntryMode === "csv" && meals.length === 0 && (
+                    <>
+                      <input ref={mealsFileInputRef} type="file" accept=".csv" onChange={handleFileUploadMeals} style={{ display: "none" }} />
+                      <button type="button" className="container-btn-file" onClick={() => mealsFileInputRef.current.click()}>
+                        <svg fill="#fff" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 50 50">
+                          <path d="M 25 2 C 12.309295 2 2 12.309295 2 25 C 2 37.690705 12.309295 48 25 48 C 37.690705 48 48 37.690705 48 25 C 48 12.309295 37.690705 2 25 2 z M 25 4 C 36.609824 4 46 13.390176 46 25 C 46 36.609824 36.609824 46 25 46 C 13.390176 46 4 36.609824 4 25 C 4 13.390176 13.390176 4 25 4 z M 24 13 L 24 24 L 13 24 L 13 26 L 24 26 L 24 37 L 26 37 L 26 26 L 37 26 L 37 24 L 26 24 L 26 13 L 24 13 z" />
+                        </svg>
+                        Upload List of Meals
+                      </button>
+                    </>
+                  )}
+
+                  {mealsEntryMode === "csv" && meals.length > 0 && (
+                    <>
+                      <p style={{ marginLeft: "-656px", color: "#8dc73f" }}>List of meals uploaded</p>
+                      <div className="file-actions" style={{ marginLeft: "812px" }}>
+                        <FaEdit className="fa-edit" onClick={() => mealsFileInputRef.current.click()} />
+                        <FaTrash className="fa-trash" onClick={() => handleDeleteList("meals")} />
+                      </div>
+                      <table className="product-table">
+                        <thead>
+                          <tr>
+                            <th>Meal Name</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>Quantity</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {meals.map((row, rowIndex) => (
+                            <tr key={rowIndex}>
+                              {editableRow === rowIndex && editableType === "meals" ? (
+                                <>
+                                  <td><input value={editedItem.mealName || ""} onChange={(e) => handleRowInputChange(e, "mealName")} className="edit-input" /></td>
+                                  <td><input value={editedItem.mealDescription || ""} onChange={(e) => handleRowInputChange(e, "mealDescription")} className="edit-input" /></td>
+                                  <td>
+                                    <select value={editedItem.mealType || ""} onChange={(e) => handleRowInputChange(e, "mealType")} className="edit-input">
+                                      {mealTypes.map(mt => <option key={mt} value={mt}>{mt}</option>)}
+                                    </select>
+                                  </td>
+                                  <td><input type="number" value={editedItem.quantity || ""} onChange={(e) => handleRowInputChange(e, "quantity")} className="edit-input" min="1" /></td>
+                                  <td><FaSave className="fa-save" onClick={() => handleSaveRow(rowIndex)} /></td>
+                                </>
+                              ) : (
+                                <>
+                                  <td>{row.mealName}</td>
+                                  <td>{row.mealDescription}</td>
+                                  <td>{row.mealType}</td>
+                                  <td>{row.quantity}</td>
+                                  <td>
+                                    <FaEdit className="fa-edit" onClick={() => handleEditRow(rowIndex, "meals")} style={{ color: "black", cursor: "pointer", fontSize: "20px" }} />
+                                    <FaTrash className="fa-trash" onClick={() => handleDeleteRow(rowIndex, "meals")} style={{ color: "red", cursor: "pointer", fontSize: "20px", marginLeft: "10px" }} />
+                                  </td>
+                                </>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </>
+                  )}
+
+                  {mealsEntryMode === "form" && (
+                    <div className="manual-product-entry">
+                      {manualMeals.map((meal, index) => (
+                        <div key={index} className="manual-product-row">
+                          <input type="text" placeholder="Meal Name" value={meal.mealName} onChange={(e) => handleManualMealChange(index, "mealName", e.target.value)} className="signup-input" />
+                          <textarea placeholder="Meal Description" value={meal.mealDescription} onChange={(e) => handleManualMealChange(index, "mealDescription", e.target.value)} className="signup-input" />
+                          <select value={meal.mealType} onChange={(e) => handleManualMealChange(index, "mealType", e.target.value)} className="signup-input">
+                            {mealTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                          </select>
+                          <input type="number" placeholder="Quantity" value={meal.quantity} onChange={(e) => handleManualMealChange(index, "quantity", e.target.value)} className="signup-input" min="1" />
+                          {manualMeals.length > 1 && <button type="button" onClick={() => handleRemoveManualMeal(index)}>Remove</button>}
+                        </div>
+                      ))}
+                      <button type="button" onClick={handleAddManualMeal} className="signup-button">Add Another Meal</button>
+                    </div>
+                  )}
+                  {errors.meals && <p className="error-message">{errors.meals}</p>}
+                </>
               )}
-              {errors.meals && <p className="error-message">{errors.meals}</p>}
             </>
           )}
 

@@ -171,6 +171,7 @@ async function createDonation(req, res) {
       donor,
       meals: [],
       numberOfMeals: category === 'prepared_meals' ? (providedNumberOfMeals || calculatedNumberOfMeals) : undefined,
+      remainingMeals: category === 'prepared_meals' ? numberOfMeals : undefined, // Initialize remainingMeals
       products: [],
       status: status || 'pending'
     });
@@ -520,20 +521,21 @@ async function getAllDonations(req, res) {
 // ✅ Get Donation by ID
 async function getDonationById(req, res) {
   try {
-      const { id } = req.params;
-      const donation = await Donation.findById(id)
-          .populate('donor')
-          .populate('products.product')
-          .populate('meals.meal');
+    const { id } = req.params;
+    const donation = await Donation.findById(id)
+      .populate('donor')
+      .populate('products.product')
+      .populate('meals.meal');
 
-      if (!donation) {
-          return res.status(404).json({ message: 'Donation not found' });
-      }
+    if (!donation) {
+      return res.status(404).json({ message: 'Donation not found' });
+    }
 
-      res.status(200).json(donation);
+    console.log('Fetched donation for getDonationById:', donation);
+    res.status(200).json(donation);
   } catch (error) {
-      console.error('Error fetching donation by ID:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error fetching donation by ID:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 }
 

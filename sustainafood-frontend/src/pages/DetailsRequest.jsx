@@ -400,55 +400,61 @@ const DetailsRequest = () => {
 
   const handleSubmitDonation = async () => {
     if (!validateDonation()) return;
-  
+
     try {
-      const donationData = {
-        donor: user?._id || user?.id,
-        expirationDate: request.expirationDate || new Date().toISOString(),
-      };
-  
-      if (request.category === "packaged_products") {
-        const donationProducts = request.requestedProducts.map((product, index) => ({
-          product: product._id ? product._id.toString() : null,
-          quantity: Number(donationQuantities[index]) || 0,
-        })).filter(p => p.quantity > 0);
-        donationData.products = donationProducts;
-      } else if (request.category === "prepared_meals") {
-        const mealsToSend = mealsEntryMode === "form" ? manualDonationMeals : donationMeals;
-        const formattedMeals = mealsToSend.map(meal => ({
-          mealName: meal.mealName,
-          mealDescription: meal.mealDescription,
-          mealType: meal.mealType,
-          quantity: parseInt(meal.quantity),
+        const donationData = {
+            donor: user?._id || user?.id,
+            expirationDate: request.expirationDate || new Date().toISOString(),
+        };
+
+        if (request.category === "packaged_products") {
+            const donationProducts = request.requestedProducts.map((product, index) => ({
+                product: product._id ? product._id.toString() : null,
+                quantity: Number(donationQuantities[index]) || 0,
+            })).filter(p => p.quantity > 0);
+            donationData.products = donationProducts;
+        } else if (request.category === "prepared_meals") {
+            const mealsToSend = mealsEntryMode === "form" ? manualDonationMeals : donationMeals;
+            const formattedMeals = mealsToSend.map(meal => {
+                const quantity = parseInt(meal.quantity);
+                if (isNaN(quantity) || quantity <= 0) {
+                    throw new Error(`Invalid quantity for meal ${meal.mealName}: ${meal.quantity}`);
+                }
+                return {
+                    mealName: meal.mealName,
+                    mealDescription: meal.mealDescription,
+                    mealType: meal.mealType,
+                    quantity: quantity,
+                };
+            });
+            donationData.meals = formattedMeals;
+            donationData.numberOfMeals = mealsEntryMode === "form"
+                ? manualDonationMeals.reduce((sum, meal) => sum + (parseInt(meal.quantity) || 0), 0)
+                : donationMeals.reduce((sum, meal) => sum + (meal.quantity || 0), 0);
+        }
+
+        console.log('Submitting donation data:', donationData); // Debug log
+
+        const response = await addDonationToRequest(id, donationData);
+        setIsAddingDonation(false);
+        setDonationQuantities(request.requestedProducts.map(() => 0));
+        setDonationMeals([]);
+        setManualDonationMeals([{
+            mealName: "",
+            mealDescription: "",
+            mealType: "Lunch",
+            quantity: ""
+        }]);
+        setRequest(prev => ({
+            ...prev,
+            donations: [...(prev.donations || []), response.donation],
         }));
-        donationData.meals = formattedMeals;
-        donationData.numberOfMeals = mealsEntryMode === "form"
-          ? manualDonationMeals.reduce((sum, meal) => sum + (parseInt(meal.quantity) || 0), 0)
-          : donationMeals.reduce((sum, meal) => sum + (meal.quantity || 0), 0);
-      }
-  
-      console.log('Submitting donation data:', donationData); // Debug log
-  
-      const response = await addDonationToRequest(id, donationData);
-      setIsAddingDonation(false);
-      setDonationQuantities(request.requestedProducts.map(() => 0));
-      setDonationMeals([]);
-      setManualDonationMeals([{
-        mealName: "",
-        mealDescription: "",
-        mealType: "Lunch",
-        quantity: ""
-      }]);
-      setRequest(prev => ({
-        ...prev,
-        donations: [...(prev.donations || []), response.donation],
-      }));
-      showAlert('success', 'Donation submitted successfully');
+        showAlert('success', 'Donation submitted successfully');
     } catch (error) {
-      console.error('Error submitting donation:', error);
-      showAlert('error', `Failed to submit donation: ${error.message || 'Unknown error'}`);
+        console.error('Error submitting donation:', error);
+        showAlert('error', `Failed to submit donation: ${error.message || 'Unknown error'}`);
     }
-  };
+};
   const handleDonateAll = async () => {
     if (request.category === "prepared_meals") {
       showAlert('error', 'Cannot use "Donate all" for prepared meals. Please specify meals manually.');

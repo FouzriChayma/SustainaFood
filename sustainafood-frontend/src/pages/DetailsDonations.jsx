@@ -97,12 +97,10 @@ const DetailsDonations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [isAddingDonation, setIsAddingDonation] = useState(false);
   const [isAddingRequest, setIsAddingRequest] = useState(false);
   const user = JSON.parse(localStorage.getItem("user"));
   const [userid, setUserid] = useState();
   const [isTheOwner, setIsTheOwner] = useState(false);
-  const [donationQuantities, setDonationQuantities] = useState([]);
   const [requestQuantities, setRequestQuantities] = useState([]);
   const [requestMealQuantities, setRequestMealQuantities] = useState([]);
   const navigate = useNavigate();
@@ -208,7 +206,6 @@ const DetailsDonations = () => {
           numberOfMeals: fetchedDonation.numberOfMeals || 0,
           donationType,
         });
-        setDonationQuantities((hasProducts ? fetchedDonation.products : fetchedDonation.meals || []).map(item => item.quantity || 0));
         setRequestQuantities((hasProducts ? fetchedDonation.products : []).map(item => item.quantity || 0));
         setRequestMealQuantities((hasMeals ? fetchedDonation.meals : []).map(item => item.quantity || 0));
       } catch (err) {
@@ -383,110 +380,6 @@ const DetailsDonations = () => {
       ...editedDonation,
       meals: [...editedDonation.meals, newMeal],
     });
-  };
-
-  const handleDonationQuantityChange = (index, value) => {
-    const newQuantities = [...donationQuantities];
-    const maxQuantity = editedDonation.donationType === 'products'
-      ? donation.products[index]?.quantity || 0
-      : donation.meals[index]?.quantity || 0;
-    newQuantities[index] = Math.min(Number(value), maxQuantity);
-    setDonationQuantities(newQuantities);
-  };
-
-  const handleSubmitDonation = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No authentication token found');
-
-      const donationItems = editedDonation.donationType === 'products'
-        ? donation.products?.map((item, index) => ({
-            id: item.product?._id || item.product,
-            name: item.product?.name,
-            productDescription: item.product?.productDescription,
-            productType: item.product?.productType,
-            weightPerUnit: Number(item.product?.weightPerUnit) || 0,
-            weightUnit: item.product?.weightUnit,
-            totalQuantity: Number(item.product?.totalQuantity) || 0,
-            status: item.product?.status,
-            quantity: Number(donationQuantities[index]) || 0,
-          })).filter(p => p.quantity > 0) || []
-        : [];
-
-      const donationMeals = editedDonation.donationType === 'meals'
-        ? donation.meals?.map((item, index) => ({
-            id: item.meal?._id || item.meal,
-            mealName: item.meal?.mealName,
-            mealDescription: item.meal?.mealDescription,
-            mealType: item.meal?.mealType,
-            quantity: Number(donationQuantities[index]) || 0,
-          })).filter(m => m.quantity > 0) || []
-        : [];
-
-      const donationData = {
-        ...editedDonation,
-        products: donationItems,
-        meals: donationMeals,
-        donor: user?._id || user?.id,
-        expirationDate: donation.expirationDate || new Date().toISOString(),
-      };
-
-      const response = await updateDonation(id, donationData);
-      setIsAddingDonation(false);
-      setDonationQuantities((donation.products || donation.meals || []).map(item => item.quantity || 0));
-      setDonation(response.data.data);
-      showAlert('success', 'Donation updated successfully');
-    } catch (error) {
-      console.error('Error submitting donation:', error);
-      showAlert('error', `Failed to update donation: ${error.message || 'Unknown error'}`);
-    }
-  };
-
-  const handleDonateAll = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No authentication token found');
-
-      const donationItems = editedDonation.donationType === 'products'
-        ? donation.products?.map(item => ({
-            id: item.product?._id || item.product,
-            name: item.product?.name,
-            productDescription: item.product?.productDescription,
-            productType: item.product?.productType,
-            weightPerUnit: Number(item.product?.weightPerUnit) || 0,
-            weightUnit: item.product?.weightUnit,
-            totalQuantity: Number(item.product?.totalQuantity) || 0,
-            status: item.product?.status,
-            quantity: Number(item.quantity) || 0,
-          })) || []
-        : [];
-
-      const donationMeals = editedDonation.donationType === 'meals'
-        ? donation.meals?.map(item => ({
-            id: item.meal?._id || item.meal,
-            mealName: item.meal?.mealName,
-            mealDescription: item.meal?.mealDescription,
-            mealType: item.meal?.mealType,
-            quantity: Number(item.quantity) || 0,
-          })) || []
-        : [];
-
-      const donationData = {
-        ...editedDonation,
-        products: donationItems,
-        meals: donationMeals,
-        donor: user?._id || user?.id,
-        expirationDate: donation.expirationDate || new Date().toISOString(),
-      };
-
-      const response = await updateDonation(id, donationData);
-      setIsAddingDonation(false);
-      setDonation(response.data.data);
-      showAlert('success', 'Donated all items successfully');
-    } catch (error) {
-      console.error('Error donating all:', error);
-      showAlert('error', `Failed to donate all: ${error.message || 'Unknown error'}`);
-    }
   };
 
   const handleRequestQuantityChange = (index, value) => {
@@ -800,47 +693,6 @@ const DetailsDonations = () => {
             </>
           )}
 
-          {isAddingDonation && (
-            <DonationForm>
-              <h4>Update Donation Quantities</h4>
-              {editedDonation.donationType === 'products' ? (
-                donation.products.map((item, index) => (
-                  <div key={index}>
-                    <label>
-                      {item.product?.name} - {item.product?.productDescription} (Max: {item.quantity})
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max={item.quantity}
-                      value={donationQuantities[index]}
-                      onChange={(e) => handleDonationQuantityChange(index, e.target.value)}
-                      placeholder="Quantity to update"
-                    />
-                  </div>
-                ))
-              ) : (
-                donation.meals.map((item, index) => (
-                  <div key={index}>
-                    <label>
-                      {item.meal?.mealName} - {item.meal?.mealDescription} (Max: {item.quantity})
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max={item.quantity}
-                      value={donationQuantities[index]}
-                      onChange={(e) => handleDonationQuantityChange(index, e.target.value)}
-                      placeholder="Quantity to update"
-                    />
-                  </div>
-                ))
-              )}
-              <Button variant="donate" onClick={handleDonateAll}>Donate All</Button>
-              <Button variant="donate" onClick={handleSubmitDonation}>Submit Donation</Button>
-            </DonationForm>
-          )}
-
           {isAddingRequest && (
             <DonationForm>
               <h4>Specify the Request</h4>
@@ -885,7 +737,7 @@ const DetailsDonations = () => {
           <Button variant="back" onClick={() => window.history.back()}>🔙 Go Back</Button>
 
           {isTheOwner && !isEditing && (
-            <Button variant="submit" as={Link} to={`/ListDonationsRequest/${id}`}>
+            <Button variant="submit" as={Link} to={`/ListRequestsDonation/${id}`}>
               👀 See Requests
             </Button>
           )}
@@ -896,15 +748,6 @@ const DetailsDonations = () => {
               onClick={() => setIsAddingRequest(!isAddingRequest)}
             >
               {isAddingRequest ? 'Cancel' : 'Add Request'}
-            </Button>
-          )}
-
-          {isTheOwner && !isEditing && (
-            <Button
-              variant={isAddingDonation ? "cancel" : "add"}
-              onClick={() => setIsAddingDonation(!isAddingDonation)}
-            >
-              {isAddingDonation ? 'Cancel' : 'Update Quantities'}
             </Button>
           )}
 

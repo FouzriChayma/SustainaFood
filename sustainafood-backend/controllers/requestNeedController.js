@@ -80,124 +80,145 @@ async function getRequestsByStatus(req, res) {
 // ✅ Create a new request
 async function createRequest(req, res) {
     console.log("Request body received:", req.body);
-
-    upload(req, res, async (err) => { // Use multer middleware here
-        if (err) {
-            return res.status(500).json({ message: "Multer error", error: err.message });
-        }
-
+  
+    try {
+      let {
+        title,
+        location,
+        expirationDate,
+        description,
+        category,
+        recipient,
+        requestedProducts,
+        requestedMeals, 
+        status,
+        linkedDonation,
+        numberOfMeals,
+      } = req.body;
+  
+      // Ensure requestedProducts is an array and handle parsing if it's a string
+      if (typeof requestedProducts === 'string') {
         try {
-            let {
-                title,
-                location,
-                expirationDate,
-                description,
-                category,
-                recipient,
-                requestedProducts,
-                status,
-                linkedDonation,
-                numberOfMeals,
-                mealName,
-                mealDescription,
-                mealType  // Add mealType here
-            } = req.body;
-
-            // Ensure requestedProducts is an array and handle parsing if it's a string
-            if (typeof requestedProducts === 'string') {
-                try {
-                    requestedProducts = JSON.parse(requestedProducts);
-                    // Trim keys to remove leading/trailing spaces
-                    requestedProducts = requestedProducts.map(product => {
-                        const trimmedProduct = {};
-                        for (let key in product) {
-                            const trimmedKey = key.trim();
-                            trimmedProduct[trimmedKey] = product[key];
-                        }
-                        return trimmedProduct;
-                    });
-                } catch (error) {
-                    return res.status(400).json({ message: "Invalid requestedProducts format" });
-                }
-            } else if (!Array.isArray(requestedProducts)) {
-                requestedProducts = [];
+          requestedProducts = JSON.parse(requestedProducts);
+          // Trim keys to remove leading/trailing spaces
+          requestedProducts = requestedProducts.map(product => {
+            const trimmedProduct = {};
+            for (let key in product) {
+              const trimmedKey = key.trim();
+              trimmedProduct[trimmedKey] = product[key];
             }
-
-            // Filter out incomplete product requests and log invalid ones
-            requestedProducts = requestedProducts.filter(product => {
-                const isValid = product.name &&
-                    product.weightPerUnit &&
-                    product.totalQuantity &&
-                    product.productDescription &&
-                    product.status &&
-                    product.productType &&
-                    product.weightUnit &&
-                    product.weightUnitTotale;
-                if (!isValid) {
-                    console.log("Filtered out invalid product:", product);
-                }
-                return isValid;
-            });
-
-            // Validate expirationDate
-            if (isNaN(new Date(expirationDate).getTime())) {
-                return res.status(400).json({ message: "Invalid expiration date format" });
-            }
-
-            // Create the request without products first
-            const newRequest = new RequestNeed({
-                title,
-                location,
-                expirationDate: new Date(expirationDate),
-                description,
-                category: category || undefined,
-                recipient,
-                status: status || "pending",
-                linkedDonation: linkedDonation || null,
-                numberOfMeals: category === 'prepared_meals' ? parseInt(numberOfMeals, 10) : undefined,
-                mealName: mealName || undefined,  // Use || undefined
-                mealDescription: mealDescription || undefined,  // Use || undefined
-                mealType: mealType || undefined,  // And mealType
-                requestedProducts : []
-            });
-
-            try {
-                await newRequest.save();
-                let productIds = [];
-                if (category === 'packaged_products' && requestedProducts.length > 0) {
-
-                    const productDocs = requestedProducts.map(product => ({
-                        ...product,
-                        request: newRequest._id // Assuming your schema has a 'requestId' field
-                    }));
-                    const createdProducts = await Product.insertMany(productDocs);
-                    productIds = createdProducts.map(product => product._id);
-                    newRequest.requestedProducts = productIds;
-
-                    await newRequest.save(); // Persist changes
-
-
-                }
-
-
-                console.log("Created Products:", newRequest.requestedProducts);
-                return res.status(201).json({ message: 'Request created successfully', newRequest });
-
-            } catch (err) {
-                console.error("❌ Product Insertion Error:", err);
-                return res.status(500).json({ message: "Failed to insert request", error: err.message });
-            }
-
-
+            return trimmedProduct;
+          });
         } catch (error) {
-            console.error("Request Creation Error:", error);
-            res.status(500).json({
-                message: "Failed to create request",
-                error: error.message || error
-            });
+          return res.status(400).json({ message: "Invalid requestedProducts format" });
         }
-    });
-}
+      } else if (!Array.isArray(requestedProducts)) {
+        requestedProducts = [];
+      }
+  
+      // For recipients, requestedMeals will be undefined; for donors, it won't be used here
+      if (typeof requestedMeals === 'string') {
+        try {
+          requestedMeals = JSON.parse(requestedMeals);
+          // Trim keys to remove leading/trailing spaces
+          requestedMeals = requestedMeals.map(meal => {
+            const trimmedMeal = {};
+            for (let key in meal) {
+              const trimmedKey = key.trim();
+              trimmedMeal[trimmedKey] = meal[key];
+            }
+            return trimmedMeal;
+          });
+        } catch (error) {
+          return res.status(400).json({ message: "Invalid requestedMeals format" });
+        }
+      } else if (!Array.isArray(requestedMeals)) {
+        requestedMeals = [];
+      }
+  
+      // Filter out incomplete product requests and log invalid ones
+      requestedProducts = requestedProducts.filter(product => {
+        const isValid = product.name &&
+          product.weightPerUnit &&
+          product.totalQuantity &&
+          product.productDescription &&
+          product.status &&
+          product.productType &&
+          product.weightUnit &&
+          product.weightUnitTotale;
+        if (!isValid) {
+          console.log("Filtered out invalid product:", product);
+        }
+        return isValid;
+      });
+  
+      // Validate expirationDate
+      if (isNaN(new Date(expirationDate).getTime())) {
+        return res.status(400).json({ message: "Invalid expiration date format" });
+      }
+  
+      // Validate numberOfMeals for prepared meals
+      let totalMeals = 0;
+      if (category === 'prepared_meals') {
+        const parsedNumberOfMeals = parseInt(numberOfMeals, 10);
+        if (isNaN(parsedNumberOfMeals) || parsedNumberOfMeals <= 0) {
+          return res.status(400).json({ message: 'numberOfMeals must be a valid positive integer for prepared meals' });
+        }
+        totalMeals = parsedNumberOfMeals;
+        // For recipients, requestedMeals will be empty; no need to validate against it
+      }
+  
+      // Create the request without products or meals first
+      const newRequest = new RequestNeed({
+        title,
+        location,
+        expirationDate: new Date(expirationDate),
+        description,
+        category: category || undefined,
+        recipient,
+        requestedProducts: [], // Initially empty
+        requestedMeals: [],    // Initially empty (recipients won't provide this)
+        status: status || "pending",
+        linkedDonation: linkedDonation || null,
+        numberOfMeals: category === 'prepared_meals' ? totalMeals : undefined,
+        isaPost: true, // Assuming this is a standalone request
+      });
+  
+      await newRequest.save(); // Save to obtain the request _id
+      const requestId = newRequest._id;
+  
+      // Handle products for packaged_products
+      let productIds = [];
+      if (category === 'packaged_products' && requestedProducts.length > 0) {
+        const productDocs = requestedProducts.map(product => ({
+          ...product,
+          request: requestId, // Link to the request
+        }));
+        const createdProducts = await Product.insertMany(productDocs);
+        productIds = createdProducts.map(product => product._id);
+        newRequest.requestedProducts = productIds;
+      }
+  
+      // No meal handling for recipients; this will be handled by donors when they create a donation
+  
+      // Save the updated request
+      await newRequest.save();
+  
+      // Fetch the populated request for the response
+      const populatedRequest = await RequestNeed.findById(newRequest._id)
+        .populate('recipient')
+        .populate('requestedProducts')
+        .populate('requestedMeals');
+  
+      res.status(201).json({ message: 'Request created successfully', newRequest: populatedRequest });
+    } catch (error) {
+      console.error("Request Creation Error:", error);
+      res.status(500).json({
+        message: "Failed to create request",
+        error: error.message || error,
+      });
+    }
+  }
 
 // ✅ Update a request by ID
 async function updateRequest(req, res) {
@@ -284,6 +305,8 @@ async function createRequestNeedForExistingDonation(req, res) {
         let validatedProducts = [];
         let validatedMeals = [];
         let totalMeals = 0;
+        let donationProductMap; // Declare here, define conditionally
+        let donationMealMap;    // Declare here, define conditionally
 
         if (isMealDonation) {
             // Validate requestedMeals
@@ -291,8 +314,7 @@ async function createRequestNeedForExistingDonation(req, res) {
                 return res.status(400).json({ message: 'requestedMeals must be an array for meal donations' });
             }
 
-            // Map of available meals (using meal._id as key)
-            const donationMealMap = new Map(
+            donationMealMap = new Map(
                 donation.meals.map(mealEntry => [mealEntry.meal._id.toString(), { quantity: mealEntry.quantity, meal: mealEntry.meal }])
             );
 
@@ -312,7 +334,7 @@ async function createRequestNeedForExistingDonation(req, res) {
                     return res.status(400).json({ message: `Requested quantity (${quantity}) for meal ${mealId} exceeds available quantity (${availableQuantity})` });
                 }
 
-                validatedMeals.push(mealId); // Only store the meal ID as per the schema
+                validatedMeals.push(mealId);
                 totalMeals += quantity;
             }
 
@@ -328,7 +350,7 @@ async function createRequestNeedForExistingDonation(req, res) {
                 return res.status(400).json({ message: 'requestedProducts must be an array for product donations' });
             }
 
-            const donationProductMap = new Map(
+            donationProductMap = new Map(
                 donation.products.map(p => [p.product._id.toString(), { quantity: p.quantity, product: p.product }])
             );
 
@@ -383,7 +405,7 @@ async function createRequestNeedForExistingDonation(req, res) {
             .populate('requestedProducts')
             .populate('requestedMeals');
 
-        // Send notification to donor
+        // Send notification to donor (if email exists)
         if (donation.donor && donation.donor.email) {
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
@@ -409,7 +431,7 @@ Request Details:
 - Recipient: ${recipient.name || 'Unknown Recipient'}
 ${isMealDonation ? 
     `- Requested Meals: ${validatedMeals.map(mealId => {
-        const mealEntry = donation.meals.find(m => m.meal._id.toString() === mealId.toString());
+        const mealEntry = donationMealMap.get(mealId.toString());
         const requestedQty = requestedMeals.find(rm => rm.meal === mealId).quantity;
         return `${mealEntry.meal.mealName} (Quantity: ${requestedQty})`;
     }).join(', ')} (Total: ${totalMeals})` :
@@ -439,7 +461,7 @@ Your Platform Team`,
                             <li><strong>Recipient:</strong> ${recipient.name || 'Unknown Recipient'}</li>
                             ${isMealDonation ? 
                                 `<li><strong>Requested Meals:</strong> ${validatedMeals.map(mealId => {
-                                    const mealEntry = donation.meals.find(m => m.meal._id.toString() === mealId.toString());
+                                    const mealEntry = donationMealMap.get(mealId.toString());
                                     const requestedQty = requestedMeals.find(rm => rm.meal === mealId).quantity;
                                     return `${mealEntry.meal.mealName} (Quantity: ${requestedQty})`;
                                 }).join(', ')} (Total: ${totalMeals})</li>` :
@@ -480,7 +502,6 @@ Your Platform Team`,
         });
     }
 }
-
 
 
 
@@ -718,174 +739,215 @@ async function deleteRequest(req, res) {
 
 async function addDonationToRequest(req, res) {
     try {
-      const { requestId } = req.params;
-      const { products, meals, donor, expirationDate, numberOfMeals } = req.body;
-  
-      // ### Input Validation
-      if (!requestId) {
-        return res.status(400).json({ message: 'Request ID is required' });
-      }
-  
-      // Fetch the request with populated fields
-      const request = await RequestNeed.findById(requestId)
-        .populate('requestedProducts')
-        .populate('recipient');
-      if (!request) {
-        return res.status(404).json({ message: 'Request not found' });
-      }
-  
-      // Validate based on category
-      let donationProducts = [];
-      let donationMeals = [];
-      if (request.category === 'packaged_products') {
-        if (!products || !Array.isArray(products)) {
-          return res.status(400).json({ message: 'Products array is required for packaged_products category' });
+        const { requestId } = req.params;
+        const { products, meals, donor, expirationDate, numberOfMeals } = req.body;
+
+        // ### Input Validation
+        if (!requestId || !mongoose.Types.ObjectId.isValid(requestId)) {
+            return res.status(400).json({ message: 'Valid Request ID is required' });
         }
-        const productMap = new Map(request.requestedProducts.map(p => [p._id.toString(), p.totalQuantity]));
-        donationProducts = products.map(({ product, quantity }) => {
-          if (!productMap.has(product)) {
-            throw new Error(`Product ${product} not found in request`);
-          }
-          const maxQty = productMap.get(product);
-          return {
-            product,
-            quantity: Math.min(quantity, maxQty),
-          };
-        });
-      } else if (request.category === 'prepared_meals') {
-        if (!meals || !Array.isArray(meals)) {
-          return res.status(400).json({ message: 'Meals array is required for prepared_meals category' });
+
+        // Fetch the request with populated fields
+        const request = await RequestNeed.findById(requestId)
+            .populate('requestedProducts')
+            .populate('recipient');
+        if (!request) {
+            return res.status(404).json({ message: 'Request not found' });
         }
-        const meales= meals.map(meal => ({
-            mealName: meal.mealName,
-            mealDescription: meal.mealDescription,
-            mealType: meal.mealType,
-            quantity: Number(meal.quantity),
-          }));
-        donationMeals = meals.map(meal => ({
-          mealName: meal.mealName,
-          mealDescription: meal.mealDescription,
-          mealType: meal.mealType,
-          quantity: Number(meal.quantity),
-        }));
-      } else {
-        return res.status(400).json({ message: 'Invalid request category' });
-      }
-  
-      // ### Create New Donation
-      const newDonation = new Donation({
-        title: request.title,
-        donor: donor || req.user.id,
-        description: `Donation for request ${request.title}`,
-        category: request.category,
-        location: request.location,
-        products: donationProducts,
-        meals: donationMeals,
-        numberOfMeals: request.category === 'prepared_meals' ? (numberOfMeals || request.numberOfMeals || 1) : undefined,
-        expirationDate: expirationDate || request.expirationDate,
-        isaPost: false,
-        linkedRequests: [requestId],
-      });
-  
-      const savedDonation = await newDonation.save();
-  
-      // ### Update Request's linkedDonation Field
-      if (!request.linkedDonation) {
-        request.linkedDonation = [];
-      }
-      request.linkedDonation.push(savedDonation._id);
-      await request.save();
-  
-      // ### Send Notification Email
-      const recipient = request.recipient;
-      if (recipient && recipient.email) {
-        const populatedDonation = await Donation.findById(savedDonation._id)
-          .populate('donor')
-          .populate('meals.meal')
-          .populate('products.product')
-         ;
-  
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-          },
-          tls: {
-            rejectUnauthorized: false,
-          },
+
+        // Validate based on category
+        let donationProducts = [];
+        let donationMeals = [];
+        if (request.category === 'packaged_products') {
+            if (!products || !Array.isArray(products)) {
+                return res.status(400).json({ message: 'Products array is required for packaged_products category' });
+            }
+            const productMap = new Map(request.requestedProducts.map(p => [p._id.toString(), p.totalQuantity]));
+            donationProducts = products.map(({ product, quantity }) => {
+                if (!productMap.has(product)) {
+                    throw new Error(`Product ${product} not found in request`);
+                }
+                const maxQty = productMap.get(product);
+                return {
+                    product,
+                    quantity: Math.min(quantity, maxQty),
+                };
+            });
+        } else if (request.category === 'prepared_meals') {
+            if (!meals || !Array.isArray(meals) || meals.length === 0) {
+                return res.status(400).json({ message: 'Meals array is required for prepared_meals category' });
+            }
+
+            // Validate meals input
+            for (const meal of meals) {
+                if (!meal.mealName || !meal.mealType || !meal.quantity || meal.quantity < 1) {
+                    return res.status(400).json({
+                        message: 'Each meal must have mealName, mealType, and a quantity greater than 0'
+                    });
+                }
+            }
+
+            // Create or find Meals documents and build donationMeals
+            donationMeals = [];
+            for (const meal of meals) {
+                // Check if a Meals document already exists with the same mealName and mealType
+                let mealDoc = await Meals.findOne({
+                    mealName: meal.mealName,
+                    mealType: meal.mealType
+                });
+
+                // If not found, create a new Meals document
+                if (!mealDoc) {
+                    // Generate a unique id for the Meals document using the Counter model
+                    const counter = await Counter.findOneAndUpdate(
+                        { _id: 'MealId' }, // Use a unique identifier for Meals
+                        { $inc: { seq: 1 } },
+                        { new: true, upsert: true }
+                    );
+
+                    mealDoc = new Meals({
+                        id: counter.seq.toString(), // Assign the generated id as a string
+                        mealName: meal.mealName,
+                        mealDescription: meal.mealDescription || '',
+                        mealType: meal.mealType,
+                        quantity: Number(meal.quantity)
+                    });
+                    await mealDoc.save();
+                }
+
+                // Add to donationMeals with the meal ID
+                donationMeals.push({
+                    meal: mealDoc._id,
+                    quantity: Number(meal.quantity)
+                });
+            }
+
+            // Validate numberOfMeals
+            const totalMeals = donationMeals.reduce((sum, m) => sum + m.quantity, 0);
+            const expectedNumberOfMeals = numberOfMeals || request.numberOfMeals || totalMeals;
+            if (totalMeals !== expectedNumberOfMeals) {
+                return res.status(400).json({
+                    message: `Total quantity of meals (${totalMeals}) must match numberOfMeals (${expectedNumberOfMeals})`
+                });
+            }
+        } else {
+            return res.status(400).json({ message: 'Invalid request category' });
+        }
+
+        // ### Create New Donation
+        const newDonation = new Donation({
+            title: request.title,
+            donor: donor || req.user._id,
+            description: `Donation for request ${request.title}`,
+            category: request.category,
+            location: request.location,
+            products: donationProducts,
+            meals: donationMeals,
+            numberOfMeals: request.category === 'prepared_meals' ? (numberOfMeals || request.numberOfMeals || donationMeals.reduce((sum, m) => sum + m.quantity, 0)) : undefined,
+            expirationDate: expirationDate || request.expirationDate,
+            isaPost: false,
+            linkedRequests: [requestId],
         });
-  
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: recipient.email,
-            subject: `New Donation Added to Your Request: ${request.title}`,
-            text: `Dear ${recipient.name || 'Recipient'},
-          
-          A new donation has been added to your request titled "${request.title}".
-          
-          Donation Details:
-          - Title: ${populatedDonation.title}
-          - Donor: ${populatedDonation.donor?.name || 'Unknown Donor'}
-          ${request.category === 'packaged_products' ? `- Products: ${populatedDonation.products
-              .map(p => `${p.product?.name || 'Unknown Product'} (Quantity: ${p.quantity || 0})`)
-              .join(', ')}` : `- Meals: ${populatedDonation.meals
-              .map(m => `${m.meal?.mealName || 'Unknown Meal'} (Type: ${m.meal?.mealType || 'Unknown Type'}, Quantity: ${m.quantity || 0})`)
-              .join(', ')}`}
-          - Expiration Date: ${populatedDonation.expirationDate ? new Date(populatedDonation.expirationDate).toLocaleDateString() : 'Not set'}
-          
-          Thank you for using our platform!
-          
-          Best regards,
-          Your Platform Team`,
-            html: `
-              <div style="font-family: Arial, sans-serif; color: black;">
-                <div style="text-align: center; margin-bottom: 20px;">
-                  <img src="cid:logo" alt="Platform Logo" style="max-width: 150px; height: auto;" />
-                </div>
-                <h2 style="color: #228b22;">New Donation Added to Your Request</h2>
-                <p>Dear ${recipient.name || 'Recipient'},</p>
-                <p>A new donation has been added to your request titled "<strong>${request.title}</strong>".</p>
-                <h3>Donation Details:</h3>
-                <ul>
-                  <li><strong>Title:</strong> ${populatedDonation.title}</li>
-                  <li><strong>Donor:</strong> ${populatedDonation.donor?.name || 'Unknown Donor'}</li>
-                  ${request.category === 'packaged_products' ? `<li><strong>Products:</strong> ${populatedDonation.products
+
+        const savedDonation = await newDonation.save();
+
+        // ### Update Request's linkedDonation Field
+        if (!request.linkedDonation) {
+            request.linkedDonation = [];
+        }
+        request.linkedDonation.push(savedDonation._id);
+        await request.save();
+
+        // ### Send Notification Email
+        const recipient = request.recipient;
+        if (recipient && recipient.email) {
+            const populatedDonation = await Donation.findById(savedDonation._id)
+                .populate('donor')
+                .populate('meals.meal')
+                .populate('products.product');
+
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS,
+                },
+                tls: {
+                    rejectUnauthorized: false,
+                },
+            });
+
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: recipient.email,
+                subject: `New Donation Added to Your Request: ${request.title}`,
+                text: `Dear ${recipient.name || 'Recipient'},
+
+A new donation has been added to your request titled "${request.title}".
+
+Donation Details:
+- Title: ${populatedDonation.title}
+- Donor: ${populatedDonation.donor?.name || 'Unknown Donor'}
+${request.category === 'packaged_products' ? `- Products: ${populatedDonation.products
+                    .map(p => `${p.product?.name || 'Unknown Product'} (Quantity: ${p.quantity || 0})`)
+                    .join(', ')}` : `- Meals: ${populatedDonation.meals
+                    .map(m => `${m.meal?.mealName || 'Unknown Meal'} (Type: ${m.meal?.mealType || 'Unknown Type'}, Quantity: ${m.quantity || 0})`)
+                    .join(', ')}`}
+- Expiration Date: ${populatedDonation.expirationDate ? new Date(populatedDonation.expirationDate).toLocaleDateString() : 'Not set'}
+
+Thank you for using our platform!
+
+Best regards,
+Your Platform Team`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; color: black;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <img src="cid:logo" alt="Platform Logo" style="max-width: 150px; height: auto;" />
+                        </div>
+                        <h2 style="color: #228b22;">New Donation Added to Your Request</h2>
+                        <p>Dear ${recipient.name || 'Recipient'},</p>
+                        <p>A new donation has been added to your request titled "<strong>${request.title}</strong>".</p>
+                        <h3>Donation Details:</h3>
+                        <ul>
+                            <li><strong>Title:</strong> ${populatedDonation.title}</li>
+                            <li><strong>Donor:</strong> ${populatedDonation.donor?.name || 'Unknown Donor'}</li>
+                            ${request.category === 'packaged_products' ? `<li><strong>Products:</strong> ${populatedDonation.products
                     .map(p => `${p.product?.name || 'Unknown Product'} (Quantity: ${p.quantity || 0})`)
                     .join(', ')}</li>` : `<li><strong>Meals:</strong> ${populatedDonation.meals
-                    .map(m => `${populatedDonation._id || 'Unknown Meal'} (Type of meals: ${m.meal?.mealType || 'Unknown Type'}, Quantity: ${m.quantity || 0})`)
+                    .map(m => `${m.meal?.mealName || 'Unknown Meal'} (Type: ${m.meal?.mealType || 'Unknown Type'}, Quantity: ${m.quantity || 0})`)
                     .join(', ')}</li>`}
-                  <li><strong>Expiration Date:</strong> ${populatedDonation.expirationDate ? new Date(populatedDonation.expirationDate).toLocaleDateString() : 'Not set'}</li>
-                </ul>
-                <p>Thank you for using our platform!</p>
-                <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
-              </div>
-            `,
-            attachments: [
-              {
-                filename: 'logo.png',
-                path: path.join(__dirname, '../uploads/logo.png'),
-                cid: 'logo',
-              },
-            ],
-          };
-          console.log('Populated Donation Meals:', populatedDonation.meals);
-        await transporter.sendMail(mailOptions);
-        console.log(`Email sent to ${recipient.email}`);
-      } else {
-        console.warn('Recipient email not found for request:', requestId);
-      }
-  
-      // ### Response
-      res.status(201).json({
-        message: 'Donation added to request successfully',
-        donation: savedDonation,
-      });
+                            <li><strong>Expiration Date:</strong> ${populatedDonation.expirationDate ? new Date(populatedDonation.expirationDate).toLocaleDateString() : 'Not set'}</li>
+                        </ul>
+                        <p>Thank you for using our platform!</p>
+                        <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
+                    </div>
+                `,
+                attachments: [
+                    {
+                        filename: 'logo.png',
+                        path: path.join(__dirname, '../uploads/logo.png'),
+                        cid: 'logo',
+                    },
+                ],
+            };
+
+            console.log('Populated Donation Meals:', populatedDonation.meals);
+            await transporter.sendMail(mailOptions);
+            console.log(`Email sent to ${recipient.email}`);
+        } else {
+            console.warn('Recipient email not found for request:', requestId);
+        }
+
+        // ### Response
+        res.status(201).json({
+            message: 'Donation added to request successfully',
+            donation: savedDonation,
+        });
     } catch (error) {
-      console.error('Donation Error:', error);
-      res.status(500).json({ message: 'Failed to add donation to request', error: error.message });
+        console.error('Donation Error:', error);
+        res.status(500).json({ message: 'Failed to add donation to request', error: error.message });
     }
-  }
+}
 async function getRequestWithDonations(req, res) {
     try {
         const { requestId } = req.params;

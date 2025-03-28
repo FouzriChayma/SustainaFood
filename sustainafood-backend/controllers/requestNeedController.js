@@ -720,19 +720,20 @@ async function addDonationToRequest(req, res) {
       const { requestId } = req.params;
       const { products, donor, expirationDate } = req.body;
   
-      // Fetch the request and populate requestedProducts and recipient
+      // ### Input Validation
+      if (!requestId || !products || !Array.isArray(products)) {
+        return res.status(400).json({ message: 'Request ID and products array are required' });
+      }
+  
+      // Fetch the request with populated fields
       const request = await RequestNeed.findById(requestId)
         .populate('requestedProducts')
-        .populate('recipient'); // Assuming 'recipient' is a field in RequestNeed referencing the User model
+        .populate('recipient');
       if (!request) {
         return res.status(404).json({ message: 'Request not found' });
       }
   
-      console.log('Request category:', request.category);
-      console.log('Request numberOfMeals:', request.numberOfMeals);
-      console.log('Request linkedDonation:', request.linkedDonation);
-  
-      // Validate products against the request
+      // ### Validate Products Against Request
       const productMap = new Map(request.requestedProducts.map(p => [p._id.toString(), p.totalQuantity]));
       const donationProducts = products.map(({ product, quantity }) => {
         if (!productMap.has(product)) {
@@ -745,7 +746,7 @@ async function addDonationToRequest(req, res) {
         };
       });
   
-      // Create the new donation
+      // ### Create New Donation
       const newDonation = new Donation({
         title: request.title,
         donor: donor || req.user.id,
@@ -755,30 +756,26 @@ async function addDonationToRequest(req, res) {
         products: donationProducts,
         numberOfMeals: request.category === 'prepared_meals' ? (request.numberOfMeals || 1) : undefined,
         expirationDate: expirationDate || request.expirationDate,
-        isaPost:false,
+        isaPost: false,
         linkedRequests: [requestId],
       });
   
       const savedDonation = await newDonation.save();
   
-      // Update the request's linkedDonation field
-      if (request.linkedDonation === null || request.linkedDonation === undefined) {
-        await RequestNeed.updateOne({ _id: requestId }, { $set: { linkedDonation: [] } });
+      // ### Update Request's linkedDonation Field
+      if (!request.linkedDonation) {
+        request.linkedDonation = []; // Initialize if null or undefined
       }
+      request.linkedDonation.push(savedDonation._id);
+      await request.save();
   
-      await RequestNeed.updateOne({ _id: requestId }, { $push: { linkedDonation: savedDonation._id } });
-  
-      // Fetch the recipient's email and send notification
-      const recipient = request.recipient; // Assuming recipient is populated
-      if (!recipient || !recipient.email) {
-        console.warn('Recipient email not found for request:', requestId);
-      } else {
-        // Populate the donor and products in the saved donation to get names
+      // ### Send Notification Email
+      const recipient = request.recipient;
+      if (recipient && recipient.email) {
         const populatedDonation = await Donation.findById(savedDonation._id)
-          .populate('donor') // Populate donor to get the name
-          .populate('products.product'); // Populate products to get product names
+          .populate('donor')
+          .populate('products.product');
   
-        // Configure email transporter
         const transporter = nodemailer.createTransport({
           service: 'gmail',
           auth: {
@@ -786,11 +783,10 @@ async function addDonationToRequest(req, res) {
             pass: process.env.EMAIL_PASS,
           },
           tls: {
-            rejectUnauthorized: false, // Disable SSL verification
+            rejectUnauthorized: false,
           },
         });
   
-        // Email details
         const mailOptions = {
           from: process.env.EMAIL_USER,
           to: recipient.email,
@@ -835,17 +831,19 @@ async function addDonationToRequest(req, res) {
           attachments: [
             {
               filename: 'logo.png',
-              path: path.join(__dirname, '../uploads/logo.png'), // Adjust path to match your logo file
-              cid: 'logo', // Content-ID to reference in the HTML
+              path: path.join(__dirname, '../uploads/logo.png'),
+              cid: 'logo',
             },
           ],
         };
   
-        // Send email
         await transporter.sendMail(mailOptions);
         console.log(`Email sent to ${recipient.email}`);
+      } else {
+        console.warn('Recipient email not found for request:', requestId);
       }
   
+      // ### Response
       res.status(201).json({
         message: 'Donation added to request successfully',
         donation: savedDonation,

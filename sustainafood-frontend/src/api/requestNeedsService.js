@@ -26,6 +26,7 @@ export const createRequestNeedForExistingDonation = async (donationId, requestDa
   }
 };
 export const addDonationToRequest = async (requestId, donationData) => {
+  console.log('Sending donation data:', requestId);
   const token = localStorage.getItem('token');
   if (!token) {
     throw new Error('User not authenticated - No token found');

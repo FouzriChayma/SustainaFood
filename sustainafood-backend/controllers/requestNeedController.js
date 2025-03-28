@@ -8,6 +8,7 @@ const path = require("path");
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const multer = require('multer'); // Import multer
+const Meals=require('../models/Meals');
 
 const upload = multer().none(); // Create multer instance to handle FormData
 
@@ -718,11 +719,11 @@ async function deleteRequest(req, res) {
 async function addDonationToRequest(req, res) {
     try {
       const { requestId } = req.params;
-      const { products, donor, expirationDate } = req.body;
+      const { products, meals, donor, expirationDate, numberOfMeals } = req.body;
   
       // ### Input Validation
-      if (!requestId || !products || !Array.isArray(products)) {
-        return res.status(400).json({ message: 'Request ID and products array are required' });
+      if (!requestId) {
+        return res.status(400).json({ message: 'Request ID is required' });
       }
   
       // Fetch the request with populated fields
@@ -733,18 +734,43 @@ async function addDonationToRequest(req, res) {
         return res.status(404).json({ message: 'Request not found' });
       }
   
-      // ### Validate Products Against Request
-      const productMap = new Map(request.requestedProducts.map(p => [p._id.toString(), p.totalQuantity]));
-      const donationProducts = products.map(({ product, quantity }) => {
-        if (!productMap.has(product)) {
-          throw new Error(`Product ${product} not found in request`);
+      // Validate based on category
+      let donationProducts = [];
+      let donationMeals = [];
+      if (request.category === 'packaged_products') {
+        if (!products || !Array.isArray(products)) {
+          return res.status(400).json({ message: 'Products array is required for packaged_products category' });
         }
-        const maxQty = productMap.get(product);
-        return {
-          product,
-          quantity: Math.min(quantity, maxQty),
-        };
-      });
+        const productMap = new Map(request.requestedProducts.map(p => [p._id.toString(), p.totalQuantity]));
+        donationProducts = products.map(({ product, quantity }) => {
+          if (!productMap.has(product)) {
+            throw new Error(`Product ${product} not found in request`);
+          }
+          const maxQty = productMap.get(product);
+          return {
+            product,
+            quantity: Math.min(quantity, maxQty),
+          };
+        });
+      } else if (request.category === 'prepared_meals') {
+        if (!meals || !Array.isArray(meals)) {
+          return res.status(400).json({ message: 'Meals array is required for prepared_meals category' });
+        }
+        const meales= meals.map(meal => ({
+            mealName: meal.mealName,
+            mealDescription: meal.mealDescription,
+            mealType: meal.mealType,
+            quantity: Number(meal.quantity),
+          }));
+        donationMeals = meals.map(meal => ({
+          mealName: meal.mealName,
+          mealDescription: meal.mealDescription,
+          mealType: meal.mealType,
+          quantity: Number(meal.quantity),
+        }));
+      } else {
+        return res.status(400).json({ message: 'Invalid request category' });
+      }
   
       // ### Create New Donation
       const newDonation = new Donation({
@@ -754,7 +780,8 @@ async function addDonationToRequest(req, res) {
         category: request.category,
         location: request.location,
         products: donationProducts,
-        numberOfMeals: request.category === 'prepared_meals' ? (request.numberOfMeals || 1) : undefined,
+        meals: donationMeals,
+        numberOfMeals: request.category === 'prepared_meals' ? (numberOfMeals || request.numberOfMeals || 1) : undefined,
         expirationDate: expirationDate || request.expirationDate,
         isaPost: false,
         linkedRequests: [requestId],
@@ -764,7 +791,7 @@ async function addDonationToRequest(req, res) {
   
       // ### Update Request's linkedDonation Field
       if (!request.linkedDonation) {
-        request.linkedDonation = []; // Initialize if null or undefined
+        request.linkedDonation = [];
       }
       request.linkedDonation.push(savedDonation._id);
       await request.save();
@@ -774,7 +801,9 @@ async function addDonationToRequest(req, res) {
       if (recipient && recipient.email) {
         const populatedDonation = await Donation.findById(savedDonation._id)
           .populate('donor')
-          .populate('products.product');
+          .populate('meals.meal')
+          .populate('products.product')
+         ;
   
         const transporter = nodemailer.createTransport({
           service: 'gmail',
@@ -788,55 +817,59 @@ async function addDonationToRequest(req, res) {
         });
   
         const mailOptions = {
-          from: process.env.EMAIL_USER,
-          to: recipient.email,
-          subject: `New Donation Added to Your Request: ${request.title}`,
-          text: `Dear ${recipient.name || 'Recipient'},
-  
-  A new donation has been added to your request titled "${request.title}".
-  
-  Donation Details:
-  - Title: ${populatedDonation.title}
-  - Donor: ${populatedDonation.donor?.name || 'Unknown Donor'}
-  - Products: ${populatedDonation.products
-            .map(p => `${p.product?.name || 'Unknown Product'} (Quantity: ${p.quantity})`)
-            .join(', ')}
-  - Expiration Date: ${populatedDonation.expirationDate ? new Date(populatedDonation.expirationDate).toLocaleDateString() : 'Not set'}
-  
-  Thank you for using our platform!
-  
-  Best regards,
-  Your Platform Team`,
-          html: `
-            <div style="font-family: Arial, sans-serif; color: black;">
-              <div style="text-align: center; margin-bottom: 20px;">
-                <img src="cid:logo" alt="Platform Logo" style="max-width: 150px; height: auto;" />
+            from: process.env.EMAIL_USER,
+            to: recipient.email,
+            subject: `New Donation Added to Your Request: ${request.title}`,
+            text: `Dear ${recipient.name || 'Recipient'},
+          
+          A new donation has been added to your request titled "${request.title}".
+          
+          Donation Details:
+          - Title: ${populatedDonation.title}
+          - Donor: ${populatedDonation.donor?.name || 'Unknown Donor'}
+          ${request.category === 'packaged_products' ? `- Products: ${populatedDonation.products
+              .map(p => `${p.product?.name || 'Unknown Product'} (Quantity: ${p.quantity || 0})`)
+              .join(', ')}` : `- Meals: ${populatedDonation.meals
+              .map(m => `${m.meal?.mealName || 'Unknown Meal'} (Type: ${m.meal?.mealType || 'Unknown Type'}, Quantity: ${m.quantity || 0})`)
+              .join(', ')}`}
+          - Expiration Date: ${populatedDonation.expirationDate ? new Date(populatedDonation.expirationDate).toLocaleDateString() : 'Not set'}
+          
+          Thank you for using our platform!
+          
+          Best regards,
+          Your Platform Team`,
+            html: `
+              <div style="font-family: Arial, sans-serif; color: black;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                  <img src="cid:logo" alt="Platform Logo" style="max-width: 150px; height: auto;" />
+                </div>
+                <h2 style="color: #228b22;">New Donation Added to Your Request</h2>
+                <p>Dear ${recipient.name || 'Recipient'},</p>
+                <p>A new donation has been added to your request titled "<strong>${request.title}</strong>".</p>
+                <h3>Donation Details:</h3>
+                <ul>
+                  <li><strong>Title:</strong> ${populatedDonation.title}</li>
+                  <li><strong>Donor:</strong> ${populatedDonation.donor?.name || 'Unknown Donor'}</li>
+                  ${request.category === 'packaged_products' ? `<li><strong>Products:</strong> ${populatedDonation.products
+                    .map(p => `${p.product?.name || 'Unknown Product'} (Quantity: ${p.quantity || 0})`)
+                    .join(', ')}</li>` : `<li><strong>Meals:</strong> ${populatedDonation.meals
+                    .map(m => `${populatedDonation._id || 'Unknown Meal'} (Type of meals: ${m.meal?.mealType || 'Unknown Type'}, Quantity: ${m.quantity || 0})`)
+                    .join(', ')}</li>`}
+                  <li><strong>Expiration Date:</strong> ${populatedDonation.expirationDate ? new Date(populatedDonation.expirationDate).toLocaleDateString() : 'Not set'}</li>
+                </ul>
+                <p>Thank you for using our platform!</p>
+                <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
               </div>
-              <h2 style="color: #228b22;">New Donation Added to Your Request</h2>
-              <p>Dear ${recipient.name || 'Recipient'},</p>
-              <p>A new donation has been added to your request titled "<strong>${request.title}</strong>".</p>
-              <h3>Donation Details:</h3>
-              <ul>
-                <li><strong>Title:</strong> ${populatedDonation.title}</li>
-                <li><strong>Donor:</strong> ${populatedDonation.donor?.name || 'Unknown Donor'}</li>
-                <li><strong>Products:</strong> ${populatedDonation.products
-                  .map(p => `${p.product?.name || 'Unknown Product'} (Quantity: ${p.quantity})`)
-                  .join(', ')}</li>
-                <li><strong>Expiration Date:</strong> ${populatedDonation.expirationDate ? new Date(populatedDonation.expirationDate).toLocaleDateString() : 'Not set'}</li>
-              </ul>
-              <p>Thank you for using our platform!</p>
-              <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
-            </div>
-          `,
-          attachments: [
-            {
-              filename: 'logo.png',
-              path: path.join(__dirname, '../uploads/logo.png'),
-              cid: 'logo',
-            },
-          ],
-        };
-  
+            `,
+            attachments: [
+              {
+                filename: 'logo.png',
+                path: path.join(__dirname, '../uploads/logo.png'),
+                cid: 'logo',
+              },
+            ],
+          };
+          console.log('Populated Donation Meals:', populatedDonation.meals);
         await transporter.sendMail(mailOptions);
         console.log(`Email sent to ${recipient.email}`);
       } else {

@@ -400,13 +400,13 @@ const DetailsRequest = () => {
 
   const handleSubmitDonation = async () => {
     if (!validateDonation()) return;
-
+  
     try {
       const donationData = {
-        donor: userid,
+        donor: user?._id || user?.id,
         expirationDate: request.expirationDate || new Date().toISOString(),
       };
-
+  
       if (request.category === "packaged_products") {
         const donationProducts = request.requestedProducts.map((product, index) => ({
           product: product._id ? product._id.toString() : null,
@@ -426,7 +426,9 @@ const DetailsRequest = () => {
           ? manualDonationMeals.reduce((sum, meal) => sum + (parseInt(meal.quantity) || 0), 0)
           : donationMeals.reduce((sum, meal) => sum + (meal.quantity || 0), 0);
       }
-
+  
+      console.log('Submitting donation data:', donationData); // Debug log
+  
       const response = await addDonationToRequest(id, donationData);
       setIsAddingDonation(false);
       setDonationQuantities(request.requestedProducts.map(() => 0));
@@ -447,7 +449,6 @@ const DetailsRequest = () => {
       showAlert('error', `Failed to submit donation: ${error.message || 'Unknown error'}`);
     }
   };
-
   const handleDonateAll = async () => {
     if (request.category === "prepared_meals") {
       showAlert('error', 'Cannot use "Donate all" for prepared meals. Please specify meals manually.');

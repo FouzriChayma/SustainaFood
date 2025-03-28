@@ -28,6 +28,10 @@ export const getUserById = async (id) => {
 };
 
 // 🔹 Mettre à jour un utilisateur
+export const onUpdateDescription = async (id, description) => {
+  return axios.put(`http://localhost:3000/users/updateDescription/${id}`, { description });
+};
+// 🔹 Mettre à jour un utilisateur
 export const updateUser = async (id, userData) => {
   return axios.put(`http://localhost:3000/users/update/${id}`, userData, {
     headers: {

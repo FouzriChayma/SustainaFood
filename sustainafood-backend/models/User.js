@@ -47,6 +47,7 @@ const Role = Object.freeze({
 
 // User schema definition
 const userSchema = new Schema({
+  description:{ type: String},
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String },

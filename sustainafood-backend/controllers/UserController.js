@@ -244,6 +244,7 @@ const updateUser = async (req, res) => {
     try {
       // Récupération des champs texte depuis le corps de la requête
       const {
+        description,
         role,
         name,
         email,
@@ -265,6 +266,7 @@ const updateUser = async (req, res) => {
   
       // Construction de l'objet de mise à jour
       const updateData = {};
+      if (description) updateData.description = description;
       if (name) updateData.name = name;
       if (email) updateData.email = email;
       if (phone && !isNaN(phone)) updateData.phone = phone;
@@ -321,7 +323,40 @@ const updateUser = async (req, res) => {
       res.status(500).json({ error: error.message });
     }
   };
+  // Update Description Controller
+  const onUpdateDescription = async (req, res) => {
+    try {
+      const { id } = req.params; // Correct parameter name
+      const { description } = req.body; // Expect description in body
   
+      // Validate input
+      if (!description || typeof description !== 'string') {
+        return res.status(400).json({ message: 'Description is required and must be a string' });
+      }
+      if (description.length > 500) {
+        return res.status(400).json({ message: 'Description cannot exceed 500 characters' });
+      }
+  
+      // Update User
+      const updatedUser = await User.findOneAndUpdate(
+        { _id: id },
+        { description },
+        { new: true, runValidators: true }
+      );
+  
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      res.status(200).json({
+        message: 'Description updated successfully',
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error('Error updating description:', error);
+      res.status(500).json({ message: 'Server error while updating description' });
+    }
+  };
 
   const updateUserWithEmail = async (req, res) => {
       try {
@@ -854,4 +889,4 @@ const send2FACodeforsigninwithgoogle = async (req, res) => {
     }
 };
 
-module.exports = {send2FACode,send2FACodeforsigninwithgoogle,changePassword,updateUserWithEmail, createUser,addUser, getUsers, getUserById,updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter ,deactivateAccount  , validate2FACode , toggle2FA};
+module.exports = {onUpdateDescription,send2FACode,send2FACodeforsigninwithgoogle,changePassword,updateUserWithEmail, createUser,addUser, getUsers, getUserById,updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter ,deactivateAccount  , validate2FACode , toggle2FA};

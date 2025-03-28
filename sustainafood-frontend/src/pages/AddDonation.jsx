@@ -75,16 +75,14 @@ export const AddDonation = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      if (typeof user.id === "number") {
+      if (typeof user?.id === "number") {
         if (!user || !user._id) return;
         try {
-          
           setUserid(user._id);
         } catch (error) {
           console.error("Backend Error:", error);
         }
-      }
-      else if (typeof user.id === "string") {
+      } else if (typeof user?.id === "string") {
         if (!user || !user.id) return;
         try {
           setUserid(user.id);
@@ -93,15 +91,12 @@ export const AddDonation = () => {
         }
       }
     };
-    console.log(userid)
-    console.log(numberOfMeals)
-
 
     if (user && (user._id || user.id)) {
       fetchUser();
     }
   }, [user]);
-  
+
   useEffect(() => {
     // Calculate total meals from manualMeals when in form mode
     if (isDonner && category === "prepared_meals" && mealsEntryMode === "form") {
@@ -308,17 +303,27 @@ export const AddDonation = () => {
     if (category === "prepared_meals" && isDonner) {
       donationData.append("numberOfMeals", numberOfMeals);
       const mealsToSend = mealsEntryMode === "form" ? manualMeals : meals;
-      donationData.append("meals", JSON.stringify(mealsToSend.map(meal => ({
+      // Ensure quantity is an integer and all fields are present
+      const formattedMeals = mealsToSend.map(meal => ({
         mealName: meal.mealName,
         mealDescription: meal.mealDescription,
         mealType: meal.mealType,
-        quantity: meal.quantity,
-      }))));
+        quantity: parseInt(meal.quantity), // Ensure quantity is an integer
+      }));
+      console.log("Formatted Meals to Send:", formattedMeals); // Debugging
+      donationData.append("meals", JSON.stringify(formattedMeals));
     }
 
     if (category === "packaged_products") {
       const productsToSend = productEntryMode === "csv" ? products : manualProducts;
-      donationData.append(isDonner ? "products" : "requestedProducts", JSON.stringify(productsToSend));
+      // Ensure totalQuantity is an integer
+      const formattedProducts = productsToSend.map(product => ({
+        ...product,
+        totalQuantity: parseInt(product.totalQuantity),
+        weightPerUnit: parseFloat(product.weightPerUnit),
+      }));
+      console.log("Formatted Products to Send:", formattedProducts); // Debugging
+      donationData.append(isDonner ? "products" : "requestedProducts", JSON.stringify(formattedProducts));
     }
 
     try {
@@ -327,16 +332,16 @@ export const AddDonation = () => {
         donationData.append("type", type);
         donationData.append("donor", userid);
 
+        console.log("Sending Donation Data:", [...donationData.entries()]); // Debugging
         response = await addDonation(donationData);
         console.log("Donation created successfully:", response.data);
         showAlert("success", "Donation created successfully!");
       } else if (isRecipient) {
         donationData.append("recipient", userid);
+        console.log("Sending Request Data:", [...donationData.entries()]); // Debugging
         response = await createrequests(donationData);
-        console.log(donationData)
         console.log("Request created successfully:", response.data);
         showAlert("success", "Request created successfully!");
-        
       }
       navigate("/ListOfDonations");
     } catch (err) {
@@ -584,11 +589,11 @@ export const AddDonation = () => {
                                     {productTypes.map(pt => <option key={pt} value={pt}>{pt}</option>)}
                                   </select>
                                 ) : key === "weightUnit" || key === "weightUnitTotale" ? (
-                                  <select value={editedItem[key] || ""} onChange={(e) => handleRowInputChange(e, key)} className="edit-input">
+                                  <select value={editedItem[key] || ""} onChange={(e) => handleRowInputChange(e, "key")} className="edit-input">
                                     {weightUnits.map(wu => <option key={wu} value={wu}>{wu}</option>)}
                                   </select>
                                 ) : key === "status" ? (
-                                  <select value={editedItem[key] || ""} onChange={(e) => handleRowInputChange(e, key)} className="edit-input">
+                                  <select value={editedItem[key] || ""} onChange={(e) => handleRowInputChange(e, "key")} className="edit-input">
                                     {statuses.map(status => <option key={status} value={status}>{status}</option>)}
                                   </select>
                                 ) : (

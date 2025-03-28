@@ -5,10 +5,8 @@ const mongoose = require('mongoose');
 const Meal = require('../models/Meals');         // Adjust path to your model
 
 
-// ✅ Create a new donation (also creates related products and meals )
 async function createDonation(req, res) {
   let newDonation;
-
   try {
     let {
       title,
@@ -27,114 +25,43 @@ async function createDonation(req, res) {
     // Log the incoming request body for debugging
     console.log("Incoming Request Body:", req.body);
 
-    // Ensure products is an array
-    if (!Array.isArray(products)) {
-      if (typeof products === 'string') {
-        try {
-          products = JSON.parse(products);
-        } catch (error) {
-          throw new Error('Invalid products format: must be a valid JSON array');
-        }
-      } else {
-        products = [];
-      }
-    }
-
-    // Ensure meals is an array
-    if (!Array.isArray(meals)) {
-      if (typeof meals === 'string') {
-        try {
-          meals = JSON.parse(meals);
-        } catch (error) {
-          throw new Error('Invalid meals format: must be a valid JSON array');
-        }
-      } else {
-        meals = [];
-      }
-    }
-
-    // Log the parsed meals for debugging
-    console.log("Parsed Meals:", meals);
-
-    // Validate mealType values
-    const validMealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert', 'Other'];
+    // Ensure products and meals are arrays
+    products = Array.isArray(products) ? products : typeof products === 'string' ? JSON.parse(products) : [];
+    meals = Array.isArray(meals) ? meals : typeof meals === 'string' ? JSON.parse(meals) : [];
 
     // Validate and filter meals
-    const validMeals = meals
-      .map((meal, index) => {
-        if (!meal.mealName || typeof meal.mealName !== 'string' || !meal.mealName.trim()) {
-          throw new Error(`Meal at index ${index} is missing a valid mealName`);
-        }
-        if (!meal.mealDescription || typeof meal.mealDescription !== 'string' || !meal.mealDescription.trim()) {
-          throw new Error(`Meal at index ${index} is missing a valid mealDescription`);
-        }
-        if (!meal.mealType || !validMealTypes.includes(meal.mealType)) {
-          throw new Error(`Meal at index ${index} has an invalid mealType: ${meal.mealType}. Must be one of ${validMealTypes.join(', ')}`);
-        }
-        const quantity = parseInt(meal.quantity);
-        if (isNaN(quantity) || quantity <= 0) {
-          throw new Error(`Meal at index ${index} has an invalid quantity: ${meal.quantity}. Must be a positive integer`);
-        }
-        return {
-          mealName: meal.mealName,
-          mealDescription: meal.mealDescription,
-          mealType: meal.mealType,
-          quantity: quantity
-        };
-      })
-      .filter(meal => meal); // Ensure no null/undefined entries
-
-    // Log the valid meals for debugging
-    console.log("Valid Meals After Filtering:", validMeals);
+    const validMeals = meals.map(meal => ({
+      mealName: meal.mealName || undefined,
+      mealDescription: meal.mealDescription || undefined,
+      mealType: meal.mealType || undefined,
+      quantity: parseInt(meal.quantity) || undefined
+    })).filter(meal =>
+      meal.mealName &&
+      meal.mealDescription &&
+      meal.mealType &&
+      meal.quantity > 0
+    );
 
     // Validate and filter products
-    const validProducts = products
-      .map((product, index) => {
-        if (!product.productType || typeof product.productType !== 'string') {
-          throw new Error(`Product at index ${index} is missing a valid productType`);
-        }
-        const weightPerUnit = parseFloat(product.weightPerUnit);
-        if (isNaN(weightPerUnit) || weightPerUnit <= 0) {
-          throw new Error(`Product at index ${index} has an invalid weightPerUnit: ${product.weightPerUnit}`);
-        }
-        const totalQuantity = parseInt(product.totalQuantity);
-        if (isNaN(totalQuantity) || totalQuantity <= 0) {
-          throw new Error(`Product at index ${index} has an invalid totalQuantity: ${product.totalQuantity}`);
-        }
-        if (!product.productDescription || typeof product.productDescription !== 'string') {
-          throw new Error(`Product at index ${index} is missing a valid productDescription`);
-        }
-        if (!product.status || typeof product.status !== 'string') {
-          throw new Error(`Product at index ${index} is missing a valid status`);
-        }
-        return {
-          productType: product.productType,
-          weightPerUnit: weightPerUnit,
-          weightUnit: product.weightUnit || 'kg',
-          totalQuantity: totalQuantity,
-          productDescription: product.productDescription,
-          status: product.status || 'available'
-        };
-      })
-      .filter(product => product);
+    const validProducts = products.map(product => ({
+      productType: product.productType || undefined,
+      weightPerUnit: parseFloat(product.weightPerUnit) || undefined,
+      weightUnit: product.weightUnit || 'kg',
+      totalQuantity: parseInt(product.totalQuantity) || undefined,
+      productDescription: product.productDescription || undefined,
+      status: product.status || 'available'
+    })).filter(product =>
+      product.productType &&
+      product.weightPerUnit > 0 &&
+      product.totalQuantity > 0 &&
+      product.productDescription &&
+      product.status
+    );
 
     // Validate required fields
-    if (!title || typeof title !== 'string' || !title.trim()) {
-      throw new Error('Missing or invalid required field: title');
+    if (!title || !location || !expirationDate || !description || !donor) {
+      throw new Error('Missing required fields: title, location, expirationDate, description, or donor');
     }
-    if (!location || typeof location !== 'string' || !location.trim()) {
-      throw new Error('Missing or invalid required field: location');
-    }
-    if (!expirationDate || isNaN(new Date(expirationDate).getTime())) {
-      throw new Error('Missing or invalid required field: expirationDate');
-    }
-    if (!description || typeof description !== 'string' || !description.trim()) {
-      throw new Error('Missing or invalid required field: description');
-    }
-    if (!donor || !mongoose.Types.ObjectId.isValid(donor)) {
-      throw new Error('Missing or invalid required field: donor');
-    }
-
     if (category === 'prepared_meals' && validMeals.length === 0) {
       throw new Error('At least one valid meal is required for prepared_meals category');
     }
@@ -144,11 +71,22 @@ async function createDonation(req, res) {
       ? validMeals.reduce((sum, meal) => sum + meal.quantity, 0)
       : undefined;
 
-    // Validate provided numberOfMeals
-    const providedNumberOfMeals = parseInt(numberOfMeals);
-    if (category === 'prepared_meals' && !isNaN(providedNumberOfMeals) && providedNumberOfMeals !== calculatedNumberOfMeals) {
-      throw new Error(`Provided numberOfMeals (${providedNumberOfMeals}) does not match the calculated total (${calculatedNumberOfMeals})`);
-    }
+    // Create Meals documents
+    const mealDocs = await Promise.all(validMeals.map(async meal => {
+      const counter = await Counter.findOneAndUpdate(
+        { _id: 'mealId' },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      const newMeal = new Meal({
+        id: counter.seq,
+        mealName: meal.mealName,
+        mealDescription: meal.mealDescription,
+        mealType: meal.mealType
+      });
+      await newMeal.save();
+      return { meal: newMeal._id, quantity: meal.quantity };
+    }));
 
     // Create the donation object
     newDonation = new Donation({
@@ -159,45 +97,13 @@ async function createDonation(req, res) {
       category: category || 'prepared_meals',
       type: type || 'donation',
       donor,
-      meals: [],
-      numberOfMeals: category === 'prepared_meals' ? (providedNumberOfMeals || calculatedNumberOfMeals) : undefined,
+      meals: category === 'prepared_meals' ? mealDocs : [],
+      numberOfMeals: category === 'prepared_meals' ? (numberOfMeals || calculatedNumberOfMeals) : undefined,
       products: [],
       status: status || 'pending'
     });
 
-    // Process meals: Create Meal documents and link them
-    let mealEntries = [];
-    if (category === 'prepared_meals' && validMeals.length > 0) {
-      for (let meal of validMeals) {
-        const counter = await Counter.findOneAndUpdate(
-          { _id: 'mealId' },
-          { $inc: { seq: 1 } },
-          { new: true, upsert: true }
-        );
-
-        if (!counter) {
-          throw new Error('Failed to generate meal ID');
-        }
-
-        const newMeal = new Meal({
-          id: counter.seq,
-          mealName: meal.mealName,
-          mealDescription: meal.mealDescription,
-          mealType: meal.mealType,
-          quantity: meal.quantity,
-          donation: newDonation._id
-        });
-
-        await newMeal.save();
-        console.log(`Created Meal Document: ${newMeal._id}`); // Debugging
-        mealEntries.push({
-          meal: newMeal._id,
-          quantity: meal.quantity
-        });
-      }
-    }
-
-    // Process products: Create Product documents and link them
+    // Process products
     if (validProducts.length > 0) {
       for (let product of validProducts) {
         const counter = await Counter.findOneAndUpdate(
@@ -213,19 +119,12 @@ async function createDonation(req, res) {
         product.id = counter.seq;
         product.donation = newDonation._id;
       }
-
       const createdProducts = await Product.insertMany(validProducts);
       newDonation.products = createdProducts.map((createdProduct, index) => ({
         product: createdProduct._id,
         quantity: validProducts[index].totalQuantity
       }));
     }
-
-    // Assign the meal entries to the donation
-    newDonation.meals = mealEntries;
-
-    // Log the donation before saving
-    console.log("Donation Before Save:", newDonation);
 
     // Save the donation
     await newDonation.save();
@@ -238,7 +137,6 @@ async function createDonation(req, res) {
 
     res.status(201).json({ message: 'Donation created successfully', donation: populatedDonation });
   } catch (error) {
-    // Rollback
     if (newDonation && newDonation._id) {
       if (newDonation.meals && newDonation.meals.length > 0) {
         const mealIds = newDonation.meals.map(entry => entry.meal);

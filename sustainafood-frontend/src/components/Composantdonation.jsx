@@ -68,14 +68,14 @@ const StatusBadge = styled.span`
   }};
 `;
 
-// Product list
-const ProductList = styled.ul`
+// Product/Meal list
+const ItemList = styled.ul`
   list-style: none;
   padding: 0;
   margin-top: 10px;
 `;
 
-const ProductItem = styled.li`
+const Item = styled.li`
   background: #f5f5f5;
   padding: 10px;
   border-radius: 8px;
@@ -116,15 +116,15 @@ export const Composantdonation = ({ donation }) => {
     title,
     location,
     expirationDate,
-    numberOfMeals = 0,  // Added default value
+    numberOfMeals = 0,
     products = [],
     meals = [],
     status,
   } = donation;
 
-  // Log pour vérifier les données (kept as is)
-  console.log("Products:", products);
-  console.log("Meals:", meals);
+  // Log for debugging
+ // console.log("Products:", products);
+  ///console.log("Meals:", meals);
 
   return (
     <Card>
@@ -140,13 +140,13 @@ export const Composantdonation = ({ donation }) => {
           <StatusBadge status={status}>{status || 'Unknown'}</StatusBadge>
         </Details>
 
-        {/* Affichage conditionnel des produits ou des meals */}
+        {/* Conditional display of products or meals */}
         {Array.isArray(products) && products.length > 0 ? (
           <>
             <h4>📦 Available Products:</h4>
-            <ProductList>
+            <ItemList>
               {products.slice(0, 2).map((product, index) => (
-                <ProductItem key={index}>
+                <Item key={index}>
                   {product.product && typeof product.product === 'object' ? (
                     <>
                       <span><strong>Name:</strong> {product.product.name || 'N/A'}</span>
@@ -163,33 +163,35 @@ export const Composantdonation = ({ donation }) => {
                   ) : (
                     <span>No product data available</span>
                   )}
-                </ProductItem>
+                </Item>
               ))}
-              {products.length === 0 && <ProductItem>No products available</ProductItem>}
-            </ProductList>
+              {products.length === 0 && <Item>No products available</Item>}
+            </ItemList>
           </>
         ) : Array.isArray(meals) && meals.length > 0 ? (
           <>
             <h4>🍽️ Available Meals:</h4>
-            <span><strong>Quantity:</strong> {numberOfMeals}</span>
-            <ProductList>
-              {meals.slice(0, 2).map((meal, index) => (
-                <ProductItem key={index}>
-                  {meal.meal && typeof meal.meal === 'object' ? (
+            <Details><strong>Total Quantity:</strong> {numberOfMeals}</Details>
+            <ItemList>
+              {meals.slice(0, 2).map((meale, index) => (
+                <Item key={index}>
+                  {meale.meal && typeof meale.meal === 'object' ? (
                     <>
-                      <span><strong>Name:</strong> {meal.meal.mealName || 'Not specified'}</span>
-                      <span><strong>Description:</strong> {meal.meal.mealDescription || 'Not specified'}</span>
+                      <span><strong>Name:</strong> {meale.meal.mealName || 'Not specified'}</span>
+                      <span><strong>Description:</strong> {meale.meal.mealDescription || 'Not specified'}</span>
+                      <span><strong>Type:</strong> {meale.meal.mealType || 'Not specified'}</span>
+                      <span><strong>Quantity:</strong> {meale.quantity || 0}</span>
                     </>
                   ) : (
-                    <span>No meal data available</span>
+                    <span>Invalid meal data</span>
                   )}
-                </ProductItem>
+                </Item>
               ))}
-              {meals.length === 0 && <ProductItem>No meals available</ProductItem>}
-            </ProductList>
+              {meals.length === 0 && <Item>No meals available</Item>}
+            </ItemList>
           </>
         ) : (
-          <ProductItem>No products or meals available</ProductItem>
+          <Item>No products or meals available</Item>
         )}
       </div>
 

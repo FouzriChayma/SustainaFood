@@ -654,11 +654,14 @@ const DetailsDonations = () => {
                   ))
                 ) : (
                   meals && meals.length > 0 ? (
-                    meals.map((meal, index) => (
+                    meals.map((meale, index) => (
                       <li className="donation-li-list" key={index}>
-                        <span><strong>🍽️ Name:</strong> {meal.mealName || 'Not specified'}</span> <br />
-                        <span><strong>📝 Description:</strong> {meal.mealDescription || 'None'}</span> <br />
-                        <span><strong>🍴 Type:</strong> {meal.mealType || 'Unknown'}</span>
+                        <span><strong>🍽️ Name:</strong> {meale.meal.mealName || 'Not specified'}</span> <br />
+                        <span><strong>📝 Description:</strong> {meale.meal.mealDescription || 'None'}</span> <br />
+                        <span><strong>🍴 Type:</strong> {meale.meal.mealType || 'Unknown'}</span>
+                        <span><strong>🍴 Quantity:</strong> {meale.quantity || 'Unknown'}</span>
+
+                        
                       </li>
                     ))
                   ) : (

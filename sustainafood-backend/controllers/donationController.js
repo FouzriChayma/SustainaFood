@@ -5,10 +5,8 @@ const mongoose = require('mongoose');
 const Meal = require('../models/Meals');         // Adjust path to your model
 
 
-// ✅ Create a new donation (also creates related products and meals )
 async function createDonation(req, res) {
-  let newDonation; // Declare outside try block for rollback purposes
-
+  let newDonation;
   try {
     let {
       title,
@@ -24,25 +22,11 @@ async function createDonation(req, res) {
       meals
     } = req.body;
 
-    // Ensure products is an array
-    if (!Array.isArray(products)) {
-      if (typeof products === 'string') {
-        products = JSON.parse(products);
-      } else {
-        products = [];
-      }
-    }
+    // Ensure products and meals are arrays
+    products = Array.isArray(products) ? products : typeof products === 'string' ? JSON.parse(products) : [];
+    meals = Array.isArray(meals) ? meals : typeof meals === 'string' ? JSON.parse(meals) : [];
 
-    // Ensure meals is an array
-    if (!Array.isArray(meals)) {
-      if (typeof meals === 'string') {
-        meals = JSON.parse(meals);
-      } else {
-        meals = [];
-      }
-    }
-
-    // Validate and filter meals (ensure all required fields are present)
+    // Validate and filter meals
     const validMeals = meals.map(meal => ({
       mealName: meal.mealName || undefined,
       mealDescription: meal.mealDescription || undefined,
@@ -55,7 +39,7 @@ async function createDonation(req, res) {
       meal.quantity > 0
     );
 
-    // Validate and filter products (ensure all required fields are present)
+    // Validate and filter products
     const validProducts = products.map(product => ({
       productType: product.productType || undefined,
       weightPerUnit: parseFloat(product.weightPerUnit) || undefined,
@@ -75,15 +59,31 @@ async function createDonation(req, res) {
     if (!title || !location || !expirationDate || !description || !donor) {
       throw new Error('Missing required fields: title, location, expirationDate, description, or donor');
     }
-
     if (category === 'prepared_meals' && validMeals.length === 0) {
       throw new Error('At least one valid meal is required for prepared_meals category');
     }
 
-    // Calculate numberOfMeals if not provided or if it needs to be corrected
+    // Calculate numberOfMeals
     const calculatedNumberOfMeals = category === 'prepared_meals'
       ? validMeals.reduce((sum, meal) => sum + meal.quantity, 0)
       : undefined;
+
+    // Create Meals documents
+    const mealDocs = await Promise.all(validMeals.map(async meal => {
+      const counter = await Counter.findOneAndUpdate(
+        { _id: 'mealId' },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      const newMeal = new Meal({
+        id: counter.seq,
+        mealName: meal.mealName,
+        mealDescription: meal.mealDescription,
+        mealType: meal.mealType
+      });
+      await newMeal.save();
+      return { meal: newMeal._id, quantity: meal.quantity };
+    }));
 
     // Create the donation object
     newDonation = new Donation({
@@ -94,13 +94,13 @@ async function createDonation(req, res) {
       category: category || 'prepared_meals',
       type: type || 'donation',
       donor,
-      meals: category === 'prepared_meals' ? validMeals : [],
+      meals: category === 'prepared_meals' ? mealDocs : [],
       numberOfMeals: category === 'prepared_meals' ? (numberOfMeals || calculatedNumberOfMeals) : undefined,
       products: [],
       status: status || 'pending'
     });
 
-    // Process products: Create Product documents and link them
+    // Process products
     if (validProducts.length > 0) {
       for (let product of validProducts) {
         const counter = await Counter.findOneAndUpdate(
@@ -109,9 +109,8 @@ async function createDonation(req, res) {
           { new: true, upsert: true }
         );
         product.id = counter.seq;
-        product.donation = newDonation._id; // Link to donation
+        product.donation = newDonation._id;
       }
-
       const createdProducts = await Product.insertMany(validProducts);
       newDonation.products = createdProducts.map((createdProduct, index) => ({
         product: createdProduct._id,
@@ -119,12 +118,11 @@ async function createDonation(req, res) {
       }));
     }
 
-    // Save the donation with embedded meals and product references
+    // Save the donation
     await newDonation.save();
 
     res.status(201).json({ message: 'Donation created successfully', donation: newDonation });
   } catch (error) {
-    // Rollback: Delete the donation if it was created but an error occurred
     if (newDonation && newDonation._id) {
       await Donation.deleteOne({ _id: newDonation._id });
     }

@@ -242,7 +242,7 @@ async function deleteRequest(req, res) {
 async function createRequestNeedForExistingDonation(req, res) {
     try {
         const { donationId } = req.params;
-        const { recipientId, requestedProducts, requestedMeals, description } = req.body;
+        const { recipientId, requestedProducts, requestedMeals, description, numberOfMeals } = req.body;
 
         // Validate input
         if (!donationId || !mongoose.Types.ObjectId.isValid(donationId)) {
@@ -255,7 +255,7 @@ async function createRequestNeedForExistingDonation(req, res) {
         // Fetch the donation and populate its products and meals
         const donation = await Donation.findById(donationId)
             .populate('products.product')
-            .populate('meals')
+            .populate('meals.meal')
             .populate('donor');
         if (!donation) {
             return res.status(404).json({ message: 'Donation not found' });
@@ -292,12 +292,8 @@ async function createRequestNeedForExistingDonation(req, res) {
 
             // Map of available meals (using meal._id as key)
             const donationMealMap = new Map(
-                donation.meals.map(meal => [meal._id.toString(), { meal }])
+                donation.meals.map(mealEntry => [mealEntry.meal._id.toString(), { quantity: mealEntry.quantity, meal: mealEntry.meal }])
             );
-
-            // Since the schema doesn't support quantities per meal, we'll use the total quantity
-            // provided in the request and distribute it across the meals
-            const totalRequestedMeals = requestedMeals.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
             for (const { meal: mealId, quantity } of requestedMeals) {
                 if (!mongoose.Types.ObjectId.isValid(mealId)) {
@@ -307,14 +303,21 @@ async function createRequestNeedForExistingDonation(req, res) {
                     return res.status(400).json({ message: `Meal ${mealId} is not part of this donation` });
                 }
 
+                const availableQuantity = donationMealMap.get(mealId).quantity;
                 if (!Number.isInteger(quantity) || quantity <= 0) {
                     return res.status(400).json({ message: `Quantity for meal ${mealId} must be a positive integer` });
                 }
+                if (quantity > availableQuantity) {
+                    return res.status(400).json({ message: `Requested quantity (${quantity}) for meal ${mealId} exceeds available quantity (${availableQuantity})` });
+                }
 
-                validatedMeals.push(mealId); // Only store the meal ID as per the current schema
+                validatedMeals.push(mealId); // Only store the meal ID as per the schema
+                totalMeals += quantity;
             }
 
-            totalMeals = totalRequestedMeals;
+            if (totalMeals !== numberOfMeals) {
+                return res.status(400).json({ message: `Total requested meals (${totalMeals}) do not match provided numberOfMeals (${numberOfMeals})` });
+            }
             if (totalMeals > donation.numberOfMeals) {
                 return res.status(400).json({ message: `Total requested meals (${totalMeals}) exceed available number of meals (${donation.numberOfMeals})` });
             }
@@ -345,7 +348,6 @@ async function createRequestNeedForExistingDonation(req, res) {
                 }
 
                 validatedProducts.push(productId);
-                totalMeals += quantity; // For consistency, though not used for products
             }
         }
 
@@ -406,12 +408,14 @@ Request Details:
 - Recipient: ${recipient.name || 'Unknown Recipient'}
 ${isMealDonation ? 
     `- Requested Meals: ${validatedMeals.map(mealId => {
-        const meal = donation.meals.find(m => m._id.toString() === mealId.toString());
-        return `${meal.mealName}`;
+        const mealEntry = donation.meals.find(m => m.meal._id.toString() === mealId.toString());
+        const requestedQty = requestedMeals.find(rm => rm.meal === mealId).quantity;
+        return `${mealEntry.meal.mealName} (Quantity: ${requestedQty})`;
     }).join(', ')} (Total: ${totalMeals})` :
     `- Requested Products: ${validatedProducts.map(productId => {
         const product = donationProductMap.get(productId.toString()).product;
-        return `${product.name}`;
+        const requestedQty = requestedProducts.find(rp => rp.product === productId).quantity;
+        return `${product.name} (Quantity: ${requestedQty})`;
     }).join(', ')}`
 }
 - Expiration Date: ${newRequest.expirationDate.toLocaleDateString()}
@@ -434,12 +438,14 @@ Your Platform Team`,
                             <li><strong>Recipient:</strong> ${recipient.name || 'Unknown Recipient'}</li>
                             ${isMealDonation ? 
                                 `<li><strong>Requested Meals:</strong> ${validatedMeals.map(mealId => {
-                                    const meal = donation.meals.find(m => m._id.toString() === mealId.toString());
-                                    return `${meal.mealName}`;
+                                    const mealEntry = donation.meals.find(m => m.meal._id.toString() === mealId.toString());
+                                    const requestedQty = requestedMeals.find(rm => rm.meal === mealId).quantity;
+                                    return `${mealEntry.meal.mealName} (Quantity: ${requestedQty})`;
                                 }).join(', ')} (Total: ${totalMeals})</li>` :
                                 `<li><strong>Requested Products:</strong> ${validatedProducts.map(productId => {
                                     const product = donationProductMap.get(productId.toString()).product;
-                                    return `${product.name}`;
+                                    const requestedQty = requestedProducts.find(rp => rp.product === productId).quantity;
+                                    return `${product.name} (Quantity: ${requestedQty})`;
                                 }).join(', ')}</li>`
                             }
                             <li><strong>Expiration Date:</strong> ${newRequest.expirationDate.toLocaleDateString()}</li>

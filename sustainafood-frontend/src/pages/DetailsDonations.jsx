@@ -104,7 +104,7 @@ const DetailsDonations = () => {
   const [isTheOwner, setIsTheOwner] = useState(false);
   const [donationQuantities, setDonationQuantities] = useState([]);
   const [requestQuantities, setRequestQuantities] = useState([]);
-  const [requestMealQuantities, setRequestMealQuantities] = useState([]); // New state for meal quantities
+  const [requestMealQuantities, setRequestMealQuantities] = useState([]);
   const navigate = useNavigate();
   const isDonor = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
@@ -120,7 +120,7 @@ const DetailsDonations = () => {
     products: [],
     meals: [],
     numberOfMeals: 0,
-    donationType: 'products', // 'products' or 'meals'
+    donationType: 'products',
   });
 
   useEffect(() => {
@@ -163,18 +163,19 @@ const DetailsDonations = () => {
             : [],
           meals: hasMeals
             ? fetchedDonation.meals.map(item => ({
-                id: item.id || null,
-                mealName: item.mealName || 'Unnamed Meal',
-                mealDescription: item.mealDescription || 'Default meal description',
-                mealType: item.mealType || 'Other',
+                id: item.meal?.id || null,
+                mealName: item.meal?.mealName || 'Unnamed Meal',
+                mealDescription: item.meal?.mealDescription || 'Default meal description',
+                mealType: item.meal?.mealType || 'Other',
+                quantity: item.quantity || 1, // Use the quantity from Donation.meals
               }))
             : [],
           numberOfMeals: fetchedDonation.numberOfMeals || 0,
           donationType,
         });
-        setDonationQuantities((hasProducts ? fetchedDonation.products : fetchedDonation.meals || []).map(() => 0));
-        setRequestQuantities((hasProducts ? fetchedDonation.products : []).map(() => 0));
-        setRequestMealQuantities((hasMeals ? fetchedDonation.meals : []).map(() => 0)); // Initialize meal quantities
+        setDonationQuantities((hasProducts ? fetchedDonation.products : fetchedDonation.meals || []).map(item => item.quantity || 0));
+        setRequestQuantities((hasProducts ? fetchedDonation.products : []).map(item => item.quantity || 0));
+        setRequestMealQuantities((hasMeals ? fetchedDonation.meals : []).map(item => item.quantity || 0));
       } catch (err) {
         setError(err.response?.data?.message || 'Error fetching donation data');
       } finally {
@@ -207,7 +208,7 @@ const DetailsDonations = () => {
       (item) => !item.name?.trim() || !item.productDescription?.trim() || !item.productType?.trim()
     );
     const invalidMeal = editedDonation.meals.find(
-      (item) => !item.mealName?.trim() || !item.mealDescription?.trim() || !item.mealType?.trim()
+      (item) => !item.mealName?.trim() || !item.mealDescription?.trim() || !item.mealType?.trim() || item.quantity < 1
     );
 
     if (editedDonation.donationType === 'products' && invalidProduct) {
@@ -215,12 +216,17 @@ const DetailsDonations = () => {
       return;
     }
     if (editedDonation.donationType === 'meals' && invalidMeal) {
-      showAlert('error', 'Please fill in all required fields for meals.');
+      showAlert('error', 'Please fill in all required fields for meals, including a valid quantity.');
       return;
     }
-    if (editedDonation.donationType === 'meals' && editedDonation.category === 'prepared_meals' && (!editedDonation.meals.length || editedDonation.numberOfMeals < 1)) {
-      showAlert('error', 'List of meals and a valid number of meals are required for prepared meals.');
-      return;
+    if (editedDonation.donationType === 'meals' && editedDonation.category === 'prepared_meals') {
+      const totalMeals = editedDonation.meals.reduce((sum, meal) => sum + (Number(meal.quantity) || 0), 0);
+      if (!editedDonation.meals.length || totalMeals < 1) {
+        showAlert('error', 'List of meals and a valid total number of meals are required for prepared meals.');
+        return;
+      }
+      // Update numberOfMeals to match the sum of meal quantities
+      editedDonation.numberOfMeals = totalMeals;
     }
 
     if (new Date(editedDonation.expirationDate) <= new Date()) {
@@ -249,6 +255,7 @@ const DetailsDonations = () => {
             mealName: item.mealName,
             mealDescription: item.mealDescription,
             mealType: item.mealType,
+            quantity: Number(item.quantity) || 1, // Include quantity
           }))
         : [],
       numberOfMeals: editedDonation.donationType === 'meals' ? Number(editedDonation.numberOfMeals) || 0 : 0,
@@ -281,6 +288,9 @@ const DetailsDonations = () => {
 
   const handleMealChange = (index, field, value) => {
     const updatedMeals = [...editedDonation.meals];
+    if (field === 'quantity') {
+      value = Number(value);
+    }
     updatedMeals[index] = { ...updatedMeals[index], [field]: value };
     setEditedDonation({ ...editedDonation, meals: updatedMeals });
   };
@@ -333,6 +343,7 @@ const DetailsDonations = () => {
       mealName: '',
       mealDescription: 'New meal description',
       mealType: 'Other',
+      quantity: 1, // Default quantity
     };
     setEditedDonation({
       ...editedDonation,
@@ -342,7 +353,9 @@ const DetailsDonations = () => {
 
   const handleDonationQuantityChange = (index, value) => {
     const newQuantities = [...donationQuantities];
-    const maxQuantity = donation.products ? donation.products[index]?.quantity || 0 : 0;
+    const maxQuantity = editedDonation.donationType === 'products'
+      ? donation.products[index]?.quantity || 0
+      : donation.meals[index]?.quantity || 0;
     newQuantities[index] = Math.min(Number(value), maxQuantity);
     setDonationQuantities(newQuantities);
   };
@@ -352,36 +365,41 @@ const DetailsDonations = () => {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token found');
 
-      const donationItems = donation.products?.map((item, index) => ({
-        id: item.product?._id || item.product,
-        name: item.product?.name,
-        productDescription: item.product?.productDescription,
-        productType: item.product?.productType,
-        weightPerUnit: Number(item.product?.weightPerUnit) || 0,
-        weightUnit: item.product?.weightUnit,
-        totalQuantity: Number(item.product?.totalQuantity) || 0,
-        status: item.product?.status,
-        quantity: Number(donationQuantities[index]) || 0,
-      })).filter(p => p.quantity > 0) || [];
+      const donationItems = editedDonation.donationType === 'products'
+        ? donation.products?.map((item, index) => ({
+            id: item.product?._id || item.product,
+            name: item.product?.name,
+            productDescription: item.product?.productDescription,
+            productType: item.product?.productType,
+            weightPerUnit: Number(item.product?.weightPerUnit) || 0,
+            weightUnit: item.product?.weightUnit,
+            totalQuantity: Number(item.product?.totalQuantity) || 0,
+            status: item.product?.status,
+            quantity: Number(donationQuantities[index]) || 0,
+          })).filter(p => p.quantity > 0) || []
+        : [];
+
+      const donationMeals = editedDonation.donationType === 'meals'
+        ? donation.meals?.map((item, index) => ({
+            id: item.meal?._id || item.meal,
+            mealName: item.meal?.mealName,
+            mealDescription: item.meal?.mealDescription,
+            mealType: item.meal?.mealType,
+            quantity: Number(donationQuantities[index]) || 0,
+          })).filter(m => m.quantity > 0) || []
+        : [];
 
       const donationData = {
         ...editedDonation,
         products: donationItems,
-        meals: editedDonation.donationType === 'meals'
-          ? editedDonation.meals.map(item => ({
-              id: item.id || null,
-              mealName: item.mealName,
-              mealDescription: item.mealDescription,
-              mealType: item.mealType,
-            }))
-          : [],
+        meals: donationMeals,
         donor: user?._id || user?.id,
         expirationDate: donation.expirationDate || new Date().toISOString(),
       };
 
       const response = await updateDonation(id, donationData);
       setIsAddingDonation(false);
-      setDonationQuantities(donation.products?.map(() => 0) || []);
+      setDonationQuantities((donation.products || donation.meals || []).map(item => item.quantity || 0));
       setDonation(response.data.data);
       showAlert('success', 'Donation updated successfully');
     } catch (error) {
@@ -395,29 +413,34 @@ const DetailsDonations = () => {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token found');
 
-      const donationItems = donation.products?.map(item => ({
-        id: item.product?._id || item.product,
-        name: item.product?.name,
-        productDescription: item.product?.productDescription,
-        productType: item.product?.productType,
-        weightPerUnit: Number(item.product?.weightPerUnit) || 0,
-        weightUnit: item.product?.weightUnit,
-        totalQuantity: Number(item.product?.totalQuantity) || 0,
-        status: item.product?.status,
-        quantity: Number(item.quantity) || 0,
-      })) || [];
+      const donationItems = editedDonation.donationType === 'products'
+        ? donation.products?.map(item => ({
+            id: item.product?._id || item.product,
+            name: item.product?.name,
+            productDescription: item.product?.productDescription,
+            productType: item.product?.productType,
+            weightPerUnit: Number(item.product?.weightPerUnit) || 0,
+            weightUnit: item.product?.weightUnit,
+            totalQuantity: Number(item.product?.totalQuantity) || 0,
+            status: item.product?.status,
+            quantity: Number(item.quantity) || 0,
+          })) || []
+        : [];
+
+      const donationMeals = editedDonation.donationType === 'meals'
+        ? donation.meals?.map(item => ({
+            id: item.meal?._id || item.meal,
+            mealName: item.meal?.mealName,
+            mealDescription: item.meal?.mealDescription,
+            mealType: item.meal?.mealType,
+            quantity: Number(item.quantity) || 0,
+          })) || []
+        : [];
 
       const donationData = {
         ...editedDonation,
         products: donationItems,
-        meals: editedDonation.donationType === 'meals'
-          ? editedDonation.meals.map(item => ({
-              id: item.id || null,
-              mealName: item.mealName,
-              mealDescription: item.mealDescription,
-              mealType: item.mealType,
-            }))
-          : [],
+        meals: donationMeals,
         donor: user?._id || user?.id,
         expirationDate: donation.expirationDate || new Date().toISOString(),
       };
@@ -434,14 +457,14 @@ const DetailsDonations = () => {
 
   const handleRequestQuantityChange = (index, value) => {
     const newQuantities = [...requestQuantities];
-    const maxQuantity = donation.products ? donation.products[index]?.quantity || 0 : 0;
+    const maxQuantity = donation.products[index]?.quantity || 0;
     newQuantities[index] = Math.min(Number(value), maxQuantity);
     setRequestQuantities(newQuantities);
   };
 
   const handleRequestMealQuantityChange = (index, value) => {
     const newQuantities = [...requestMealQuantities];
-    const maxQuantity = donation.numberOfMeals || 0; // Use total number of meals as the limit
+    const maxQuantity = donation.meals[index]?.quantity || 0;
     newQuantities[index] = Math.min(Number(value), maxQuantity);
     setRequestMealQuantities(newQuantities);
   };
@@ -461,17 +484,27 @@ const DetailsDonations = () => {
         })).filter(p => p.quantity > 0) || [];
       } else {
         requestedMealsItems = donation.meals?.map((item, index) => ({
-          meal: item._id,
+          meal: item.meal?._id || item.meal,
           quantity: Number(requestMealQuantities[index]) || 0,
         })).filter(m => m.quantity > 0) || [];
       }
 
+      const totalRequestedMeals = editedDonation.donationType === 'meals'
+        ? requestMealQuantities.reduce((sum, qty) => sum + Number(qty), 0)
+        : 0;
+
+      if (editedDonation.donationType === 'meals' && totalRequestedMeals > donation.numberOfMeals) {
+        showAlert('error', `Total requested meals (${totalRequestedMeals}) exceed available meals (${donation.numberOfMeals})`);
+        return;
+      }
+
       const requestData = {
-        donation: id,
+        donationId: id, // Changed from 'donation' to 'donationId' to match backend
         requestedProducts: editedDonation.donationType === 'products' ? requestedItems : [],
         requestedMeals: editedDonation.donationType === 'meals' ? requestedMealsItems : [],
         recipientId: user?._id || user?.id,
-        expirationDate: donation.expirationDate || new Date().toISOString(),
+        description: editedDonation.description || '',
+        numberOfMeals: totalRequestedMeals,
       };
 
       const response = await createRequestNeedForExistingDonation(id, requestData);
@@ -499,21 +532,23 @@ const DetailsDonations = () => {
           quantity: Number(item.quantity) || 0,
         })) || [];
       } else {
-        // Distribute the total numberOfMeals equally across all meals for simplicity
-        const mealsCount = donation.meals?.length || 1;
-        const quantityPerMeal = Math.floor(donation.numberOfMeals / mealsCount);
         requestedMealsItems = donation.meals?.map(item => ({
-          meal: item._id,
-          quantity: quantityPerMeal,
+          meal: item.meal?._id || item.meal,
+          quantity: Number(item.quantity) || 0,
         })) || [];
       }
 
+      const totalRequestedMeals = editedDonation.donationType === 'meals'
+        ? requestedMealsItems.reduce((sum, item) => sum + item.quantity, 0)
+        : 0;
+
       const requestData = {
-        donation: id,
+        donationId: id, // Changed from 'donation' to 'donationId'
         requestedProducts: editedDonation.donationType === 'products' ? requestedItems : [],
         requestedMeals: editedDonation.donationType === 'meals' ? requestedMealsItems : [],
         recipientId: user?._id || user?.id,
-        expirationDate: donation.expirationDate || new Date().toISOString(),
+        description: editedDonation.description || '',
+        numberOfMeals: totalRequestedMeals,
       };
 
       const response = await createRequestNeedForExistingDonation(id, requestData);
@@ -572,15 +607,8 @@ const DetailsDonations = () => {
       
           {editedDonation.donationType === 'meals' && isEditing && editedDonation.category === 'prepared_meals' && (
             <p>
-              <strong>🔢 Number of Meals:</strong>
-              <input
-                type="number"
-                min="1"
-                value={editedDonation.numberOfMeals}
-                onChange={(e) => setEditedDonation({ ...editedDonation, numberOfMeals: Number(e.target.value) })}
-                placeholder="Number of Meals"
-                style={{ marginLeft: "10px", width: "100px" }}
-              />
+              <strong>🔢 Total Number of Meals:</strong>
+              <span>{editedDonation.meals.reduce((sum, meal) => sum + (Number(meal.quantity) || 0), 0)}</span>
             </p>
           )}
 
@@ -642,6 +670,7 @@ const DetailsDonations = () => {
                     <li key={index} style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
                       <input type="text" value={meal.mealName} onChange={(e) => handleMealChange(index, 'mealName', e.target.value)} placeholder="🍽️ Meal Name" />
                       <input type="text" value={meal.mealDescription} onChange={(e) => handleMealChange(index, 'mealDescription', e.target.value)} placeholder="📝 Description" style={{ marginLeft: "10px" }} />
+                      <input type="number" min="1" value={meal.quantity} onChange={(e) => handleMealChange(index, 'quantity', e.target.value)} placeholder="🔢 Quantity" style={{ marginLeft: "10px" }} />
                       <select value={meal.mealType} onChange={(e) => handleMealChange(index, 'mealType', e.target.value)} style={{ marginLeft: "10px", padding: "8px", borderRadius: "5px" }}>
                         <option value="Breakfast">Breakfast</option>
                         <option value="Lunch">Lunch</option>
@@ -654,11 +683,12 @@ const DetailsDonations = () => {
                   ))
                 ) : (
                   meals && meals.length > 0 ? (
-                    meals.map((meal, index) => (
+                    meals.map((mealEntry, index) => (
                       <li className="donation-li-list" key={index}>
-                        <span><strong>🍽️ Name:</strong> {meal.mealName || 'Not specified'}</span> <br />
-                        <span><strong>📝 Description:</strong> {meal.mealDescription || 'None'}</span> <br />
-                        <span><strong>🍴 Type:</strong> {meal.mealType || 'Unknown'}</span>
+                        <span><strong>🍽️ Name:</strong> {mealEntry.meal?.mealName || 'Not specified'}</span> <br />
+                        <span><strong>📝 Description:</strong> {mealEntry.meal?.mealDescription || 'None'}</span> <br />
+                        <span><strong>🍴 Type:</strong> {mealEntry.meal?.mealType || 'Unknown'}</span> <br />
+                        <span><strong>🔢 Quantity:</strong> {mealEntry.quantity || 0}</span>
                       </li>
                     ))
                   ) : (
@@ -669,24 +699,42 @@ const DetailsDonations = () => {
             </>
           )}
 
-          {isAddingDonation && editedDonation.donationType === 'products' && (
+          {isAddingDonation && (
             <DonationForm>
               <h4>Update Donation Quantities</h4>
-              {donation.products.map((item, index) => (
-                <div key={index}>
-                  <label>
-                    {item.product?.name} - {item.product?.productDescription} (Max: {item.quantity})
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max={item.quantity}
-                    value={donationQuantities[index]}
-                    onChange={(e) => handleDonationQuantityChange(index, e.target.value)}
-                    placeholder="Quantity to update"
-                  />
-                </div>
-              ))}
+              {editedDonation.donationType === 'products' ? (
+                donation.products.map((item, index) => (
+                  <div key={index}>
+                    <label>
+                      {item.product?.name} - {item.product?.productDescription} (Max: {item.quantity})
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max={item.quantity}
+                      value={donationQuantities[index]}
+                      onChange={(e) => handleDonationQuantityChange(index, e.target.value)}
+                      placeholder="Quantity to update"
+                    />
+                  </div>
+                ))
+              ) : (
+                donation.meals.map((item, index) => (
+                  <div key={index}>
+                    <label>
+                      {item.meal?.mealName} - {item.meal?.mealDescription} (Max: {item.quantity})
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max={item.quantity}
+                      value={donationQuantities[index]}
+                      onChange={(e) => handleDonationQuantityChange(index, e.target.value)}
+                      placeholder="Quantity to update"
+                    />
+                  </div>
+                ))
+              )}
               <Button variant="donate" onClick={handleDonateAll}>Donate All</Button>
               <Button variant="donate" onClick={handleSubmitDonation}>Submit Donation</Button>
             </DonationForm>
@@ -715,12 +763,12 @@ const DetailsDonations = () => {
                 donation.meals.map((item, index) => (
                   <div key={index}>
                     <label>
-                      {item.mealName} - {item.mealDescription} (Total Available: {donation.numberOfMeals})
+                      {item.meal?.mealName} - {item.meal?.mealDescription} (Max: {item.quantity})
                     </label>
                     <input
                       type="number"
                       min="0"
-                      max={donation.numberOfMeals}
+                      max={item.quantity}
                       value={requestMealQuantities[index]}
                       onChange={(e) => handleRequestMealQuantityChange(index, e.target.value)}
                       placeholder="Quantity to request"
@@ -747,6 +795,15 @@ const DetailsDonations = () => {
               onClick={() => setIsAddingRequest(!isAddingRequest)}
             >
               {isAddingRequest ? 'Cancel' : 'Add Request'}
+            </Button>
+          )}
+
+          {isTheOwner && !isEditing && (
+            <Button
+              variant={isAddingDonation ? "cancel" : "add"}
+              onClick={() => setIsAddingDonation(!isAddingDonation)}
+            >
+              {isAddingDonation ? 'Cancel' : 'Update Quantities'}
             </Button>
           )}
 

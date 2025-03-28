@@ -143,32 +143,29 @@ async function updateDonation(req, res) {
     }
 
     // **Fetch Existing Donation**
-    const existingDonation = await Donation.findById(id).populate('meals');
+    const existingDonation = await Donation.findById(id).populate('meals.meal');
     if (!existingDonation) {
       return res.status(404).json({ message: 'Donation not found' });
     }
 
     // **Process Products**
-    let updatedProducts = existingDonation.products || []; // Default to existing products
+    let updatedProducts = existingDonation.products || [];
     if (products !== undefined) {
       if (!Array.isArray(products)) {
         return res.status(400).json({ message: 'Products must be an array' });
       }
       updatedProducts = [];
       for (const item of products) {
-        // Validate quantity if provided
         if (item.quantity !== undefined && (typeof item.quantity !== 'number' || item.quantity < 0)) {
           return res.status(400).json({ message: 'Invalid quantity in products array' });
         }
 
         let productId;
         if (item.id) {
-          // **Update Existing Product**
           const product = await Product.findOne({ id: item.id });
           if (!product) {
             return res.status(404).json({ message: `Product with id ${item.id} not found` });
           }
-          // Update allowed fields if provided
           product.name = item.name ?? product.name;
           product.productDescription = item.productDescription ?? product.productDescription;
           product.productType = item.productType ?? product.productType;
@@ -179,27 +176,25 @@ async function updateDonation(req, res) {
           await product.save();
           productId = product._id;
         } else {
-          // **Create New Product**
           const counter = await Counter.findOneAndUpdate(
             { _id: 'ProductId' },
             { $inc: { seq: 1 } },
             { new: true, upsert: true }
           );
           const newProduct = new Product({
-            id: counter.seq, // Manually set the auto-incremented id
+            id: counter.seq,
             name: item.name,
             productDescription: item.productDescription,
             productType: item.productType,
             weightPerUnit: item.weightPerUnit,
             weightUnit: item.weightUnit,
             totalQuantity: item.totalQuantity,
-            status: item.status || 'available', // Default status
-            donation: id // Link to this donation
+            status: item.status || 'available',
+            donation: id
           });
           await newProduct.save();
           productId = newProduct._id;
         }
-        // Add to donation’s products array with quantity
         updatedProducts.push({ product: productId, quantity: item.quantity || 1 });
       }
     }
@@ -212,15 +207,12 @@ async function updateDonation(req, res) {
       }
 
       // **Identify Meals to Delete**
-      const existingMealIds = existingDonation.meals.map(meal => meal.id.toString()); // Custom numeric id
+      const existingMealIds = existingDonation.meals.map(mealEntry => mealEntry.meal.id.toString());
       const updatedMealIds = meals
-        .filter(item => item.id) // Only consider meals with an id (existing meals)
+        .filter(item => item.id)
         .map(item => item.id.toString());
 
-      // Meals that are in existingDonation.meals but not in the updated meals list should be deleted
       const mealsToDelete = existingMealIds.filter(mealId => !updatedMealIds.includes(mealId));
-
-      // **Delete Removed Meals**
       if (mealsToDelete.length > 0) {
         await Meal.deleteMany({ id: { $in: mealsToDelete } });
       }
@@ -228,42 +220,46 @@ async function updateDonation(req, res) {
       // **Process Updated/New Meals**
       updatedMeals = [];
       for (const item of meals) {
+        if (item.quantity === undefined || typeof item.quantity !== 'number' || item.quantity < 1) {
+          return res.status(400).json({ message: 'Invalid or missing quantity in meals array' });
+        }
+
         let mealId;
         if (item.id) {
-          // **Update Existing Meal**
           const meal = await Meal.findOne({ id: item.id });
           if (!meal) {
             return res.status(404).json({ message: `Meal with id ${item.id} not found` });
           }
-          // Update allowed fields if provided
           meal.mealName = item.mealName ?? meal.mealName;
           meal.mealDescription = item.mealDescription ?? meal.mealDescription;
           meal.mealType = item.mealType ?? meal.mealType;
+          meal.quantity = item.quantity; // Update the quantity in the Meal document
           await meal.save();
           mealId = meal._id;
         } else {
-          // **Create New Meal**
           const counter = await Counter.findOneAndUpdate(
             { _id: 'mealId' },
             { $inc: { seq: 1 } },
             { new: true, upsert: true }
           );
           const newMeal = new Meal({
-            id: counter.seq, // Manually set the auto-incremented id
+            id: counter.seq,
             mealName: item.mealName,
             mealDescription: item.mealDescription,
             mealType: item.mealType,
-            donation: id // Link to this donation
+            quantity: item.quantity,
+            donation: id
           });
           await newMeal.save();
           mealId = newMeal._id;
         }
-        // Add to donation’s meals array
-        updatedMeals.push(mealId);
+        updatedMeals.push({ meal: mealId, quantity: item.quantity });
       }
     } else {
-      // If meals is undefined, keep the existing meals
-      updatedMeals = existingDonation.meals.map(meal => meal._id);
+      updatedMeals = existingDonation.meals.map(mealEntry => ({
+        meal: mealEntry.meal._id,
+        quantity: mealEntry.quantity,
+      }));
     }
 
     // **Update Donation Fields**
@@ -291,7 +287,7 @@ async function updateDonation(req, res) {
     )
       .populate('donor')
       .populate('products.product')
-      .populate('meals');
+      .populate('meals.meal');
 
     if (!updatedDonation) {
       return res.status(404).json({ message: 'Donation not found' });

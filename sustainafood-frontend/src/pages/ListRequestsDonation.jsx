@@ -3,14 +3,13 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getDonationById } from '../api/donationService';
-import { getUserById } from '../api/userService';
-import { createAndAcceptDonationTransaction, rejectDonation } from '../api/donationTransactionService';
+import { getRequestsByDonationId, updateRequestStatus } from '../api/requestNeedsService';
 import imgmouna from '../assets/images/imgmouna.png';
 import styled, { createGlobalStyle } from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
 import { useAlert } from '../contexts/AlertContext';
-import { getRequestsByDonationId } from '../api/requestNeedsService';
 import { useParams, useNavigate } from 'react-router-dom';
+
 // Global Styles
 const GlobalStyle = createGlobalStyle`
   body {
@@ -21,7 +20,7 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
-// Styled Components (Reused from ListDonationsRequest.jsx)
+// Styled Components
 const RequestContainer = styled.div`
   padding: 20px;
   max-width: 1200px;
@@ -303,57 +302,6 @@ const SearchInput = styled.input`
   background: transparent;
 `;
 
-const RejectionModal = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-`;
-
-const ModalContent = styled.div`
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 400px;
-  max-width: 90%;
-`;
-
-const ModalTextarea = styled.textarea`
-  width: 100%;
-  min-height: 100px;
-  margin: 10px 0;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-`;
-
-const ModalButtons = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-`;
-
-const Spinner = styled.div`
-  display: inline-block;
-  width: ${props => props.size === 'sm' ? '12px' : '16px'};
-  height: ${props => props.size === 'sm' ? '12px' : '16px'};
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s ease-in-out infinite;
-  margin-right: 5px;
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-`;
-
 const StatusBadge = styled.span`
   display: inline-block;
   padding: 3px 8px;
@@ -385,7 +333,6 @@ const ListRequestsDonation = () => {
   const [requests, setRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
   const [donation, setDonation] = useState(null);
-  const [users, setUsers] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -393,9 +340,6 @@ const ListRequestsDonation = () => {
   const [filterOption, setFilterOption] = useState('all');
   const [sortOption, setSortOption] = useState('date');
   const [searchQuery, setSearchQuery] = useState('');
-  const [processing, setProcessing] = useState({});
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [currentRejectionId, setCurrentRejectionId] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -405,33 +349,16 @@ const ListRequestsDonation = () => {
         navigate('/login');
         return;
       }
-  
+
       try {
         setLoading(true);
         const donationResponse = await getDonationById(donationId);
         setDonation(donationResponse.data);
-  
+
         const requestResponse = await getRequestsByDonationId(donationId);
         console.log('Requests response:', requestResponse.data);
         const requestsArray = Array.isArray(requestResponse.data) ? requestResponse.data : [];
         setRequests(requestsArray);
-  
-        if (requestsArray.length > 0) {
-          const userPromises = requestsArray.map(request =>
-            getUserById(request.recipient)
-              .then(response => ({ id: request.recipient, data: response.data }))
-              .catch(err => {
-                console.error(`Error fetching user ${request.recipient}:`, err);
-                return { id: request.recipient, data: null };
-              })
-          );
-          const userResults = await Promise.all(userPromises);
-          const userMap = userResults.reduce((acc, { id, data }) => {
-            if (data) acc[id] = data;
-            return acc;
-          }, {});
-          setUsers(userMap);
-        }
       } catch (err) {
         console.error('Fetch error:', err.response?.data || err.message);
         setError(
@@ -444,7 +371,7 @@ const ListRequestsDonation = () => {
         setLoading(false);
       }
     };
-  
+
     fetchData();
   }, [donationId, navigate, showAlert]);
 
@@ -469,7 +396,8 @@ const ListRequestsDonation = () => {
           meal.meal?.mealName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           meal.meal?.mealType?.toLowerCase().includes(searchQuery.toLowerCase())
         );
-        const recipientMatch = users[request.recipient]?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+        const recipientMatch = request.recipient?.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              request.recipient?.lastName?.toLowerCase().includes(searchQuery.toLowerCase());
         return productMatch || mealMatch || recipientMatch;
       });
     }
@@ -479,7 +407,9 @@ const ListRequestsDonation = () => {
       if (sortOption === 'title') {
         return a.title.localeCompare(b.title);
       } else if (sortOption === 'recipient') {
-        return (users[a.recipient]?.name || '').localeCompare(users[b.recipient]?.name || '');
+        const aName = `${a.recipient?.firstName || ''} ${a.recipient?.lastName || ''}`.trim();
+        const bName = `${b.recipient?.firstName || ''} ${b.recipient?.lastName || ''}`.trim();
+        return aName.localeCompare(bName);
       } else if (sortOption === 'status') {
         return a.status.localeCompare(b.status);
       } else {
@@ -489,7 +419,7 @@ const ListRequestsDonation = () => {
 
     setFilteredRequests(updatedRequests);
     setCurrentPage(1);
-  }, [requests, donation, users, filterOption, sortOption, searchQuery]);
+  }, [requests, donation, filterOption, sortOption, searchQuery]);
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -498,91 +428,17 @@ const ListRequestsDonation = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  const handleAcceptRequest = async (requestId) => {
-    if (!window.confirm('Are you sure you want to accept this request?')) return;
-
+  const handleStatusUpdate = async (requestId, status) => {
     try {
-      setProcessing(prev => ({ ...prev, [requestId]: 'accepting' }));
-
-      // Optimistic update for request status and donation's remainingMeals
-      setRequests(prev => prev.map(r => 
-        r._id === requestId ? { ...r, status: 'approved' } : r
+      await updateRequestStatus(requestId, status);
+      showAlert('success', `Request ${status} successfully`);
+      setRequests(requests.map(request =>
+        request._id === requestId ? { ...request, status } : request
       ));
-
-      if (donation.category === 'prepared_meals') {
-        setDonation(prev => ({
-          ...prev,
-          remainingMeals: Math.max(0, prev.remainingMeals - (requests.find(r => r._id === requestId)?.numberOfMeals || 0))
-        }));
-      }
-
-      // Create the transaction and update the donation on the backend
-      const response = await createAndAcceptDonationTransaction(donationId, requestId);
-      console.log('createAndAcceptDonationTransaction response:', response);
-
-      // Fetch the updated donation data from the server
-      const updatedDonationResponse = await getDonationById(donationId);
-      console.log('getDonationById response:', updatedDonationResponse);
-      const updatedDonation = updatedDonationResponse.data;
-      setDonation(updatedDonation);
-
-      // Fetch the updated request data from the server
-      const updatedRequestData = await getRequestsByDonationId(donationId);
-      const updatedRequestsArray = Array.isArray(updatedRequestData) ? updatedRequestData : [];
-      setRequests(updatedRequestsArray);
-
-      // Set the filter to 'all' to ensure the updated request is visible
-      setFilterOption('all');
-
-      showAlert('success', 'Request accepted and transaction created successfully!');
     } catch (error) {
-      console.error('Error accepting request:', error.response?.data || error.message);
-      const errorMessage = error.response?.data?.message || 'An unexpected error occurred while accepting the request.';
-      
-      // Revert the optimistic updates on error
-      setRequests(prev => prev.map(r => 
-        r._id === requestId ? { ...r, status: 'pending' } : r
-      ));
-      if (donation.category === 'prepared_meals') {
-        setDonation(prev => ({ ...prev }));
-      }
-
-      showAlert('error', errorMessage);
-    } finally {
-      setProcessing(prev => ({ ...prev, [requestId]: false }));
+      console.error(`Error updating request status to ${status}:`, error.response?.data || error.message);
+      showAlert('error', `Failed to ${status} request: ${error.response?.data?.message || error.message}`);
     }
-  };
-
-  const handleRejectRequest = async (requestId) => {
-    if (!rejectionReason) {
-      showAlert('warning', 'Please provide a reason for rejection');
-      return;
-    }
-
-    try {
-      setProcessing(prev => ({ ...prev, [requestId]: 'rejecting' }));
-      // Call the backend to update the request status
-      await rejectDonation(requestId, rejectionReason); // Note: We might need a new endpoint rejectRequest
-
-      // Update the local state to reflect the rejection
-      setRequests(prev => prev.map(r => 
-        r._id === requestId ? { ...r, status: 'rejected' } : r
-      ));
-      setCurrentRejectionId(null);
-      setRejectionReason('');
-
-      showAlert('success', 'Request rejected successfully!');
-    } catch (error) {
-      console.error('Error rejecting request:', error.response?.data || error.message);
-      showAlert('error', 'Failed to reject request');
-    } finally {
-      setProcessing(prev => ({ ...prev, [requestId]: false }));
-    }
-  };
-
-  const openRejectionDialog = (requestId) => {
-    setCurrentRejectionId(requestId);
-    setRejectionReason('');
   };
 
   if (loading) return <LoadingMessage>Loading...</LoadingMessage>;
@@ -611,8 +467,7 @@ const ListRequestsDonation = () => {
       <Navbar />
       <RequestContainer>
         <RequestTitle>
-          🤝 Requests for Donation: <br />
-          <span className="donation-title">{donation.title}</span>
+          🤝 Requests for Donation: <p>{donation.title}</p>
         </RequestTitle>
 
         <Controls>
@@ -643,8 +498,8 @@ const ListRequestsDonation = () => {
 
         {currentRequests.length > 0 ? (
           currentRequests.map((request) => {
-            const userPhoto = users[request.recipient]?.photo
-              ? `http://localhost:3000/${users[request.recipient].photo}`
+            const userPhoto = request.recipient?.photo
+              ? `http://localhost:3000/${request.recipient.photo}`
               : imgmouna;
             return (
               <RequestCard key={request._id}>
@@ -657,8 +512,12 @@ const ListRequestsDonation = () => {
                       console.error(`Failed to load image: ${userPhoto}`);
                     }}
                   />
-                  <ProfileText>{users[request.recipient]?.name || 'Unknown'}</ProfileText>
-                  <ProfileText>{users[request.recipient]?.role || 'N/A'}</ProfileText>
+                  <ProfileText>
+                    {request.recipient
+                      ? `${request.recipient.firstName || 'Unknown'} ${request.recipient.lastName || ''}`.trim() || 'Unknown User'
+                      : 'Unknown User'}
+                  </ProfileText>
+                  <ProfileText>{request.recipient?.role || 'Role Not Specified'}</ProfileText>
                 </ProfileInfo>
                 <RequestDetails>
                   <RequestDetail><strong>Title:</strong> {request.title || 'Untitled'}</RequestDetail>
@@ -671,11 +530,9 @@ const ListRequestsDonation = () => {
                     </StatusBadge>
                   </RequestDetail>
                   {donation.category === 'prepared_meals' && (
-                    <>
-                      <RequestDetail>
-                        <strong>Number of Meals Requested:</strong> {request.numberOfMeals || 'N/A'}
-                      </RequestDetail>
-                    </>
+                    <RequestDetail>
+                      <strong>Number of Meals Requested:</strong> {request.numberOfMeals || 'Not specified'}
+                    </RequestDetail>
                   )}
                 </RequestDetails>
                 <ItemSection>
@@ -684,22 +541,22 @@ const ListRequestsDonation = () => {
                       <ItemsTitle>Requested Meals:</ItemsTitle>
                       <ItemList>
                         {request.requestedMeals && request.requestedMeals.length > 0 ? (
-                            request.requestedMeals.map((item, itemIndex) => (
-                            <Item key={item._id || itemIndex}>
-                                <ItemDetails>
-                                <span><strong>Name:</strong> {item.meal?.mealName || 'N/A'}</span>
-                                <span><strong>Type:</strong> {item.meal?.mealType || 'N/A'}</span>
-                                <span><strong>Description:</strong> {item.meal?.mealDescription || 'N/A'}</span>
-                                </ItemDetails>
-                                <ItemQuantity>
-                                <strong>Quantity:</strong> {item.quantity || 0}
-                                </ItemQuantity>
+                          request.requestedMeals.map((item, itemIndex) => (
+                            < Item key={item._id || itemIndex}>
+                              <ItemDetails>
+                                <span><strong>Name:</strong> {item.meal?.mealName || 'Meal Not Specified'}</span>
+                                <span><strong>Type:</strong> {item.meal?.mealType || 'Type Not Specified'}</span>
+                                <span><strong>Description:</strong> {item.meal?.mealDescription || 'No Description'}</span>
+                              </ItemDetails>
+                              <ItemQuantity>
+                                <strong>Quantity:</strong> {item.quantity !== undefined ? item.quantity : 'Not specified'}
+                              </ItemQuantity>
                             </Item>
-                            ))
+                          ))
                         ) : (
-                            <Item>No meals requested</Item>
+                          <Item>No meals requested</Item>
                         )}
-                        </ItemList>
+                      </ItemList>
                     </>
                   ) : (
                     <>
@@ -709,12 +566,12 @@ const ListRequestsDonation = () => {
                           request.requestedProducts.map((item, itemIndex) => (
                             <Item key={item._id || itemIndex}>
                               <ItemDetails>
-                                <span><strong>Name:</strong> {item.product?.name || 'N/A'}</span>
-                                <span><strong>Type:</strong> {item.product?.productType || 'N/A'}</span>
-                                <span><strong>Weight:</strong> {item.product?.weightPerUnit ? `${item.product.weightPerUnit} ${item.product.weightUnit || ''}` : 'N/A'}</span>
+                                <span><strong>Name:</strong> {item.product?.name || 'Product Not Specified'}</span>
+                                <span><strong>Type:</strong> {item.product?.productType || 'Type Not Specified'}</span>
+                                <span><strong>Weight:</strong> {item.product?.weightPerUnit ? `${item.product.weightPerUnit} ${item.product.weightUnit || ''}` : 'Weight Not Specified'}</span>
                               </ItemDetails>
                               <ItemQuantity>
-                                <strong>Quantity:</strong> {item.quantity || 0}
+                                <strong>Quantity:</strong> {item.quantity !== undefined ? item.quantity : 'Not specified'}
                               </ItemQuantity>
                             </Item>
                           ))
@@ -725,75 +582,27 @@ const ListRequestsDonation = () => {
                     </>
                   )}
                 </ItemSection>
-                <ButtonContainer>
-                  {(!request.status || request.status === 'pending') ? (
-                    <>
-                      <ActionButton
-                        className="accept-btn"
-                        onClick={() => handleAcceptRequest(request._id)}
-                        disabled={processing[request._id]}
-                      >
-                        {processing[request._id] === 'accepting' ? (
-                          <>
-                            <Spinner size="sm" /> Processing...
-                          </>
-                        ) : '✔ Accept'}
-                      </ActionButton>
-                      <ActionButton
-                        className="reject-btn"
-                        onClick={() => openRejectionDialog(request._id)}
-                        disabled={processing[request._id]}
-                      >
-                        ✖ Reject
-                      </ActionButton>
-                    </>
-                  ) : (
-                    <div style={{
-                      color: request.status === 'approved' ? 'green' : 'red',
-                      fontWeight: 'bold'
-                    }}>
-                      Status: {request.status}
-                    </div>
-                  )}
-                </ButtonContainer>
+                {request.status === 'pending' && (
+                  <ButtonContainer>
+                    <ActionButton
+                      className="accept-btn"
+                      onClick={() => handleStatusUpdate(request._id, 'approved')}
+                    >
+                      ✔ Accept
+                    </ActionButton>
+                    <ActionButton
+                      className="reject-btn"
+                      onClick={() => handleStatusUpdate(request._id, 'rejected')}
+                    >
+                      ✖ Reject
+                    </ActionButton>
+                  </ButtonContainer>
+                )}
               </RequestCard>
             );
           })
         ) : (
           <NoRequests>No matching requests found.</NoRequests>
-        )}
-
-        {currentRejectionId && (
-          <RejectionModal>
-            <ModalContent>
-              <h3>Reason for Rejection</h3>
-              <p>Please explain why you're rejecting this request:</p>
-              <ModalTextarea
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Enter rejection reason (required)..."
-              />
-              <ModalButtons>
-                <ActionButton
-                  className="cancel-btn"
-                  onClick={() => setCurrentRejectionId(null)}
-                >
-                  Cancel
-                </ActionButton>
-                <ActionButton
-                  className="reject-btn"
-                  onClick={() => handleRejectRequest(currentRejectionId)}
-                  disabled={!rejectionReason || processing[currentRejectionId]}
-                >
-                  {processing[currentRejectionId] === 'rejecting' ? (
-                    <>
-                      <Spinner size="sm" /> Submitting...
-                    </>
-                  ) : 'Submit Rejection'}
-                </ActionButton>
-              </ModalButtons>
-            </ModalContent>
-          </RejectionModal>
         )}
 
         {totalPages > 1 && (

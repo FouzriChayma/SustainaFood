@@ -100,3 +100,23 @@ export const getRequestsByDonationId = async (donationId) => {
     headers: { Authorization: `Bearer ${token}` },
   });
 };
+export const updateRequestStatus = async (requestId, status) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('User not authenticated - No token found');
+  }
+
+  try {
+    const response = await axios.put(
+      `http://localhost:3000/request-needs/request/${requestId}/status`,
+      { status },
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+    return response;
+  } catch (error) {
+    console.error('Error updating request status:', error.response?.data || error.message);
+    throw error;
+  }
+};

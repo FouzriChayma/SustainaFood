@@ -994,16 +994,24 @@ async function getRequestsByDonationId(req, res) {
       });
   
       console.log(`Found ${requests.length} requests for donationId: ${donationId}`);
-  
       if (!requests.length) {
         return res.status(404).json({ message: 'No requests found for this donation' });
       }
   
+      // Log raw requests before population
+      console.log('Raw requests before population:', JSON.stringify(requests, null, 2));
+  
       // Step 2: Populate recipient
       await RequestNeed.populate(requests, { path: 'recipient' });
   
+      // Log requests after recipient population
+      console.log('Requests after recipient population:', JSON.stringify(requests, null, 2));
+  
       // Step 3: Populate requestedProducts.product (if applicable)
       await RequestNeed.populate(requests, { path: 'requestedProducts.product' });
+  
+      // Log requests after requestedProducts population
+      console.log('Requests after requestedProducts population:', JSON.stringify(requests, null, 2));
   
       // Step 4: Populate requestedMeals.meal (if applicable)
       await RequestNeed.populate(requests, {
@@ -1015,7 +1023,43 @@ async function getRequestsByDonationId(req, res) {
         options: { strictPopulate: false } // Disable strictPopulate
       });
   
-      res.status(200).json(requests);
+      // Log requests after requestedMeals population
+      console.log('Requests after requestedMeals population:', JSON.stringify(requests, null, 2));
+  
+      // Step 5: Validate and clean up the response
+      const cleanedRequests = requests.map(request => {
+        // Ensure recipient is an object, even if population failed
+        if (!request.recipient) {
+          console.warn(`Recipient not found for request ${request._id}`);
+          request.recipient = { firstName: 'Unknown', lastName: '', role: 'N/A' };
+        }
+  
+        // Ensure requestedProducts is an array and clean up invalid entries
+        if (request.category === 'packaged_products') {
+          request.requestedProducts = request.requestedProducts?.map(item => {
+            if (!item.product) {
+              console.warn(`Product not found for requestedProduct in request ${request._id}`);
+              return { product: { name: 'N/A', productType: 'N/A', weightPerUnit: 'N/A', weightUnit: 'N/A' }, quantity: item.quantity || 0 };
+            }
+            return item;
+          }) || [];
+        }
+  
+        // Ensure requestedMeals is an array and clean up invalid entries
+        if (request.category === 'prepared_meals') {
+          request.requestedMeals = request.requestedMeals?.map(item => {
+            if (!item.meal) {
+              console.warn(`Meal not found for requestedMeal in request ${request._id}`);
+              return { meal: { mealName: 'N/A', mealType: 'N/A', mealDescription: 'N/A' }, quantity: item.quantity || 0 };
+            }
+            return item;
+          }) || [];
+        }
+  
+        return request;
+      });
+  
+      res.status(200).json(cleanedRequests);
     } catch (error) {
       console.error('Error in getRequestsByDonationId:', error.message, error.stack);
       res.status(500).json({ message: 'Server error', error: error.message });

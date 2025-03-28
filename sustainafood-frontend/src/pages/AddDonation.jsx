@@ -70,22 +70,9 @@ export const AddDonation = () => {
 
   // Updated productTypes array with the specified values
   const productTypes = [
-    "Canned_Goods",    // e.g., canned beans, soups
-    "Dry_Goods",       // e.g., rice, pasta
-    "Beverages",       // e.g., bottled water, juice
-    "Snacks",          // e.g., chips, granola bars
-    "Cereals",         // e.g., oatmeal, cornflakes
-    "Baked_Goods",     // e.g., packaged bread, cookies
-    "Condiments",      // e.g., ketchup, sauces
-    "Vegetables",      // e.g., carrots, potatoes
-    "Fruits",          // e.g., apples, bananas
-    "Meat",            // e.g., fresh beef, chicken
-    "Fish",            // e.g., fresh salmon, tuna
-    "Dairy",           // e.g., milk, cheese
-    "Eggs",            // e.g., fresh eggs
-    "Baby_Food",       // e.g., formula, purees
-    "Pet_Food",        // e.g., dog/cat food
-    "Other"            // Miscellaneous
+    "Canned_Goods", "Dry_Goods", "Beverages", "Snacks", "Cereals", "Baked_Goods",
+    "Condiments", "Vegetables", "Fruits", "Meat", "Fish", "Dairy", "Eggs",
+    "Baby_Food", "Pet_Food", "Other"
   ];
   const weightUnits = ["kg", "g", "lb", "oz", "ml", "l"];
   const statuses = ["available", "pending", "reserved", "out_of_stock"];
@@ -339,9 +326,6 @@ export const AddDonation = () => {
     donationData.append("status", "pending");
 
     if (category === "prepared_meals") {
-    
-
-    if (category === "prepared_meals" ){
       donationData.append("numberOfMeals", numberOfMeals);
       // For donors, send meal details; for recipients, only send numberOfMeals
       if (isDonner) {
@@ -356,16 +340,34 @@ export const AddDonation = () => {
         donationData.append("meals", JSON.stringify(formattedMeals));
       }
     }
-  }
+
     if (category === "packaged_products") {
       const productsToSend = productEntryMode === "csv" ? products : manualProducts;
-      const formattedProducts = productsToSend.map(product => ({
-        ...product,
-        totalQuantity: parseInt(product.totalQuantity),
-        weightPerUnit: parseFloat(product.weightPerUnit),
-      }));
-      console.log("Formatted Products to Send:", formattedProducts);
-      donationData.append(isDonner ? "products" : "requestedProducts", JSON.stringify(formattedProducts));
+      if (isDonner) {
+        // For donors, send the full product details
+        const formattedProducts = productsToSend.map(product => ({
+          ...product,
+          totalQuantity: parseInt(product.totalQuantity),
+          weightPerUnit: parseFloat(product.weightPerUnit),
+        }));
+        console.log("Formatted Products to Send (Donor):", formattedProducts);
+        donationData.append("products", JSON.stringify(formattedProducts));
+      } else if (isRecipient) {
+        // For recipients, send requestedProducts with only the necessary fields
+        const formattedRequestedProducts = productsToSend.map(product => ({
+          name: product.name,
+          productType: product.productType,
+          productDescription: product.productDescription,
+          weightPerUnit: parseFloat(product.weightPerUnit),
+          weightUnit: product.weightUnit,
+          weightUnitTotale: product.weightUnitTotale,
+          quantity: parseInt(product.totalQuantity), // Map totalQuantity to quantity
+          image: product.image,
+          status: product.status,
+        }));
+        console.log("Formatted Requested Products to Send (Recipient):", formattedRequestedProducts);
+        donationData.append("requestedProducts", JSON.stringify(formattedRequestedProducts));
+      }
     }
 
     try {
@@ -453,7 +455,7 @@ export const AddDonation = () => {
             />
             {errors.numberOfMeals && <p className="error-message">{errors.numberOfMeals}</p>}
           </>
-                    )}
+          )}
           <textarea className="signup-input" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} required />
           {errors.description && <p className="error-message">{errors.description}</p>}
 

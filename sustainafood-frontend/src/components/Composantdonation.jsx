@@ -116,13 +116,13 @@ export const Composantdonation = ({ donation }) => {
     title,
     location,
     expirationDate,
-    numberOfMeals,  
+    numberOfMeals = 0,  // Added default value
     products = [],
     meals = [],
     status,
   } = donation;
 
-  // Log pour vérifier les données
+  // Log pour vérifier les données (kept as is)
   console.log("Products:", products);
   console.log("Meals:", meals);
 
@@ -136,57 +136,60 @@ export const Composantdonation = ({ donation }) => {
           {expirationDate ? new Date(expirationDate).toLocaleDateString() : 'Not defined'}
         </Details>
         <Details>
-          🔄 <strong>Status:</strong> <StatusBadge status={status}>{status || 'Unknown'}</StatusBadge>
+          🔄 <strong>Status:</strong>{' '}
+          <StatusBadge status={status}>{status || 'Unknown'}</StatusBadge>
         </Details>
 
         {/* Affichage conditionnel des produits ou des meals */}
         {Array.isArray(products) && products.length > 0 ? (
           <>
-            {/* Available Products Section */}
-        <h4>📦 Available Products:</h4>
-        <ProductList>
-          {Array.isArray(products) && products.length > 0 ? (
-            products.slice(0, 2).map((product, index) => (
-              <ProductItem key={index}>
-              {product.product && typeof product.product === 'object' ? (
-                <>
-                  <span><strong>Name:</strong> {product.product.name || 'N/A'}</span>
-                  <span><strong>Type:</strong> {product.product.productType || 'N/A'}</span>
-                  <span>
-                    <strong>Weight:</strong>{' '}
-                    {product.product.weightPerUnit
-                      ? `${product.product.weightPerUnit} ${product.product.weightUnit || ''}`
-                      : 'N/A'}
-                  </span>
-                  <span><strong>Status:</strong> {product.product.status || 'N/A'}</span>
-                  <span><strong>Quantity:</strong> {product.quantity || 0}</span>
-                </>
-              ) : (
-                <span>No product data available</span>
-              )}
-            </ProductItem>
-            ))
-          ) : (
-            <ProductItem>No products available</ProductItem>
-          )}
-        </ProductList>
+            <h4>📦 Available Products:</h4>
+            <ProductList>
+              {products.slice(0, 2).map((product, index) => (
+                <ProductItem key={index}>
+                  {product.product && typeof product.product === 'object' ? (
+                    <>
+                      <span><strong>Name:</strong> {product.product.name || 'N/A'}</span>
+                      <span><strong>Type:</strong> {product.product.productType || 'N/A'}</span>
+                      <span>
+                        <strong>Weight:</strong>{' '}
+                        {product.product.weightPerUnit
+                          ? `${product.product.weightPerUnit} ${product.product.weightUnit || ''}`
+                          : 'N/A'}
+                      </span>
+                      <span><strong>Status:</strong> {product.product.status || 'N/A'}</span>
+                      <span><strong>Quantity:</strong> {product.quantity || 0}</span>
+                    </>
+                  ) : (
+                    <span>No product data available</span>
+                  )}
+                </ProductItem>
+              ))}
+              {products.length === 0 && <ProductItem>No products available</ProductItem>}
+            </ProductList>
           </>
         ) : Array.isArray(meals) && meals.length > 0 ? (
           <>
             <h4>🍽️ Available Meals:</h4>
-            <span><strong>Quantity:</strong> {numberOfMeals || 0}</span>
-
+            <span><strong>Quantity:</strong> {numberOfMeals}</span>
             <ProductList>
               {meals.slice(0, 2).map((meal, index) => (
                 <ProductItem key={index}>
-                  <span><strong>Name:</strong> {meal.mealName || 'Not specified'}</span>
-                  <span><strong>Description:</strong> {meal.mealDescription || 'Not specified'}</span>
+                  {meal.meal && typeof meal.meal === 'object' ? (
+                    <>
+                      <span><strong>Name:</strong> {meal.meal.mealName || 'Not specified'}</span>
+                      <span><strong>Description:</strong> {meal.meal.mealDescription || 'Not specified'}</span>
+                    </>
+                  ) : (
+                    <span>No meal data available</span>
+                  )}
                 </ProductItem>
               ))}
+              {meals.length === 0 && <ProductItem>No meals available</ProductItem>}
             </ProductList>
           </>
         ) : (
-          <ProductItem>Aucun produit ni repas disponible</ProductItem>
+          <ProductItem>No products or meals available</ProductItem>
         )}
       </div>
 

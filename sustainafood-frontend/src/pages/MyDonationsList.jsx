@@ -256,7 +256,7 @@ export default function MyDonationsList() {
         <TopControls>
 
         <AddRequestButton  to="/AddDonation">
-        ✚ Add New Request
+        ✚ Add New Donation
         </AddRequestButton>
         {/* 🔍 Stylish Search Bar */}
         <SearchContainer>

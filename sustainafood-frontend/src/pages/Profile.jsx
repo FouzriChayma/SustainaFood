@@ -10,12 +10,19 @@ import { useAuth } from "../contexts/AuthContext";
 import RoleSpecificProfile from '../components/RoleSpecificProfile';
 import dhiaphoto from '../assets/images/dhiaphoto.png';
 import assilphoto from '../assets/images/assilphoto.png';
+import { onUpdateDescription } from "../api/userService";
+import { FaEdit,FaPlus } from "react-icons/fa"
+
+
 const Profile = () => {
   const navigate = useNavigate();
   const { user: authUser, token, clearWelcomeMessage } = useAuth(); // Add clearWelcomeMessage
   const [user, setUser] = useState(authUser);
   const [error, setError] = useState("");
   const [welcomeMessage, setWelcomeMessage] = useState(authUser?.welcomeMessage || "");
+  const [isEditing, setIsEditing] = useState(false);
+  const [description, setDescription] = useState(""); // Initialize as empty, will sync with fetched data
+  const [descriptionError, setDescriptionError] = useState(""); // Added for error feedback
 
   const profilePhotoUrl = user?.photo ? `http://localhost:3000/${user.photo}` : pdp;
 
@@ -26,6 +33,7 @@ const Profile = () => {
         try {
           const response = await getUserById(authUser._id);
           setUser(response.data);
+          setDescription(response.data.description || ""); // Sync description with fetched data
         } catch (error) {
           console.error("Backend Error:", error);
         }
@@ -35,6 +43,7 @@ const Profile = () => {
         try {
           const response = await getUserById(authUser.id);
           setUser(response.data);
+          setDescription(response.data.description || ""); // Sync description with fetched data
         } catch (error) {
           console.error("Backend Error:", error);
         }
@@ -45,7 +54,6 @@ const Profile = () => {
       fetchUser();
     }
   }, [authUser]);
-  
 
   useEffect(() => {
     if (welcomeMessage) {
@@ -58,33 +66,45 @@ const Profile = () => {
       return () => clearTimeout(timer); // Cleanup the timer
     }
   }, [welcomeMessage, clearWelcomeMessage]);
-  
+
+  const handleSave = async () => {
+    try {
+      const userId = user._id || user.id; // Get user ID for backend update
+      await onUpdateDescription(userId, description); // Update backend with user ID and description
+      setUser(prevUser => ({ ...prevUser, description })); // Update local user state
+      setIsEditing(false); // Exit editing mode
+      setDescriptionError(""); // Clear any previous errors
+    } catch (error) {
+      console.error("Error updating description:", error);
+      setDescriptionError("Failed to update description. Please try again."); // Set error message
+    }
+  };
 
   return (
     <>
       <Navbar />
       <div className="container-profile">
-      {welcomeMessage && (
-        <div className="welcome-message">
-          <div className="welcome-message-content">
-            <div className="welcome-icon">🎉</div>
-            <span>{welcomeMessage}</span>
+        {welcomeMessage && (
+          <div className="welcome-message">
+            <div className="welcome-message-content">
+              <div className="welcome-icon">🎉</div>
+              <span>{welcomeMessage}</span>
+            </div>
+            <div className="confetti-container">
+              {Array.from({ length: 20 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`confetti confetti-${i % 5}`}
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 3}s`,
+                    animationDuration: `${3 + Math.random() * 2}s`,
+                  }}
+                ></div>
+              ))}
+            </div>
           </div>
-          <div className="confetti-container">
-            {Array.from({ length: 20 }).map((_, i) => (
-              <div
-                key={i}
-                className={`confetti confetti-${i % 5}`}
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 3}s`,
-                  animationDuration: `${3 + Math.random() * 2}s`,
-                }}
-              ></div>
-            ))}
-          </div>
-        </div>
-      )}
+        )}
         <header>
           <div className="profile-header">
             <h1>My Profile</h1>
@@ -114,10 +134,33 @@ const Profile = () => {
                 </div>
                 <div className="bottom">
                   <div className="content">
-                    <span className="name">Description</span>
-                    <span className="about-me">
-                      Lorem ipsum dolor sit amet consectetur adipisicinFcls Lorem ipsum dolor sit amet consectetur adipisicinFcls
-                    </span>
+                    <div style={{display:"flex"}}>
+                   <div><span className="name">Description</span></div> 
+                  <div> <button  className='bottom-editdesc name'
+                    onClick={() => {
+                      setIsEditing(true);
+                      setDescriptionError("");
+                    }}
+                  >
+                    {description ? <FaEdit /> : <FaPlus />}
+                  </button></div> 
+                  </div>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        className="description-input"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        onBlur={handleSave} // Sauvegarde automatique quand on quitte le champ
+                        placeholder="Enter your description" // Added for better UX
+                        autoFocus
+                      />
+                    ) : (
+                      <span className="about-me">{description || "No description yet..."}</span>
+                    )}
+                {descriptionError && <p className="error-message">{descriptionError}</p>} {/* Display error */}
+                {descriptionError && <p className="error-message">{descriptionError}</p>}
+                
                   </div>
                   <div className="bottom-bottom">
                     <h1 className='userrole'>
@@ -146,9 +189,7 @@ const Profile = () => {
           </div>
 
           <div className="right-column">
-
-            <div >
-
+            <div>
               <div className="winner-cards">
                 <div className="winner-outlinePage">
                   <svg
@@ -199,7 +240,7 @@ const Profile = () => {
                     height="25"
                   >
                     <path
-                      d="M512 0C228.693 0 0 228.693 0 512s228.693 512 512 512 512-228.693 512-512S795.307 0 512 0z m0 69.973c244.053 0 442.027 197.973 442.027 442.027 0 87.04-25.6 168.96-69.973 237.227-73.387-78.507-170.667-133.12-281.6-151.893 69.973-34.133 119.467-105.813 119.467-187.733 0-116.053-93.867-209.92-209.92-209.92s-209.92 93.867-209.92 209.92c0 83.627 47.787 155.307 119.467 187.733-110.933 20.48-208.213 75.093-281.6 153.6-44.373-68.267-69.973-150.187-69.973-238.933 0-244.053 197.973-442.027 442.027-442.027z"
+                      d="M512 0C228.693 0 0 228.693 0 512s228.693 512 512 512 512-228.693 512-512S795.307 0 512 0z m0 69.973c244.053 0 442.027 197.973 442.027 442.027 0 87.04-25.6 168.96-69.973 237.227-73.387-78.507-170.667-133.12-281.6-151.893 69.973-34.133 119.467-105.813 119.467-187.733 0-116.053-93.867-209.92-209.92 FN-209.92s-209.92 93.867-209.92 209.92c0 83.627 47.787 155.307 119.467 187.733-110.933 20.48-208.213 75.093-281.6 153.6-44.373-68.267-69.973-150.187-69.973-238.933 0-244.053 197.973-442.027 442.027-442.027z"
                       fill="#8a8a8a"
                     ></path>
                   </svg>
@@ -297,7 +338,6 @@ const Profile = () => {
                   </div>
                 </div>
               </div>
-
             </div>
 
             <div className="inbox-section">
@@ -340,7 +380,6 @@ const Profile = () => {
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         </div>

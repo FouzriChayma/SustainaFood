@@ -142,7 +142,12 @@ body{
     fill: #f55d56;
     transform: scale(1.2);
   }
-
+.bottom-editdesc{
+  margin-left: 90px;
+  margin-top: -26px;
+  background-color:#8dc73f ;
+  color: white;
+}
   .card-white  .bottom .bottom-bottom .button {
     background: white;
     color: #8dc73f;

@@ -27,6 +27,10 @@ router.put(
     ]),
     userController.updateUser
   );
+  router.put(
+    "/updateDescription/:id",
+    userController.onUpdateDescription
+  );
 
 router.post('/login', userController.user_signin);
 router.post('/userwinthemailandpss', userController.getUserByEmailAndPassword);

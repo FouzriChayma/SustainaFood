@@ -339,6 +339,9 @@ export const AddDonation = () => {
     donationData.append("status", "pending");
 
     if (category === "prepared_meals") {
+    
+
+    if (category === "prepared_meals" ){
       donationData.append("numberOfMeals", numberOfMeals);
       // For donors, send meal details; for recipients, only send numberOfMeals
       if (isDonner) {
@@ -353,7 +356,7 @@ export const AddDonation = () => {
         donationData.append("meals", JSON.stringify(formattedMeals));
       }
     }
-
+  }
     if (category === "packaged_products") {
       const productsToSend = productEntryMode === "csv" ? products : manualProducts;
       const formattedProducts = productsToSend.map(product => ({
@@ -438,7 +441,19 @@ export const AddDonation = () => {
             <option value="prepared_meals">Prepared Meals</option>
             <option value="packaged_products">Packaged Products</option>
           </select>
-
+          {category === "prepared_meals" && isRecipient && (
+          <>
+            <input
+              className="signup-input"
+              type="number"
+              placeholder="Total Number of Meals"
+              value={numberOfMeals}
+              onChange={(e) => setNumberOfMeals(e.target.value)}
+              required
+            />
+            {errors.numberOfMeals && <p className="error-message">{errors.numberOfMeals}</p>}
+          </>
+                    )}
           <textarea className="signup-input" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} required />
           {errors.description && <p className="error-message">{errors.description}</p>}
 

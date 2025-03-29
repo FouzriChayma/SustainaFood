@@ -81,173 +81,164 @@ async function getRequestsByStatus(req, res) {
 // ✅ Create a new request
 async function createRequest(req, res) {
     console.log("Request body received:", req.body);
-  
+
     try {
-      let {
-        title,
-        location,
-        expirationDate,
-        description,
-        category,
-        recipient,
-        requestedProducts,
-        requestedMeals,
-        status,
-        linkedDonation,
-        numberOfMeals,
-      } = req.body;
-  
-      // Ensure requestedProducts is an array and handle parsing if it's a string
-      if (typeof requestedProducts === 'string') {
-        try {
-          requestedProducts = JSON.parse(requestedProducts);
-          // Trim keys to remove leading/trailing spaces
-          requestedProducts = requestedProducts.map(product => {
-            const trimmedProduct = {};
-            for (let key in product) {
-              const trimmedKey = key.trim();
-              trimmedProduct[trimmedKey] = product[key];
+        let {
+            title,
+            location,
+            expirationDate,
+            description,
+            category,
+            recipient,
+            requestedProducts,
+            requestedMeals,
+            status,
+            linkedDonation,
+            numberOfMeals,
+        } = req.body;
+
+        // Ensure requestedProducts is parsed correctly
+        if (typeof requestedProducts === 'string') {
+            try {
+                requestedProducts = JSON.parse(requestedProducts);
+            } catch (error) {
+                return res.status(400).json({ message: "Invalid requestedProducts format" });
             }
-            return trimmedProduct;
-          });
-        } catch (error) {
-          return res.status(400).json({ message: "Invalid requestedProducts format" });
         }
-      } else if (!Array.isArray(requestedProducts)) {
-        requestedProducts = [];
-      }
-  
-      // For recipients, requestedMeals will be undefined; for donors, it won't be used here
-      if (typeof requestedMeals === 'string') {
-        try {
-          requestedMeals = JSON.parse(requestedMeals);
-          // Trim keys to remove leading/trailing spaces
-          requestedMeals = requestedMeals.map(meal => {
-            const trimmedMeal = {};
-            for (let key in meal) {
-              const trimmedKey = key.trim();
-              trimmedMeal[trimmedKey] = meal[key];
+        if (!Array.isArray(requestedProducts)) {
+            requestedProducts = [];
+        }
+
+        // Ensure requestedMeals is parsed correctly
+        if (typeof requestedMeals === 'string') {
+            try {
+                requestedMeals = JSON.parse(requestedMeals);
+            } catch (error) {
+                return res.status(400).json({ message: "Invalid requestedMeals format" });
             }
-            return trimmedMeal;
-          });
-        } catch (error) {
-          return res.status(400).json({ message: "Invalid requestedMeals format" });
         }
-      } else if (!Array.isArray(requestedMeals)) {
-        requestedMeals = [];
-      }
-  
-      // Filter out incomplete product requests and log invalid ones
-      requestedProducts = requestedProducts.filter(product => {
-        const isValid = product.name &&
-          product.weightPerUnit &&
-          product.quantity &&
-          product.productDescription &&
-          product.status &&
-          product.productType &&
-          product.weightUnit &&
-          product.weightUnitTotale;
-        if (!isValid) {
-          console.log("Filtered out invalid product:", product);
+        if (!Array.isArray(requestedMeals)) {
+            requestedMeals = [];
         }
-        return isValid;
-      });
-  
-      // Validate expirationDate
-      if (isNaN(new Date(expirationDate).getTime())) {
-        return res.status(400).json({ message: "Invalid expiration date format" });
-      }
-  
-      // Validate numberOfMeals for prepared meals
-      let totalMeals = 0;
-      if (category === 'prepared_meals') {
-        const parsedNumberOfMeals = parseInt(numberOfMeals, 10);
-        if (isNaN(parsedNumberOfMeals) || parsedNumberOfMeals <= 0) {
-          return res.status(400).json({ message: 'numberOfMeals must be a valid positive integer for prepared meals' });
+
+        // Validate and filter products
+        requestedProducts = requestedProducts.map((product, index) => {
+            if (!product.name || typeof product.name !== 'string' || !product.name.trim()) {
+                throw new Error(`Product at index ${index} is missing a valid name`);
+            }
+            if (!product.productType || typeof product.productType !== 'string') {
+                throw new Error(`Product at index ${index} is missing a valid productType`);
+            }
+            if (!product.productDescription || typeof product.productDescription !== 'string' || !product.productDescription.trim()) {
+                throw new Error(`Product at index ${index} is missing a valid productDescription`);
+            }
+            const weightPerUnit = parseFloat(product.weightPerUnit);
+            if (isNaN(weightPerUnit) || weightPerUnit <= 0) {
+                throw new Error(`Product at index ${index} has an invalid weightPerUnit: ${product.weightPerUnit}. Must be a positive number`);
+            }
+            const totalQuantity = parseInt(product.totalQuantity);
+            if (isNaN(totalQuantity) || totalQuantity <= 0) {
+                throw new Error(`Product at index ${index} has an invalid totalQuantity: ${product.totalQuantity}. Must be a positive integer`);
+            }
+            if (!product.status || typeof product.status !== 'string') {
+                throw new Error(`Product at index ${index} is missing a valid status`);
+            }
+            return product;
+        });
+
+        // Validate expirationDate
+        if (isNaN(new Date(expirationDate).getTime())) {
+            return res.status(400).json({ message: "Invalid expiration date format" });
         }
-        totalMeals = parsedNumberOfMeals;
-        // For recipients, requestedMeals will be empty; no need to validate against it
-      }
-  
-      // Create the request without products or meals first
-      const newRequest = new RequestNeed({
-        title,
-        location,
-        expirationDate: new Date(expirationDate),
-        description,
-        category: category || undefined,
-        recipient,
-        requestedProducts: [], // Initially empty
-        requestedMeals: [],    // Initially empty (recipients won't provide this)
-        status: status || "pending",
-        linkedDonation: linkedDonation || null,
-        numberOfMeals: category === 'prepared_meals' ? totalMeals : undefined,
-        isaPost: true, // Assuming this is a standalone request
-      });
-  
-      await newRequest.save(); // Save to obtain the request _id
-      const requestId = newRequest._id;
-  
-      // Handle products for packaged_products
-      if (category === 'packaged_products' && requestedProducts.length > 0) {
-        // Step 1: Get the current counter value and increment it for the number of products
-        const counter = await Counter.findOneAndUpdate(
-          { _id: 'ProductId' }, // Use a unique counter ID for Product
-          { $inc: { seq: requestedProducts.length } }, // Increment by the number of products
-          { new: true, upsert: true }
-        );
-  
-        // Step 2: Calculate the starting ID for the first product
-        const startId = counter.seq - requestedProducts.length + 1;
-  
-        // Step 3: Create Product documents with auto-incremented IDs
-        const productDocs = requestedProducts.map((product, index) => ({
-          id: startId + index, // Assign the auto-incremented ID
-          name: product.name,
-          productType: product.productType,
-          productDescription: product.productDescription,
-          weightPerUnit: product.weightPerUnit,
-          weightUnit: product.weightUnit,
-          weightUnitTotale: product.weightUnitTotale,
-          totalQuantity: product.quantity, // Use the quantity field for Product's totalQuantity
-          image: product.image,
-          status: product.status,
-          request: requestId, // Link to the request
-        }));
-  
-        try {
-          const createdProducts = await Product.insertMany(productDocs);
-          // Map created products to the requestedProducts array with quantities
-          newRequest.requestedProducts = createdProducts.map(product => ({
-            product: product._id,
-            quantity: parseInt(product.totalQuantity), // Use the quantity from the Product document
-          }));
-        } catch (error) {
-          console.error("Product Creation Error:", error);
-          return res.status(400).json({ message: "Failed to create products", error: error.message });
+
+        // Validate numberOfMeals for prepared meals
+        let totalMeals = 0;
+        if (category === 'prepared_meals') {
+            const parsedNumberOfMeals = parseInt(numberOfMeals, 10);
+            if (isNaN(parsedNumberOfMeals) || parsedNumberOfMeals <= 0) {
+                return res.status(400).json({ message: 'numberOfMeals must be a valid positive integer for prepared meals' });
+            }
+            totalMeals = parsedNumberOfMeals;
         }
-      }
-  
-      // No meal handling for recipients; this will be handled by donors when they create a donation
-  
-      // Save the updated request
-      await newRequest.save();
-  
-      // Fetch the populated request for the response
-      const populatedRequest = await RequestNeed.findById(newRequest._id)
-        .populate('recipient')
-        .populate('requestedProducts.product') // Populate the product field in requestedProducts
-        .populate('requestedMeals.meal');
-  
-      res.status(201).json({ message: 'Request created successfully', newRequest: populatedRequest });
+
+        // Create the request without products or meals first
+        const newRequest = new RequestNeed({
+            title,
+            location,
+            expirationDate: new Date(expirationDate),
+            description,
+            category: category || undefined,
+            recipient,
+            requestedProducts: [], // Initially empty
+            requestedMeals: [],    // Initially empty
+            status: status || "pending",
+            linkedDonation: linkedDonation || null,
+            numberOfMeals: category === 'prepared_meals' ? totalMeals : undefined,
+            isaPost: true,
+        });
+
+        await newRequest.save(); // Save to obtain the request _id
+        const requestId = newRequest._id;
+
+        // Handle products for packaged_products
+        if (category === 'packaged_products' && requestedProducts.length > 0) {
+            // Get the current counter value and increment it for the number of products
+            const counter = await Counter.findOneAndUpdate(
+                { _id: 'ProductId' }, 
+                { $inc: { seq: requestedProducts.length } }, 
+                { new: true, upsert: true }
+            );
+
+            const startId = counter.seq - requestedProducts.length + 1;
+
+            // Create Product documents with auto-incremented IDs
+            const productDocs = requestedProducts.map((product, index) => ({
+                id: startId + index,
+                name: product.name,
+                productType: product.productType,
+                productDescription: product.productDescription,
+                weightPerUnit: product.weightPerUnit,
+                weightUnit: product.weightUnit,
+                weightUnitTotale: product.weightUnitTotale,
+                totalQuantity: product.totalQuantity,
+                image: product.image,
+                status: product.status,
+                request: requestId,
+            }));
+
+            try {
+                const createdProducts = await Product.insertMany(productDocs);
+                // Map created products to the requestedProducts array with quantities
+                newRequest.requestedProducts = createdProducts.map(product => ({
+                    product: product._id,
+                    quantity: parseInt(product.totalQuantity),
+                }));
+            } catch (error) {
+                console.error("Product Creation Error:", error);
+                return res.status(400).json({ message: "Failed to create products", error: error.message });
+            }
+        }
+
+        // Save the updated request
+        await newRequest.save();
+
+        // Fetch the populated request for the response
+        const populatedRequest = await RequestNeed.findById(newRequest._id)
+            .populate('recipient')
+            .populate('requestedProducts.product') 
+            .populate('requestedMeals.meal');
+
+        console.log("Saved request:", populatedRequest);
+        res.status(201).json({ message: 'Request created successfully', newRequest: populatedRequest });
     } catch (error) {
-      console.error("Request Creation Error:", error);
-      res.status(500).json({
-        message: "Failed to create request",
-        error: error.message || error,
-      });
+        console.error("Request Creation Error:", error);
+        res.status(500).json({
+            message: "Failed to create request",
+            error: error.message || error,
+        });
     }
-  }
+}
+
 
 // ✅ Update a request by ID
 async function updateRequest(req, res) {

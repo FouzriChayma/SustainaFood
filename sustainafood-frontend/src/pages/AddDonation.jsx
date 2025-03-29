@@ -361,6 +361,7 @@ export const AddDonation = () => {
           weightPerUnit: parseFloat(product.weightPerUnit),
           weightUnit: product.weightUnit,
           weightUnitTotale: product.weightUnitTotale,
+          totalQuantity: parseFloat(product.totalQuantity),
           quantity: parseInt(product.totalQuantity), // Map totalQuantity to quantity
           image: product.image,
           status: product.status,
@@ -386,7 +387,8 @@ export const AddDonation = () => {
         console.log("Request created successfully:", response.data);
         showAlert("success", "Request created successfully!");
       }
-      navigate("/ListOfDonations");
+      window.history.back();
+
     } catch (err) {
       console.error("Error creating donation/request:", err);
       const errorMessage = err.response?.data?.message || "An error occurred while creating the donation/request.";

@@ -283,7 +283,7 @@ const DetailsRequest = () => {
     deleteRequest(id)
       .then(() => {
         showAlert('success', 'Request successfully deleted');
-        navigate('/ListOfDonations');
+        window.history.back();
       })
       .catch((error) => {
         console.error("Error deleting request:", error);
@@ -949,7 +949,7 @@ const DetailsRequest = () => {
             </DonationForm>
           )}
 
-          <Button variant="back" onClick={() => navigate('/ListOfDonations')}>🔙 Go Back</Button>
+          <Button variant="back" onClick={() => window.history.back()}>🔙 Go Back</Button>
 
           {!isTheOwner && (
             <Button

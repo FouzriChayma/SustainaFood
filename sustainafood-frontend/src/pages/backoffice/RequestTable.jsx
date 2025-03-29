@@ -61,7 +61,10 @@ const RequestTable = () => {
   const [sortOrder, setSortOrder] = useState("asc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const requestsPerPage = 5;
+  const [categoryFilter, setCategoryFilter] = useState("");
+const [roleFilter, setRoleFilter] = useState("");
+const [statusFilter, setStatusFilter] = useState("");
+  const requestsPerPage = 4;
 
   // Sanitize data function
   const sanitizeRequest = (request) => {
@@ -90,12 +93,21 @@ const RequestTable = () => {
     fetchRequests();
   }, []);
 
-  const sortedRequests = [...requests].sort((a, b) => {
+   // Filter requests based on category, role, and status
+   const filteredRequests = requests.filter((request) => {
+    const categoryMatch = categoryFilter === "" || request.category === categoryFilter;
+    const roleMatch = roleFilter === "" || (request.recipient && request.recipient.role === roleFilter);
+    const statusMatch = statusFilter === "" || request.status === statusFilter;
+    return categoryMatch && roleMatch && statusMatch;
+  });
+
+  // Sort filtered requests
+  const sortedRequests = [...filteredRequests].sort((a, b) => {
     let comparison = 0;
     if (sortField === "title") {
       comparison = (a.title || "").localeCompare(b.title || "");
-    } else if (sortField === "status") {
-      comparison = (a.status || "").localeCompare(b.status || "");
+    } else if (sortField === "category") {
+      comparison = (a.category || "").localeCompare(b.category || "");
     } else if (sortField === "expirationDate") {
       const dateA = a.expirationDate ? new Date(a.expirationDate) : null;
       const dateB = b.expirationDate ? new Date(b.expirationDate) : null;
@@ -108,20 +120,19 @@ const RequestTable = () => {
       } else {
         comparison = 0;
       }
+    } else if (sortField === "status") {
+      comparison = (a.status || "").localeCompare(b.status || "");
     } else if (sortField === "_id") {
       comparison = (a._id || "").localeCompare(b._id || "");
-    } else if (sortField === "category") {
-      comparison = (a.category || "").localeCompare(b.category || "");
+    } else if (sortField === "role") {
+      comparison = (a.recipient?.role || "").localeCompare(b.recipient?.role || "");
     }
     return sortOrder === "asc" ? comparison : comparison * -1;
   });
 
   const pagesVisited = currentPage * requestsPerPage;
-  const displayRequests = sortedRequests.slice(
-    pagesVisited,
-    pagesVisited + requestsPerPage
-  );
-  const pageCount = Math.ceil(requests.length / requestsPerPage);
+  const displayRequests = sortedRequests.slice(pagesVisited, pagesVisited + requestsPerPage);
+  const pageCount = Math.ceil(filteredRequests.length / requestsPerPage);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -134,6 +145,8 @@ const RequestTable = () => {
   const handleSortOrderChange = (e) => {
     setSortOrder(e.target.value);
   };
+
+
 
   const exportToPDF = () => {
     const doc = new jsPDF();
@@ -202,30 +215,45 @@ const RequestTable = () => {
               Export to PDF
             </button>
           </div>
-
-          <div className="sort-container">
-            <label htmlFor="sortField">Sort By:</label>
+          <div className="filter-container">
+            <label htmlFor="categoryFilter">Filter by Category:</label>
             <select
-              id="sortField"
-              value={sortField}
-              onChange={handleSortChange}
+              id="categoryFilter"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
             >
-              <option value="title">Title</option>
-              <option value="category">Category</option>
-              <option value="expirationDate">Expiration Date</option>
-              <option value="status">Status</option>
-              <option value="_id">ID</option>
+              <option value="">All</option>
+              <option value="packaged_products">Packaged Products</option>
+              <option value="prepared_meals">Prepared Meals</option>
             </select>
-            <label htmlFor="sortOrder">Order:</label>
+
+            <label htmlFor="roleFilter">Filter by Role:</label>
             <select
-              id="sortOrder"
-              value={sortOrder}
-              onChange={handleSortOrderChange}
+              id="roleFilter"
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
             >
-              <option value="asc">Ascending</option>
-              <option value="desc">Descending</option>
+              <option value="">All</option>
+              <option value="ong">ONG</option>
+              <option value="student">Student</option>
+            </select>
+
+            <label htmlFor="statusFilter">Filter by Status:</label>
+            <select
+              id="statusFilter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="fulfilled">Fulfilled</option>
+              <option value="partially_fulfilled">Partially Fulfilled</option>
             </select>
           </div>
+
+        
 
           {loading ? (
             <div>Loading requests...</div>
@@ -241,7 +269,6 @@ const RequestTable = () => {
                     <th>Category</th>
                     <th>Expiration Date</th>
                     <th>Status</th>
-                    <th>Description</th>
                     <th>Products</th>
                     <th>Location</th>
                     <th>Actions</th>
@@ -280,12 +307,10 @@ const RequestTable = () => {
                           {new Date(request.expirationDate).toLocaleDateString()}
                         </td>
                         <td>{request.status}</td>
-                        <td>{request.description}</td>
                         <td>
                           {request.category === "prepared_meals" ? (
                             <div>
-                              Name: {request.mealName || "N/A"}, Description:{" "}
-                              {request.mealDescription || "N/A"}
+                              number Of Meals: {request.numberOfMeals || "N/A"}
                             </div>
                           ) : (
                             <div>

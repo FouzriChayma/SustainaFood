@@ -6,7 +6,7 @@ background-color: white;
 padding: 20px;
 border-radius: 10px;
 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-margin-top: 12px;
+    margin-top: 12px;
 }
 /* General Table Styling */
 table {
@@ -139,4 +139,34 @@ table tbody tr:hover {
     width: 100%;
     justify-content: center;
   }
+}
+
+/* Filter Section */
+.filter-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: center;
+  background: #fff;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.filter-container label {
+  font-weight: bold;
+}
+
+.filter-container select {
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background: #fff;
+  cursor: pointer;
+  transition: border 0.3s;
+}
+
+.filter-container select:focus {
+  border-color: #228b22;
+  outline: none;
 }

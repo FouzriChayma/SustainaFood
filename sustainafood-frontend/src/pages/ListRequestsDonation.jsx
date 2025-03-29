@@ -1,4 +1,3 @@
-// src/pages/ListRequestsDonation.jsx
 import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -161,14 +160,14 @@ const ItemDetails = styled.div`
 `;
 
 const ItemQuantity = styled.span`
-  font-size: 16px;
+  font-size: 14px;
   font-weight: bold;
   color: #d9534f;
   padding: 4px 8px;
   border-radius: 4px;
 
   @media (max-width: 768px) {
-    font-size: 14px;
+    font-size: 13px;
     padding: 6px;
   }
 `;
@@ -269,6 +268,12 @@ const RequestTitle = styled.h1`
   font-size: 40px;
   margin-bottom: 20px;
   text-align: center;
+
+  p {
+    font-size: 24px;
+    color: #495057;
+    margin: 5px 0 0;
+  }
 `;
 
 const SearchContainer = styled.div`
@@ -324,6 +329,16 @@ const StatusBadge = styled.span`
     background-color: #f8d7da;
     color: #721c24;
   }
+
+  &.fulfilled {
+    background-color: #cce5ff;
+    color: #004085;
+  }
+
+  &.partially_fulfilled {
+    background-color: #e2e3e5;
+    color: #383d41;
+  }
 `;
 
 const ListRequestsDonation = () => {
@@ -361,12 +376,17 @@ const ListRequestsDonation = () => {
         setRequests(requestsArray);
       } catch (err) {
         console.error('Fetch error:', err.response?.data || err.message);
-        setError(
-          err.response?.data?.message || 
-          err.response?.data?.error || 
-          err.message || 
-          'Failed to fetch data'
-        );
+        let errorMessage = 'Failed to fetch data';
+        if (err.response) {
+          if (err.response.status === 404) {
+            errorMessage = 'Donation or requests not found';
+          } else if (err.response.status === 400) {
+            errorMessage = 'Invalid donation ID';
+          } else {
+            errorMessage = err.response.data?.message || err.response.data?.error || err.message;
+          }
+        }
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -381,7 +401,7 @@ const ListRequestsDonation = () => {
     let updatedRequests = [...requests];
 
     // Apply filters
-    if (filterOption === 'pending' || filterOption === 'approved' || filterOption === 'rejected') {
+    if (filterOption !== 'all') {
       updatedRequests = updatedRequests.filter(r => r.status === filterOption);
     }
 
@@ -396,8 +416,7 @@ const ListRequestsDonation = () => {
           meal.meal?.mealName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           meal.meal?.mealType?.toLowerCase().includes(searchQuery.toLowerCase())
         );
-        const recipientMatch = request.recipient?.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                              request.recipient?.lastName?.toLowerCase().includes(searchQuery.toLowerCase());
+        const recipientMatch = request.recipient?.name?.toLowerCase().includes(searchQuery.toLowerCase());
         return productMatch || mealMatch || recipientMatch;
       });
     }
@@ -407,13 +426,13 @@ const ListRequestsDonation = () => {
       if (sortOption === 'title') {
         return a.title.localeCompare(b.title);
       } else if (sortOption === 'recipient') {
-        const aName = `${a.recipient?.firstName || ''} ${a.recipient?.lastName || ''}`.trim();
-        const bName = `${b.recipient?.firstName || ''} ${b.recipient?.lastName || ''}`.trim();
+        const aName = a.recipient?.name || '';
+        const bName = b.recipient?.name || '';
         return aName.localeCompare(bName);
       } else if (sortOption === 'status') {
         return a.status.localeCompare(b.status);
       } else {
-        return new Date(a.createdAt) - new Date(b.createdAt); // Assuming requests have a createdAt field
+        return new Date(a.created_at) - new Date(b.created_at);
       }
     });
 
@@ -478,17 +497,28 @@ const ListRequestsDonation = () => {
               placeholder="Search by product, meal, or recipient..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search requests"
             />
           </SearchContainer>
 
-          <Select value={filterOption} onChange={(e) => setFilterOption(e.target.value)}>
+          <Select 
+            value={filterOption} 
+            onChange={(e) => setFilterOption(e.target.value)}
+            aria-label="Filter by status"
+          >
             <option value="all">🟢 All Requests</option>
             <option value="pending">🟠 Pending</option>
             <option value="approved">🟢 Approved</option>
             <option value="rejected">🔴 Rejected</option>
+            <option value="fulfilled">🔵 Fulfilled</option>
+            <option value="partially_fulfilled">⚪ Partially Fulfilled</option>
           </Select>
 
-          <Select value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
+          <Select 
+            value={sortOption} 
+            onChange={(e) => setSortOption(e.target.value)}
+            aria-label="Sort requests"
+          >
             <option value="date">📆 Sort by Date</option>
             <option value="title">📝 Sort by Title</option>
             <option value="recipient">👤 Sort by Recipient</option>
@@ -513,9 +543,7 @@ const ListRequestsDonation = () => {
                     }}
                   />
                   <ProfileText>
-                    {request.recipient
-                      ? `${request.recipient.firstName || 'Unknown'} ${request.recipient.lastName || ''}`.trim() || 'Unknown User'
-                      : 'Unknown User'}
+                    {request.recipient?.name || 'Unknown User'}
                   </ProfileText>
                   <ProfileText>{request.recipient?.role || 'Role Not Specified'}</ProfileText>
                 </ProfileInfo>
@@ -542,14 +570,14 @@ const ListRequestsDonation = () => {
                       <ItemList>
                         {request.requestedMeals && request.requestedMeals.length > 0 ? (
                           request.requestedMeals.map((item, itemIndex) => (
-                            < Item key={item._id || itemIndex}>
+                            <Item key={item._id || itemIndex}>
                               <ItemDetails>
                                 <span><strong>Name:</strong> {item.meal?.mealName || 'Meal Not Specified'}</span>
                                 <span><strong>Type:</strong> {item.meal?.mealType || 'Type Not Specified'}</span>
                                 <span><strong>Description:</strong> {item.meal?.mealDescription || 'No Description'}</span>
                               </ItemDetails>
                               <ItemQuantity>
-                                <strong>Quantity:</strong> {item.quantity !== undefined ? item.quantity : 'Not specified'}
+                                Quantity: {item.quantity !== undefined ? item.quantity : 'Not specified'}
                               </ItemQuantity>
                             </Item>
                           ))
@@ -566,12 +594,17 @@ const ListRequestsDonation = () => {
                           request.requestedProducts.map((item, itemIndex) => (
                             <Item key={item._id || itemIndex}>
                               <ItemDetails>
-                                <span><strong>Name:</strong> {item.product?.name || 'Product Not Specified'}</span>
+                                <span><strong>Name:</strong> {item.product?.name || 'Product Not Found'}</span>
                                 <span><strong>Type:</strong> {item.product?.productType || 'Type Not Specified'}</span>
-                                <span><strong>Weight:</strong> {item.product?.weightPerUnit ? `${item.product.weightPerUnit} ${item.product.weightUnit || ''}` : 'Weight Not Specified'}</span>
+                                <span>
+                                  <strong>Weight:</strong>{' '}
+                                  {item.product?.weightPerUnit && item.product?.weightUnit
+                                    ? `${item.product.weightPerUnit} ${item.product.weightUnit}`
+                                    : 'Weight Not Specified'}
+                                </span>
                               </ItemDetails>
                               <ItemQuantity>
-                                <strong>Quantity:</strong> {item.quantity !== undefined ? item.quantity : 'Not specified'}
+                                Quantity: {item.quantity !== undefined ? item.quantity : 'Not specified'}
                               </ItemQuantity>
                             </Item>
                           ))
@@ -587,12 +620,14 @@ const ListRequestsDonation = () => {
                     <ActionButton
                       className="accept-btn"
                       onClick={() => handleStatusUpdate(request._id, 'approved')}
+                      aria-label="Accept request"
                     >
                       ✔ Accept
                     </ActionButton>
                     <ActionButton
                       className="reject-btn"
                       onClick={() => handleStatusUpdate(request._id, 'rejected')}
+                      aria-label="Reject request"
                     >
                       ✖ Reject
                     </ActionButton>
@@ -610,6 +645,7 @@ const ListRequestsDonation = () => {
             <button
               onClick={() => paginate(currentPage - 1)}
               disabled={currentPage === 1}
+              aria-label="Previous page"
             >
               Previous
             </button>
@@ -617,6 +653,7 @@ const ListRequestsDonation = () => {
             <button
               onClick={() => paginate(currentPage + 1)}
               disabled={currentPage === totalPages}
+              aria-label="Next page"
             >
               Next
             </button>

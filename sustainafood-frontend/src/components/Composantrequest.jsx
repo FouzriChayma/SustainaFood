@@ -108,68 +108,94 @@ const SeeMoreButton = styled(Link)`
 
 export const Composantrequest = ({ request }) => {
   if (!request || typeof request !== 'object' || !request._id) {
-      return <div>Invalid request data.</div>;
+    return <div>Invalid request data.</div>;
   }
 
   const {
-      _id,
-      title,
-      location,
-      expirationDate,
-      description,
-      category,
-      status,
-      requestedProducts,
-      numberOfMeals,
-      mealName, // New attribute
-      mealDescription, // New attribute
-      mealType
+    _id,
+    title,
+    location,
+    expirationDate,
+    description,
+    category,
+    status,
+    requestedProducts,
+    numberOfMeals,
+    mealName, // New attribute
+    mealDescription, // New attribute
+    mealType, // New attribute
   } = request;
 
   return (
-      <Card>
-          <div>
-              <Title>🛒 {title || 'Untitled Request'}</Title>
-              <Details>📍 <strong>Location:</strong> {location || 'Not specified'}</Details>
-              <Details>📆 <strong>Expiration:</strong> {expirationDate ? new Date(expirationDate).toLocaleDateString() : 'Not defined'}</Details>
-              <Details>📝 <strong>Description:</strong> {description || 'No description'}</Details>
-              <Details>📂 <strong>Category:</strong> {category || 'Not specified'}</Details>
-              <Details>🔄 <strong>Status:</strong> <StatusBadge status={status}>{status || 'Unknown'}</StatusBadge></Details>
+    <Card>
+      <div>
+        <Title>🛒 {title || 'Untitled Request'}</Title>
+        <Details>📍 <strong>Location:</strong> {location || 'Not specified'}</Details>
+        <Details>📆 <strong>Expiration:</strong> {expirationDate ? new Date(expirationDate).toLocaleDateString() : 'Not defined'}</Details>
+        <Details>📝 <strong>Description:</strong> {description || 'No description'}</Details>
+        <Details>📂 <strong>Category:</strong> {category || 'Not specified'}</Details>
+        <Details>🔄 <strong>Status:</strong> <StatusBadge status={status}>{status || 'Unknown'}</StatusBadge></Details>
 
-              {/* Conditional Rendering of Products or Meal Details */}
-              <h4>{category === 'prepared_meals' ? '🍽️ Prepared Meals' : '📦 Requested Products:'}</h4>
-              <ProductList>
-                  {category === 'prepared_meals' ? (
-                      <>
-                       
-                          <ProductItem>Number of Meals: {numberOfMeals || 'Not specified'}</ProductItem>
-                                </>
-                  ) : requestedProducts && requestedProducts.length > 0 ? (
-                      requestedProducts.map((product, index) => (
-                          <ProductItem key={index}>
-                              <span>
-                                  <strong>Type:</strong> {product.productType || 'Not specified'}
-                              </span>
-                              <span>
-                                  <strong>Weight:</strong> {product.weightPerUnit || 0} {product.weightUnit || ''}
-                              </span>
-                              <span>
-                                  <strong>Quantity:</strong> {product.totalQuantity || 0} {product.weightUnitTotale || ''}
-                              </span>
-                              <span>
-                                  <strong>Status:</strong> {product.status || 'Unknown'}
-                              </span>
-                          </ProductItem>
-                      ))
-                  ) : (
-                      <ProductItem>{category === 'prepared_meals' ? `🍽️ Number of meals: ${numberOfMeals || 'Not specified'}` : 'No requested products'}</ProductItem>
+        {/* Conditional Rendering of Products or Meal Details */}
+        <h4>{category === 'prepared_meals' ? '🍽️ Prepared Meals' : '📦 Requested Products:'}</h4>
+        <ProductList>
+          {category === 'prepared_meals' ? (
+            <>
+              {mealName || mealDescription || mealType ? (
+                <ProductItem>
+                  {mealName && (
+                    <span>
+                      <strong>Meal Name:</strong> {mealName}
+                    </span>
                   )}
-              </ProductList>
-          </div>
+                  {mealDescription && (
+                    <span>
+                      <strong>Description:</strong> {mealDescription}
+                    </span>
+                  )}
+                  {mealType && (
+                    <span>
+                      <strong>Type:</strong> {mealType}
+                    </span>
+                  )}
+                  <span>
+                    <strong>Number of Meals:</strong> {numberOfMeals || 'Not specified'}
+                  </span>
+                </ProductItem>
+              ) : (
+                <ProductItem>
+                  <span>
+                    <strong>Number of Meals:</strong> {numberOfMeals || 'Not specified'}
+                  </span>
+                </ProductItem>
+              )}
+            </>
+          ) : requestedProducts && requestedProducts.length > 0 ? (
+            requestedProducts.map((item, index) => (
+              <ProductItem key={index}>
+                <span>
+                  <strong>Type:</strong> {item.product?.productType || 'Not specified'}
+                </span>
+                <span>
+                  <strong>Weight:</strong> {item.product?.weightPerUnit || 0} {item.product?.weightUnit || ''}
+                </span>
+                <span>
+                  <strong>Quantity:</strong> {item.quantity || 0} {item.product?.weightUnitTotale || ''}
+                </span>
+                <span>
+                  <strong>Status:</strong> {item.product?.status || 'Unknown'}
+                </span>
+              </ProductItem>
+            ))
+          ) : (
+            <ProductItem>No requested products</ProductItem>
+          )}
+        </ProductList>
+      </div>
 
-          {/* Button to view more details */}
-          <SeeMoreButton to={`/DetailsRequest/${_id}`}>See more</SeeMoreButton>
-      </Card>
+      {/* Button to view more details */}
+      <SeeMoreButton to={`/DetailsRequest/${_id}`}>See more</SeeMoreButton>
+    </Card>
   );
 };
 

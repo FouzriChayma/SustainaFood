@@ -10,6 +10,7 @@ import { FaEdit, FaTrash, FaSave, FaTimes, FaEye } from "react-icons/fa";
 import styled from 'styled-components';
 import logo from "../assets/images/LogoCh.png";
 import { useAlert } from '../contexts/AlertContext';
+
 // Styled Components for Buttons
 const Button = styled.button`
   display: inline-block;
@@ -426,8 +427,8 @@ const DetailsDonations = () => {
 
       const requestData = {
         donationId: id,
-        requestedProducts: editedDonation.donationType === 'products' ? requestedItems : [],
-        requestedMeals: editedDonation.donationType === 'meals' ? requestedMealsItems : [],
+        requestedProducts: requestedItems,
+        requestedMeals: requestedMealsItems,
         recipientId: user?._id || user?.id,
         description: editedDonation.description || '',
         numberOfMeals: totalRequestedMeals,
@@ -470,8 +471,8 @@ const DetailsDonations = () => {
 
       const requestData = {
         donationId: id,
-        requestedProducts: editedDonation.donationType === 'products' ? requestedItems : [],
-        requestedMeals: editedDonation.donationType === 'meals' ? requestedMealsItems : [],
+        requestedProducts: requestedItems,
+        requestedMeals: requestedMealsItems,
         recipientId: user?._id || user?.id,
         description: editedDonation.description || '',
         numberOfMeals: totalRequestedMeals,
@@ -614,13 +615,14 @@ const DetailsDonations = () => {
                   ))
                 ) : (
                   products && products.length > 0 ? (
-                    products.map((product, index) => (
+                    products.map((item, index) => (
                       <li className="donation-li-list" key={index}>
-                        <span><strong>🔖 Name:</strong> {product.product?.name || 'Not specified'}</span> <br />
-                        <span><strong>📝 Description:</strong> {product.product?.productDescription || 'None'}</span> <br />
-                        <span><strong>🔢 Quantity:</strong> {product.quantity || 0}</span> <br />
-                        <span><strong>⚖️ Weight:</strong> {product.product?.weightPerUnit || 0} {product.product?.weightUnit || 'kg'}</span> <br />
-                        <span><strong>🔄 Status:</strong> {product.product?.status || 'Unknown'}</span>
+                        <span><strong>🔖 Name:</strong> {item.product?.name || 'Not specified'}</span> <br />
+                        <span><strong>📝 Description:</strong> {item.product?.productDescription || 'None'}</span> <br />
+                        <span><strong>📦 Type:</strong> {item.product?.productType || 'Not specified'}</span> <br />
+                        <span><strong>🔢 Quantity:</strong> {item.quantity || 0}</span> <br />
+                        <span><strong>⚖️ Weight:</strong> {item.product?.weightPerUnit || 0} {item.product?.weightUnit || 'kg'}</span> <br />
+                        <span><strong>🔄 Status:</strong> {item.product?.status || 'Unknown'}</span>
                       </li>
                     ))
                   ) : (
@@ -676,12 +678,12 @@ const DetailsDonations = () => {
                   ))
                 ) : (
                   meals && meals.length > 0 ? (
-                    meals.map((mealEntry, index) => (
+                    meals.map((item, index) => (
                       <li className="donation-li-list" key={index}>
-                        <span><strong>🍽️ Name:</strong> {mealEntry.meal?.mealName || 'Not specified'}</span> <br />
-                        <span><strong>📝 Description:</strong> {mealEntry.meal?.mealDescription || 'None'}</span> <br />
-                        <span><strong>🍴 Type:</strong> {mealEntry.meal?.mealType || 'Unknown'}</span> <br />
-                        <span><strong>🔢 Quantity:</strong> {mealEntry.quantity || 0}</span>
+                        <span><strong>🍽️ Name:</strong> {item.meal?.mealName || 'Not specified'}</span> <br />
+                        <span><strong>📝 Description:</strong> {item.meal?.mealDescription || 'None'}</span> <br />
+                        <span><strong>🍴 Type:</strong> {item.meal?.mealType || 'Unknown'}</span> <br />
+                        <span><strong>🔢 Quantity:</strong> {item.quantity || 0}</span>
                       </li>
                     ))
                   ) : (
@@ -699,7 +701,7 @@ const DetailsDonations = () => {
                 donation.products.map((item, index) => (
                   <div key={index}>
                     <label>
-                      {item.product?.name} - {item.product?.productDescription} (Max: {item.quantity})
+                      {item.product?.name || 'Not specified'} - {item.product?.productDescription || 'None'} (Max: {item.quantity || 0})
                     </label>
                     <input
                       type="number"
@@ -715,7 +717,7 @@ const DetailsDonations = () => {
                 donation.meals.map((item, index) => (
                   <div key={index}>
                     <label>
-                      {item.meal?.mealName} - {item.meal?.mealDescription} (Max: {item.quantity})
+                      {item.meal?.mealName || 'Not specified'} - {item.meal?.mealDescription || 'None'} (Max: {item.quantity || 0})
                     </label>
                     <input
                       type="number"

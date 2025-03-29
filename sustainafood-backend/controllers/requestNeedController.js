@@ -16,7 +16,7 @@ const upload = multer().none(); // Create multer instance to handle FormData
 // ✅ Get all requests
 async function getAllRequests(req, res) {
     try {
-        const requests = await RequestNeed.find({}, 'title location expirationDate description category recipient status linkedDonation requestedProducts numberOfMeals mealName mealDescription mealType')
+        const requests = await RequestNeed.find({isaPost:true})
             .populate('recipient')
             .populate('requestedProducts.product');
         res.status(200).json(requests);
@@ -47,7 +47,7 @@ async function getRequestById(req, res) {
 async function getRequestsByRecipientId(req, res) {
     try {
         const { recipientId } = req.params;
-        const requests = await RequestNeed.find({ recipient: recipientId })
+        const requests = await RequestNeed.find({ recipient: recipientId,isaPost:true})
             .populate('requestedProducts.product');
 
         if (!requests.length) {
@@ -174,7 +174,7 @@ async function createRequest(req, res) {
             status: status || "pending",
             linkedDonation: linkedDonation || null,
             numberOfMeals: category === 'prepared_meals' ? totalMeals : undefined,
-            isaPost: true,
+            isaPost:true,
         });
 
         await newRequest.save(); // Save to obtain the request _id
@@ -531,7 +531,7 @@ async function createRequestNeedForExistingDonation(req, res) {
             requestedMeals: isMealDonation ? validatedMeals : [],
             status: 'pending',
             linkedDonation: [donationId],
-            isaPost: false,
+            isaPost:false,
             numberOfMeals: isMealDonation ? totalMeals : undefined,
         });
 
@@ -778,7 +778,7 @@ async function addDonationToRequest(req, res) {
             meals: donationMeals,
             numberOfMeals: request.category === 'prepared_meals' ? numberOfMeals : undefined,
             expirationDate: expirationDate || request.expirationDate,
-            isaPost: false,
+            isaPost:false,
             linkedRequests: [requestId],
         });
 

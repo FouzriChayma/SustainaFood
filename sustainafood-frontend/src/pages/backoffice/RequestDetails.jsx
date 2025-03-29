@@ -4,7 +4,49 @@ import { getRequestById } from '../../api/requestNeedsService';
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import "../../assets/styles/backoffcss/RequestDetail.css";
+import imgmouna from '../../assets/images/imgmouna.png';
+import styled from 'styled-components';
 
+const Button = styled.button`
+  display: inline-block;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 8px;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  ${({ variant }) => variant === 'add' && `
+    background: #228b22;
+    &:hover { background: #1e7b1e; transform: translateY(-2px); }
+  `}
+  ${({ variant }) => variant === 'cancel' && `
+    background: #dc3545;
+    &:hover { background: #b02a37; transform: translateY(-2px); }
+  `}
+  ${({ variant }) => variant === 'submit' && `
+    background: #28a745;
+    &:hover { background: #218838; transform: translateY(-2px); }
+  `}
+  ${({ variant }) => variant === 'donate' && `
+    background: #228b22;
+    &:hover { background: #1e7b1e; transform: translateY(-2px); }
+  `}
+  ${({ variant }) => variant === 'back' && `
+    background: #6c757d;
+    &:hover { background: #5a6268; transform: translateY(-2px); }
+  `}
+
+  &:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+`;
 const RequestDetail = () => {
   const { id } = useParams();
   const [request, setRequest] = useState(null);
@@ -17,10 +59,10 @@ const RequestDetail = () => {
         setLoading(true);
         const response = await getRequestById(id);
         setRequest(response.data);
-        setLoading(false);
       } catch (err) {
-        setError('Error fetching request details.');
+        setError('❌ Error fetching request details.');
         console.error(err);
+      } finally {
         setLoading(false);
       }
     };
@@ -28,17 +70,9 @@ const RequestDetail = () => {
     fetchRequest();
   }, [id]);
 
-  if (loading) {
-    return <div className="loading">Loading request details...</div>;
-  }
-
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
-
-  if (!request) {
-    return <div>Request not found.</div>;
-  }
+  if (loading) return <div className="loading">⏳ Loading request details...</div>;
+  if (error) return <div className="error">{error}</div>;
+  if (!request) return <div className="error">⚠️ Request not found.</div>;
 
   return (
     <div className="request-detail-container">
@@ -47,106 +81,61 @@ const RequestDetail = () => {
         <Navbar />
         <div className="request-card">
           <div className="request-header">
-            <h2>Request Details</h2>
+            <h2>📄 Request Details</h2>
           </div>
-          <div className="request-details">
-            <table className="details-table">
-              <tbody>
-                <tr>
-                  <td><strong>ID:</strong></td>
-                  <td>{request._id}</td>
-                </tr>
-                <tr>
-                  <td><strong>Title:</strong></td>
-                  <td>{request.title || 'Untitled Request'}</td>
-                </tr>
-                <tr>
-                  <td><strong>Category:</strong></td>
-                  <td>{request.category || 'Not specified'}</td>
-                </tr>
-                <tr>
-                  <td><strong>Expiration Date:</strong></td>
-                  <td>
-                    {request.expirationDate 
-                      ? new Date(request.expirationDate).toLocaleDateString() 
-                      : 'Not defined'}
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Status:</strong></td>
-                  <td>{request.status || 'Unknown'}</td>
-                </tr>
-                <tr>
-                  <td><strong>Description:</strong></td>
-                  <td>{request.description || 'N/A'}</td>
-                </tr>
 
-                {/* Conditional Rendering for Prepared Meals */}
-                {request.category === 'prepared_meals' && (
-                  <>
-                    <tr>
-                      <td colSpan="2"><strong>Meal Details:</strong></td>
-                    </tr>
-                    {(request.mealName || request.mealDescription || request.mealType) && (
-                      <>
-                        {request.mealName && (
-                          <tr>
-                            <td><strong>Meal Name:</strong></td>
-                            <td>{request.mealName}</td>
-                          </tr>
-                        )}
-                        {request.mealDescription && (
-                          <tr>
-                            <td><strong>Description:</strong></td>
-                            <td>{request.mealDescription}</td>
-                          </tr>
-                        )}
-                        {request.mealType && (
-                          <tr>
-                            <td><strong>Type:</strong></td>
-                            <td>{request.mealType}</td>
-                          </tr>
-                        )}
-                      </>
-                    )}
-                    <tr>
-                      <td><strong>Number of Meals:</strong></td>
-                      <td>{request.numberOfMeals || 'Not specified'}</td>
-                    </tr>
-                  </>
-                )}
+          <div className="request-info">
+            <div className="recipient-info">
+              <img
+                src={request.recipient?.photo ? `http://localhost:3000/${request.recipient.photo}` : imgmouna}
+                alt="Profile"
+                className="profile-img-details"
+                onError={(e) => (e.target.src = imgmouna)}
+              />
+              <div className="recipient-text">
+                <h3> {request.recipient?.name || "Unknown User"}</h3>
+                <p className="role"> {request.recipient?.role || "Role Not Specified"}</p>
+              </div>
+            </div>
 
-                {/* Conditional Rendering for Packaged Products */}
-                {request.category === 'packaged_products' && (
-                  <>
-                    <tr>
-                      <td colSpan="2"><strong>Requested Products:</strong></td>
-                    </tr>
-                    {request.requestedProducts && request.requestedProducts.length > 0 ? (
-                      request.requestedProducts.map((item, index) => (
-                        <tr key={index}>
-                          <td colSpan="2">
-                            <div>
-                              <strong>Type:</strong> {item.product?.productType || 'Not specified'}<br />
-                              <strong>Weight:</strong> {item.product?.weightPerUnit || 0} {item.product?.weightUnit || ''}<br />
-                              <strong>Quantity:</strong> {item.quantity || 0} {item.product?.weightUnitTotale || ''}<br />
-                              <strong>Status:</strong> {item.product?.status || 'Unknown'}
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="2">No products requested</td>
-                      </tr>
-                    )}
-                  </>
+            <div className="detail-item">📌 <strong>Title:</strong> {request.title || 'Untitled Request'}</div>
+            <div className="detail-item">📂 <strong>Category:</strong> {request.category || 'Not specified'}</div>
+            <div className="detail-item">📅 <strong>Expiration Date:</strong> 
+              {request.expirationDate ? new Date(request.expirationDate).toLocaleDateString() : 'Not defined'}
+            </div>
+            <div className="detail-item">📊 <strong>Status:</strong> {request.status || 'Unknown'}</div>
+            <div className="detail-item">📝 <strong>Description:</strong> {request.description || 'N/A'}</div>
+
+            {request.category === 'prepared_meals' && (
+              <div className="detail-item">🍽️ <strong>Number of Meals:</strong> {request.numberOfMeals || 'Not specified'}</div>
+            )}
+
+            {request.category === 'packaged_products' && request.requestedProducts && (
+              <div className="products-section">
+                <h3>🛒 Requested Products:</h3>
+                {request.requestedProducts.length > 0 ? (
+                  <div className="products-grid">
+                    {request.requestedProducts.map((item, index) => (
+                      <div className="product-card-details" key={index}>
+                        <p>📦 <strong>Type:</strong> {item.product?.productType || 'Not specified'}</p>
+                        <p>⚖️ <strong>Weight:</strong> {item.product?.weightPerUnit || 0} {item.product?.weightUnit || ''}</p>
+                        <p>🔢 <strong>Quantity:</strong> {item.quantity || 0} {item.product?.weightUnitTotale || ''}</p>
+                        <p>🟢 <strong>Status:</strong> {item.product?.status || 'Unknown'}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p>🚫 No products requested</p>
                 )}
-              </tbody>
-            </table>
+              </div>
+            )}
           </div>
+          <Button variant="back" onClick={() => window.history.back()}>🔙 Go Back</Button>
+
         </div>
+
       </div>
+
     </div>
   );
 };

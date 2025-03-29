@@ -15,7 +15,7 @@ var donationTransactionRoutes = require('./routes/donationTransactionRoutes');
 var statsRoutes = require("./routes/statsRoutes"); // Importer les routes de statistiques
 var app = express();
 // var passport = require("passport"); // ✅ Importer Passport
-
+app.use(cors());
 // View engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'twig');

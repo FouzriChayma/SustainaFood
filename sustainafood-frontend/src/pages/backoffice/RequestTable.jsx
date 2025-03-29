@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import styled from "styled-components";
 import imgmouna from '../../assets/images/imgmouna.png';
+import logo from '../../assets/images/logooo.png';  // Import the logo
 
 // Styled component for pagination controls
 const PaginationControls = styled.div`
@@ -149,57 +150,137 @@ const [statusFilter, setStatusFilter] = useState("");
 
 
   const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text("Request List", 10, 10);
-
-    const tableColumn = [
-      "ID",
-      "Title",
-      "Category",
-      "Expiration Date",
-      "Status",
-      "Description",
-      "Products",
-      "Location",
-    ];
-
-    const tableRows = sortedRequests.map((request) => [
-      request._id,
-      request.title.trim(),
-      request.category.trim(),
-      new Date(request.expirationDate).toLocaleDateString(),
-      request.status,
-      request.description.trim(),
-      request.category === "prepared_meals"
-        ? `Name: ${request.mealName || "N/A"}, Description: ${
-            request.mealDescription || "N/A"
-          }, Number of Meals: ${request.numberOfMeals || "N/A"}, Meal Type: ${request.mealType || "N/A"}`
-        : request.requestedProducts && request.requestedProducts.length > 0
-        ? request.requestedProducts
-            .map((p) => `${p.name.trim()} (${p.productDescription.trim()})`)
-            .join(", ")
-        : "No Products",
-      request.location || "N/A",
-    ]);
-
-    autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
-      startY: 20,
-      theme: "grid",
-      styles: {
-        fontSize: 10,
-        cellPadding: 3,
-      },
-      headStyles: {
-        fillColor: "#4CAF50",
-        textColor: "#ffffff",
-      },
+    const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4",
     });
 
-    doc.save("Request_List.pdf");
-  };
+    // 🎨 Header Background
+    doc.setFillColor(50, 62, 72); // Dark Slate Blue
+    doc.rect(0, 0, doc.internal.pageSize.width, 40, "F");
+
+    // 🏆 Decorative Bottom Line
+
+    doc.setDrawColor(144, 196, 60); // Accent Green
+    doc.setLineWidth(1.5);
+    doc.line(0, 40, doc.internal.pageSize.width, 40);
+
+    // 🖼️ Add Logo
+    const imgWidth = 30, imgHeight = 30;
+    doc.addImage(logo, "PNG", 5, 5, imgWidth, imgHeight);
+
+    // 🏷️ Title
+    doc.setFontSize(24);
+    doc.setTextColor(255, 255, 255); // White
+    doc.setFont("helvetica", "bold");
+    doc.text("Request List", doc.internal.pageSize.width / 2, 20, { align: "center" });
+
+    // 📅 Date
+    const today = new Date();
+    const dateStr = today.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
+    doc.setFontSize(10);
+    doc.setTextColor(200, 200, 200);
+    doc.text(`Generated: ${dateStr}`, doc.internal.pageSize.width - 50, 35);
+
+    // 📊 Table Headers
+    const tableColumn = [
+        "User",
+        "Title",
+        "Category",
+        "Expiration Date",
+        "Status",
+        "Description",
+        "Products",
+        "Location",
+    ];
+
+    // 🔄 Data Processing
+    const tableRows = sortedRequests.map((request) => {
+        const username = request.recipient ? request.recipient.name : "Unknown";
+        const role = request.recipient ? request.recipient.role : "Role Not Specified";
+
+        const products =
+            request.category === "prepared_meals"
+                ? ` number Of Meals: ${request.numberOfMeals || "N/A"}\n `
+                : request.category === "packaged_products" && request.requestedProducts?.length
+                ? request.requestedProducts
+                      .map((p) => ` ${p.product?.productType || "N/A"}\n ${p.product?.productDescription?.trim() || "N/A"}\n Qty: ${p.quantity || 0}`)
+                      .join("\n\n")
+                : " No Products";
+
+        return [
+            `${username} (${role})`,
+            request.title?.trim() || "N/A",
+            request.category?.trim() || "N/A",
+            request.expirationDate ? new Date(request.expirationDate).toLocaleDateString() : "N/A",
+            request.status || "N/A",
+            request.description?.trim() || "N/A",
+            products,
+            request.location || "N/A",
+        ];
+    });
+
+    // 🏆 Styled Table
+    autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 50,
+        theme: "grid",
+        styles: {
+            fontSize: 9,
+            cellPadding: 5,
+            textColor: [45, 45, 45], // Dark Gray Text
+            lineColor: [220, 220, 220], // Light Borders
+            lineWidth: 0.3,
+            valign: "middle",
+        },
+        headStyles: {
+            fillColor: [70, 80, 95], // Dark Blue Headers
+            textColor: [255, 255, 255], // White Text
+            fontStyle: "bold",
+            fontSize: 10,
+        },
+        alternateRowStyles: {
+            fillColor: [245, 245, 245], // Light Gray Background for Alternating Rows
+        },
+        columnStyles: {
+            6: { cellWidth: 50 }, // Wider Product Column
+        },
+        didDrawPage: (data) => {
+            // 🔻 Footer Line
+            doc.setDrawColor(200, 200, 200);
+            doc.setLineWidth(0.5);
+            doc.line(15, doc.internal.pageSize.height - 20, doc.internal.pageSize.width - 15, doc.internal.pageSize.height - 20);
+
+            // 📄 Page Numbers
+            doc.setFillColor(144, 196, 60);
+            doc.roundedRect(doc.internal.pageSize.width / 2 - 15, doc.internal.pageSize.height - 18, 30, 12, 3, 3, "F");
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(9);
+            doc.text(`Page ${data.pageNumber} of ${doc.internal.getNumberOfPages()}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: "center" });
+
+            // 🔒 Confidentiality Notice
+            doc.setTextColor(120, 120, 120);
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "italic");
+            doc.text("Confidential - For internal use only", 15, doc.internal.pageSize.height - 10);
+
+            // 🔗 Branding
+            doc.text("© SustainaFood", doc.internal.pageSize.width - 45, doc.internal.pageSize.height - 10);
+        },
+    });
+
+    // 📥 Save PDF
+    doc.save(`Request_List_${today.toISOString().split("T")[0]}.pdf`);
+};
+
+  
+  
 
   return (
     <div className="dashboard-container">

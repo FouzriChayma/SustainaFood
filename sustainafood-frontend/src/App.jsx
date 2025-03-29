@@ -47,6 +47,8 @@ import ProductDetail from "./pages/backoffice/ProductDetail";
 import DonationDetails from "./pages/backoffice/DonationDetails";
 
 import DonationsRequestList from"./pages/backoffice/DonationsRequestList";
+import RequestDonationsList from"./pages/backoffice/RequestDonationsList";
+
 import ListRequestsDonation from './pages/ListRequestsDonation';
 const App = () => {
   return (
@@ -89,6 +91,8 @@ const App = () => {
           <Route path="/products/view/:id" element={<ProductDetail />} />
           <Route path="/donations/view/:id" element={<DonationDetails />} />
           <Route path="/DonationsRequestList/:id" element={<DonationsRequestList />} />
+          <Route path="/RequestDonationsList/:id" element={<RequestDonationsList />} />
+
 
         </Route>
 

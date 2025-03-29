@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams,Link } from 'react-router-dom';
 import { getRequestById } from '../../api/requestNeedsService';
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
@@ -117,6 +117,7 @@ const RequestDetail = () => {
                   <div className="products-grid">
                     {request.requestedProducts.map((item, index) => (
                       <div className="product-card-details" key={index}>
+                        <p> <strong>Name:</strong>{item.product?.name || item.product?.productType || 'Unknown Product'}</p>
                         <p>📦 <strong>Type:</strong> {item.product?.productType || 'Not specified'}</p>
                         <p>⚖️ <strong>Weight:</strong> {item.product?.weightPerUnit || 0} {item.product?.weightUnit || ''}</p>
                         <p>🔢 <strong>Quantity:</strong> {item.quantity || 0} {item.product?.weightUnitTotale || ''}</p>
@@ -131,7 +132,14 @@ const RequestDetail = () => {
             )}
           </div>
           <Button variant="back" onClick={() => window.history.back()}>🔙 Go Back</Button>
-
+          <Button
+              variant="submit"
+              as={Link}
+              to={`/DonationsRequestList/${id}`}
+              style={{ textDecoration: 'none' }}
+            >
+              👀 View Donations
+            </Button>
         </div>
 
       </div>

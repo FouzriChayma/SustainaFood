@@ -46,7 +46,7 @@ import RequestDetails from "./pages/backoffice/RequestDetails";
 import ProductDetail from "./pages/backoffice/ProductDetail";
 import DonationDetails from "./pages/backoffice/DonationDetails";
 
-
+import DonationsRequestList from"./pages/backoffice/DonationsRequestList";
 import ListRequestsDonation from './pages/ListRequestsDonation';
 const App = () => {
   return (
@@ -88,6 +88,8 @@ const App = () => {
           <Route path="/requests/view/:id" element={<RequestDetails />} />
           <Route path="/products/view/:id" element={<ProductDetail />} />
           <Route path="/donations/view/:id" element={<DonationDetails />} />
+          <Route path="/DonationsRequestList/:id" element={<DonationsRequestList />} />
+
         </Route>
 
         {/* Routes privées pour ong, restaurant, supermarket, student, transporter */}

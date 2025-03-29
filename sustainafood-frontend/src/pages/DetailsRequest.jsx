@@ -967,7 +967,7 @@ const DetailsRequest = () => {
               to={`/ListDonationsRequest/${id}`}
               style={{ textDecoration: 'none' }}
             >
-              👀 View Request
+              👀 View Donations
             </Button>
           )}
           {isEditing && category === 'packaged_products' && (

@@ -3,12 +3,55 @@ import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import ReactPaginate from "react-paginate";
 import { FaFilePdf, FaEye } from "react-icons/fa";
 import { getrequests } from "../../api/requestNeedsService";
 import "../../assets/styles/backoffcss/RequestTable.css";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import styled from "styled-components";
+import imgmouna from '../../assets/images/imgmouna.png';
+
+// Styled component for pagination controls
+const PaginationControls = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 10px;
+
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background: #228b22;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+
+    &:hover {
+      background: #56ab2f;
+    }
+
+    &:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+  }
+
+  span {
+    font-size: 16px;
+    color: #333;
+  }
+`;
+
+const ProfileImg = styled.img`
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #228b22;
+`;
 
 const RequestTable = () => {
   const [requests, setRequests] = useState([]);
@@ -80,8 +123,8 @@ const RequestTable = () => {
   );
   const pageCount = Math.ceil(requests.length / requestsPerPage);
 
-  const changePage = ({ selected }) => {
-    setCurrentPage(selected);
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
   };
 
   const handleSortChange = (e) => {
@@ -105,26 +148,26 @@ const RequestTable = () => {
       "Status",
       "Description",
       "Products",
-        "Location",  
+      "Location",
     ];
 
     const tableRows = sortedRequests.map((request) => [
       request._id,
-      request.title.trim(), // Trim on rendering
-      request.category.trim(), // Trim on rendering
+      request.title.trim(),
+      request.category.trim(),
       new Date(request.expirationDate).toLocaleDateString(),
       request.status,
-      request.description.trim(), // Trim on rendering
+      request.description.trim(),
       request.category === "prepared_meals"
         ? `Name: ${request.mealName || "N/A"}, Description: ${
             request.mealDescription || "N/A"
           }, Number of Meals: ${request.numberOfMeals || "N/A"}, Meal Type: ${request.mealType || "N/A"}`
         : request.requestedProducts && request.requestedProducts.length > 0
         ? request.requestedProducts
-            .map((p) => `${p.name.trim()} (${p.productDescription.trim()})`) 
+            .map((p) => `${p.name.trim()} (${p.productDescription.trim()})`)
             .join(", ")
         : "No Products",
-      request.location || "N/A",  
+      request.location || "N/A",
     ]);
 
     autoTable(doc, {
@@ -153,14 +196,14 @@ const RequestTable = () => {
 
         <div className="request-list">
           <div className="header-container">
-            <h2>Request Management</h2>
+            <h2 style={{ color:"green"}}>Request Management</h2>
             <button className="export-pdf-btn" onClick={exportToPDF}>
               <FaFilePdf />
               Export to PDF
             </button>
           </div>
 
-              <div className="sort-container">
+          <div className="sort-container">
             <label htmlFor="sortField">Sort By:</label>
             <select
               id="sortField"
@@ -193,7 +236,7 @@ const RequestTable = () => {
               <table>
                 <thead>
                   <tr>
-                    <th>ID</th>
+                    <th>User</th>
                     <th>Title</th>
                     <th>Category</th>
                     <th>Expiration Date</th>
@@ -201,53 +244,87 @@ const RequestTable = () => {
                     <th>Description</th>
                     <th>Products</th>
                     <th>Location</th>
-                                        <th>Actions</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {displayRequests.map((request) => (
-                    <tr key={request._id}>
-                      <td>{request._id}</td>
-                      <td>{request.title}</td>
-                      <td>{request.category}</td>
+                  {displayRequests.map((request) => {
+                    const userPhoto = request.recipient?.photo
+                      ? `http://localhost:3000/${request.recipient.photo}`
+                      : imgmouna;
+                    return (
+                      <tr key={request._id}>
                       <td>
-                          {new Date(
-                            request.expirationDate
-                          ).toLocaleDateString()}
+                        <ProfileImg
+                          src={userPhoto}
+                          alt="Profile"
+                          onError={(e) => {
+                            e.target.src = imgmouna;
+                            console.error(`Failed to load image: ${userPhoto}`);
+                          }}
+                        />
+                        <br />
+                        <span style={{ fontWeight: "bold" }}>
+                          {request.recipient
+                            ? `${request.recipient.name || "Unknown"}`.trim() || "Unknown User"
+                            : "Unknown User"}
+                        </span>
+                        <br />
+                        <span style={{ color: "#228b22" }}>
+                          {request.recipient?.role || "Role Not Specified"}
+                        </span>
                       </td>
-                      <td>{request.status}</td>
-                      <td>{request.description}</td>
-     <td>
-{request.category === "prepared_meals" ? (
-    <div>
-       Name: {request.mealName || "N/A"},
-       Description: {request.mealDescription || "N/A"}
-     
-    </div>
-  ) : (
-    <div>requsted product: {request.requestedProducts.length}</div>
-  )}
-</td>
-                      <td>{request.location || "N/A"}</td>
-                                            <td className="action-buttons">
-                        <button className="view-btn">
-                          <Link to={`/requests/view/${request._id}`}>
-                            <FaEye />
-                          </Link>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        <td>{request.title}</td>
+                        <td>{request.category}</td>
+                        <td>
+                          {new Date(request.expirationDate).toLocaleDateString()}
+                        </td>
+                        <td>{request.status}</td>
+                        <td>{request.description}</td>
+                        <td>
+                          {request.category === "prepared_meals" ? (
+                            <div>
+                              Name: {request.mealName || "N/A"}, Description:{" "}
+                              {request.mealDescription || "N/A"}
+                            </div>
+                          ) : (
+                            <div>
+                              requsted product: {request.requestedProducts.length}
+                            </div>
+                          )}
+                        </td>
+                        <td>{request.location || "N/A"}</td>
+                        <td >
+                          <button className="view-btn">
+                            <Link to={`/requests/view/${request._id}`}>
+                              <FaEye />
+                            </Link>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
-              <ReactPaginate
-                previousLabel={"Previous"}
-                nextLabel={"Next"}
-                pageCount={pageCount}
-                onPageChange={changePage}
-                containerClassName={"pagination"}
-                activeClassName={"active"}
-              />
+              <PaginationControls>
+                <button
+                  onClick={() => handlePageChange(Math.max(currentPage - 1, 0))}
+                  disabled={currentPage === 0}
+                >
+                  Previous
+                </button>
+                <span>
+                  Page {currentPage + 1} of {pageCount}
+                </span>
+                <button
+                  onClick={() =>
+                    handlePageChange(Math.min(currentPage + 1, pageCount - 1))
+                  }
+                  disabled={currentPage === pageCount - 1}
+                >
+                  Next
+                </button>
+              </PaginationControls>
             </>
           )}
         </div>

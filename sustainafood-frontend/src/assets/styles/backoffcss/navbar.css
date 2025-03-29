@@ -24,11 +24,8 @@
 /* Barre de recherche */
 .search-container {
     display: flex;
-    align-items: center;
-    border: 1px solid #ddd;
-    border-radius: 20px;
-    padding: 5px 10px;
     background: #f9f9f9;
+    margin-top: 15px;
 }
 
 .search-container input {
@@ -42,6 +39,7 @@
 .search-icon {
     color: #666;
     cursor: pointer;
+    background-color: white;
 }
 
 /* Espace entre les icônes */

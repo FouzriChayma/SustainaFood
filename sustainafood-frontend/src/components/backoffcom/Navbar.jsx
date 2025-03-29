@@ -59,8 +59,8 @@ const Navbar = ({ setSearchQuery }) => {
                     value={searchQuery} 
                     onChange={handleSearch} 
                 />
-                <button type="submit" className="search-icon-btn">
-                    <FaSearch className="search-icon" />
+                <button type="submit" >
+                    <FaSearch  />
                 </button>
             </form>
 

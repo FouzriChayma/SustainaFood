@@ -5,7 +5,7 @@ import styled from 'styled-components';
 import Navbar from '../components/Navbar'; // Assuming these exist in your project
 import Footer from '../components/Footer'; // Assuming these exist in your project
 
-// Styled Components
+// Styled Components (unchanged)
 const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -168,7 +168,7 @@ const ProductItem = styled.li`
   align-items: center;
   width: 100%;
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-  margin-bottom: 8px; /* Added spacing between items */
+  margin-bottom: 8px;
 `;
 
 const RecipientProfile = () => {
@@ -190,8 +190,10 @@ const RecipientProfile = () => {
     const fetchRequests = async () => {
       try {
         const response = await getRequestsByRecipientId(userid);
-        setRequests(response.data);
+        console.log('Requests Data:', response.data); // Debug log
+        setRequests(response.data || []);
       } catch (err) {
+        console.error('Fetch Error:', err);
         setError(err.response?.data?.message || 'Error fetching request data');
       } finally {
         setLoading(false);
@@ -210,8 +212,8 @@ const RecipientProfile = () => {
   const filteredRequests = requests
     .filter(
       (request) =>
-        request.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.description?.toLowerCase().includes(searchTerm.toLowerCase())
+        (request.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (request.description?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     )
     .filter((request) => (statusFilter ? request.status === statusFilter : true));
 
@@ -278,23 +280,21 @@ const RecipientProfile = () => {
                 </DetailText>
                 <h4>📦 Requested Products:</h4>
                 <ProductList>
-                  {Array.isArray(request.requestedProducts) &&
-                  request.requestedProducts.length > 0 ? (
-                    request.requestedProducts.map((product, index) => (
+                  {Array.isArray(request.requestedProducts) && request.requestedProducts.length > 0 ? (
+                    request.requestedProducts.map((item, index) => (
                       <ProductItem key={index}>
                         <span>
-                          <strong>Type:</strong> {product.productType || 'Not specified'}
+                          <strong>Type:</strong> {item.product?.productType || 'Not specified'}
                         </span>
                         <span>
-                          <strong>Weight:</strong> {product.weightPerUnit || 0}{' '}
-                          {product.weightUnit || ''}
+                          <strong>Weight:</strong> {item.product?.weightPerUnit || 0}{' '}
+                          {item.product?.weightUnit || ''}
                         </span>
                         <span>
-                          <strong>Quantity:</strong> {product.totalQuantity || 0}{' '}
-                          {product.weightUnitTotale || ''}
+                          <strong>Quantity:</strong> {item.product?.totalQuantity || 0}
                         </span>
                         <span>
-                          <strong>Status:</strong> {product.status || 'Unknown'}
+                          <strong>Status:</strong> {item.product?.status || 'Unknown'}
                         </span>
                       </ProductItem>
                     ))

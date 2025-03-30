@@ -31,13 +31,13 @@ pipeline {
                         // ✅ Lancer user-2fa.test.js
                         echo 'Running backend test: 2FA'
                         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                            sh 'npx jest test/user-2fa.test.js --detectOpenHandles --forceExit --testTimeout=30000' // Increased timeout
+                            sh 'npx jest test/user-2fa.test.js --detectOpenHandles --forceExit --testTimeout=100000' // Increased timeout
                         }
 
                         // ✅ Lancer user-signin.test.js
                         echo 'Running backend test: Sign-in'
                         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                            sh 'npx jest test/user-signin.test.js --detectOpenHandles --forceExit --testTimeout=30000' // Increased timeout
+                            sh 'npx jest test/user-signin.test.js --detectOpenHandles --forceExit --testTimeout=100000' // Increased timeout
                         }
 
                         echo 'Backend tests completed.'

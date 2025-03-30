@@ -1,34 +1,12 @@
 pipeline {
     agent any
     environment {
-        // Define Node version (using NVM)
+        // Define Node version (assuming NVM is pre-configured on the agent)
         NODE_VERSION = '20' // Specify a Node.js version >= 20
     }
 
     stages {
-        // ✅ Étape 0: Setup Node Environment
-        stage('Setup Node Environment') {
-            steps {
-                sh '''
-                echo "Setting up Node.js environment with NVM"
-                export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
 
-                if [ -s "$NVM_DIR/nvm.sh" ]; then
-                    . "$NVM_DIR/nvm.sh"  # Load NVM
-                fi
-
-                if [ ! -x "$(command -v nvm)" ]; then
-                    echo "NVM not found! Please ensure NVM is installed on the agent."
-                    exit 1  # Fail the stage if NVM is not found
-                fi
-
-                nvm install ${NODE_VERSION} || nvm install
-                nvm use ${NODE_VERSION}
-                node -v
-                npm -v
-                '''
-            }
-        }
         // ✅ Étape 1: Installer les dépendances
         stage('Install Dependencies') {
             steps {

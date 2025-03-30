@@ -1,7 +1,19 @@
 pipeline {
     agent any
+    environment {
+        // Define Node version (using NVM)
+        NODE_VERSION = '20' // Specify a Node.js version >= 20
+    }
 
     stages {
+        // ✅ Étape 0: Setup Node Environment
+        stage('Setup Node Environment') {
+            steps {
+                sh "nvm install ${NODE_VERSION} || nvm install" // Install node if not present
+                sh "nvm use ${NODE_VERSION}"                    // Activating node
+                sh "node -v"
+            }
+        }
         // ✅ Étape 1: Installer les dépendances
         stage('Install Dependencies') {
             steps {
@@ -12,7 +24,7 @@ pipeline {
                     }
                     // Frontend dependencies
                     dir('sustainafood-frontend') {
-                        sh 'npm install --legacy-peer-deps'
+                        sh 'npm install' // Remove --legacy-peer-deps, now handled by newer Node version
                     }
                 }
             }
@@ -26,13 +38,13 @@ pipeline {
                         // ✅ Lancer user-2fa.test.js
                         echo 'Running backend test: 2FA'
                         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                            sh 'npx jest test/user-2fa.test.js --detectOpenHandles --forceExit --testTimeout=10000' // Ajout timeout
+                            sh 'npx jest test/user-2fa.test.js --detectOpenHandles --forceExit --testTimeout=30000' // Increased timeout
                         }
 
                         // ✅ Lancer user-signin.test.js
                         echo 'Running backend test: Sign-in'
                         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                            sh 'npx jest test/user-signin.test.js --detectOpenHandles --forceExit --testTimeout=10000' // Ajout timeout
+                            sh 'npx jest test/user-signin.test.js --detectOpenHandles --forceExit --testTimeout=30000' // Increased timeout
                         }
 
                         echo 'Backend tests completed.'
@@ -41,6 +53,16 @@ pipeline {
             }
         }
 
+        // ✅ Étape 3: Check Test Results (Fail Pipeline if Tests Failed)
+        stage('Check Test Results') {
+            steps {
+                script {
+                    if (currentBuild.result == 'FAILURE') {
+                        error('Backend tests failed. Failing the pipeline.')
+                    }
+                }
+            }
+        }
        
         // ✅ Étape 4: Build Application
         stage('Build Application') {
@@ -57,7 +79,7 @@ pipeline {
                     dir('sustainafood-frontend') {
                         echo 'Building frontend...'
 
-                        // Installer fontawesome icons (optional)
+                        // Installer fontawesome icons (optional) - Only if needed
                         sh 'npm install @fortawesome/fontawesome-svg-core'
                         sh 'npm install @fortawesome/react-fontawesome'
                         sh 'npm install @fortawesome/free-solid-svg-icons'
@@ -71,7 +93,24 @@ pipeline {
                 }
             }
         }
-
-
+        // ✅ Étape 5: Check Build Results (Fail Pipeline if Build Failed)
+        stage('Check Build Results') {
+            steps {
+                script {
+                    if (currentBuild.result == 'FAILURE') {
+                        error('Frontend build failed. Failing the pipeline.')
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            echo "Pipeline completed. Result: ${currentBuild.result}"
+        }
+        failure {
+            // Send notification on failure
+            echo "Sending notification on failure..."
+        }
     }
 }

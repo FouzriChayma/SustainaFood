@@ -9,9 +9,21 @@ pipeline {
         // ✅ Étape 0: Setup Node Environment
         stage('Setup Node Environment') {
             steps {
-                sh "nvm install ${NODE_VERSION} || nvm install" // Install node if not present
-                sh "nvm use ${NODE_VERSION}"                    // Activating node
-                sh "node -v"
+                sh '''
+                echo "Setting up Node.js environment with NVM"
+                export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+                [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # Load NVM
+
+                if [ ! -x "$(command -v nvm)" ]; then
+                    echo "NVM not found! Please ensure NVM is installed on the agent."
+                    exit 1  # Fail the stage if NVM is not found
+                fi
+
+                nvm install ${NODE_VERSION} || nvm install
+                nvm use ${NODE_VERSION}
+                node -v
+                npm -v
+                '''
             }
         }
         // ✅ Étape 1: Installer les dépendances

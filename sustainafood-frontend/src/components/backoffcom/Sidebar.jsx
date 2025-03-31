@@ -100,8 +100,8 @@ const Sidebar = () => {
             <div className="dropdown-content-dashboard">
               <Link to="/Donations">Donation Management</Link>
               <Link to="/food-donation/requests" className={location.pathname === "/food-donation/requests" ? "active" : ""} role="menuitem">Request Management</Link>
-              {/* <Link to="/DonationTransList">Donation Transaction List</Link>
-              <Link to="/food-donation/product" className={location.pathname === "/food-donation/product" ? "active" : ""} role="menuitem">Product list</Link>*/}
+               <Link to="/PredictionsDashboard">Donation Predictions Dashboard</Link>
+             {/* <Link to="/food-donation/product" className={location.pathname === "/food-donation/product" ? "active" : ""} role="menuitem">Product list</Link>*/}
             </div>
           )}
         </div>

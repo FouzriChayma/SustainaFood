@@ -15,7 +15,7 @@ const PredictionsDashboard = () => {
   useEffect(() => {
     const fetchPredictions = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/donation/donations/predict-supply-demand?period=month');
+        const response = await axios.get('http://localhost:3000/donation/donations/predict-supply-demand?period=week'); // Changed to 'week'
         console.log('API Response:', response.data);
         setPredictions(response.data);
         setLoading(false);
@@ -70,7 +70,7 @@ const PredictionsDashboard = () => {
   }
 
   const chartData = {
-    labels: Object.keys(predictions.supply),
+    labels: Object.keys(predictions.supply), // Will now be in 'YYYY-W#' format
     datasets: [
       {
         label: 'Supply (Products)',
@@ -103,7 +103,7 @@ const PredictionsDashboard = () => {
     responsive: true,
     plugins: {
       legend: { position: 'top' },
-      title: { display: true, text: 'Supply and Demand Predictions' },
+      title: { display: true, text: 'Weekly Supply and Demand Predictions' }, // Updated title
     },
   };
 
@@ -112,7 +112,7 @@ const PredictionsDashboard = () => {
       <Sidebar />
       <div className="profile-container">
         <Navbar />
-        <h1>Supply and Demand Predictions</h1>
+        <h1>Weekly Supply and Demand Predictions</h1> {/* Updated heading */}
         <Line data={chartData} options={options} />
       </div>
     </div>

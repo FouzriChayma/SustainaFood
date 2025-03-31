@@ -654,12 +654,13 @@ async function classifyFood(req, res) {
     console.error('Classification Error:', error);
     res.status(500).json({ message: 'Failed to classify food item', error: error.message });
   }
-}async function getSupplyDemandPrediction(req, res) {
+}
+async function getSupplyDemandPrediction(req, res) {
   console.log('getSupplyDemandPrediction called');
   try {
     const { period } = req.query;
-    console.log('Fetching predictions for period:', period || 'month');
-    const predictions = await predictSupplyDemand(period || 'month');
+    console.log('Fetching predictions for period:', period || 'week'); // Changed default to 'week'
+    const predictions = await predictSupplyDemand(period || 'week');
     console.log('Predictions:', predictions);
     if (!predictions.supply || !predictions.demand) {
       throw new Error('Prediction data is incomplete');

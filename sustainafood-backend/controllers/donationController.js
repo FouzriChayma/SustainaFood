@@ -5,6 +5,9 @@ const mongoose = require('mongoose');
 const Meal = require('../models/Meals');         // Adjust path to your model
 
 
+const { classifyFoodItem } = require('../aiService/classifyFoodItem');
+const { predictSupplyDemand } = require('../aiService/predictSupplyDemand');
+
 async function createDonation(req, res) {
   let newDonation;
 
@@ -634,4 +637,55 @@ async function getDonationByRequestId(req, res) {
   }
 }
 
-module.exports = {getDonationByRequestId,getDonationsByUserId ,getAllDonations, getDonationById, getDonationsByDate, getDonationsByType, getDonationsByCategory, createDonation, updateDonation, deleteDonation , getDonationsByStatus };
+//AI PART 
+async function classifyFood(req, res) {
+  try {
+    const { name, description, category } = req.body;
+    if (!name || !description || !category) {
+      return res.status(400).json({ message: 'Name, description, and category are required' });
+    }
+
+    const result = await classifyFoodItem({ name, description, category });
+    res.status(200).json({ 
+      productType: category === 'packaged_products' ? result.productType : undefined,
+      mealType: category === 'prepared_meals' ? result.mealType : undefined 
+    });
+  } catch (error) {
+    console.error('Classification Error:', error);
+    res.status(500).json({ message: 'Failed to classify food item', error: error.message });
+  }
+}async function getSupplyDemandPrediction(req, res) {
+  console.log('getSupplyDemandPrediction called');
+  try {
+    const { period } = req.query;
+    console.log('Fetching predictions for period:', period || 'month');
+    const predictions = await predictSupplyDemand(period || 'month');
+    console.log('Predictions:', predictions);
+    if (!predictions.supply || !predictions.demand) {
+      throw new Error('Prediction data is incomplete');
+    }
+    res.status(200).json(predictions);
+  } catch (error) {
+    console.error('Prediction Error Details:', error.stack);
+    res.status(500).json({ message: 'Failed to predict supply and demand', error: error.message });
+  }
+}
+
+async function getDonationByRequestId(req, res) {
+  console.log('getDonationByRequestId called with:', req.params.requestId);
+  try {
+    const { requestId } = req.params;
+    const donation = await Donation.findOne({ linkedRequests: requestId });
+    if (!donation) {
+      return res.status(404).json({ message: 'Donation not found' });
+    }
+    res.status(200).json(donation);
+  } catch (error) {
+    console.error('Error fetching donation by request ID:', error.stack);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+}
+
+// Ensure this function isn’t miscalled with a request ID
+
+module.exports = {getSupplyDemandPrediction,classifyFood,getDonationByRequestId,getDonationsByUserId ,getAllDonations, getDonationById, getDonationsByDate, getDonationsByType, getDonationsByCategory, createDonation, updateDonation, deleteDonation , getDonationsByStatus };

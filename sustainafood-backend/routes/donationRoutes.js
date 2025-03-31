@@ -3,7 +3,18 @@ const multer = require('multer');
 const upload = multer(); // Pour parser les champs sans fichier
 const router = express.Router();
 const donationController = require('../controllers/donationController');
-
+router.post('/donations/classify-food', donationController.classifyFood);
+// Log to confirm this route is hit
+router.get('/donations/predict-supply-demand', (req, res, next) => {
+    console.log('Route /donations/predict-supply-demand matched');
+    next();
+  }, donationController.getSupplyDemandPrediction);
+  
+  // Log to confirm this route is hit
+  router.get('/donations/:requestId', (req, res, next) => {
+    console.log('Route /donations/:requestId matched with:', req.params.requestId);
+    next();
+  }, donationController.getDonationByRequestId);
 // ✅ Get all donations
 router.get('/', donationController.getAllDonations);
 
@@ -32,5 +43,6 @@ router.put('/:id', donationController.updateDonation);
 // ✅ Delete a donation (and delete associated products)
 router.delete('/:id', donationController.deleteDonation);
 router.get('/donations/:requestId',donationController.getDonationByRequestId)
+
 
 module.exports = router;

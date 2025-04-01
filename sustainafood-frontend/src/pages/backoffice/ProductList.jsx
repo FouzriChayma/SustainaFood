@@ -6,7 +6,7 @@ import ReactPaginate from "react-paginate";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import "../../assets/styles/backoffcss/ProductList.css";
-import { getAllProducts } from "../../api/productservice";
+import { getAllProducts } from "../../api/productService";
 import { getrequests } from "../../api/requestNeedsService"; // Importez getrequests
 import { Link } from 'react-router-dom';
 

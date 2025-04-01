@@ -28,8 +28,8 @@ pipeline {
            steps {
                script {
                     dir('sustainafood-backend') {
-                       ✅ Lancer userDetails.test.js
-                     // echo 'Running backend test: userDetails'
+                    //   ✅ Lancer userDetails.test.js
+                     echo 'Running backend test: userDetails'
                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                             sh 'npx jest test/userDetails.test.js --detectOpenHandles --forceExit --testTimeout=100000' // Increased timeout
                      }

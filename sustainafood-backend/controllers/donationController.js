@@ -740,4 +740,4 @@ async function matchDonationToRequests(donation) {
 }
 // Ensure this function isn’t miscalled with a request ID
 
-module.exports = {matchDonationToRequests,getSupplyDemandPrediction,classifyFood,getDonationsByUserId ,getAllDonations, getDonationById, getDonationsByDate, getDonationsByType, getDonationsByCategory, createDonation, updateDonation, deleteDonation , getDonationsByStatus };
+module.exports = {matchDonationToRequests,getDonationByRequestId,getSupplyDemandPrediction,classifyFood,getDonationsByUserId ,getAllDonations, getDonationById, getDonationsByDate, getDonationsByType, getDonationsByCategory, createDonation, updateDonation, deleteDonation , getDonationsByStatus };

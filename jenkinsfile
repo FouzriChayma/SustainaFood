@@ -24,38 +24,38 @@ pipeline {
         }
 
        //  ✅ Étape 2: Exécuter les tests unitaires séparément (2FA & Sign-in)
-        //stage('Run Backend Tests Separately') {
-          //  steps {
-            //    script {
-              //      dir('sustainafood-backend') {
-                //        ✅ Lancer user-2fa.test.js
-                  //      echo 'Running backend test: 2FA'
-                    //    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                      //      sh 'npx jest test/user-2fa.test.js --detectOpenHandles --forceExit --testTimeout=100000' // Increased timeout
-                       // }
+        stage('Run Backend Tests Separately') {
+           steps {
+               script {
+                    dir('sustainafood-backend') {
+                       ✅ Lancer userDetails.test.js
+                     // echo 'Running backend test: userDetails'
+                       catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                            sh 'npx jest test/userDetails.test.js --detectOpenHandles --forceExit --testTimeout=100000' // Increased timeout
+                     }
 
                         //✅ Lancer user-signin.test.js
-                        //echo 'Running backend test: Sign-in'
-                        //catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                          //  sh 'npx jest test/user-signin.test.js --detectOpenHandles --forceExit --testTimeout=100000' // Increased timeout
-                        //}
+                    echo 'Running backend test: Sign-in'
+                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                            sh 'npx jest test/user-signin.test.js --detectOpenHandles --forceExit --testTimeout=100000' // Increased timeout
+                        }
 
-                       // echo 'Backend tests completed.'
-                   // }
-                //}
-            //}
-      //  }
+                        echo 'Backend tests completed.'
+                    }
+                }
+            }
+       }
 
        //  ✅ Étape 3: Check Test Results (Fail Pipeline if Tests Failed)
-     //   stage('Check Test Results') {
-            //steps {
-               // script {
-                   // if (currentBuild.result == 'FAILURE') {
-                    //    error('Backend tests failed. Failing the pipeline.')
-                  //  }
-               // }
-           // }
-       // }
+       stage('Check Test Results') {
+            steps {
+                script {
+                    if (currentBuild.result == 'FAILURE') {
+                    error('Backend tests failed. Failing the pipeline.')
+                   }
+                }
+            }
+     }
        
         // ✅ Étape 4: Build Application
         stage('Build Application') {

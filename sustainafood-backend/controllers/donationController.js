@@ -638,21 +638,24 @@ async function getDonationByRequestId(req, res) {
 }
 
 //AI PART 
+// ✅ Classify a food item
 async function classifyFood(req, res) {
   try {
-    const { name, description, category } = req.body;
-    if (!name || !description || !category) {
-      return res.status(400).json({ message: 'Name, description, and category are required' });
-    }
+      const { name, description, category } = req.body;
 
-    const result = await classifyFoodItem({ name, description, category });
-    res.status(200).json({ 
-      productType: category === 'packaged_products' ? result.productType : undefined,
-      mealType: category === 'prepared_meals' ? result.mealType : undefined 
-    });
+      if (!name || !description || !category) {
+          return res.status(400).json({ message: 'Name, description, and category are required' });
+      }
+
+      if (!['packaged_products', 'prepared_meals'].includes(category)) {
+          return res.status(400).json({ message: 'Invalid category' });
+      }
+
+      const classification = await classifyFoodItem({ name, description, category });
+      res.status(200).json(classification);
   } catch (error) {
-    console.error('Classification Error:', error);
-    res.status(500).json({ message: 'Failed to classify food item', error: error.message });
+      console.error('Error classifying food item:', error);
+      res.status(500).json({ message: 'Failed to classify food item', error: error.message });
   }
 }
 async function getSupplyDemandPrediction(req, res) {
@@ -686,7 +689,68 @@ async function getDonationByRequestId(req, res) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 }
+async function matchDonationToRequests(donation) {
+  const { category, products, meals, expirationDate, numberOfMeals: donatedMeals } = donation;
 
+  // Find pending requests that match the donation's category
+  const requests = await RequestNeed.find({
+      category: donation.category,
+      status: 'pending',
+      expirationDate: { $gte: new Date() } // Ensure request is still valid
+  })
+      .populate('recipient'); // Only populate recipient, no need for requestedMeals
+
+  const matches = [];
+  for (const request of requests) {
+      let matchScore = 0;
+      let fulfilledItems = [];
+
+      // Check if the request's needs match the donation
+      if (category === 'packaged_products') {
+          // Keep the existing logic for packaged_products
+          for (const reqProduct of request.requestedProducts || []) {
+              const matchingProduct = products.find(p => p.product.productType === reqProduct.product.productType);
+              if (matchingProduct) {
+                  const fulfilledQty = Math.min(matchingProduct.quantity, reqProduct.quantity);
+                  fulfilledItems.push({ product: reqProduct.product._id, quantity: fulfilledQty });
+                  matchScore += fulfilledQty * 10; // Score based on quantity fulfilled
+              }
+          }
+      } else if (category === 'prepared_meals') {
+          // For prepared_meals, match based on numberOfMeals
+          const requestedMeals = request.numberOfMeals || 0;
+          if (requestedMeals > 0 && donatedMeals > 0) {
+              // Calculate how many meals can be fulfilled
+              const fulfilledQty = Math.min(donatedMeals, requestedMeals);
+              fulfilledItems.push({ quantity: fulfilledQty }); // No specific meal, just the quantity
+              matchScore += fulfilledQty * 10; // Score based on quantity fulfilled
+          }
+      }
+
+      if (fulfilledItems.length > 0) {
+          // Adjust score based on expiration date
+          const daysUntilExpiration = (expirationDate - new Date()) / (1000 * 60 * 60 * 24);
+          if (daysUntilExpiration < 3) matchScore += 50; // Boost for near-expiring items
+          else if (daysUntilExpiration < 7) matchScore += 20; // Moderate boost for items expiring soon
+
+          // Adjust score based on recipient type
+          if (request.recipient.type === 'RELIEF' && daysUntilExpiration < 7) {
+              matchScore += 30; // Boost for relief organizations needing urgent supplies
+          } else if (request.recipient.type === 'SOCIAL_WELFARE') {
+              matchScore += 10; // Slight boost for social welfare organizations
+          }
+
+          matches.push({
+              request,
+              fulfilledItems,
+              matchScore
+          });
+      }
+  }
+
+  // Sort matches by score (descending)
+  return matches.sort((a, b) => b.matchScore - a.matchScore);
+}
 // Ensure this function isn’t miscalled with a request ID
 
-module.exports = {getSupplyDemandPrediction,classifyFood,getDonationByRequestId,getDonationsByUserId ,getAllDonations, getDonationById, getDonationsByDate, getDonationsByType, getDonationsByCategory, createDonation, updateDonation, deleteDonation , getDonationsByStatus };
+module.exports = {matchDonationToRequests,getSupplyDemandPrediction,classifyFood,getDonationByRequestId,getDonationsByUserId ,getAllDonations, getDonationById, getDonationsByDate, getDonationsByType, getDonationsByCategory, createDonation, updateDonation, deleteDonation , getDonationsByStatus };

@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios"; // Added axios import
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import "../assets/styles/AddDonation.css";
@@ -26,7 +25,7 @@ export const AddDonation = () => {
   const [type, setType] = useState("donation");
   const [category, setCategory] = useState("prepared_meals");
   const [description, setDescription] = useState("");
-  const [numberOfMeals, setNumberOfMeals] = useState("");
+  const [numberOfMeals, setNumberOfMeals] = useState(""); // Total meals for display/validation
 
   // Error handling
   const [error, setError] = useState(null);
@@ -69,7 +68,7 @@ export const AddDonation = () => {
   const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
 
-  // Updated productTypes and mealTypes arrays
+  // Updated productTypes array with the specified values
   const productTypes = [
     "Canned_Goods", "Dry_Goods", "Beverages", "Snacks", "Cereals", "Baked_Goods",
     "Condiments", "Vegetables", "Fruits", "Meat", "Fish", "Dairy", "Eggs",
@@ -104,79 +103,40 @@ export const AddDonation = () => {
   }, [user]);
 
   useEffect(() => {
+    // Calculate total meals from manualMeals when in form mode (for donors only)
     if (category === "prepared_meals" && isDonner) {
       const total = manualMeals.reduce((sum, meal) => sum + (parseInt(meal.quantity) || 0), 0);
       setNumberOfMeals(total || "");
     }
   }, [manualMeals, mealsEntryMode, category, isDonner]);
 
-  const handleFileUpload = async (event) => {
+  const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
       Papa.parse(file, {
-        complete: async (result) => {
-          console.log("Parsed CSV Products:", result.data);
-          if (isDonner) {
-            const classifiedProducts = await Promise.all(
-              result.data.map(async (product) => {
-                try {
-                  const response = await axios.post('/api/donations/classify-food', {
-                    name: product.name || "",
-                    description: product.productDescription || "",
-                    category: 'packaged_products',
-                  });
-                  return { ...product, productType: response.data.productType || "Other" };
-                } catch (error) {
-                  console.error('Classification Error:', error);
-                  return { ...product, productType: "Other" }; // Fallback
-                }
-              })
-            );
-            setProducts(classifiedProducts);
-          } else {
-            setProducts(result.data);
-          }
-          showAlert("success", "Products uploaded successfully.");
+        complete: (result) => {
+          console.log("Parsed CSV Products:", result.data); // Debugging
+          setProducts(result.data);
         },
         header: true,
         skipEmptyLines: true,
       });
+      showAlert("success", "Products uploaded successfully.");
     }
   };
 
-  const handleFileUploadMeals = async (event) => {
+  const handleFileUploadMeals = (event) => {
     const file = event.target.files[0];
     if (file) {
       Papa.parse(file, {
-        complete: async (result) => {
+        complete: (result) => {
           const parsedMeals = result.data.map(meal => ({
             ...meal,
             quantity: parseInt(meal.quantity) || 0
           }));
-          if (isDonner) {
-            const classifiedMeals = await Promise.all(
-              parsedMeals.map(async (meal) => {
-                try {
-                  const response = await axios.post('/api/donations/classify-food', {
-                    name: meal.mealName || "",
-                    description: meal.mealDescription || "",
-                    category: 'prepared_meals',
-                  });
-                  return { ...meal, mealType: response.data.mealType || "Other" };
-                } catch (error) {
-                  console.error('Classification Error:', error);
-                  return { ...meal, mealType: "Other" }; // Fallback
-                }
-              })
-            );
-            setMeals(classifiedMeals);
-            const total = classifiedMeals.reduce((sum, meal) => sum + (meal.quantity || 0), 0);
-            setNumberOfMeals(total || "");
-          } else {
-            setMeals(parsedMeals);
-            const total = parsedMeals.reduce((sum, meal) => sum + (meal.quantity || 0), 0);
-            setNumberOfMeals(total || "");
-          }
+          setMeals(parsedMeals);
+          const total = parsedMeals.reduce((sum, meal) => sum + (meal.quantity || 0), 0);
+          setNumberOfMeals(total || "");
           showAlert("success", "Meals uploaded successfully.");
         },
         header: true,
@@ -205,6 +165,7 @@ export const AddDonation = () => {
         tempErrors.numberOfMeals = "Number of meals must be a valid positive integer";
       }
 
+      // For donors, validate meal details
       if (isDonner) {
         if (mealsEntryMode === "csv" && meals.length === 0) {
           tempErrors.meals = "Meals list is required when uploading via CSV";
@@ -216,6 +177,7 @@ export const AddDonation = () => {
             tempErrors.meals = "All meals must have a name, type, description, and valid quantity";
           }
         }
+        // Validate that the total quantity of meals matches numberOfMeals
         const totalMeals = mealsEntryMode === "form"
           ? manualMeals.reduce((sum, meal) => sum + (parseInt(meal.quantity) || 0), 0)
           : meals.reduce((sum, meal) => sum + (parseInt(meal.quantity) || 0), 0);
@@ -234,12 +196,13 @@ export const AddDonation = () => {
         );
         if (invalidProducts.length > 0) {
           tempErrors.products = "All products must have a name, type, description, weight per unit, and total quantity greater than 0";
+          console.log("Invalid Products:", invalidProducts); // Debugging
         }
       }
     }
 
     setErrors(tempErrors);
-    console.log("Validation Errors:", tempErrors);
+    console.log("Validation Errors:", tempErrors); // Debugging
     return Object.keys(tempErrors).length === 0;
   };
 
@@ -298,43 +261,15 @@ export const AddDonation = () => {
     }
   };
 
-  const handleManualProductChange = async (index, field, value) => {
+  const handleManualProductChange = (index, field, value) => {
     const updated = [...manualProducts];
     updated[index][field] = field === "totalQuantity" || field === "weightPerUnit" ? parseInt(value) || "" : value;
-
-    if (isDonner && (field === "name" || field === "productDescription")) {
-      try {
-        const response = await axios.post('/api/donations/classify-food', {
-          name: updated[index].name || "",
-          description: updated[index].productDescription || "",
-          category: 'packaged_products',
-        });
-        updated[index].productType = response.data.productType || "Other";
-      } catch (error) {
-        console.error('Classification Error:', error);
-        updated[index].productType = "Other"; // Fallback
-      }
-    }
     setManualProducts(updated);
   };
 
-  const handleManualMealChange = async (index, field, value) => {
+  const handleManualMealChange = (index, field, value) => {
     const updated = [...manualMeals];
     updated[index][field] = field === "quantity" ? parseInt(value) || "" : value;
-
-    if (isDonner && (field === "mealName" || field === "mealDescription")) {
-      try {
-        const response = await axios.post('/api/donations/classify-food', {
-          name: updated[index].mealName || "",
-          description: updated[index].mealDescription || "",
-          category: 'prepared_meals',
-        });
-        updated[index].mealType = response.data.mealType || "Other";
-      } catch (error) {
-        console.error('Classification Error:', error);
-        updated[index].mealType = "Other"; // Fallback
-      }
-    }
     setManualMeals(updated);
   };
 
@@ -392,6 +327,7 @@ export const AddDonation = () => {
 
     if (category === "prepared_meals") {
       donationData.append("numberOfMeals", numberOfMeals);
+      // For donors, send meal details; for recipients, only send numberOfMeals
       if (isDonner) {
         const mealsToSend = mealsEntryMode === "form" ? manualMeals : meals;
         const formattedMeals = mealsToSend.map(meal => ({
@@ -408,6 +344,7 @@ export const AddDonation = () => {
     if (category === "packaged_products") {
       const productsToSend = productEntryMode === "csv" ? products : manualProducts;
       if (isDonner) {
+        // For donors, send the full product details
         const formattedProducts = productsToSend.map(product => ({
           ...product,
           totalQuantity: parseInt(product.totalQuantity),
@@ -416,6 +353,7 @@ export const AddDonation = () => {
         console.log("Formatted Products to Send (Donor):", formattedProducts);
         donationData.append("products", JSON.stringify(formattedProducts));
       } else if (isRecipient) {
+        // For recipients, send requestedProducts with only the necessary fields
         const formattedRequestedProducts = productsToSend.map(product => ({
           name: product.name,
           productType: product.productType,
@@ -424,7 +362,7 @@ export const AddDonation = () => {
           weightUnit: product.weightUnit,
           weightUnitTotale: product.weightUnitTotale,
           totalQuantity: parseFloat(product.totalQuantity),
-          quantity: parseInt(product.totalQuantity),
+          quantity: parseInt(product.totalQuantity), // Map totalQuantity to quantity
           image: product.image,
           status: product.status,
         }));
@@ -450,6 +388,7 @@ export const AddDonation = () => {
         showAlert("success", "Request created successfully!");
       }
       window.history.back();
+
     } catch (err) {
       console.error("Error creating donation/request:", err);
       const errorMessage = err.response?.data?.message || "An error occurred while creating the donation/request.";
@@ -506,21 +445,19 @@ export const AddDonation = () => {
             <option value="prepared_meals">Prepared Meals</option>
             <option value="packaged_products">Packaged Products</option>
           </select>
-
           {category === "prepared_meals" && isRecipient && (
-            <>
-              <input
-                className="signup-input"
-                type="number"
-                placeholder="Total Number of Meals"
-                value={numberOfMeals}
-                onChange={(e) => setNumberOfMeals(e.target.value)}
-                required
-              />
-              {errors.numberOfMeals && <p className="error-message">{errors.numberOfMeals}</p>}
-            </>
+          <>
+            <input
+              className="signup-input"
+              type="number"
+              placeholder="Total Number of Meals"
+              value={numberOfMeals}
+              onChange={(e) => setNumberOfMeals(e.target.value)}
+              required
+            />
+            {errors.numberOfMeals && <p className="error-message">{errors.numberOfMeals}</p>}
+          </>
           )}
-
           <textarea className="signup-input" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} required />
           {errors.description && <p className="error-message">{errors.description}</p>}
 
@@ -532,11 +469,12 @@ export const AddDonation = () => {
                 placeholder={isDonner ? "Total Number of Meals" : "Enter the total number of meals you need"}
                 value={numberOfMeals}
                 onChange={(e) => setNumberOfMeals(e.target.value)}
-                readOnly={isDonner}
+                readOnly={isDonner} // readOnly for donors, editable for recipients
                 min="1"
               />
               {errors.numberOfMeals && <p className="error-message">{errors.numberOfMeals}</p>}
 
+              {/* Show meal details entry only for donors */}
               {isDonner && (
                 <>
                   <div className="radio-buttons-container-adddonation">
@@ -621,35 +559,12 @@ export const AddDonation = () => {
                     <div className="manual-product-entry">
                       {manualMeals.map((meal, index) => (
                         <div key={index} className="manual-product-row">
-                          <input
-                            type="text"
-                            placeholder="Meal Name"
-                            value={meal.mealName}
-                            onChange={(e) => handleManualMealChange(index, "mealName", e.target.value)}
-                            className="signup-input"
-                          />
-                          <textarea
-                            placeholder="Meal Description"
-                            value={meal.mealDescription}
-                            onChange={(e) => handleManualMealChange(index, "mealDescription", e.target.value)}
-                            className="signup-input"
-                          />
-                          <select
-                            value={meal.mealType}
-                            onChange={(e) => handleManualMealChange(index, "mealType", e.target.value)}
-                            className="signup-input"
-                            disabled={isDonner} // Disable for donors since AI sets this
-                          >
+                          <input type="text" placeholder="Meal Name" value={meal.mealName} onChange={(e) => handleManualMealChange(index, "mealName", e.target.value)} className="signup-input" />
+                          <textarea placeholder="Meal Description" value={meal.mealDescription} onChange={(e) => handleManualMealChange(index, "mealDescription", e.target.value)} className="signup-input" />
+                          <select value={meal.mealType} onChange={(e) => handleManualMealChange(index, "mealType", e.target.value)} className="signup-input">
                             {mealTypes.map(type => <option key={type} value={type}>{type}</option>)}
                           </select>
-                          <input
-                            type="number"
-                            placeholder="Quantity"
-                            value={meal.quantity}
-                            onChange={(e) => handleManualMealChange(index, "quantity", e.target.value)}
-                            className="signup-input"
-                            min="1"
-                          />
+                          <input type="number" placeholder="Quantity" value={meal.quantity} onChange={(e) => handleManualMealChange(index, "quantity", e.target.value)} className="signup-input" min="1" />
                           {manualMeals.length > 1 && <button type="button" onClick={() => handleRemoveManualMeal(index)}>Remove</button>}
                         </div>
                       ))}
@@ -695,67 +610,21 @@ export const AddDonation = () => {
                 <div className="manual-product-entry">
                   {manualProducts.map((product, index) => (
                     <div key={index} className="manual-product-row">
-                      <input
-                        type="text"
-                        placeholder="Product Name"
-                        value={product.name}
-                        onChange={(e) => handleManualProductChange(index, "name", e.target.value)}
-                        className="signup-input"
-                      />
-                      <select
-                        className="signup-input"
-                        value={product.productType}
-                        onChange={(e) => handleManualProductChange(index, "productType", e.target.value)}
-                        disabled={isDonner} // Disable for donors since AI sets this
-                      >
+                      <input type="text" placeholder="Product Name" value={product.name} onChange={(e) => handleManualProductChange(index, "name", e.target.value)} className="signup-input" />
+                      <select className="signup-input" value={product.productType} onChange={(e) => handleManualProductChange(index, "productType", e.target.value)}>
                         {productTypes.map(pt => <option key={pt} value={pt}>{pt}</option>)}
                       </select>
-                      <textarea
-                        className="signup-input"
-                        placeholder="Product Description"
-                        value={product.productDescription}
-                        onChange={(e) => handleManualProductChange(index, "productDescription", e.target.value)}
-                      />
-                      <input
-                        type="number"
-                        placeholder="Weight Per Unit"
-                        value={product.weightPerUnit}
-                        onChange={(e) => handleManualProductChange(index, "weightPerUnit", e.target.value)}
-                        className="signup-input"
-                      />
-                      <select
-                        className="signup-input"
-                        value={product.weightUnit}
-                        onChange={(e) => handleManualProductChange(index, "weightUnit", e.target.value)}
-                      >
+                      <textarea className="signup-input" placeholder="Product Description" value={product.productDescription} onChange={(e) => handleManualProductChange(index, "productDescription", e.target.value)} />
+                      <input type="number" placeholder="Weight Per Unit" value={product.weightPerUnit} onChange={(e) => handleManualProductChange(index, "weightPerUnit", e.target.value)} className="signup-input" />
+                      <select className="signup-input" value={product.weightUnit} onChange={(e) => handleManualProductChange(index, "weightUnit", e.target.value)}>
                         {weightUnits.map(wu => <option key={wu} value={wu}>{wu}</option>)}
                       </select>
-                      <select
-                        className="signup-input"
-                        value={product.weightUnitTotale}
-                        onChange={(e) => handleManualProductChange(index, "weightUnitTotale", e.target.value)}
-                      >
+                      <select className="signup-input" value={product.weightUnitTotale} onChange={(e) => handleManualProductChange(index, "weightUnitTotale", e.target.value)}>
                         {weightUnits.map(wu => <option key={wu} value={wu}>{wu}</option>)}
                       </select>
-                      <input
-                        type="number"
-                        placeholder="Total Quantity"
-                        value={product.totalQuantity}
-                        onChange={(e) => handleManualProductChange(index, "totalQuantity", e.target.value)}
-                        className="signup-input"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Image URL"
-                        value={product.image}
-                        onChange={(e) => handleManualProductChange(index, "image", e.target.value)}
-                        className="signup-input"
-                      />
-                      <select
-                        className="signup-input"
-                        value={product.status}
-                        onChange={(e) => handleManualProductChange(index, "status", e.target.value)}
-                      >
+                      <input type="number" placeholder="Total Quantity" value={product.totalQuantity} onChange={(e) => handleManualProductChange(index, "totalQuantity", e.target.value)} className="signup-input" />
+                      <input type="text" placeholder="Image URL" value={product.image} onChange={(e) => handleManualProductChange(index, "image", e.target.value)} className="signup-input" />
+                      <select className="signup-input" value={product.status} onChange={(e) => handleManualProductChange(index, "status", e.target.value)}>
                         {statuses.map(status => <option key={status} value={status}>{status}</option>)}
                       </select>
                       {manualProducts.length > 1 && <button type="button" onClick={() => handleRemoveManualProduct(index)}>Remove</button>}

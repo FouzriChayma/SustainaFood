@@ -50,6 +50,8 @@ import DonationsRequestList from"./pages/backoffice/DonationsRequestList";
 import RequestDonationsList from"./pages/backoffice/RequestDonationsList";
 import PredictionsDashboard from './pages/backoffice/PredictionsDashboard';
 import ListRequestsDonation from './pages/ListRequestsDonation';
+import AiClassification from './pages/AiClassification';
+import DonationRecommendations from './pages/DonationRecommendations';
 
 const App = () => {
   return (
@@ -103,6 +105,7 @@ const App = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/account-settings" element={<AccountSettings />} />
+          <Route path="/DonationRecommendations" element={<DonationRecommendations />} />
         </Route>
 
         {/* Routes privées pour ong, restaurant, supermarket, student */}
@@ -124,6 +127,8 @@ const App = () => {
         <Route element={<PrivateRoute roles={["supermarket", "restaurant"]} />}>
           <Route path="/mydonations" element={<MyDonations />} />
           <Route path="/ListRequestsDonation/:donationId" element={<ListRequestsDonation />} />
+          <Route path="/AiClassification" element={<AiClassification />} />
+
         </Route>
 
         {/* Route pour les pages non trouvées */}

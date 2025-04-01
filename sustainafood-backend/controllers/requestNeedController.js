@@ -9,8 +9,7 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const multer = require('multer'); // Import multerz
 const Meals=require('../models/Meals');
-
-
+const fs = require('fs');
 const upload = multer().none(); // Create multer instance to handle FormData
 
 // ✅ Get all requests
@@ -898,6 +897,315 @@ Your Platform Team`,
         res.status(500).json({ message: 'Failed to add donation to request', error: error.message });
     }
 }
+async function UpdateAddDonationToRequest(req, res) {
+    try {
+        const { requestId } = req.params;
+        const { donationId, products, meals, donor, expirationDate, numberOfMeals, fulfilledItems } = req.body;
+
+        // ### Input Validation
+        if (!requestId || !mongoose.Types.ObjectId.isValid(requestId)) {
+            return res.status(400).json({ message: 'Valid Request ID is required' });
+        }
+
+        if (!donationId || !mongoose.Types.ObjectId.isValid(donationId)) {
+            return res.status(400).json({ message: 'Valid Donation ID is required' });
+        }
+
+        if (!donor || !mongoose.Types.ObjectId.isValid(donor)) {
+            return res.status(400).json({ message: 'Valid Donor ID is required' });
+        }
+
+        // Fetch the request with populated fields
+        const request = await RequestNeed.findById(requestId)
+            .populate('requestedProducts.product')
+            .populate('recipient');
+        if (!request) {
+            return res.status(404).json({ message: 'Request not found' });
+        }
+
+        // Fetch the existing donation
+        const donation = await Donation.findById(donationId);
+        if (!donation) {
+            return res.status(404).json({ message: 'Donation not found' });
+        }
+
+        // Validate donor
+        if (donation.donor.toString() !== donor) {
+            return res.status(403).json({ message: 'Donor does not match the donation owner' });
+        }
+
+        // Check if the donation is already assigned to this request
+        if (donation.linkedRequests && donation.linkedRequests.includes(requestId)) {
+            return res.status(400).json({ message: 'Donation is already assigned to this request' });
+        }
+
+        // Validate based on category
+        let donationProducts = [];
+        let donationMeals = [];
+        if (request.category === 'packaged_products') {
+            if (!products || !Array.isArray(products) || products.length === 0) {
+                return res.status(400).json({ message: 'Products array is required for packaged_products category' });
+            }
+
+            // Create a map of requested products with their quantities
+            const productMap = new Map(
+                request.requestedProducts.map(p => [p.product?._id.toString(), p.quantity])
+            );
+
+            // Validate and map the products from the request body
+            donationProducts = products.map(({ product, quantity }) => {
+                if (!product || !mongoose.Types.ObjectId.isValid(product)) {
+                    throw new Error(`Invalid product ID: ${product}`);
+                }
+                if (!productMap.has(product)) {
+                    throw new Error(`Product ${product} not found in request`);
+                }
+                const maxQty = productMap.get(product);
+                if (typeof quantity !== 'number' || quantity < 0) {
+                    throw new Error(`Invalid quantity for product ${product}: ${quantity}`);
+                }
+                return {
+                    product,
+                    quantity: Math.min(quantity, maxQty),
+                };
+            });
+
+            // Update donation products
+            donation.products = donationProducts;
+        } else if (request.category === 'prepared_meals') {
+            if (!meals || !Array.isArray(meals) || meals.length === 0) {
+                return res.status(400).json({ message: 'Meals array is required for prepared_meals category' });
+            }
+
+            if (typeof numberOfMeals !== 'number' || numberOfMeals <= 0) {
+                return res.status(400).json({ message: 'numberOfMeals must be a positive number for prepared_meals category' });
+            }
+
+            // Validate meals input
+            for (const meal of meals) {
+                if (!meal.mealName || typeof meal.mealName !== 'string' || meal.mealName.trim() === '') {
+                    return res.status(400).json({ message: 'Each meal must have a valid mealName' });
+                }
+                if (!meal.mealDescription || typeof meal.mealDescription !== 'string' || meal.mealDescription.trim() === '') {
+                    return res.status(400).json({ message: 'Each meal must have a valid mealDescription' });
+                }
+                if (!meal.mealType || typeof meal.mealType !== 'string' || meal.mealType.trim() === '') {
+                    return res.status(400).json({ message: 'Each meal must have a valid mealType' });
+                }
+                if (typeof meal.quantity !== 'number' || meal.quantity < 1) {
+                    return res.status(400).json({ message: `Invalid quantity for meal ${meal.mealName}: ${meal.quantity}` });
+                }
+            }
+
+            // Create or find Meals documents and build donationMeals
+            donationMeals = [];
+            for (const meal of meals) {
+                // Check if a Meals document already exists with the same mealName and mealType
+                let mealDoc = await Meals.findOne({
+                    mealName: meal.mealName,
+                    mealType: meal.mealType
+                });
+
+                // If not found, create a new Meals document
+                if (!mealDoc) {
+                    // Generate a unique id for the Meals document using the Counter model
+                    const counter = await Counter.findOneAndUpdate(
+                        { _id: 'MealId' },
+                        { $inc: { seq: 1 } },
+                        { new: true, upsert: true }
+                    );
+
+                    mealDoc = new Meals({
+                        id: counter.seq.toString(),
+                        mealName: meal.mealName,
+                        mealDescription: meal.mealDescription,
+                        mealType: meal.mealType,
+                        quantity: Number(meal.quantity)
+                    });
+                    await mealDoc.save();
+                }
+
+                // Add to donationMeals with the meal ID
+                donationMeals.push({
+                    meal: mealDoc._id,
+                    quantity: Number(meal.quantity)
+                });
+            }
+
+            // Validate numberOfMeals
+            const totalMeals = donationMeals.reduce((sum, m) => sum + m.quantity, 0);
+            if (totalMeals !== numberOfMeals) {
+                return res.status(400).json({
+                    message: `Total quantity of meals (${totalMeals}) must match numberOfMeals (${numberOfMeals})`
+                });
+            }
+
+            // Update donation meals
+            donation.meals = donationMeals;
+            donation.numberOfMeals = numberOfMeals;
+        } else {
+            return res.status(400).json({ message: 'Invalid request category' });
+        }
+
+        // ### Update Donation
+        if (!donation.linkedRequests) {
+            donation.linkedRequests = [];
+        }
+        donation.linkedRequests.push(requestId);
+
+        // Update expiration date if provided
+        if (expirationDate) {
+            donation.expirationDate = expirationDate;
+        }
+
+        // Calculate total quantity allocated across all linked requests
+        let totalAllocated = 0;
+        for (const linkedRequestId of donation.linkedRequests) {
+            const linkedRequest = await RequestNeed.findById(linkedRequestId);
+            if (linkedRequest) {
+                const fulfilledForThisRequest = linkedRequest.linkedDonation
+                    .filter(d => d.toString() === donationId)
+                    .length > 0
+                    ? fulfilledItems.reduce((sum, item) => sum + item.quantity, 0)
+                    : 0;
+                totalAllocated += fulfilledForThisRequest;
+            }
+        }
+
+        // Calculate total available quantity in the donation
+        const totalAvailable = donation.category === 'packaged_products'
+            ? donation.products.reduce((sum, p) => sum + p.quantity, 0)
+            : donation.numberOfMeals || 0;
+
+        // Update donation status
+        donation.status = totalAllocated >= totalAvailable ? "fulfilled" : "partially_fulfilled";
+
+        await donation.save();
+
+        // ### Update Request's linkedDonation Field
+        if (!request.linkedDonation) {
+            request.linkedDonation = [];
+        }
+        if (!request.linkedDonation.includes(donationId)) {
+            request.linkedDonation.push(donationId);
+        }
+
+        // Calculate and update request status based on fulfilled items
+        const totalFulfilledForRequest = fulfilledItems.reduce((total, item) => total + item.quantity, 0);
+        request.status = totalFulfilledForRequest >= request.numberOfMeals
+            ? "fulfilled"
+            : "partially_fulfilled";
+
+        await request.save();
+
+        // ### Send Notification Email
+        const recipient = request.recipient;
+        if (recipient && recipient.email) {
+            const populatedDonation = await Donation.findById(donationId)
+                .populate('donor')
+                .populate('meals.meal')
+                .populate('products.product');
+
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS,
+                },
+                tls: {
+                    rejectUnauthorized: false,
+                },
+            });
+
+            // Prepare email content with fallbacks
+            const productList = populatedDonation.products?.length > 0
+                ? populatedDonation.products
+                    .map(p => `${p.product?.name || 'Unknown Product'} (Quantity: ${p.quantity || 0})`)
+                    .join(', ')
+                : 'None';
+            const mealList = populatedDonation.meals?.length > 0
+                ? populatedDonation.meals
+                    .map(m => `${m.meal?.mealName || 'Unknown Meal'} (Type: ${m.meal?.mealType || 'Unknown Type'}, Quantity: ${m.quantity || 0})`)
+                    .join(', ')
+                : 'None';
+
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: recipient.email,
+                subject: `Donation Assigned to Your Request: ${request.title}`,
+                text: `Dear ${recipient.name || 'Recipient'},
+
+A donation has been assigned to your request titled "${request.title}".
+
+Donation Details:
+- Title: ${populatedDonation.title}
+- Donor: ${populatedDonation.donor?.name || 'Unknown Donor'}
+${request.category === 'packaged_products' ? `- Products: ${productList}` : `- Meals: ${mealList}`}
+- Expiration Date: ${populatedDonation.expirationDate ? new Date(populatedDonation.expirationDate).toLocaleDateString() : 'Not set'}
+
+Thank you for using our platform!
+
+Best regards,
+Your Platform Team`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; color: black;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <img src="cid:logo" alt="Platform Logo" style="max-width: 150px; height: auto;" />
+                        </div>
+                        <h2 style="color: #228b22;">Donation Assigned to Your Request</h2>
+                        <p>Dear ${recipient.name || 'Recipient'},</p>
+                        <p>A donation has been assigned to your request titled "<strong>${request.title}</strong>".</p>
+                        <h3>Donation Details:</h3>
+                        <ul>
+                            <li><strong>Title:</strong> ${populatedDonation.title}</li>
+                            <li><strong>Donor:</strong> ${populatedDonation.donor?.name || 'Unknown Donor'}</li>
+                            ${request.category === 'packaged_products' ? `<li><strong>Products:</strong> ${productList}</li>` : `<li><strong>Meals:</strong> ${mealList}</li>`}
+                            <li><strong>Expiration Date:</strong> ${populatedDonation.expirationDate ? new Date(populatedDonation.expirationDate).toLocaleDateString() : 'Not set'}</li>
+                        </ul>
+                        <p>Thank you for using our platform!</p>
+                        <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
+                    </div>
+                `,
+                attachments: [],
+            };
+
+            // Add logo attachment if the file exists
+            const logoPath = path.join(__dirname, '../uploads/logo.png');
+            if (fs.existsSync(logoPath)) {
+                mailOptions.attachments.push({
+                    filename: 'logo.png',
+                    path: logoPath,
+                    cid: 'logo',
+                });
+            } else {
+                console.warn('Logo file not found at:', logoPath);
+                // Remove the logo from the HTML if the file is missing
+                mailOptions.html = mailOptions.html.replace('<img src="cid:logo" alt="Platform Logo" style="max-width: 150px; height: auto;" />', '');
+            }
+
+            try {
+                await transporter.sendMail(mailOptions);
+                console.log(`Email sent to ${recipient.email}`);
+            } catch (emailError) {
+                console.error('Failed to send email:', emailError);
+                // Continue with the response even if email fails
+            }
+        } else {
+            console.warn('Recipient email not found for request:', requestId);
+        }
+
+        // ### Response
+        res.status(200).json({
+            message: 'Donation assigned to request successfully',
+            donation,
+        });
+    } catch (error) {
+        console.error('Donation Assignment Error:', error);
+        res.status(500).json({ message: 'Failed to assign donation to request', error: error.message });
+    }
+}
+
+
 async function getRequestWithDonations(req, res) {
     try {
         const { requestId } = req.params;
@@ -1019,5 +1327,5 @@ module.exports = {
     deleteRequest,
     createRequestNeedForExistingDonation,
     getRequestWithDonations,
-    getRequestsByDonationId
+    getRequestsByDonationId,UpdateAddDonationToRequest
 };

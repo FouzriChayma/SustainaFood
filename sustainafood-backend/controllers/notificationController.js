@@ -134,7 +134,7 @@ const getNotificationsByReceiver = async (req, res) => {
         }
 
         const notifications = await Notification.find({ receiver: receiverId })
-            .populate('sender', 'name email')
+            .populate('sender', 'name email photo')
             .populate('receiver', 'name email')
             .sort({ createdAt: -1 });
 

@@ -5,6 +5,7 @@ import logo from "../assets/images/logooo.png";
 import imgmouna from "../assets/images/imgmouna.png";
 import { useAuth } from "../contexts/AuthContext";
 import { getUserById } from "../api/userService";
+import { getNotificationsByReceiver, markNotificationAsRead } from "../api/notificationService";
 import "../assets/styles/Navbar.css";
 
 const Navbar = () => {
@@ -13,35 +14,63 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
   const navigate = useNavigate();
-  const profilePhotoUrll = user?.photo ? `http://localhost:3000/${user.photo}` : imgmouna;
+
+  const profilePhotoUrl = user?.photo ? `http://localhost:3000/${user.photo}` : imgmouna;
+
+  // Fetch user details
   useEffect(() => {
     const fetchUser = async () => {
-      if (typeof authUser.id === "number") {
-        if (!authUser || !authUser._id) return;
-        try {
-          const response = await getUserById(authUser._id);
-          setUser(response.data);
-        } catch (error) {
-          console.error("Backend Error:", error);
-        }
-      }
-      else if (typeof authUser.id === "string") {
-        if (!authUser || !authUser.id) return;
-        try {
-          const response = await getUserById(authUser.id);
-          setUser(response.data);
-        } catch (error) {
-          console.error("Backend Error:", error);
-        }
+      if (!authUser || (!authUser._id && !authUser.id)) return;
+
+      const userId = authUser._id || authUser.id;
+      try {
+        const response = await getUserById(userId);
+        setUser(response.data);
+      } catch (error) {
+        console.error("Backend Error:", error);
       }
     };
 
-    if (authUser && (authUser._id || authUser.id)) {
+    if (authUser) {
       fetchUser();
     }
   }, [authUser]);
-  
+
+  // Fetch notifications for the logged-in user
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!authUser || !token) return;
+      const userId = authUser._id || authUser.id;
+      if (!userId) return;
+
+      try {
+        const response = await getNotificationsByReceiver(userId, token);
+        setNotifications(response.notifications || []);
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+      }
+    };
+
+    fetchNotifications();
+  }, [authUser, token]);
+
+  // Handle marking a notification as read
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      await markNotificationAsRead(notificationId, token);
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notif) =>
+          notif._id === notificationId ? { ...notif, isRead: true } : notif
+        )
+      );
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate("/login");
@@ -51,7 +80,7 @@ const Navbar = () => {
   const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
   const isAdmin = user?.role === "admin";
-  const isTransporter=user?.role === "transporter";
+  const isTransporter = user?.role === "transporter";
 
   return (
     <nav className="navbarfront">
@@ -139,22 +168,77 @@ const Navbar = () => {
               )}
             </div>
 
+            {/* Notification Bell with Dropdown */}
             <div className="social-icons">
-              <FaBell />
+              <div
+                className="notification-bell"
+                onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
+              >
+                <FaBell />
+                {notifications.filter((notif) => !notif.isRead).length > 0 && (
+                  <span className="notification-count">
+                    {notifications.filter((notif) => !notif.isRead).length}
+                  </span>
+                )}
+              </div>
+              {notificationDropdownOpen && (
+                <div className="notification-dropdown">
+                  {notifications.length > 0 ? (
+                    notifications.map((notification) => {
+                      // Safely handle sender photo
+                      const senderPhotoUrl = notification.sender?.photo
+                        ? `http://localhost:3000/${notification.sender.photo}`
+                        : imgmouna;
+
+                      return (
+                        <div
+                          key={notification._id}
+                          className={`notification-item ${notification.isRead ? "read" : "unread"}`}
+                          onClick={() => handleMarkAsRead(notification._id)}
+                        >
+                          {/* Avatar à gauche */}
+                          <img
+                            src={senderPhotoUrl}
+                            alt="Sender"
+                            className="notification-avatar"
+                            onError={(e) => (e.target.src = imgmouna)} // Fallback on error
+                          />
+
+                          {/* Contenu à droite */}
+                          <div className="notification-content">
+                            <p>
+                              <strong>{notification.sender?.name || "Unknown User"}</strong>{" "}
+                              {notification.message}
+                            </p>
+                            <small>{new Date(notification.createdAt).toLocaleString()}</small>
+                          </div>
+
+                          {/* Indicateur de non-lu */}
+                          {!notification.isRead && <div className="notification-status"></div>}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="notification-item">
+                      <p>No notifications</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Render Profile Menu Only for Non-Admin Users */}
             {!isAdmin && (
               <div className="profile-menu" onClick={() => setMenuOpen(!menuOpen)}>
                 <img
-                  src={profilePhotoUrll || "/placeholder.svg"}
+                  src={profilePhotoUrl || "/placeholder.svg"}
                   alt="Profile"
                   className="profile-img"
                 />
                 <div className={`dropdown-menu ${menuOpen ? "active" : ""}`}>
                   <div className="profile-info">
                     <img
-                      src={profilePhotoUrll || "/placeholder.svg"}
+                      src={profilePhotoUrl || "/placeholder.svg"}
                       alt="Profile"
                       className="dropdown-img"
                     />

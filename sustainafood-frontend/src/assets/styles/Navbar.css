@@ -283,3 +283,101 @@
   }
 }
 
+/* notification Design */
+/* Existing styles... */
+
+/* Notification Bell and Dropdown */
+.notification-bell {
+  position: relative;
+  cursor: pointer;
+  color: black;
+  font-size: 1.5rem;
+}
+
+.notification-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: red;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: 50px;
+  right: 20px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+.notification-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.notification-item.unread {
+  background-color: #f0f0f0; /* Fond pour notifications non lues */
+}
+
+.notification-item.read {
+  background-color: #ffffff;
+}
+
+.notification-item:hover {
+  background-color: #e9ecef;
+}
+
+.notification-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 10px;
+}
+
+.notification-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.notification-content p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.notification-content small {
+  font-size: 0.75rem;
+  color: #777;
+  margin-top: 3px;
+}
+
+.notification-status {
+  width: 10px;
+  height: 10px;
+  background-color: blue;
+  border-radius: 50%;
+  margin-left: auto; /* Pousse le point bleu à droite */
+}
+
+
+/* Ensure the social-icons container doesn't interfere */
+.social-icons {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}

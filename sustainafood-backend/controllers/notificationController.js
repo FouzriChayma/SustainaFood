@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
-const User = require('../models/User'); // Assuming you have a User model
+const User = require('../models/User');
 const nodemailer = require('nodemailer');
 const path = require('path');
 const fs = require('fs');
@@ -42,7 +42,11 @@ const createNotification = async (req, res) => {
             isRead: false,
         });
 
+        console.log('Creating notification with data:', newNotification);
+
         const savedNotification = await newNotification.save();
+
+        console.log('Notification saved successfully:', savedNotification);
 
         // ### Send Notification Email to Receiver (Optional)
         if (receiverUser.email) {
@@ -87,7 +91,6 @@ Your Platform Team`,
                 attachments: [],
             };
 
-            // Add logo attachment if the file exists
             const logoPath = path.join(__dirname, '../uploads/logo.png');
             if (fs.existsSync(logoPath)) {
                 mailOptions.attachments.push({
@@ -105,7 +108,6 @@ Your Platform Team`,
                 console.log(`Email sent to ${receiverUser.email}`);
             } catch (emailError) {
                 console.error('Failed to send email:', emailError);
-                // Continue with the response even if email fails
             }
         } else {
             console.warn('Receiver email not found for user:', receiver);
@@ -122,21 +124,19 @@ Your Platform Team`,
     }
 };
 
-// ### Get all notifications for a specific user (receiver)
+// Rest of the controller methods (unchanged)
 const getNotificationsByReceiver = async (req, res) => {
     try {
         const { receiverId } = req.params;
 
-        // Input validation
         if (!receiverId || !isValidObjectId(receiverId)) {
             return res.status(400).json({ message: 'Valid receiver ID is required' });
         }
 
-        // Fetch notifications for the receiver
         const notifications = await Notification.find({ receiver: receiverId })
-            .populate('sender', 'name email') // Populate sender details
-            .populate('receiver', 'name email') // Populate receiver details
-            .sort({ createdAt: -1 }); // Sort by creation date (newest first)
+            .populate('sender', 'name email')
+            .populate('receiver', 'name email')
+            .sort({ createdAt: -1 });
 
         res.status(200).json({
             message: 'Notifications retrieved successfully',
@@ -148,17 +148,14 @@ const getNotificationsByReceiver = async (req, res) => {
     }
 };
 
-// ### Get a single notification by ID
 const getNotificationById = async (req, res) => {
     try {
         const { notificationId } = req.params;
 
-        // Input validation
         if (!notificationId || !isValidObjectId(notificationId)) {
             return res.status(400).json({ message: 'Valid notification ID is required' });
         }
 
-        // Fetch the notification
         const notification = await Notification.findById(notificationId)
             .populate('sender', 'name email')
             .populate('receiver', 'name email');
@@ -177,17 +174,14 @@ const getNotificationById = async (req, res) => {
     }
 };
 
-// ### Mark a notification as read
 const markNotificationAsRead = async (req, res) => {
     try {
         const { notificationId } = req.params;
 
-        // Input validation
         if (!notificationId || !isValidObjectId(notificationId)) {
             return res.status(400).json({ message: 'Valid notification ID is required' });
         }
 
-        // Fetch and update the notification
         const notification = await Notification.findById(notificationId);
         if (!notification) {
             return res.status(404).json({ message: 'Notification not found' });
@@ -206,17 +200,14 @@ const markNotificationAsRead = async (req, res) => {
     }
 };
 
-// ### Delete a notification
 const deleteNotification = async (req, res) => {
     try {
         const { notificationId } = req.params;
 
-        // Input validation
         if (!notificationId || !isValidObjectId(notificationId)) {
             return res.status(400).json({ message: 'Valid notification ID is required' });
         }
 
-        // Fetch and delete the notification
         const notification = await Notification.findByIdAndDelete(notificationId);
         if (!notification) {
             return res.status(404).json({ message: 'Notification not found' });
@@ -231,17 +222,14 @@ const deleteNotification = async (req, res) => {
     }
 };
 
-// ### Get unread notifications count for a user
 const getUnreadNotificationsCount = async (req, res) => {
     try {
         const { receiverId } = req.params;
 
-        // Input validation
         if (!receiverId || !isValidObjectId(receiverId)) {
             return res.status(400).json({ message: 'Valid receiver ID is required' });
         }
 
-        // Count unread notifications
         const unreadCount = await Notification.countDocuments({
             receiver: receiverId,
             isRead: false,

@@ -10,9 +10,9 @@ import logo from "../assets/images/LogoCh.png";
 import { useNavigate } from "react-router-dom";
 import { useAlert } from '../contexts/AlertContext';
 import Papa from "papaparse";
-
+import axios from 'axios';
+import {createnotification} from '../api/notificationService'; // Import the function to create a notification
 // Styled Components for Buttons
-
 const Button = styled.button`
   display: inline-block;
   padding: 12px 20px;
@@ -221,6 +221,26 @@ const DetailsRequest = () => {
     }
   }, [manualDonationMeals, mealsEntryMode, request?.category]);
 
+  // Function to send a notification to the recipient
+  const sendNotificationToRecipient = async (donorName, requestTitle, recipientId) => {
+    try {
+      const message = `${donorName} has added a new donation for your request "${requestTitle}"  `;
+      const notificationData = {
+        sender: user?._id || user?.id, // Donor
+        receiver: recipientId, // Recipient of the request
+        message: message,
+        isRead: false,
+      };
+
+      await  createnotification(notificationData);
+      console.log('Notification sent successfully');
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      // Don't interrupt the donation process if notification fails
+      showAlert('warning', 'Donation added, but failed to send notification to recipient');
+    }
+  };
+
   const validateRequestUpdate = () => {
     let errors = {};
 
@@ -300,7 +320,6 @@ const DetailsRequest = () => {
     }
 
     try {
-      // Prepare the data to send to the backend
       const requestData = {
         title: editedRequest.title,
         location: editedRequest.location,
@@ -495,7 +514,6 @@ const DetailsRequest = () => {
     try {
       const donationData = {
         donor: user?._id || user?.id,
-        
         expirationDate: request.expirationDate || new Date().toISOString(),
       };
 
@@ -541,6 +559,13 @@ const DetailsRequest = () => {
         ...prev,
         donations: [...(prev.donations || []), response.donation],
       }));
+
+      // Send notification to the recipient
+      const recipientId = request.recipient?._id || request.recipient;
+      const donorName = user?.name || 'A donor';
+      const requestTitle = request.title || 'Untitled Request';
+      await sendNotificationToRecipient(donorName, requestTitle, recipientId);
+
       showAlert('success', 'Donation submitted successfully');
     } catch (error) {
       console.error('Error submitting donation:', error);
@@ -572,6 +597,13 @@ const DetailsRequest = () => {
         ...prev,
         donations: [...(prev.donations || []), response.donation],
       }));
+
+      // Send notification to the recipient
+      const recipientId = request.recipient?._id || request.recipient;
+      const donorName = user?.name || 'A donor';
+      const requestTitle = request.title || 'Untitled Request';
+      await sendNotificationToRecipient(donorName, requestTitle, recipientId);
+
       showAlert('success', 'Donated all products successfully');
     } catch (error) {
       console.error('Error donating all:', error);

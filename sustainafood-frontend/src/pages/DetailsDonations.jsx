@@ -10,7 +10,8 @@ import { FaEdit, FaTrash, FaSave, FaTimes, FaEye } from "react-icons/fa";
 import styled from 'styled-components';
 import logo from "../assets/images/LogoCh.png";
 import { useAlert } from '../contexts/AlertContext';
-
+import axios from 'axios'; // Import axios for API calls
+import {createnotification} from '../api/notificationService'; // Import the function to create a notification
 // Styled Components for Buttons
 const Button = styled.button`
   display: inline-block;
@@ -222,6 +223,24 @@ const DetailsDonations = () => {
       setIsTheOwner(userid === (donation.donor?._id || donation.donor));
     }
   }, [donation, userid]);
+
+  // Function to send a notification to the donor
+  const sendNotificationToDonor = async (recipientName, donationTitle, donorId) => {
+    try {
+      const message = `${recipientName} has created a new request for your donation "${donationTitle}" 5 minutes ago`;
+      const notificationData = {
+        sender: user?._id || user?.id, // Recipient (the one creating the request)
+        receiver: donorId, // Donor (the one who created the donation)
+        message: message,
+        isRead: false,
+      };
+      await  createnotification(notificationData);
+      console.log('Notification sent successfully to donor');
+    } catch (error) {
+      console.error('Error sending notification to donor:', error);
+      showAlert('warning', 'Request created, but failed to send notification to donor');
+    }
+  };
 
   const handleDeleteDonation = () => {
     deleteDonation(id)
@@ -438,6 +457,13 @@ const DetailsDonations = () => {
       setIsAddingRequest(false);
       setRequestQuantities(donation.products?.map(() => 0) || []);
       setRequestMealQuantities(donation.meals?.map(() => 0) || []);
+
+      // Send notification to the donor
+      const donorId = donation.donor?._id || donation.donor;
+      const recipientName = user?.name || 'A recipient';
+      const donationTitle = donation.title || 'Untitled Donation';
+      await sendNotificationToDonor(recipientName, donationTitle, donorId);
+
       showAlert('success', 'Request submitted successfully');
     } catch (error) {
       console.error('Error submitting request:', error);
@@ -482,6 +508,13 @@ const DetailsDonations = () => {
       setIsAddingRequest(false);
       setRequestQuantities(donation.products?.map(() => 0) || []);
       setRequestMealQuantities(donation.meals?.map(() => 0) || []);
+
+      // Send notification to the donor
+      const donorId = donation.donor?._id || donation.donor;
+      const recipientName = user?.name || 'A recipient';
+      const donationTitle = donation.title || 'Untitled Donation';
+      await sendNotificationToDonor(recipientName, donationTitle, donorId);
+
       showAlert('success', 'Requested all items successfully');
     } catch (error) {
       console.error('Error requesting all:', error);

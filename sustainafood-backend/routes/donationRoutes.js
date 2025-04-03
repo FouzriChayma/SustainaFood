@@ -4,6 +4,56 @@ const upload = multer(); // Pour parser les champs sans fichier
 const router = express.Router();
 const Donation = require('../models/Donation'); // Import the Donation model
 const RequestNeed = require('../models/RequestNeed');
+const DonationRecommender=require('../aiService/mlModel');
+// Route to get recommendations for a donation
+router.get('/donations/anomalies', async (req, res) => {
+    try {
+      const recommender = new DonationRecommender();
+      const anomalies = await recommender.detectAnomalies();
+  
+      const detailedAnomalies = await Promise.all(
+        anomalies.map(async (anomaly) => {
+          const donation = await Donation.findById(anomaly.donationId).populate('donor', 'name role photo');
+          if (!donation || !donation.donor) {
+            return {
+              donationId: anomaly.donationId,
+              title: 'Unknown Donation',
+              donor: {
+                id: anomaly.donor || 'Unknown',
+                photo: '', // Photo par défaut vide
+                name: 'Unknown Donor',
+                role: 'N/A'
+              },
+              quantity: anomaly.quantity,
+              daysToExpiry: anomaly.daysToExpiry,
+              linkedRequests: anomaly.linkedRequests,
+              anomalyScore: anomaly.anomalyScore,
+              reason: anomaly.reason
+            };
+          }
+          return {
+            donationId: anomaly.donationId,
+            title: donation.title,
+            donor: {
+              id: donation.donor._id,
+              name: donation.donor.name || 'Missing Name',
+              role: donation.donor.role || 'Missing Role',
+              photo: donation.donor.photo || '' // Inclure la photo, même vide
+            },
+            quantity: anomaly.quantity,
+            daysToExpiry: anomaly.daysToExpiry,
+            linkedRequests: anomaly.linkedRequests,
+            anomalyScore: anomaly.anomalyScore,
+            reason: anomaly.reason
+          };
+        })
+      );
+      res.json(detailedAnomalies);
+    } catch (error) {
+      console.error('Error fetching anomalies:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
 // Route to get recommendations for a donation
 router.get('/donation/:donationId/recommendations', async (req, res) => {
     try {

@@ -4,10 +4,9 @@ const Counter = require('../models/Counter');
 const mongoose = require('mongoose');
 const Meal = require('../models/Meals');         // Adjust path to your model
 
-
 const { classifyFoodItem } = require('../aiService/classifyFoodItem');
 const { predictSupplyDemand } = require('../aiService/predictSupplyDemand');
-
+const DonationRecommender = require('../aiService/mlModel');
 async function createDonation(req, res) {
   let newDonation;
 
@@ -163,7 +162,7 @@ async function createDonation(req, res) {
       throw new Error(`Provided numberOfMeals (${providedNumberOfMeals}) does not match the calculated total (${calculatedNumberOfMeals})`);
     }
 
-    // Create the donation object
+    // Create the donation object with isAnomaly par défaut à false
     newDonation = new Donation({
       title,
       location,
@@ -174,9 +173,10 @@ async function createDonation(req, res) {
       donor,
       meals: [],
       numberOfMeals: category === 'prepared_meals' ? (providedNumberOfMeals || calculatedNumberOfMeals) : undefined,
-      remainingMeals: category === 'prepared_meals' ? numberOfMeals : undefined, // Initialize remainingMeals
+      remainingMeals: category === 'prepared_meals' ? (providedNumberOfMeals || calculatedNumberOfMeals) : undefined,
       products: [],
-      status: status || 'pending'
+      status: status || 'pending',
+      isAnomaly: false // Par défaut false, sera mis à jour si détectée comme anomalie
     });
 
     // Process meals: Create Meal documents and link them
@@ -255,16 +255,35 @@ async function createDonation(req, res) {
     // Log the donation before saving
     console.log("Donation Before Save:", newDonation);
 
-    // Save the donation
+    // Save the donation initialement
     await newDonation.save();
+
+    // Vérification des anomalies
+    const recommender = new DonationRecommender();
+    const anomalies = await recommender.detectAnomalies();
+    console.log('Anomalies detected after save:', anomalies);
+    const anomaly = anomalies.find(a => a.donationId.toString() === newDonation._id.toString());
+    const isAnomaly = !!anomaly;
+
+    // Si détectée comme anomalie, mettre à jour l'attribut isAnomaly dans la base
+    if (isAnomaly) {
+      newDonation.isAnomaly = true;
+      await newDonation.save(); // Sauvegarder la mise à jour
+      console.log(`Donation ${newDonation._id} marked as anomaly and updated in database`);
+    }
 
     // Populate the response
     const populatedDonation = await Donation.findById(newDonation._id)
-      .populate('donor')
+      .populate('donor', 'name role')
       .populate('products.product')
       .populate('meals.meal');
 
-    res.status(201).json({ message: 'Donation created successfully', donation: populatedDonation });
+    res.status(201).json({
+      message: 'Donation created successfully',
+      donation: populatedDonation,
+      isAnomaly,
+      anomalyDetails: isAnomaly ? anomaly : null
+    });
   } catch (error) {
     // Rollback
     if (newDonation && newDonation._id) {
@@ -508,7 +527,7 @@ async function getDonationsByStatus(req, res) {
 // ✅ Get All Donations
 async function getAllDonations(req, res) {
   try {
-      const donations = await Donation.find({ isaPost: true }) // Only fetch posted donations
+      const donations = await Donation.find({ isaPost: true,isAnomaly: false }) // Only fetch posted donations
           .populate('donor')
           .populate('products.product')
           .populate('meals.meal')
@@ -546,7 +565,7 @@ async function getDonationById(req, res) {
 async function getDonationsByUserId(req, res) {
   try {
       const { userId } = req.params;
-      const donations = await Donation.find({ donor: userId, isaPost: true })
+      const donations = await Donation.find({ donor: userId, isaPost: true,isAnomaly: false })
           .populate('products.product')
           .populate('meals.meal');
 

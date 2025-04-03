@@ -45,7 +45,7 @@ import AlertDisplay from "./components/AlertDisplay";
 import RequestDetails from "./pages/backoffice/RequestDetails";
 import ProductDetail from "./pages/backoffice/ProductDetail";
 import DonationDetails from "./pages/backoffice/DonationDetails";
-
+import AnomaliesDashbord from "./pages/backoffice/AnomaliesDashbord";
 import DonationsRequestList from"./pages/backoffice/DonationsRequestList";
 import RequestDonationsList from"./pages/backoffice/RequestDonationsList";
 import PredictionsDashboard from './pages/backoffice/PredictionsDashboard';
@@ -96,6 +96,7 @@ const App = () => {
           <Route path="/DonationsRequestList/:id" element={<DonationsRequestList />} />
           <Route path="/RequestDonationsList/:id" element={<RequestDonationsList />} />
           <Route path="/PredictionsDashboard" element={<PredictionsDashboard />} />
+          <Route path="/AnomaliesDashbord" element={<AnomaliesDashbord />} />
 
 
         </Route>

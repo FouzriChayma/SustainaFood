@@ -7,6 +7,13 @@ const Meal = require('../models/Meals');         // Adjust path to your model
 const { classifyFoodItem } = require('../aiService/classifyFoodItem');
 const { predictSupplyDemand } = require('../aiService/predictSupplyDemand');
 const DonationRecommender = require('../aiService/mlModel');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
+const nodemailer = require('nodemailer');
+const path = require('path');
+const fs = require('fs');
+require('dotenv').config();
+
 async function createDonation(req, res) {
   let newDonation;
 
@@ -25,10 +32,9 @@ async function createDonation(req, res) {
       meals
     } = req.body;
 
-    // Log the incoming request body for debugging
     console.log("Incoming Request Body:", req.body);
 
-    // Ensure products is an array
+    // Validation et traitement des produits et repas (inchangé)
     if (!Array.isArray(products)) {
       if (typeof products === 'string') {
         try {
@@ -41,7 +47,6 @@ async function createDonation(req, res) {
       }
     }
 
-    // Ensure meals is an array
     if (!Array.isArray(meals)) {
       if (typeof meals === 'string') {
         try {
@@ -54,14 +59,11 @@ async function createDonation(req, res) {
       }
     }
 
-    // Log the parsed products and meals for debugging
     console.log("Parsed Products:", products);
     console.log("Parsed Meals:", meals);
 
-    // Validate mealType values
     const validMealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert', 'Other'];
 
-    // Validate and filter meals
     const validMeals = meals
       .map((meal, index) => {
         if (!meal.mealName || typeof meal.mealName !== 'string' || !meal.mealName.trim()) {
@@ -86,7 +88,6 @@ async function createDonation(req, res) {
       })
       .filter(meal => meal);
 
-    // Validate and filter products
     const validProducts = products
       .map((product, index) => {
         if (!product.name || typeof product.name !== 'string' || !product.name.trim()) {
@@ -123,11 +124,9 @@ async function createDonation(req, res) {
       })
       .filter(product => product);
 
-    // Log the valid products and meals for debugging
     console.log("Valid Products After Filtering:", validProducts);
     console.log("Valid Meals After Filtering:", validMeals);
 
-    // Validate required fields
     if (!title || typeof title !== 'string' || !title.trim()) {
       throw new Error('Missing or invalid required field: title');
     }
@@ -151,18 +150,15 @@ async function createDonation(req, res) {
       throw new Error('At least one valid product is required for packaged_products category');
     }
 
-    // Calculate numberOfMeals
     const calculatedNumberOfMeals = category === 'prepared_meals'
       ? validMeals.reduce((sum, meal) => sum + meal.quantity, 0)
       : undefined;
 
-    // Validate provided numberOfMeals
     const providedNumberOfMeals = parseInt(numberOfMeals);
     if (category === 'prepared_meals' && !isNaN(providedNumberOfMeals) && providedNumberOfMeals !== calculatedNumberOfMeals) {
       throw new Error(`Provided numberOfMeals (${providedNumberOfMeals}) does not match the calculated total (${calculatedNumberOfMeals})`);
     }
 
-    // Create the donation object with isAnomaly par défaut à false
     newDonation = new Donation({
       title,
       location,
@@ -176,10 +172,9 @@ async function createDonation(req, res) {
       remainingMeals: category === 'prepared_meals' ? (providedNumberOfMeals || calculatedNumberOfMeals) : undefined,
       products: [],
       status: status || 'pending',
-      isAnomaly: false // Par défaut false, sera mis à jour si détectée comme anomalie
+      isAnomaly: false
     });
 
-    // Process meals: Create Meal documents and link them
     let mealEntries = [];
     if (category === 'prepared_meals' && validMeals.length > 0) {
       for (let meal of validMeals) {
@@ -188,11 +183,7 @@ async function createDonation(req, res) {
           { $inc: { seq: 1 } },
           { new: true, upsert: true }
         );
-
-        if (!counter) {
-          throw new Error('Failed to generate meal ID');
-        }
-
+        if (!counter) throw new Error('Failed to generate meal ID');
         const newMeal = new Meal({
           id: counter.seq,
           mealName: meal.mealName,
@@ -201,17 +192,12 @@ async function createDonation(req, res) {
           quantity: meal.quantity,
           donation: newDonation._id
         });
-
         await newMeal.save();
         console.log(`Created Meal Document: ${newMeal._id}`);
-        mealEntries.push({
-          meal: newMeal._id,
-          quantity: meal.quantity
-        });
+        mealEntries.push({ meal: newMeal._id, quantity: meal.quantity });
       }
     }
 
-    // Process products: Create Product documents and link them
     let productEntries = [];
     if (category === 'packaged_products' && validProducts.length > 0) {
       for (let product of validProducts) {
@@ -220,11 +206,7 @@ async function createDonation(req, res) {
           { $inc: { seq: 1 } },
           { new: true, upsert: true }
         );
-
-        if (!counter) {
-          throw new Error('Failed to generate product ID');
-        }
-
+        if (!counter) throw new Error('Failed to generate product ID');
         const newProduct = new Product({
           id: counter.seq,
           name: product.name,
@@ -238,43 +220,121 @@ async function createDonation(req, res) {
           status: product.status,
           donation: newDonation._id
         });
-
         await newProduct.save();
         console.log(`Created Product Document: ${newProduct._id}`);
-        productEntries.push({
-          product: newProduct._id,
-          quantity: product.totalQuantity
-        });
+        productEntries.push({ product: newProduct._id, quantity: product.totalQuantity });
       }
     }
 
-    // Assign the meal and product entries to the donation
     newDonation.meals = mealEntries;
     newDonation.products = productEntries;
 
-    // Log the donation before saving
     console.log("Donation Before Save:", newDonation);
-
-    // Save the donation initialement
     await newDonation.save();
 
-    // Vérification des anomalies
     const recommender = new DonationRecommender();
     const anomalies = await recommender.detectAnomalies();
     console.log('Anomalies detected after save:', anomalies);
     const anomaly = anomalies.find(a => a.donationId.toString() === newDonation._id.toString());
     const isAnomaly = !!anomaly;
 
-    // Si détectée comme anomalie, mettre à jour l'attribut isAnomaly dans la base
+    // Récupérer les informations du donateur
+    const donorUser = await User.findById(donor);
+    if (!donorUser) throw new Error('Donor not found');
+
+    // Configurer le transporteur email
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      tls: { rejectUnauthorized: false },
+    });
+
     if (isAnomaly) {
       newDonation.isAnomaly = true;
-      await newDonation.save(); // Sauvegarder la mise à jour
+      await newDonation.save();
       console.log(`Donation ${newDonation._id} marked as anomaly and updated in database`);
+
+      // Email d'alerte au donateur
+      if (donorUser.email) {
+        const mailOptionsDonor = {
+          from: process.env.EMAIL_USER,
+          to: donorUser.email,
+          subject: 'Alert: Your Donation Has Been Detected as an Anomaly',
+          text: `Dear ${donorUser.name || 'Donor'},
+
+Your donation titled "${title}" has been flagged as an anomaly for the following reason:
+"${anomaly.reason}"
+
+It requires admin review before it can be processed. You will be notified once a decision is made.
+
+Best regards,
+SustainaFood Team`,
+          html: `
+            <div style="font-family: Arial, sans-serif; color: black;">
+              <h2 style="color: #228b22;">Donation Anomaly Alert</h2>
+              <p>Dear ${donorUser.name || 'Donor'},</p>
+              <p>Your donation titled "<strong>${title}</strong>" has been flagged as an anomaly for the following reason:</p>
+              <p><strong>Reason:</strong> ${anomaly.reason}</p>
+              <p>It requires admin review before it can be processed. You will be notified once a decision is made.</p>
+              <p>Best regards,<br>SustainaFood Team</p>
+            </div>
+          `,
+        };
+
+        await transporter.sendMail(mailOptionsDonor);
+        console.log(`Anomaly alert email sent to ${donorUser.email}`);
+      }
+
+      // Notification et email aux admins
+      const admins = await User.find({ role: 'admin' });
+      for (const admin of admins) {
+        // Créer une notification pour l'admin
+        const adminNotification = new Notification({
+          sender: donor,
+          receiver: admin._id,
+          message: `A new donation titled "${title}" has been detected as an anomaly. Reason: ${anomaly.reason}. Please review it.`,
+          isRead: false,
+        });
+        await adminNotification.save();
+        console.log(`Notification sent to admin ${admin._id}`);
+
+        // Email à l'admin
+        if (admin.email) {
+          const mailOptionsAdmin = {
+            from: process.env.EMAIL_USER,
+            to: admin.email,
+            subject: 'New Donation Anomaly Detected',
+            text: `Dear ${admin.name || 'Admin'},
+
+A new donation titled "${title}" has been detected as an anomaly.
+Reason: ${anomaly.reason}
+Please review it in the admin dashboard.
+
+Best regards,
+SustainaFood Team`,
+            html: `
+              <div style="font-family: Arial, sans-serif; color: black;">
+                <h2 style="color: #228b22;">New Donation Anomaly</h2>
+                <p>Dear ${admin.name || 'Admin'},</p>
+                <p>A new donation titled "<strong>${title}</strong>" has been detected as an anomaly.</p>
+                <p><strong>Reason:</strong> ${anomaly.reason}</p>
+                <p>Please review it in the admin dashboard.</p>
+                <p>Best regards,<br>SustainaFood Team</p>
+              </div>
+            `,
+          };
+
+          await transporter.sendMail(mailOptionsAdmin);
+          console.log(`Anomaly alert email sent to admin ${admin.email}`);
+        }
+      }
     }
 
-    // Populate the response
     const populatedDonation = await Donation.findById(newDonation._id)
-      .populate('donor', 'name role')
+      .populate('donor', 'name role email')
       .populate('products.product')
       .populate('meals.meal');
 
@@ -285,7 +345,6 @@ async function createDonation(req, res) {
       anomalyDetails: isAnomaly ? anomaly : null
     });
   } catch (error) {
-    // Rollback
     if (newDonation && newDonation._id) {
       if (newDonation.meals && newDonation.meals.length > 0) {
         const mealIds = newDonation.meals.map(entry => entry.meal);
@@ -304,6 +363,8 @@ async function createDonation(req, res) {
     });
   }
 }
+
+
 // ✅ Update a donation (also updates related products)
 async function updateDonation(req, res) {
   try {

@@ -5,6 +5,9 @@ const router = express.Router();
 const Donation = require('../models/Donation'); // Import the Donation model
 const RequestNeed = require('../models/RequestNeed');
 const DonationRecommender=require('../aiService/mlModel');
+const User = require('../models/User');
+const nodemailer = require('nodemailer');
+require('dotenv').config();
 // Route to get recommendations for a donation
 router.get('/donations/anomalies', async (req, res) => {
     try {
@@ -18,17 +21,13 @@ router.get('/donations/anomalies', async (req, res) => {
             return {
               donationId: anomaly.donationId,
               title: 'Unknown Donation',
-              donor: {
-                id: anomaly.donor || 'Unknown',
-                photo: '', // Photo par défaut vide
-                name: 'Unknown Donor',
-                role: 'N/A'
-              },
+              donor: { id: anomaly.donor || 'Unknown', photo: '', name: 'Unknown Donor', role: 'N/A' },
               quantity: anomaly.quantity,
               daysToExpiry: anomaly.daysToExpiry,
               linkedRequests: anomaly.linkedRequests,
               anomalyScore: anomaly.anomalyScore,
-              reason: anomaly.reason
+              reason: anomaly.reason,
+              status: 'pending' // Statut par défaut si donation introuvable
             };
           }
           return {
@@ -38,13 +37,14 @@ router.get('/donations/anomalies', async (req, res) => {
               id: donation.donor._id,
               name: donation.donor.name || 'Missing Name',
               role: donation.donor.role || 'Missing Role',
-              photo: donation.donor.photo || '' // Inclure la photo, même vide
+              photo: donation.donor.photo || ''
             },
             quantity: anomaly.quantity,
             daysToExpiry: anomaly.daysToExpiry,
             linkedRequests: anomaly.linkedRequests,
             anomalyScore: anomaly.anomalyScore,
-            reason: anomaly.reason
+            reason: anomaly.reason,
+            status: donation.status // Inclure le statut de la donation
           };
         })
       );
@@ -71,6 +71,115 @@ router.get('/donation/:donationId/recommendations', async (req, res) => {
     }
 });
 // The matchDonationToRequests function (as previously defined)
+
+
+
+// Approbation d'une donation
+router.post('/donations/:id/approve', async (req, res) => {
+    try {
+      const donation = await Donation.findById(req.params.id).populate('donor', 'name email');
+      if (!donation) return res.status(404).json({ message: 'Donation not found' });
+  
+      // Mettre à jour le statut et isAnomaly
+      donation.status = 'approved';
+      donation.isAnomaly = false; // Une fois approuvée, ce n'est plus une anomalie
+      await donation.save();
+  
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+        tls: { rejectUnauthorized: false },
+      });
+  
+      if (donation.donor.email) {
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: donation.donor.email,
+          subject: 'Your Donation Has Been Approved',
+          text: `Dear ${donation.donor.name || 'Donor'},
+  
+  Your donation titled "${donation.title}" has been reviewed and approved by our admin team.
+  It is no longer flagged as an anomaly and is now available for processing.
+  
+  Thank you for your contribution!
+  Best regards,
+  SustainaFood Team`,
+          html: `
+            <div style="font-family: Arial, sans-serif; color: black;">
+              <h2 style="color: #228b22;">Donation Approved</h2>
+              <p>Dear ${donation.donor.name || 'Donor'},</p>
+              <p>Your donation titled "<strong>${donation.title}</strong>" has been reviewed and approved by our admin team.</p>
+              <p>It is no longer flagged as an anomaly and is now available for processing.</p>
+              <p>Thank you for your contribution!<br>Best regards,<br>SustainaFood Team</p>
+            </div>
+          `,
+        };
+  
+        await transporter.sendMail(mailOptions);
+        console.log(`Approval email sent to ${donation.donor.email}`);
+      }
+  
+      res.status(200).json({ message: 'Donation approved successfully', donation });
+    } catch (error) {
+      console.error('Error approving donation:', error);
+      res.status(500).json({ message: 'Failed to approve donation', error: error.message });
+    }
+  });
+// Rejet d'une donation
+router.post('/donations/:id/reject', async (req, res) => {
+  try {
+    const donation = await Donation.findById(req.params.id).populate('donor', 'name email');
+    if (!donation) return res.status(404).json({ message: 'Donation not found' });
+
+    donation.status = 'rejected';
+    await donation.save();
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      tls: { rejectUnauthorized: false },
+    });
+
+    if (donation.donor.email) {
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: donation.donor.email,
+        subject: 'Your Donation Has Been Rejected',
+        text: `Dear ${donation.donor.name || 'Donor'},
+
+Your donation titled "${donation.title}" has been reviewed and rejected by our admin team.
+Please contact support if you have any questions.
+
+Best regards,
+SustainaFood Team`,
+        html: `
+          <div style="font-family: Arial, sans-serif; color: black;">
+            <h2 style="color: #ff4444;">Donation Rejected</h2>
+            <p>Dear ${donation.donor.name || 'Donor'},</p>
+            <p>Your donation titled "<strong>${donation.title}</strong>" has been reviewed and rejected by our admin team.</p>
+            <p>Please contact support if you have any questions.</p>
+            <p>Best regards,<br>SustainaFood Team</p>
+          </div>
+        `,
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log(`Rejection email sent to ${donation.donor.email}`);
+    }
+
+    res.status(200).json({ message: 'Donation rejected successfully', donation });
+  } catch (error) {
+    console.error('Error rejecting donation:', error);
+    res.status(500).json({ message: 'Failed to reject donation', error: error.message });
+  }
+});
+
 async function matchDonationToRequests(donation) {
     const { category, products, meals, expirationDate, numberOfMeals: donatedMeals } = donation;
 

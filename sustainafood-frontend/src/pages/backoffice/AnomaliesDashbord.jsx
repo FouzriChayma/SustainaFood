@@ -6,8 +6,8 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaFilePdf } from "react-icons/fa";
 import styled from "styled-components";
-import imgmouna from '../../assets/images/imgmouna.png'; // Image par défaut
-import logo from '../../assets/images/logooo.png'; // Logo pour le PDF
+import imgmouna from '../../assets/images/imgmouna.png';
+import logo from '../../assets/images/logooo.png';
 import "../../assets/styles/backoffcss/anomaliesDashbord.css";
 
 // Styled component for profile image
@@ -53,6 +53,12 @@ const PaginationControls = styled.div`
   }
 `;
 
+// Styled component for action status
+const ActionStatus = styled.span`
+  font-weight: bold;
+  color: ${props => (props.status === "approved" ? "#228b22" : props.status === "rejected" ? "#ff4444" : "#333")};
+`;
+
 const AnomaliesDashboard = () => {
   const [anomalies, setAnomalies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +74,7 @@ const AnomaliesDashboard = () => {
     const fetchAnomalies = async () => {
       try {
         const response = await axios.get('http://localhost:3000/donation/donations/anomalies');
-        console.log('Anomalies fetched:', response.data); // Log pour débogage
+        console.log('Anomalies fetched:', response.data);
         setAnomalies(response.data);
         setError(null);
       } catch (error) {
@@ -84,8 +90,10 @@ const AnomaliesDashboard = () => {
   // Approve donation
   const handleApprove = async (donationId) => {
     try {
-      await axios.post(`http://localhost:3000/api/donations/${donationId}/approve`);
-      setAnomalies(anomalies.filter((anomaly) => anomaly.donationId !== donationId));
+      await axios.post(`http://localhost:3000/donation/donations/${donationId}/approve`);
+      setAnomalies(anomalies.map(anomaly =>
+        anomaly.donationId === donationId ? { ...anomaly, status: "approved" } : anomaly
+      ));
       alert(`Donation ${donationId} approved!`);
     } catch (error) {
       console.error('Error approving donation:', error);
@@ -96,8 +104,10 @@ const AnomaliesDashboard = () => {
   // Reject donation
   const handleReject = async (donationId) => {
     try {
-      await axios.post(`http://localhost:3000/api/donations/${donationId}/reject`);
-      setAnomalies(anomalies.filter((anomaly) => anomaly.donationId !== donationId));
+      await axios.post(`http://localhost:3000/donation/donations/${donationId}/reject`);
+      setAnomalies(anomalies.map(anomaly =>
+        anomaly.donationId === donationId ? { ...anomaly, status: "rejected" } : anomaly
+      ));
       alert(`Donation ${donationId} rejected!`);
     } catch (error) {
       console.error('Error rejecting donation:', error);
@@ -172,7 +182,7 @@ const AnomaliesDashboard = () => {
     doc.setTextColor(200, 200, 200);
     doc.text(`Generated: ${dateStr}`, doc.internal.pageSize.width - 50, 35);
 
-    const tableColumn = ["Title", "Donor", "Quantity", "Days to Expiry", "Linked Requests", "Score", "Reason"];
+    const tableColumn = ["Title", "Donor", "Quantity", "Days to Expiry", "Linked Requests", "Score", "Reason", "Status"];
     const tableRows = sortedAnomalies.map((anomaly) => [
       anomaly.title || "N/A",
       anomaly.donor ? `${anomaly.donor.name} (${anomaly.donor.role})` : "Unknown",
@@ -181,6 +191,7 @@ const AnomaliesDashboard = () => {
       anomaly.linkedRequests || 0,
       anomaly.anomalyScore.toFixed(3),
       anomaly.reason || "N/A",
+      anomaly.status.charAt(0).toUpperCase() + anomaly.status.slice(1) || "Pending"
     ]);
 
     autoTable(doc, {
@@ -302,18 +313,26 @@ const AnomaliesDashboard = () => {
                         <td>{anomaly.anomalyScore.toFixed(3)}</td>
                         <td>{anomaly.reason || "N/A"}</td>
                         <td>
-                          <button
-                            className="approve-btn"
-                            onClick={() => handleApprove(anomaly.donationId)}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            className="reject-btn"
-                            onClick={() => handleReject(anomaly.donationId)}
-                          >
-                            Reject
-                          </button>
+                          {anomaly.status === "approved" || anomaly.status === "rejected" ? (
+                            <ActionStatus status={anomaly.status}>
+                              {anomaly.status.charAt(0).toUpperCase() + anomaly.status.slice(1)}
+                            </ActionStatus>
+                          ) : (
+                            <>
+                              <button
+                                className="approve-btn"
+                                onClick={() => handleApprove(anomaly.donationId)}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                className="reject-btn"
+                                onClick={() => handleReject(anomaly.donationId)}
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
                         </td>
                       </tr>
                     );

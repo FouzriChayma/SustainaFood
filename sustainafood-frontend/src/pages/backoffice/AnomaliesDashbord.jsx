@@ -9,6 +9,7 @@ import styled from "styled-components";
 import imgmouna from '../../assets/images/imgmouna.png';
 import logo from '../../assets/images/logooo.png';
 import "../../assets/styles/backoffcss/anomaliesDashbord.css";
+import { useAlert } from '../../contexts/AlertContext';
 
 // Styled component for profile image
 const ProfileImg = styled.img`
@@ -60,6 +61,8 @@ const ActionStatus = styled.span`
 `;
 
 const AnomaliesDashboard = () => {
+  const { showAlert } = useAlert(); // Ajout de useAlert
+
   const [anomalies, setAnomalies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -94,10 +97,10 @@ const AnomaliesDashboard = () => {
       setAnomalies(anomalies.map(anomaly =>
         anomaly.donationId === donationId ? { ...anomaly, status: "approved" } : anomaly
       ));
-      alert(`Donation ${donationId} approved!`);
+      showAlert('success', `Donation ${donationId} approved successfully!`); // Remplacement de alert()
     } catch (error) {
       console.error('Error approving donation:', error);
-      setError('Error approving donation.');
+      showAlert('error', 'Failed to approve donation'); // Remplacement de setError
     }
   };
 
@@ -108,10 +111,10 @@ const AnomaliesDashboard = () => {
       setAnomalies(anomalies.map(anomaly =>
         anomaly.donationId === donationId ? { ...anomaly, status: "rejected" } : anomaly
       ));
-      alert(`Donation ${donationId} rejected!`);
+      showAlert('success', `Donation ${donationId} rejected successfully!`); // Remplacement de alert()
     } catch (error) {
       console.error('Error rejecting donation:', error);
-      setError('Error rejecting donation.');
+      showAlert('error', 'Failed to reject donation'); // Remplacement de setError
     }
   };
 

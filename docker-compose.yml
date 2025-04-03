@@ -19,7 +19,7 @@ services:
     container_name: back
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3005:3005"
     depends_on:
       - db
     environment:

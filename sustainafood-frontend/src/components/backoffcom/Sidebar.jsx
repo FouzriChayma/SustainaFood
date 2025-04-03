@@ -101,7 +101,7 @@ const Sidebar = () => {
               <Link to="/Donations">Donation Management</Link>
               <Link to="/food-donation/requests" className={location.pathname === "/food-donation/requests" ? "active" : ""} role="menuitem">Request Management</Link>
                <Link to="/PredictionsDashboard">Donation Predictions Dashboard</Link>
-               <Link to="/AnomaliesDashboard">Anomaly Management Dashboard</Link>
+               <Link to="/AnomaliesDashbord">Anomaly Management Dashboard</Link>
 
              {/* <Link to="/food-donation/product" className={location.pathname === "/food-donation/product" ? "active" : ""} role="menuitem">Product list</Link>*/}
             </div>

@@ -1,65 +1,77 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
-const app = require('../app');
-const User = require('../models/User');
+const app = require('../app'); // Ajustez le chemin si nécessaire
 
-const mongoUri = 'mongodb://localhost:27017/sustainafood'; // ✅ Remplace par ta base
+// --- Configuration de la base de données ---
+const mongoUri = 'mongodb://localhost:27017/sustainafood';
 
 beforeAll(async () => {
-  await mongoose.connect(mongoUri);
+  try {
+    await mongoose.connect(mongoUri);
+    console.log('MongoDB connecté pour les tests de userDetails.');
+  } catch (err) {
+    console.error('Erreur de connexion à MongoDB :', err);
+    process.exit(1);
+  }
 });
 
 afterAll(async () => {
   await mongoose.connection.close();
+  console.log('Connexion MongoDB fermée pour les tests de userDetails.');
 });
 
-describe('✅ TEST FONCTIONNALITÉ 2FA POUR UTILISATEUR AVEC 2FA ACTIVÉ', () => {
-  let userEmail = "mariemtouzri5@gmail.com"; // ✅ Remplacer par un user réel
-  let twoFACode = null;
+// --- Suite de tests pour Get User By ID ---
+describe('✅ TEST Get User By ID (GET /users/details/:id)', () => {
+  
+  // Utilisation d'un ID spécifique présent dans votre base de données
+  const EXISTING_USER_ID = '67f269dc76e0210e95aaecb1';
 
-  // ✅ Envoi du code 2FA
-  it('✅ Devrait envoyer un code 2FA pour test2fa@gmail.com', async () => {
-    const res = await request(app).post('/users/send-2fa-code').send({ email: userEmail });
+  // Un ObjectId plausible mais probablement inexistant
+  const NON_EXISTENT_USER_ID = '111111111111111111111111';
 
-    console.log('Réponse envoi code 2FA:', res.body);
+  // Un ID au format invalide
+  const INVALID_FORMAT_USER_ID = 'this-is-not-an-object-id';
 
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('message', '2FA code sent successfully');
+  it('✅ Doit récupérer un utilisateur existant par son ID valide', async () => {
+    const res = await request(app).get(`/users/details/${EXISTING_USER_ID}`);
 
-    // Récupérer le code généré en base
-    const user = await User.findOne({ email: userEmail });
-    twoFACode = user.twoFACode;
-    console.log('✅ Code 2FA récupéré depuis MongoDB :', twoFACode);
+    console.log(`GET /users/details/${EXISTING_USER_ID} Response Status:`, res.statusCode);
+    console.log(`GET /users/details/${EXISTING_USER_ID} Response Body:`, res.body);
+
+    // Assertions
+    expect(res.statusCode).toBe(200); // Attente d'un succès
+    expect(res.body).toHaveProperty('_id');
+    expect(res.body._id).toBe(EXISTING_USER_ID); // Vérifie que l'ID correspond
+    expect(res.body).toHaveProperty('email', 'mohamed@gmail.com'); // Vérifie l'email spécifique
+    expect(res.body).toHaveProperty('name', 'mohamed'); // Vérifie le nom spécifique
+    expect(res.body).toHaveProperty('role', 'student'); // Vérifie le rôle spécifique
+    expect(res.body).toHaveProperty('phone', 52352644); // Vérifie le téléphone spécifique
+    // Ajoutez d'autres assertions pour les champs à vérifier
+    expect(res.body.isBlocked).toBe(false);
+    expect(res.body.isActive).toBe(true); // Selon vos données en DB
+   
   });
 
-  // ✅ Vérification code correct
-  it('✅ Devrait valider le bon code 2FA et recevoir un token', async () => {
-    const res = await request(app).post('/users/validate-2fa-code').send({
-      email: userEmail,
-      twoFACode: twoFACode
-    });
+  it('❌ Doit retourner 404 Not Found pour un ID utilisateur inexistant', async () => {
+    const res = await request(app).get(`/users/details/${NON_EXISTENT_USER_ID}`);
 
-    console.log('Réponse validation 2FA:', res.body);
+    console.log(`GET /users/details/${NON_EXISTENT_USER_ID} Response Status:`, res.statusCode);
+    console.log(`GET /users/details/${NON_EXISTENT_USER_ID} Response Body:`, res.body);
 
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('token');
-    expect(res.body).toHaveProperty('role');
-    expect(res.body).toHaveProperty('id');
+    // Assertions
+    expect(res.statusCode).toBe(404);
+    expect(res.body).toHaveProperty('error');
+    expect(res.body.error).toBe('User not found');
   });
 
-  // ❌ Test mauvais code
-  it('❌ Devrait échouer avec un mauvais code 2FA', async () => {
-    // ✅ Renvoi nouveau code valide pour simuler un mauvais ensuite
-    await request(app).post('/users/send-2fa-code').send({ email: userEmail });
+  it('❌ Doit retourner 500 Internal Server Error pour un format d\'ID invalide', async () => {
+    const res = await request(app).get(`/users/details/${INVALID_FORMAT_USER_ID}`);
 
-    const res = await request(app).post('/users/validate-2fa-code').send({
-      email: userEmail,
-      twoFACode: "000000" // Faux code volontaire
-    });
+    console.log(`GET /users/details/${INVALID_FORMAT_USER_ID} Response Status:`, res.statusCode);
+    console.log(`GET /users/details/${INVALID_FORMAT_USER_ID} Response Body:`, res.body);
 
-    console.log('Réponse mauvais code 2FA:', res.body);
-
-    expect(res.statusCode).toBe(400);
-    expect(res.body).toHaveProperty('error', 'Invalid 2FA code'); // ✅ Message attendu
+    // Assertions
+    expect(res.statusCode).toBe(500);
+    expect(res.body).toHaveProperty('error');
   });
 });

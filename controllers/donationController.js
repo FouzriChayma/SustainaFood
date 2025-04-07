@@ -675,20 +675,20 @@ async function getSupplyDemandPrediction(req, res) {
   }
 }
 
-async function getDonationByRequestId(req, res) {
-  console.log('getDonationByRequestId called with:', req.params.requestId);
-  try {
-    const { requestId } = req.params;
-    const donation = await Donation.findOne({ linkedRequests: requestId });
-    if (!donation) {
-      return res.status(404).json({ message: 'Donation not found' });
-    }
-    res.status(200).json(donation);
-  } catch (error) {
-    console.error('Error fetching donation by request ID:', error.stack);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-}
+// async function getDonationByRequestId(req, res) {
+//   console.log('getDonationByRequestId called with:', req.params.requestId);
+//   try {
+//     const { requestId } = req.params;
+//     const donation = await Donation.findOne({ linkedRequests: requestId });
+//     if (!donation) {
+//       return res.status(404).json({ message: 'Donation not found' });
+//     }
+//     res.status(200).json(donation);
+//   } catch (error) {
+//     console.error('Error fetching donation by request ID:', error.stack);
+//     res.status(500).json({ message: 'Server error', error: error.message });
+//   }
+// }
 async function matchDonationToRequests(donation) {
   const { category, products, meals, expirationDate, numberOfMeals: donatedMeals } = donation;
 

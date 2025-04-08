@@ -99,7 +99,11 @@ export const AddDonation = () => {
     if (user && (user._id || user.id)) {
       fetchUser();
     }
-  }, [user]);
+
+    // Set type based on user role
+    if (isDonner) setType("donation");
+    else if (isRecipient) setType("request");
+  }, [user, isDonner, isRecipient]);
 
   useEffect(() => {
     if (category === "prepared_meals" && isDonner) {
@@ -332,6 +336,16 @@ export const AddDonation = () => {
         }));
         console.log("Formatted Meals to Send:", formattedMeals);
         donationData.append("meals", JSON.stringify(formattedMeals));
+      } else if (isRecipient) {
+        const mealsToSend = mealsEntryMode === "form" ? manualMeals : meals;
+        const formattedRequestedMeals = mealsToSend.map(meal => ({
+          mealName: meal.mealName,
+          mealDescription: meal.mealDescription,
+          mealType: meal.mealType,
+          quantity: parseInt(meal.quantity),
+        }));
+        console.log("Formatted Requested Meals to Send:", formattedRequestedMeals);
+        donationData.append("requestedMeals", JSON.stringify(formattedRequestedMeals));
       }
     }
 
@@ -385,10 +399,13 @@ export const AddDonation = () => {
       console.error("Error creating donation/request:", err);
       const errorData = err.response?.data;
       if (errorData?.message === "Inappropriate language detected in submission" && errorData?.badWordsDetected) {
+        const badWordsDetails = errorData.badWordsDetected.map(({ field, badWord }) => 
+          `${field}: "${badWord}"`
+        ).join(", ");
+        setError(`Inappropriate language detected: ${badWordsDetails}`);
         errorData.badWordsDetected.forEach(({ field, badWord }) => {
           showAlert('error', `Inappropriate language detected in ${field}: "${badWord}"`);
         });
-        setError("Please remove inappropriate language from your submission.");
       } else {
         const errorMessage = errorData?.message || "An error occurred while creating the donation/request.";
         setError(errorMessage);
@@ -575,6 +592,23 @@ export const AddDonation = () => {
                   {errors.meals && <p className="error-message">{errors.meals}</p>}
                 </>
               )}
+
+              {isRecipient && mealsEntryMode === "form" && (
+                <div className="manual-product-entry">
+                  {manualMeals.map((meal, index) => (
+                    <div key={index} className="manual-product-row">
+                      <input type="text" placeholder="Meal Name" value={meal.mealName} onChange={(e) => handleManualMealChange(index, "mealName", e.target.value)} className="signup-input" />
+                      <textarea placeholder="Meal Description" value={meal.mealDescription} onChange={(e) => handleManualMealChange(index, "mealDescription", e.target.value)} className="signup-input" />
+                      <select value={meal.mealType} onChange={(e) => handleManualMealChange(index, "mealType", e.target.value)} className="signup-input">
+                        {mealTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                      </select>
+                      <input type="number" placeholder="Quantity" value={meal.quantity} onChange={(e) => handleManualMealChange(index, "quantity", e.target.value)} className="signup-input" min="1" />
+                      {manualMeals.length > 1 && <button type="button" onClick={() => handleRemoveManualMeal(index)}>Remove</button>}
+                    </div>
+                  ))}
+                  <button type="button" onClick={handleAddManualMeal} className="signup-button">Add Another Meal</button>
+                </div>
+              )}
             </>
           )}
 
@@ -624,10 +658,9 @@ export const AddDonation = () => {
                         {weightUnits.map(wu => <option key={wu} value={wu}>{wu}</option>)}
                       </select>
                       <input type="number" placeholder="Total Quantity" value={product.totalQuantity} onChange={(e) => handleManualProductChange(index, "totalQuantity", e.target.value)} className="signup-input" />
-                      <input type="text" placeholder="Image URL" value={product.image} onChange={(e) => handleManualProductChange(index, "image", e.target.value)} className="signup-input" />
-                      <select className="signup-input" value={product.status} onChange={(e) => handleManualProductChange(index, "status", e.target.value)}>
+                      {/*<select className="signup-input" value={product.status} onChange={(e) => handleManualProductChange(index, "status", e.target.value)}>
                         {statuses.map(status => <option key={status} value={status}>{status}</option>)}
-                      </select>
+                      </select>*/}
                       {manualProducts.length > 1 && <button type="button" onClick={() => handleRemoveManualProduct(index)}>Remove</button>}
                     </div>
                   ))}

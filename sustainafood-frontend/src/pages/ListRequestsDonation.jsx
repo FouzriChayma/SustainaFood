@@ -19,7 +19,7 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
-// Styled Components
+// Styled Components (unchanged)
 const RequestContainer = styled.div`
   padding: 20px;
   max-width: 1200px;
@@ -447,19 +447,114 @@ const ListRequestsDonation = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  const handleStatusUpdate = async (requestId, status) => {
+  const handleStatusUpdate = async (requestId, action) => {
     try {
-      await updateRequestStatus(requestId, status);
-      showAlert('success', `Request ${status} successfully`);
-      setRequests(requests.map(request =>
-        request._id === requestId ? { ...request, status } : request
-      ));
-    } catch (error) {
-      console.error(`Error updating request status to ${status}:`, error.response?.data || error.message);
-      showAlert('error', `Failed to ${status} request: ${error.response?.data?.message || error.message}`);
-    }
-  };
+        const token = localStorage.getItem('token');
+        if (!token) {
+            showAlert('error', 'Please log in to perform this action');
+            navigate('/login');
+            return;
+        }
 
+        const request = requests.find(r => r._id === requestId);
+        if (!request) {
+            throw new Error('Request not found in local state');
+        }
+
+        if (action === 'accept') {
+            const requestBody = {
+                donationId: donationId,
+                requestNeedId: requestId,
+                allocatedProducts: [],
+                allocatedMeals: []
+            };
+
+            if (donation.category === 'packaged_products') {
+                requestBody.allocatedProducts = request.requestedProducts?.map(p => ({
+                    product: p.product?._id,
+                    quantity: p.quantity
+                })) || [];
+                if (requestBody.allocatedProducts.length === 0) {
+                    throw new Error('No products allocated for this request');
+                }
+            } else if (donation.category === 'prepared_meals') {
+                requestBody.allocatedMeals = request.requestedMeals?.map(m => {
+                    if (!m.meal || !m.meal._id) {
+                        console.error('Invalid meal data:', m);
+                        throw new Error('Invalid meal data structure');
+                    }
+                    return {
+                        meal: m.meal._id,
+                        quantity: m.quantity || 1
+                    };
+                }) || [];
+                if (requestBody.allocatedMeals.length === 0) {
+                    console.error('Requested meals data:', request.requestedMeals);
+                    throw new Error('No valid meals found in the request');
+                }
+            }
+
+            console.log('Request body being sent:', requestBody);
+
+            const response = await fetch(
+                `http://localhost:3000/donationTransaction/create-and-accept`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(requestBody),
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Backend error response:', errorData);
+                throw new Error(errorData.message || 'Failed to accept request');
+            }
+
+            const result = await response.json();
+            console.log('Success response:', result);
+
+            const [donationRes, requestsRes] = await Promise.all([
+                getDonationById(donationId),
+                getRequestsByDonationId(donationId)
+            ]);
+            
+            setDonation(donationRes.data);
+            setRequests(requestsRes.data);
+            
+            showAlert('success', 'Request accepted successfully');
+        } else if (action === 'reject') {
+            const response = await fetch(
+                `http://localhost:3000/request/${requestId}/reject`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ reason: 'Rejected by donor' }),
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to reject request');
+            }
+
+            setRequests(requests.map(request => 
+                request._id === requestId ? { ...request, status: 'rejected' } : request
+            ));
+            
+            showAlert('success', 'Request rejected successfully');
+        }
+    } catch (error) {
+        console.error(`Error ${action}ing request:`, error);
+        showAlert('error', error.message);
+    }
+};
   if (loading) return <LoadingMessage>Loading...</LoadingMessage>;
 
   if (error) return (
@@ -619,14 +714,14 @@ const ListRequestsDonation = () => {
                   <ButtonContainer>
                     <ActionButton
                       className="accept-btn"
-                      onClick={() => handleStatusUpdate(request._id, 'approved')}
+                      onClick={() => handleStatusUpdate(request._id, 'accept')}
                       aria-label="Accept request"
                     >
                       ✔ Accept
                     </ActionButton>
                     <ActionButton
                       className="reject-btn"
-                      onClick={() => handleStatusUpdate(request._id, 'rejected')}
+                      onClick={() => handleStatusUpdate(request._id, 'reject')}
                       aria-label="Reject request"
                     >
                       ✖ Reject

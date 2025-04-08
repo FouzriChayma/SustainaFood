@@ -407,6 +407,7 @@ async function deleteRequest(req, res) {
    
 }
 
+
 async function createRequestNeedForExistingDonation(req, res) {
     try {
         const { donationId } = req.params;
@@ -429,10 +430,7 @@ async function createRequestNeedForExistingDonation(req, res) {
             return res.status(404).json({ message: 'Donation not found' });
         }
 
-        // Validate donation state
-        if (donation.status !== 'pending') {
-            return res.status(400).json({ message: 'Donation is not available for requests (status must be pending)' });
-        }
+        
         if (new Date(donation.expirationDate) <= new Date()) {
             return res.status(400).json({ message: 'Donation has expired' });
         }
@@ -453,7 +451,6 @@ async function createRequestNeedForExistingDonation(req, res) {
         let totalMeals = 0;
 
         if (isMealDonation) {
-            // Validate requestedMeals
             if (!requestedMeals || !Array.isArray(requestedMeals)) {
                 return res.status(400).json({ message: 'requestedMeals must be an array for meal donations' });
             }
@@ -489,7 +486,6 @@ async function createRequestNeedForExistingDonation(req, res) {
                 return res.status(400).json({ message: `Total requested meals (${totalMeals}) exceed available number of meals (${donation.numberOfMeals})` });
             }
         } else {
-            // Validate requestedProducts
             if (!requestedProducts || !Array.isArray(requestedProducts)) {
                 return res.status(400).json({ message: 'requestedProducts must be an array for product donations' });
             }
@@ -530,7 +526,7 @@ async function createRequestNeedForExistingDonation(req, res) {
             requestedMeals: isMealDonation ? validatedMeals : [],
             status: 'pending',
             linkedDonation: [donationId],
-            isaPost:false,
+            isaPost: false,
             numberOfMeals: isMealDonation ? totalMeals : undefined,
         });
 
@@ -542,6 +538,28 @@ async function createRequestNeedForExistingDonation(req, res) {
             { $push: { linkedRequests: newRequest._id } },
             { new: true }
         );
+
+        // Create a DonationTransaction with status 'pending'
+        const counter = await Counter.findOneAndUpdate(
+            { _id: 'DonationTransactionId' },
+            { $inc: { seq: 1 } },
+            { new: true, upsert: true }
+        );
+        if (!counter) throw new Error('Failed to increment DonationTransactionId counter');
+        const transactionId = counter.seq;
+
+        const transaction = new DonationTransaction({
+            id: transactionId,
+            donation: donationId,
+            requestNeed: newRequest._id,
+            donor: donation.donor,
+            recipient: recipientId,
+            allocatedProducts: validatedProducts,
+            allocatedMeals: validatedMeals,
+            status: 'pending',
+        });
+
+        await transaction.save();
 
         // Fetch the populated request for the response
         const populatedRequest = await RequestNeed.findById(newRequest._id)
@@ -585,7 +603,7 @@ ${isMealDonation ?
 }
 - Expiration Date: ${newRequest.expirationDate.toLocaleDateString()}
 
-You can review the request in your dashboard.
+Please review the request in your dashboard and accept or reject it.
 
 Best regards,
 Your Platform Team`,
@@ -613,7 +631,7 @@ Your Platform Team`,
                             }
                             <li><strong>Expiration Date:</strong> ${newRequest.expirationDate.toLocaleDateString()}</li>
                         </ul>
-                        <p>You can review the request in your dashboard.</p>
+                        <p>Please review the request in your dashboard and accept or reject it.</p>
                         <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
                     </div>
                 `,
@@ -633,6 +651,7 @@ Your Platform Team`,
         res.status(201).json({
             message: 'Request created successfully for the donation',
             request: populatedRequest,
+            transactionId: transaction._id, // Return the transaction ID for further actions
         });
     } catch (error) {
         console.error('Create Request Error:', error);
@@ -786,9 +805,9 @@ async function addDonationToRequest(req, res) {
         // ### Update Request's linkedDonation Field
         if (!request.linkedDonation) {
             request.linkedDonation = [];
-        }
-        request.linkedDonation.push(savedDonation._id);
-        await request.save();
+          }
+          request.linkedDonation.push(savedDonation._id);
+          await request.save();
 
         // ### Send Notification Email
         const recipient = request.recipient;
@@ -1315,7 +1334,88 @@ async function getRequestsByDonationId(req, res) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 }
-
+async function rejectRequest(req, res) {
+    try {
+      const { requestId } = req.params;
+      const { reason } = req.body; // Optional rejection reason
+  
+      // Find the request
+      const request = await RequestNeed.findById(requestId).populate('recipient');
+      if (!request) {
+        return res.status(404).json({ message: 'Request not found' });
+      }
+  
+      // Check if the request can be rejected
+      if (request.status !== 'pending') {
+        return res.status(400).json({
+          message: `Request cannot be rejected in its current state (${request.status})`,
+        });
+      }
+  
+      // Update request status
+      request.status = 'rejected';
+      request.rejectionReason = reason || 'No reason provided';
+      await request.save();
+  
+      // Send email notification to the recipient (optional)
+      const recipient = request.recipient;
+      if (recipient && recipient.email) {
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+          tls: { rejectUnauthorized: false },
+        });
+  
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: recipient.email,
+          subject: `Your Request "${request.title}" Has Been Rejected`,
+          text: `Dear ${recipient.name || 'Recipient'},
+  
+  We regret to inform you that your request titled "${request.title}" has been rejected.
+  
+  Details:
+  - Request Title: ${request.title}
+  - Rejection Reason: ${reason || 'No reason provided'}
+  
+  If you have any questions, please contact our support team.
+  
+  Best regards,
+  Your Platform Team`,
+          html: `
+            <div style="font-family: Arial, sans-serif; color: black;">
+              <h2 style="color: #dc3545;">Your Request Has Been Rejected</h2>
+              <p>Dear ${recipient.name || 'Recipient'},</p>
+              <p>We regret to inform you that your request titled "<strong>${request.title}</strong>" has been rejected.</p>
+              <h3>Details:</h3>
+              <ul>
+                <li><strong>Request Title:</strong> ${request.title}</li>
+                <li><strong>Rejection Reason:</strong> ${reason || 'No reason provided'}</li>
+              </ul>
+              <p>If you have any questions, please contact our support team.</p>
+              <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
+            </div>
+          `,
+        };
+  
+        await transporter.sendMail(mailOptions);
+        console.log(`Email sent to ${recipient.email}`);
+      }
+  
+      res.status(200).json({
+        message: 'Request rejected successfully',
+        request,
+      });} catch (error) {
+        console.error('Error rejecting request:', error);
+        res.status(500).json({
+          message: 'Failed to reject request',
+          error: error.message,
+        });
+      }
+    }
 module.exports = {
     addDonationToRequest,
     getAllRequests,
@@ -1327,5 +1427,6 @@ module.exports = {
     deleteRequest,
     createRequestNeedForExistingDonation,
     getRequestWithDonations,
-    getRequestsByDonationId,UpdateAddDonationToRequest
+    getRequestsByDonationId,UpdateAddDonationToRequest,
+    rejectRequest,
 };

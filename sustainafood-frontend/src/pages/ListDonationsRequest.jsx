@@ -6,7 +6,7 @@ import Footer from '../components/Footer';
 import { getDonationByRequestId , getDonationById } from '../api/donationService';
 import { getRequestById } from '../api/requestNeedsService';
 import { getUserById } from '../api/userService';
-import { createAndAcceptDonationTransaction , rejectDonation } from '../api/donationTransactionService';
+import { createAndAcceptDonationTransactionBiderc , rejectDonation } from '../api/donationTransactionService';
 import imgmouna from '../assets/images/imgmouna.png';
 import styled, { createGlobalStyle } from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
@@ -381,13 +381,11 @@ const StatusBadge = styled.span`
 `;
 
 const ListDonationsRequest = () => {
-  const { showAlert } = useAlert(); // Added useAlert
-
+  const { showAlert } = useAlert();
   const { id } = useParams();
   const [donations, setDonations] = useState([]);
   const [filteredDonations, setFilteredDonations] = useState([]);
   const [request, setRequest] = useState(null);
-  const [users, setUsers] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -409,23 +407,6 @@ const ListDonationsRequest = () => {
         const donationData = await getDonationByRequestId(id);
         const donationsArray = Array.isArray(donationData) ? donationData : [];
         setDonations(donationsArray);
-
-        if (donationsArray.length > 0) {
-          const userPromises = donationsArray.map(donation =>
-            getUserById(donation.donor)
-              .then(response => ({ id: donation.donor, data: response.data }))
-              .catch(err => {
-                console.error(`Error fetching user ${donation.donor}:`, err);
-                return { id: donation.donor, data: null };
-              })
-          );
-          const userResults = await Promise.all(userPromises);
-          const userMap = userResults.reduce((acc, { id, data }) => {
-            if (data) acc[id] = data;
-            return acc;
-          }, {});
-          setUsers(userMap);
-        }
       } catch (err) {
         console.error('Fetch error:', err.response?.data || err.message);
         setError(err.response?.data?.message || 'Failed to fetch data');
@@ -459,11 +440,11 @@ const ListDonationsRequest = () => {
     // Apply search
     if (searchQuery) {
       updatedDonations = updatedDonations.filter(donation => {
-        const productMatch = donation.products?.some(product => 
+        const productMatch = donation.products?.some(product =>
           product.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           product.product?.productType?.toLowerCase().includes(searchQuery.toLowerCase())
         );
-        const donorMatch = users[donation.donor]?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+        const donorMatch = donation.donor?.name?.toLowerCase().includes(searchQuery.toLowerCase());
         return productMatch || donorMatch;
       });
     }
@@ -473,7 +454,7 @@ const ListDonationsRequest = () => {
       if (sortOption === 'title') {
         return a.title.localeCompare(b.title);
       } else if (sortOption === 'donor') {
-        return (users[a.donor]?.name || '').localeCompare(users[b.donor]?.name || '');
+        return (a.donor?.name || '').localeCompare(b.donor?.name || '');
       } else if (sortOption === 'status') {
         return a.status.localeCompare(b.status);
       } else {
@@ -483,7 +464,9 @@ const ListDonationsRequest = () => {
 
     setFilteredDonations(updatedDonations);
     setCurrentPage(1);
-  }, [donations, request, users, filterOption, sortOption, searchQuery]);
+  }, [donations, request, filterOption, sortOption, searchQuery]);
+
+  // ... (rest of the state and functions remain unchanged)
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -494,75 +477,84 @@ const ListDonationsRequest = () => {
 
   const handleAcceptDonation = async (donationId) => {
     if (!window.confirm('Are you sure you want to accept this donation?')) return;
-  
+
     try {
-      setProcessing(prev => ({ ...prev, [donationId]: 'accepting' }));
-  
-      // Optimistic update for donation status
-      setDonations(prev => prev.map(d => 
-        d._id === donationId ? { ...d, status: 'approved' } : d
-      ));
-  
-      // Optimistic update for request numberOfMeals (assuming 2 meals are allocated)
-      setRequest(prev => ({
-        ...prev,
-        numberOfMeals: prev.numberOfMeals - 2 // Adjust based on actual allocated meals
-      }));
-  
-      // Create the transaction and update the donation on the backend
-      const response = await createAndAcceptDonationTransaction(donationId, id);
-      console.log('createAndAcceptDonationTransaction response:', response);
-  
-      // Fetch the updated donation data from the server
-      const updatedDonationResponse = await getDonationById(donationId);
-      console.log('getDonationById response:', updatedDonationResponse);
-      const updatedDonation = updatedDonationResponse.data;
-      console.log('Updated donation data:', updatedDonation);
-  
-      // Update the local state with the updated donation data
-      setDonations(prev => prev.map(d => 
-        d._id === donationId ? updatedDonation : d
-      ));
-  
-      // Fetch the updated request data from the server
-      const updatedRequestResponse = await getRequestById(id);
-      console.log('getRequestById response after transaction:', updatedRequestResponse);
-      const updatedRequest = updatedRequestResponse.data;
-      console.log('Updated request data:', updatedRequest);
-      setRequest(updatedRequest);
-  
-      // Set the filter to 'all' to ensure the updated donation is visible
-      setFilterOption('all');
-  
-      showAlert('success', 'Donation accepted and transaction created successfully!');
+        setProcessing(prev => ({ ...prev, [donationId]: 'accepting' }));
+
+        // Find the donation to get the allocated quantities
+        const donation = donations.find(d => d._id === donationId);
+
+        // Optimistic update for donation status
+        setDonations(prev => prev.map(d => 
+            d._id === donationId ? { ...d, status: 'approved' } : d
+        ));
+
+        // Optimistic update for request quantities
+        if (donation.category === 'prepared_meals') {
+            const mealsToAllocate = donation.numberOfMeals || 0;
+            setRequest(prev => ({
+                ...prev,
+                numberOfMeals: prev.numberOfMeals - mealsToAllocate
+            }));
+        } else if (donation.category === 'packaged_products') {
+            setRequest(prev => ({
+                ...prev,
+                requestedProducts: prev.requestedProducts.map(rp => {
+                    const donatedProduct = donation.products.find(dp => 
+                        dp.product._id === rp.product._id
+                    );
+                    if (donatedProduct) {
+                        return {
+                            ...rp,
+                            quantity: rp.quantity - donatedProduct.quantity
+                        };
+                    }
+                    return rp;
+                })
+            }));
+        }
+
+        // Call the backend to create the transaction and update the donation
+        const response = await createAndAcceptDonationTransactionBiderc(donationId, id);
+        console.log('createAndAcceptDonationTransactionBiderc response:', response);
+
+        // Destructure the response directly
+        const { donation: updatedDonation, request: updatedRequest } = response;
+
+        // Update the local state with the updated data
+        setDonations(prev => prev.map(d => 
+            d._id === donationId ? updatedDonation : d
+        ));
+        setRequest(updatedRequest);
+
+        setFilterOption('all');
+        showAlert('success', 'Donation accepted and transaction created successfully!');
     } catch (error) {
-      console.error('Error accepting donation:', error.response?.data || error.message);
-      const errorMessage = error.response?.data?.message || 'An unexpected error occurred while accepting the donation.';
-      
-      // Revert the optimistic updates on error
-      setDonations(prev => prev.map(d => 
-        d._id === donationId ? { ...d, status: 'pending' } : d
-      ));
-      setRequest(prev => ({ ...prev })); // Revert request state (you might need to store the original state)
-  
-      showAlert('error', errorMessage);
+        console.error('Error accepting donation:', error.response?.data || error.message);
+        const errorMessage = error.response?.data?.message || 'An unexpected error occurred while accepting the donation.';
+        
+        // Revert the optimistic updates on error
+        setDonations(prev => prev.map(d => 
+            d._id === donationId ? { ...d, status: 'pending' } : d
+        ));
+        setRequest(prev => ({ ...prev }));
+
+        showAlert('error', errorMessage);
     } finally {
-      setProcessing(prev => ({ ...prev, [donationId]: false }));
+        setProcessing(prev => ({ ...prev, [donationId]: false }));
     }
-  };
+};
 
   const handleRejectDonation = async (donationId) => {
     if (!rejectionReason) {
       showAlert('warning', 'Please provide a reason for rejection');
       return;
     }
-  
+
     try {
       setProcessing(prev => ({ ...prev, [donationId]: 'rejecting' }));
-      // Call the backend to update the donation status
       await rejectDonation(donationId, rejectionReason); 
-  
-      // Update the local state to reflect the rejection
+
       setDonations(prev => prev.map(d => 
         d._id === donationId ? { ...d, status: 'rejected' } : d
       ));
@@ -642,8 +634,8 @@ const ListDonationsRequest = () => {
 
         {currentDonations.length > 0 ? (
           currentDonations.map((donation) => {
-            const userPhoto = users[donation.donor]?.photo
-              ? `http://localhost:3000/${users[donation.donor].photo}`
+            const userPhoto = donation.donor?.photo
+              ? `http://localhost:3000/${donation.donor.photo}`
               : imgmouna;
             return (
               <DonationCard key={donation._id}>
@@ -656,8 +648,8 @@ const ListDonationsRequest = () => {
                       console.error(`Failed to load image: ${userPhoto}`);
                     }}
                   />
-                  <ProfileText>{users[donation.donor]?.name || 'Unknown'}</ProfileText>
-                  <ProfileText>{users[donation.donor]?.role || 'N/A'}</ProfileText>
+                  <ProfileText>{donation.donor?.name || 'Unknown'}</ProfileText>
+                  <ProfileText>{donation.donor?.role || 'N/A'}</ProfileText>
                 </ProfileInfo>
                 <DonationDetails>
                   <DonationDetail><strong>Title:</strong> {donation.title || 'Untitled'}</DonationDetail>
@@ -681,31 +673,49 @@ const ListDonationsRequest = () => {
                   )}
                 </DonationDetails>
                 <ProductSection>
-                  <ProductsTitle>Products:</ProductsTitle>
-                  <ProductList>
-                    {donation.products && donation.products.length > 0 ? (
-                      donation.products.map((item, itemIndex) => {
-                        const requestedProduct = request.requestedProducts?.find(
-                          rp => rp.productType === item.product?.productType || rp._id === item.product?._id
-                        );
-                        return (
-                          <ProductItem key={item._id || itemIndex}>
-                            <ProductDetails>
-                              <span><strong>Name:</strong> {item.product?.name || 'N/A'}</span>
-                              <span><strong>Type:</strong> {item.product?.productType || 'N/A'}</span>
-                              <span><strong>Weight:</strong> {item.product?.weightPerUnit ? `${item.product.weightPerUnit} ${item.product.weightUnit || ''}` : 'N/A'}</span>
-                            </ProductDetails>
-                            <ProductQuantity>
-                              <strong>Quantity Given:</strong> {item.quantity || 0} 
-                            </ProductQuantity>
-                          </ProductItem>
-                        );
-                      })
-                    ) : (
-                      <ProductItem>No products available</ProductItem>
-                    )}
-                  </ProductList>
-                </ProductSection>
+  <ProductsTitle>{donation.category === 'prepared_meals' ? 'Meals:' : 'Products:'}</ProductsTitle>
+  <ProductList>
+    {donation.category === 'prepared_meals' ? (
+      donation.meals && donation.meals.length > 0 ? (
+        donation.meals.map((item, itemIndex) => (
+          <ProductItem key={item._id || itemIndex}>
+            <ProductDetails>
+              <span><strong>Name:</strong> {item.meal?.mealName || 'N/A'}</span>
+              <span><strong>Type:</strong> {item.meal?.mealType || 'N/A'}</span>
+            </ProductDetails>
+            <ProductQuantity>
+              <strong>Quantity Given:</strong> {item.quantity || 0}
+            </ProductQuantity>
+          </ProductItem>
+        ))
+      ) : (
+        <ProductItem>No meals available</ProductItem>
+      )
+    ) : (
+      donation.products && donation.products.length > 0 ? (
+        donation.products.map((item, itemIndex) => {
+          const requestedProduct = request.requestedProducts?.find(
+            rp => rp.productType === item.product?.productType || rp._id === item.product?._id
+          );
+          return (
+            <ProductItem key={item._id || itemIndex}>
+              <ProductDetails>
+                <span><strong>Name:</strong> {item.product?.name || 'N/A'}</span>
+                <span><strong>Type:</strong> {item.product?.productType || 'N/A'}</span>
+                <span><strong>Weight:</strong> {item.product?.weightPerUnit ? `${item.product.weightPerUnit} ${item.product.weightUnit || ''}` : 'N/A'}</span>
+              </ProductDetails>
+              <ProductQuantity>
+                <strong>Quantity Given:</strong> {item.quantity || 0}
+              </ProductQuantity>
+            </ProductItem>
+          );
+        })
+      ) : (
+        <ProductItem>No products available</ProductItem>
+      )
+    )}
+  </ProductList>
+</ProductSection>
                 <ButtonContainer>
                   {(!donation.status || donation.status === 'pending') ? (
                     <>

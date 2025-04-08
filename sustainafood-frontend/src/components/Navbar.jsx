@@ -125,6 +125,9 @@ const Navbar = () => {
                   <Link to="/ListOfRequests">List of Requests</Link>
                   {isRecipient && <Link to="/myrequest">My Requests</Link>}
                   {isDonner && <Link to="/mydonations">My Donations</Link>}
+                  {isDonner && <Link to="/addDonation">Add Donation</Link>}
+                  {isRecipient && <Link to="/addDonation">Add Request</Link>}
+                  {isDonner && <Link to="/DonationRecommendations">Donation Recommendations</Link>}
                 </div>
               )}
             </div>

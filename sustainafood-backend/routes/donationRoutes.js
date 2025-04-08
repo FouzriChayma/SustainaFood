@@ -181,57 +181,65 @@ SustainaFood Team`,
 });
 
 async function matchDonationToRequests(donation) {
-    const { category, products, meals, expirationDate, numberOfMeals: donatedMeals } = donation;
+  const { category, products, meals, expirationDate, numberOfMeals: donatedMeals } = donation;
 
-    const requests = await RequestNeed.find({
-        category: donation.category,
-        status: 'pending',
-        expirationDate: { $gte: new Date() }
-    }).populate('recipient');
+  const requests = await RequestNeed.find({
+      category: donation.category,
+      status: 'pending',
+      expirationDate: { $gte: new Date() }
+  }).populate('recipient');
 
-    const matches = [];
-    for (const request of requests) {
-        let matchScore = 0;
-        let fulfilledItems = [];
+  const matches = [];
+  for (const request of requests) {
+      let matchScore = 0;
+      let fulfilledItems = [];
 
-        if (category === 'packaged_products') {
-            for (const reqProduct of request.requestedProducts || []) {
-                const matchingProduct = products.find(p => p.product.productType === reqProduct.product.productType);
-                if (matchingProduct) {
-                    const fulfilledQty = Math.min(matchingProduct.quantity, reqProduct.quantity);
-                    fulfilledItems.push({ product: reqProduct.product._id, quantity: fulfilledQty });
-                    matchScore += fulfilledQty * 10;
-                }
-            }
-        } else if (category === 'prepared_meals') {
-            const requestedMeals = request.numberOfMeals || 0;
-            if (requestedMeals > 0 && donatedMeals > 0) {
-                const fulfilledQty = Math.min(donatedMeals, requestedMeals);
-                fulfilledItems.push({ quantity: fulfilledQty });
-                matchScore += fulfilledQty * 10;
-            }
-        }
+      if (category === 'packaged_products') {
+          const requestedProducts = request.requestedProducts || [];
+          for (const reqProduct of requestedProducts) {
+              // Handle both nested and flat structures
+              const reqProductType = reqProduct.product?.productType || reqProduct.productType;
+              const reqQuantity = reqProduct.quantity || reqProduct.totalQuantity || 0;
 
-        if (fulfilledItems.length > 0) {
-            const daysUntilExpiration = (expirationDate - new Date()) / (1000 * 60 * 60 * 24);
-            if (daysUntilExpiration < 3) matchScore += 50;
-            else if (daysUntilExpiration < 7) matchScore += 20;
+              const matchingProduct = products.find(p => p.productType === reqProductType);
+              if (matchingProduct) {
+                  const fulfilledQty = Math.min(matchingProduct.totalQuantity || matchingProduct.quantity || 0, reqQuantity);
+                  fulfilledItems.push({ 
+                      product: reqProduct.product?._id || reqProduct._id || reqProduct.productType, 
+                      quantity: fulfilledQty 
+                  });
+                  matchScore += fulfilledQty * 10;
+              }
+          }
+      } else if (category === 'prepared_meals') {
+          const requestedMeals = request.numberOfMeals || 0;
+          if (requestedMeals > 0 && donatedMeals > 0) {
+              const fulfilledQty = Math.min(donatedMeals, requestedMeals);
+              fulfilledItems.push({ quantity: fulfilledQty });
+              matchScore += fulfilledQty * 10;
+          }
+      }
 
-            if (request.recipient.type === 'RELIEF' && daysUntilExpiration < 7) {
-                matchScore += 30;
-            } else if (request.recipient.type === 'SOCIAL_WELFARE') {
-                matchScore += 10;
-            }
+      if (fulfilledItems.length > 0) {
+          const daysUntilExpiration = (new Date(expirationDate) - new Date()) / (1000 * 60 * 60 * 24);
+          if (daysUntilExpiration < 3) matchScore += 50;
+          else if (daysUntilExpiration < 7) matchScore += 20;
 
-            matches.push({
-                request,
-                fulfilledItems,
-                matchScore
-            });
-        }
-    }
+          if (request.recipient?.type === 'RELIEF' && daysUntilExpiration < 7) {
+              matchScore += 30;
+          } else if (request.recipient?.type === 'SOCIAL_WELFARE') {
+              matchScore += 10;
+          }
 
-    return matches.sort((a, b) => b.matchScore - a.matchScore);
+          matches.push({
+              request,
+              fulfilledItems,
+              matchScore
+          });
+      }
+  }
+
+  return matches.sort((a, b) => b.matchScore - a.matchScore);
 }
 
 // Other routes (e.g., for getting donations by user ID)

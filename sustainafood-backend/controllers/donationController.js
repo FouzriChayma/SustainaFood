@@ -691,7 +691,7 @@ async function getDonationsByCategory(req, res) {
 
 
 // ✅ Get Donation by Request ID
-async function getDonationByRequestId(req, res) {
+/*async function getDonationByRequestId(req, res) {
   try {
     const { requestId } = req.params;
     const donations = await Donation.find({ linkedRequests: requestId })
@@ -707,7 +707,7 @@ async function getDonationByRequestId(req, res) {
     console.error('Error fetching donation by request ID:', error);
     res.status(500).json({ message: 'Server error', error: error.message || error.toString() });
   }
-}
+}*/
 
 // ✅ Classify a Food Item
 async function classifyFood(req, res) {

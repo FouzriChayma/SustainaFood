@@ -358,4 +358,48 @@ router.get("/api/analytics/recipient/:recipientId", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+router.get("/api/personal-stats/donor/:donorId", async (req, res) => {
+  const donorId = req.params.donorId;
+  try {
+    if (!donorId) {
+      return res.status(400).json({ error: "Donor ID is required" });
+    }
+
+    const donations = await Donation.find({ donor: donorId });
+    const acceptedDonations = donations.filter((d) => d.status === "fulfilled").length; // Assuming 'status' field exists
+    const requestsForDonations = await RequestNeed.countDocuments({ donation: { $in: donations.map((d) => d._id) } }); // Requests linked to donor's donations
+    const weeklyAcceptedTrends = await Donation.aggregate([
+      { $match: { donor: donorId, status: "fulfilled" } },
+      { $group: { _id: { $week: "$created_at" }, count: { $sum: 1 } } },
+      { $sort: { "_id": 1 } },
+    ]);
+
+    res.json({ acceptedDonations, requestsForDonations, weeklyAcceptedTrends });
+  } catch (error) {
+    console.error("Donor Personal Stats Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+router.get("/api/personal-stats/recipient/:recipientId", async (req, res) => {
+  const recipientId = req.params.recipientId;
+  try {
+    if (!recipientId) {
+      return res.status(400).json({ error: "Recipient ID is required" });
+    }
+
+    const requests = await RequestNeed.find({ recipient: recipientId });
+    const totalRequests = requests.length;
+    const acceptedDonations = requests.filter((r) => r.status === "fulfilled").length; // Assuming 'status' field exists
+    const weeklyRequestTrends = await RequestNeed.aggregate([
+      { $match: { recipient: recipientId } },
+      { $group: { _id: { $week: "$created_at" }, count: { $sum: 1 } } },
+      { $sort: { "_id": 1 } },
+    ]);
+
+    res.json({ totalRequests, acceptedDonations, weeklyRequestTrends });
+  } catch (error) {
+    console.error("Recipient Personal Stats Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 module.exports = router;

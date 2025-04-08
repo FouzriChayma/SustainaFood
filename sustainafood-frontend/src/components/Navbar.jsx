@@ -155,7 +155,7 @@ const Navbar = () => {
                   
                   {isRecipient && <Link to="/analytics">Request Statistics</Link>}
                   {isDonner && <Link to="/analytics">Donation Statistics</Link>}
-                  <Link to="#">Personal Stats</Link>
+                  <Link to="PersonalStatus">Personal Stats</Link>
                 </div>
               )}
             </div>

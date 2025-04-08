@@ -53,6 +53,7 @@ import ListRequestsDonation from './pages/ListRequestsDonation';
 import AiClassification from './pages/AiClassification';
 import DonationRecommendations from './pages/DonationRecommendations';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import PersonalStatus from './pages/PersonalStatus';
 const App = () => {
   return (
     <AlertProvider>
@@ -108,6 +109,7 @@ const App = () => {
           <Route path="/account-settings" element={<AccountSettings />} />
           <Route path="/DonationRecommendations" element={<DonationRecommendations />} />
           <Route path="/analytics" element={<AnalyticsDashboard />} />
+          <Route path="/PersonalStatus" element={<PersonalStatus />} />
         </Route>
 
         {/* Routes privées pour ong, restaurant, supermarket, student */}

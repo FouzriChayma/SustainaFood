@@ -296,6 +296,66 @@ router.put('/:id', donationController.updateDonation);
 // ✅ Delete a donation (and delete associated products)
 router.delete('/:id', donationController.deleteDonation);
 router.get('/donations/:requestId',donationController.getDonationByRequestId)
+// Donor Analytics
+// Donor Analytics
+// Donor Analytics
+router.get("/api/analytics/donor/:donorId", async (req, res) => {
+  const donorId = req.params.donorId;
+  try {
+    if (!donorId) {
+      return res.status(400).json({ error: "Donor ID is required" });
+    }
 
+    const donations = await Donation.find({ donor: donorId });
+    const totalDonations = donations.length;
+    const totalItems = donations.reduce((sum, d) => {
+      if (d.category === "prepared_meals") {
+        return sum + (d.numberOfMeals || 0);
+      }
+      return sum + (d.products ? d.products.reduce((s, p) => s + (p.totalQuantity || 0), 0) : 0);
+    }, 0);
+    const categories = [...new Set(donations.map((d) => d.category))];
+    const weeklyTrends = await Donation.aggregate([
+      { $match: { donor: donorId } },
+      { $group: { _id: { $week: "$created_at" }, count: { $sum: 1 } } }, // Changed to $week
+      { $sort: { "_id": 1 } },
+    ]);
 
+    res.json({ totalDonations, totalItems, categories, weeklyTrends }); // Changed to weeklyTrends
+  } catch (error) {
+    console.error("Donor Analytics Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Recipient Analytics
+router.get("/api/analytics/recipient/:recipientId", async (req, res) => {
+  const recipientId = req.params.recipientId;
+  try {
+    if (!recipientId) {
+      return res.status(400).json({ error: "Recipient ID is required" });
+    }
+
+    const requests = await RequestNeed.find({ recipient: recipientId });
+    const totalRequests = requests.length;
+    const fulfilledRequests = requests.filter((r) => r.status === "fulfilled").length;
+    const totalFulfilledItems = requests.reduce((sum, r) => {
+      if (r.category === "prepared_meals") {
+        return sum + (r.numberOfMeals || 0);
+      }
+      return sum + ((r.requestedProducts || []).reduce((s, p) => s + (p.quantity || 0), 0));
+    }, 0);
+    const categories = [...new Set(requests.map((r) => r.category))];
+    const weeklyTrends = await RequestNeed.aggregate([
+      { $match: { recipient: recipientId } },
+      { $group: { _id: { $week: "$created_at" }, count: { $sum: 1 } } }, // Changed to $week
+      { $sort: { "_id": 1 } },
+    ]);
+
+    res.json({ totalRequests, fulfilledRequests, totalFulfilledItems, categories, weeklyTrends }); // Changed to weeklyTrends
+  } catch (error) {
+    console.error("Recipient Analytics Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 module.exports = router;

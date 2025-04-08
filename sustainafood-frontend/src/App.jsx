@@ -52,7 +52,7 @@ import PredictionsDashboard from './pages/backoffice/PredictionsDashboard';
 import ListRequestsDonation from './pages/ListRequestsDonation';
 import AiClassification from './pages/AiClassification';
 import DonationRecommendations from './pages/DonationRecommendations';
-
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
 const App = () => {
   return (
     <AlertProvider>
@@ -107,6 +107,7 @@ const App = () => {
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/account-settings" element={<AccountSettings />} />
           <Route path="/DonationRecommendations" element={<DonationRecommendations />} />
+          <Route path="/analytics" element={<AnalyticsDashboard />} />
         </Route>
 
         {/* Routes privées pour ong, restaurant, supermarket, student */}

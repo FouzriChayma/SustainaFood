@@ -152,7 +152,9 @@ const Navbar = () => {
               <span className="dropdown-toggle">Analytics & Reporting</span>
               {dropdownOpen === "analytics" && (
                 <div className="dropdown-content">
-                  <Link to="#">Donation Statistics</Link>
+                  
+                  {isRecipient && <Link to="/analytics">Request Statistics</Link>}
+                  {isDonner && <Link to="/analytics">Donation Statistics</Link>}
                   <Link to="#">Personal Stats</Link>
                 </div>
               )}

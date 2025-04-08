@@ -9,6 +9,11 @@
     
 
 }
+.file-name a {
+  color: #007bff;
+  text-decoration: underline;
+  cursor: pointer;
+}
 .adddonation-logo{
     height: 100px;
 }

@@ -11,6 +11,7 @@ import { createrequests } from "../api/requestNeedsService";
 import { useAuth } from "../contexts/AuthContext";
 import { useAlert } from "../contexts/AlertContext";
 
+
 export const AddDonation = () => {
   const { authUser } = useAuth();
   const navigate = useNavigate();
@@ -441,6 +442,9 @@ export const AddDonation = () => {
     }
   }, [category]);
 
+  // Calculate description character count
+  const descriptionCharCount = description.length;
+
   return (
     <>
       <Navbar />
@@ -477,15 +481,22 @@ export const AddDonation = () => {
             </>
           )}
 
-          <textarea className="signup-input" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} required />
-          {errors.description && <p className="error-message">{errors.description}</p>}
+<textarea 
+  className="signup-input" 
+  placeholder="Description" 
+  value={description} 
+  onChange={(e) => setDescription(e.target.value)} 
+  required 
+/>
+<p className="char-count" style={{ display: "block", width: "100%", textAlign: "right", color: "gray" }}>[{descriptionCharCount}]</p>
+{errors.description && <p className="error-message">{errors.description}</p>}
 
-          {category === "prepared_meals" && (
+          {category === "prepared_meals" && isDonner && (
             <>
               <input
                 className="signup-input"
                 type="number"
-                placeholder={isDonner ? "Total Number of Meals" : "Enter the total number of meals you need"}
+                placeholder={isDonner ? "Total Number of Meals" : "Number of Meals Needed"}
                 value={numberOfMeals}
                 onChange={(e) => setNumberOfMeals(e.target.value)}
                 readOnly={isDonner}
@@ -519,6 +530,7 @@ export const AddDonation = () => {
                         </svg>
                         Upload List of Meals
                       </button>
+                      <span className="file-name">*The CSV for meals should contain: mealName, mealDescription, mealType, and quantity.</span>
                     </>
                   )}
 
@@ -630,16 +642,19 @@ export const AddDonation = () => {
               </div>
 
               {productEntryMode === "csv" && products.length === 0 && (
-                <>
-                  <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFileUpload} style={{ display: "none" }} />
-                  <button type="button" className="container-btn-file" onClick={() => fileInputRef.current.click()}>
-                    <svg fill="#fff" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 50 50">
-                      <path d="M 25 2 C 12.309295 2 2 12.309295 2 25 C 2 37.690705 12.309295 48 25 48 C 37.690705 48 48 37.690705 48 25 C 48 12.309295 37.690705 2 25 2 z M 25 4 C 36.609824 4 46 13.390176 46 25 C 46 36.609824 36.609824 46 25 46 C 13.390176 46 4 36.609824 4 25 C 4 13.390176 13.390176 4 25 4 z M 24 13 L 24 24 L 13 24 L 13 26 L 24 26 L 24 37 L 26 37 L 26 26 L 37 26 L 37 24 L 26 24 L 26 13 L 24 13 z" />
-                    </svg>
-                    Upload List of Products
-                  </button>
-                </>
-              )}
+  <>
+    <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFileUpload} style={{ display: "none" }} />
+    <button type="button" className="container-btn-file" onClick={() => fileInputRef.current.click()}>
+      <svg fill="#fff" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 50 50">
+        <path d="M 25 2 C 12.309295 2 2 12.309295 2 25 C 2 37.690705 12.309295 48 25 48 C 37.690705 48 48 37.690705 48 25 C 48 12.309295 37.690705 2 25 2 z M 25 4 C 36.609824 4 46 13.390176 46 25 C 46 36.609824 36.609824 46 25 46 C 13.390176 46 4 36.609824 4 25 C 4 13.390176 13.390176 4 25 4 z M 24 13 L 24 24 L 13 24 L 13 26 L 24 26 L 24 37 L 26 37 L 26 26 L 37 26 L 37 24 L 26 24 L 26 13 L 24 13 z" />
+      </svg>
+      Upload List of Products
+    </button>
+    <span className="file-name">
+      *The CSV for products should contain: name, weightPerUnit, totalQuantity, productDescription, status, productType, weightUnit, and weightUnitTotale.{' '}
+    </span>
+  </>
+)}
 
               {productEntryMode === "form" && (
                 <div className="manual-product-entry">

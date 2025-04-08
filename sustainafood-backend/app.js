@@ -15,6 +15,8 @@ var donationTransactionRoutes = require('./routes/donationTransactionRoutes');
 var statsRoutes = require("./routes/statsRoutes"); // Importer les routes de statistiques
 var app = express();
 var notificationRoutes=require('./routes/notificationRoutes');
+const cron = require('node-cron');
+const DonationRecommender = require('./aiService/mlModel');
 // var passport = require("passport"); // ✅ Importer Passport
 app.use(cors());
 // View engine setup
@@ -78,5 +80,26 @@ const authRoutes = require("./routes/authRoutes");
 app.use("/auth", authRoutes);
 ////////////////////////////
 
+
+const recommender = new DonationRecommender();
+
+// Function to train the model
+const trainModel = async () => {
+  console.log('Training ML model...');
+  try {
+    await recommender.buildInteractionMatrix();
+    recommender.train(10); // Train with 10 latent factors
+    console.log('Model training completed.');
+  } catch (error) {
+    console.error('Error during model training:', error.message);
+  }
+};
+
+// Step 6: Training and Maintenance
+// Initial Training: Run when the server starts
+trainModel();
+
+// Schedule Model Updates: Run daily at midnight
+cron.schedule('0 0 * * *', trainModel);
 
 module.exports = app;

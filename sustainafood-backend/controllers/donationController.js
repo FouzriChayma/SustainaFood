@@ -7,7 +7,39 @@ const RequestNeed = require('../models/RequestNeed'); // Add this import
 
 const { classifyFoodItem } = require('../aiService/classifyFoodItem');
 const { predictSupplyDemand } = require('../aiService/predictSupplyDemand');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
+const nodemailer = require('nodemailer');
+const path = require('path');
+const fs = require('fs');
+require('dotenv').config();
 
+// Liste de "bad words" (à déplacer dans un fichier séparé si nécessaire)
+const badWords = [
+  "damn",
+  "hell",
+  "idiot",
+  "stupid",
+  "fuck",
+  "t**t"
+  // Ajoutez d'autres mots interdits selon vos besoins
+];
+
+// Fonction utilitaire pour vérifier les "bad words"
+const containsBadWords = (text) => {
+  if (!text || typeof text !== 'string') return false;
+  const lowerText = text.toLowerCase();
+  return badWords.some(word => lowerText.includes(word));
+};
+
+const checkBadWords = (text) => {
+  if (!text || typeof text !== 'string') return null;
+  const lowerText = text.toLowerCase();
+  const badWord = badWords.find(word => lowerText.includes(word));
+  return badWord ? { containsBadWords: true, badWord } : null;
+};
+
+// ✅ Create a Donation
 async function createDonation(req, res) {
   let newDonation;
 
@@ -26,10 +58,39 @@ async function createDonation(req, res) {
       meals
     } = req.body;
 
-    // Log the incoming request body for debugging
     console.log("Incoming Request Body:", req.body);
 
-    // Ensure products is an array
+    // Vérification des "bad words"
+    const badWordChecks = [];
+    const titleCheck = checkBadWords(title);
+    if (titleCheck) badWordChecks.push({ field: 'title', ...titleCheck });
+    const locationCheck = checkBadWords(location);
+    if (locationCheck) badWordChecks.push({ field: 'location', ...locationCheck });
+    const descriptionCheck = checkBadWords(description);
+    if (descriptionCheck) badWordChecks.push({ field: 'description', ...descriptionCheck });
+
+    for (const product of products || []) {
+      const nameCheck = checkBadWords(product.name);
+      if (nameCheck) badWordChecks.push({ field: `product name "${product.name}"`, ...nameCheck });
+      const descCheck = checkBadWords(product.productDescription);
+      if (descCheck) badWordChecks.push({ field: `product description for "${product.name}"`, ...descCheck });
+    }
+    for (const meal of meals || []) {
+      const nameCheck = checkBadWords(meal.mealName);
+      if (nameCheck) badWordChecks.push({ field: `meal name "${meal.mealName}"`, ...nameCheck });
+      const descCheck = checkBadWords(meal.mealDescription);
+      if (descCheck) badWordChecks.push({ field: `meal description for "${meal.mealName}"`, ...descCheck });
+    }
+
+    // Si des "bad words" sont détectés, bloquer la création
+    if (badWordChecks.length > 0) {
+      return res.status(400).json({
+        message: 'Inappropriate language detected in submission',
+        badWordsDetected: badWordChecks
+      });
+    }
+
+    // Validation et traitement des produits et repas
     if (!Array.isArray(products)) {
       if (typeof products === 'string') {
         try {
@@ -42,7 +103,6 @@ async function createDonation(req, res) {
       }
     }
 
-    // Ensure meals is an array
     if (!Array.isArray(meals)) {
       if (typeof meals === 'string') {
         try {
@@ -55,14 +115,8 @@ async function createDonation(req, res) {
       }
     }
 
-    // Log the parsed products and meals for debugging
-    console.log("Parsed Products:", products);
-    console.log("Parsed Meals:", meals);
-
-    // Validate mealType values
     const validMealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert', 'Other'];
 
-    // Validate and filter meals
     const validMeals = meals
       .map((meal, index) => {
         if (!meal.mealName || typeof meal.mealName !== 'string' || !meal.mealName.trim()) {
@@ -72,11 +126,11 @@ async function createDonation(req, res) {
           throw new Error(`Meal at index ${index} is missing a valid mealDescription`);
         }
         if (!meal.mealType || !validMealTypes.includes(meal.mealType)) {
-          throw new Error(`Meal at index ${index} has an invalid mealType: ${meal.mealType}. Must be one of ${validMealTypes.join(', ')}`);
+          throw new Error(`Meal at index ${index} has an invalid mealType: ${meal.mealType}`);
         }
         const quantity = parseInt(meal.quantity);
         if (isNaN(quantity) || quantity <= 0) {
-          throw new Error(`Meal at index ${index} has an invalid quantity: ${meal.quantity}. Must be a positive integer`);
+          throw new Error(`Meal at index ${index} has an invalid quantity: ${meal.quantity}`);
         }
         return {
           mealName: meal.mealName,
@@ -87,7 +141,6 @@ async function createDonation(req, res) {
       })
       .filter(meal => meal);
 
-    // Validate and filter products
     const validProducts = products
       .map((product, index) => {
         if (!product.name || typeof product.name !== 'string' || !product.name.trim()) {
@@ -101,11 +154,11 @@ async function createDonation(req, res) {
         }
         const weightPerUnit = parseFloat(product.weightPerUnit);
         if (isNaN(weightPerUnit) || weightPerUnit <= 0) {
-          throw new Error(`Product at index ${index} has an invalid weightPerUnit: ${product.weightPerUnit}. Must be a positive number`);
+          throw new Error(`Product at index ${index} has an invalid weightPerUnit: ${product.weightPerUnit}`);
         }
         const totalQuantity = parseInt(product.totalQuantity);
         if (isNaN(totalQuantity) || totalQuantity <= 0) {
-          throw new Error(`Product at index ${index} has an invalid totalQuantity: ${product.totalQuantity}. Must be a positive integer`);
+          throw new Error(`Product at index ${index} has an invalid totalQuantity: ${product.totalQuantity}`);
         }
         if (!product.status || typeof product.status !== 'string') {
           throw new Error(`Product at index ${index} is missing a valid status`);
@@ -124,11 +177,6 @@ async function createDonation(req, res) {
       })
       .filter(product => product);
 
-    // Log the valid products and meals for debugging
-    console.log("Valid Products After Filtering:", validProducts);
-    console.log("Valid Meals After Filtering:", validMeals);
-
-    // Validate required fields
     if (!title || typeof title !== 'string' || !title.trim()) {
       throw new Error('Missing or invalid required field: title');
     }
@@ -152,18 +200,15 @@ async function createDonation(req, res) {
       throw new Error('At least one valid product is required for packaged_products category');
     }
 
-    // Calculate numberOfMeals
     const calculatedNumberOfMeals = category === 'prepared_meals'
       ? validMeals.reduce((sum, meal) => sum + meal.quantity, 0)
       : undefined;
 
-    // Validate provided numberOfMeals
     const providedNumberOfMeals = parseInt(numberOfMeals);
     if (category === 'prepared_meals' && !isNaN(providedNumberOfMeals) && providedNumberOfMeals !== calculatedNumberOfMeals) {
       throw new Error(`Provided numberOfMeals (${providedNumberOfMeals}) does not match the calculated total (${calculatedNumberOfMeals})`);
     }
 
-    // Create the donation object
     newDonation = new Donation({
       title,
       location,
@@ -174,12 +219,12 @@ async function createDonation(req, res) {
       donor,
       meals: [],
       numberOfMeals: category === 'prepared_meals' ? (providedNumberOfMeals || calculatedNumberOfMeals) : undefined,
-      remainingMeals: category === 'prepared_meals' ? numberOfMeals : undefined, // Initialize remainingMeals
+      remainingMeals: category === 'prepared_meals' ? (providedNumberOfMeals || calculatedNumberOfMeals) : undefined,
       products: [],
-      status: status || 'pending'
+      status: status || 'pending',
+      isAnomaly: false
     });
 
-    // Process meals: Create Meal documents and link them
     let mealEntries = [];
     if (category === 'prepared_meals' && validMeals.length > 0) {
       for (let meal of validMeals) {
@@ -188,11 +233,7 @@ async function createDonation(req, res) {
           { $inc: { seq: 1 } },
           { new: true, upsert: true }
         );
-
-        if (!counter) {
-          throw new Error('Failed to generate meal ID');
-        }
-
+        if (!counter) throw new Error('Failed to generate meal ID');
         const newMeal = new Meal({
           id: counter.seq,
           mealName: meal.mealName,
@@ -201,17 +242,11 @@ async function createDonation(req, res) {
           quantity: meal.quantity,
           donation: newDonation._id
         });
-
         await newMeal.save();
-        console.log(`Created Meal Document: ${newMeal._id}`);
-        mealEntries.push({
-          meal: newMeal._id,
-          quantity: meal.quantity
-        });
+        mealEntries.push({ meal: newMeal._id, quantity: meal.quantity });
       }
     }
 
-    // Process products: Create Product documents and link them
     let productEntries = [];
     if (category === 'packaged_products' && validProducts.length > 0) {
       for (let product of validProducts) {
@@ -220,11 +255,7 @@ async function createDonation(req, res) {
           { $inc: { seq: 1 } },
           { new: true, upsert: true }
         );
-
-        if (!counter) {
-          throw new Error('Failed to generate product ID');
-        }
-
+        if (!counter) throw new Error('Failed to generate product ID');
         const newProduct = new Product({
           id: counter.seq,
           name: product.name,
@@ -238,35 +269,26 @@ async function createDonation(req, res) {
           status: product.status,
           donation: newDonation._id
         });
-
         await newProduct.save();
-        console.log(`Created Product Document: ${newProduct._id}`);
-        productEntries.push({
-          product: newProduct._id,
-          quantity: product.totalQuantity
-        });
+        productEntries.push({ product: newProduct._id, quantity: product.totalQuantity });
       }
     }
 
-    // Assign the meal and product entries to the donation
     newDonation.meals = mealEntries;
     newDonation.products = productEntries;
 
-    // Log the donation before saving
-    console.log("Donation Before Save:", newDonation);
-
-    // Save the donation
     await newDonation.save();
 
-    // Populate the response
     const populatedDonation = await Donation.findById(newDonation._id)
-      .populate('donor')
+      .populate('donor', 'name role email')
       .populate('products.product')
       .populate('meals.meal');
 
-    res.status(201).json({ message: 'Donation created successfully', donation: populatedDonation });
+    res.status(201).json({
+      message: 'Donation created successfully',
+      donation: populatedDonation
+    });
   } catch (error) {
-    // Rollback
     if (newDonation && newDonation._id) {
       if (newDonation.meals && newDonation.meals.length > 0) {
         const mealIds = newDonation.meals.map(entry => entry.meal);
@@ -281,28 +303,69 @@ async function createDonation(req, res) {
     console.error("Error creating donation:", error);
     res.status(400).json({
       message: "Failed to create donation",
-      error: error.message || error
+      error: error.message || error.toString()
     });
   }
 }
-// ✅ Update a donation (also updates related products)
+
+// ✅ Update a Donation
 async function updateDonation(req, res) {
   try {
-    const { id } = req.params; // Donation ID
+    const { id } = req.params;
     const { products, meals, ...donationData } = req.body;
 
-    // **Validate Donation ID**
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid donation ID' });
     }
 
-    // **Fetch Existing Donation**
     const existingDonation = await Donation.findById(id).populate('meals.meal');
     if (!existingDonation) {
       return res.status(404).json({ message: 'Donation not found' });
     }
 
-    // **Process Products**
+    // Vérification des "bad words" dans les champs mis à jour
+    const badWordChecks = [];
+    if (donationData.title) {
+      const titleCheck = checkBadWords(donationData.title);
+      if (titleCheck) badWordChecks.push({ field: 'title', ...titleCheck });
+    }
+    if (donationData.location) {
+      const locationCheck = checkBadWords(donationData.location);
+      if (locationCheck) badWordChecks.push({ field: 'location', ...locationCheck });
+    }
+    if (donationData.description) {
+      const descriptionCheck = checkBadWords(donationData.description);
+      if (descriptionCheck) badWordChecks.push({ field: 'description', ...descriptionCheck });
+    }
+    for (const product of products || []) {
+      if (product.name) {
+        const nameCheck = checkBadWords(product.name);
+        if (nameCheck) badWordChecks.push({ field: `product name "${product.name}"`, ...nameCheck });
+      }
+      if (product.productDescription) {
+        const descCheck = checkBadWords(product.productDescription);
+        if (descCheck) badWordChecks.push({ field: `product description for "${product.name}"`, ...descCheck });
+      }
+    }
+    for (const meal of meals || []) {
+      if (meal.mealName) {
+        const nameCheck = checkBadWords(meal.mealName);
+        if (nameCheck) badWordChecks.push({ field: `meal name "${meal.mealName}"`, ...nameCheck });
+      }
+      if (meal.mealDescription) {
+        const descCheck = checkBadWords(meal.mealDescription);
+        if (descCheck) badWordChecks.push({ field: `meal description for "${meal.mealName}"`, ...descCheck });
+      }
+    }
+
+    // Si des "bad words" sont détectés, bloquer la mise à jour
+    if (badWordChecks.length > 0) {
+      return res.status(400).json({
+        message: 'Inappropriate language detected in submission',
+        badWordsDetected: badWordChecks
+      });
+    }
+
     let updatedProducts = existingDonation.products || [];
     if (products !== undefined) {
       if (!Array.isArray(products)) {
@@ -353,14 +416,12 @@ async function updateDonation(req, res) {
       }
     }
 
-    // **Process Meals**
     let updatedMeals = [];
     if (meals !== undefined) {
       if (!Array.isArray(meals)) {
         return res.status(400).json({ message: 'Meals must be an array' });
       }
 
-      // **Identify Meals to Delete**
       const existingMealIds = existingDonation.meals.map(mealEntry => mealEntry.meal.id.toString());
       const updatedMealIds = meals
         .filter(item => item.id)
@@ -371,7 +432,6 @@ async function updateDonation(req, res) {
         await Meal.deleteMany({ id: { $in: mealsToDelete } });
       }
 
-      // **Process Updated/New Meals**
       updatedMeals = [];
       for (const item of meals) {
         if (item.quantity === undefined || typeof item.quantity !== 'number' || item.quantity < 1) {
@@ -387,7 +447,7 @@ async function updateDonation(req, res) {
           meal.mealName = item.mealName ?? meal.mealName;
           meal.mealDescription = item.mealDescription ?? meal.mealDescription;
           meal.mealType = item.mealType ?? meal.mealType;
-          meal.quantity = item.quantity; // Update the quantity in the Meal document
+          meal.quantity = item.quantity;
           await meal.save();
           mealId = meal._id;
         } else {
@@ -416,7 +476,6 @@ async function updateDonation(req, res) {
       }));
     }
 
-    // **Update Donation Fields**
     const allowedFields = [
       'title',
       'location',
@@ -433,13 +492,12 @@ async function updateDonation(req, res) {
       }
     });
 
-    // **Save Updated Donation**
     const updatedDonation = await Donation.findByIdAndUpdate(
       id,
       { ...updateData, products: updatedProducts, meals: updatedMeals },
       { new: true }
     )
-      .populate('donor')
+      .populate('donor', 'name role email')
       .populate('products.product')
       .populate('meals.meal');
 
@@ -447,7 +505,6 @@ async function updateDonation(req, res) {
       return res.status(404).json({ message: 'Donation not found' });
     }
 
-    // **Success Response**
     res.status(200).json({
       message: 'Donation updated successfully',
       data: updatedDonation
@@ -456,68 +513,72 @@ async function updateDonation(req, res) {
     console.error('Error updating donation:', error);
     res.status(500).json({
       message: 'Failed to update donation',
-      error: error.message
+      error: error.message || error.toString()
     });
   }
 }
-// ✅ Delete a donation (also deletes related products)
+
 // ✅ Delete a Donation
 async function deleteDonation(req, res) {
   try {
-      const { id } = req.params;
-      const donation = await Donation.findById(id);
+    const { id } = req.params;
+    const donation = await Donation.findById(id);
 
-      if (!donation) {
-          return res.status(404).json({ message: 'Donation not found' });
-      }
+    if (!donation) {
+      return res.status(404).json({ message: 'Donation not found' });
+    }
 
-      // Delete associated products and meals
-      await Product.deleteMany({ _id: { $in: donation.products } });
-      await Meal.deleteMany({ _id: { $in: donation.meals } });
+    if (donation.products && donation.products.length > 0) {
+      const productIds = donation.products.map(entry => entry.product);
+      await Product.deleteMany({ _id: { $in: productIds } });
+    }
+    if (donation.meals && donation.meals.length > 0) {
+      const mealIds = donation.meals.map(entry => entry.meal);
+      await Meal.deleteMany({ _id: { $in: mealIds } });
+    }
 
-      // Delete donation
-      await Donation.findByIdAndDelete(id);
+    await Donation.findByIdAndDelete(id);
 
-      res.status(200).json({ message: 'Donation and related items deleted successfully' });
+    res.status(200).json({ message: 'Donation and related items deleted successfully' });
   } catch (error) {
-      console.error('Error deleting donation:', error);
-      res.status(500).json({ message: 'Failed to delete donation', error: error.message });
+    console.error('Error deleting donation:', error);
+    res.status(500).json({ message: 'Failed to delete donation', error: error.message || error.toString() });
   }
 }
 
 // ✅ Get Donations by Status
 async function getDonationsByStatus(req, res) {
   try {
-      const { status } = req.params;
-      const donations = await Donation.find({ status })
-          .populate('donor')
-          .populate('products.product')
-          .populate('meals.meal');
+    const { status } = req.params;
+    const donations = await Donation.find({ status })
+      .populate('donor', 'name role email')
+      .populate('products.product')
+      .populate('meals.meal');
 
-      if (donations.length === 0) {
-          return res.status(404).json({ message: 'No donations found with this status' });
-      }
+    if (donations.length === 0) {
+      return res.status(404).json({ message: 'No donations found with this status' });
+    }
 
-      res.status(200).json(donations);
+    res.status(200).json(donations);
   } catch (error) {
-      console.error('Error fetching donations by status:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error fetching donations by status:', error);
+    res.status(500).json({ message: 'Server error', error: error.message || error.toString() });
   }
 }
 
 // ✅ Get All Donations
 async function getAllDonations(req, res) {
   try {
-      const donations = await Donation.find({ isaPost: true }) // Only fetch posted donations
-          .populate('donor')
-          .populate('products.product')
-          .populate('meals.meal')
-          .populate('linkedRequests');
+    const donations = await Donation.find({ isaPost: true, isAnomaly: false })
+      .populate('donor', 'name role email')
+      .populate('products.product')
+      .populate('meals.meal')
+      .populate('linkedRequests');
 
-      res.status(200).json(donations);
+    res.status(200).json(donations);
   } catch (error) {
-      console.error('Error fetching all donations:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error fetching all donations:', error);
+    res.status(500).json({ message: 'Server error', error: error.message || error.toString() });
   }
 }
 
@@ -526,7 +587,7 @@ async function getDonationById(req, res) {
   try {
     const { id } = req.params;
     const donation = await Donation.findById(id)
-      .populate('donor')
+      .populate('donor', 'name role email')
       .populate('products.product')
       .populate('meals.meal');
 
@@ -538,83 +599,90 @@ async function getDonationById(req, res) {
     res.status(200).json(donation);
   } catch (error) {
     console.error('Error fetching donation by ID:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: 'Server error', error: error.message || error.toString() });
   }
 }
 
 // ✅ Get Donations by User ID
 async function getDonationsByUserId(req, res) {
   try {
-      const { userId } = req.params;
-      const donations = await Donation.find({ donor: userId, isaPost: true })
-          .populate('products.product')
-          .populate('meals.meal');
+    const { userId } = req.params;
+    const donations = await Donation.find({ donor: userId, isaPost: true, isAnomaly: false })
+      .populate('products.product')
+      .populate('meals.meal');
 
-      if (donations.length === 0) {
-          return res.status(404).json({ message: 'No donations found for this user' });
-      }
+    if (donations.length === 0) {
+      return res.status(404).json({ message: 'No donations found for this user' });
+    }
 
-      res.status(200).json(donations);
+    res.status(200).json(donations);
   } catch (error) {
-      console.error('Error fetching donations by user ID:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error fetching donations by user ID:', error);
+    res.status(500).json({ message: 'Server error', error: error.message || error.toString() });
   }
 }
 
 // ✅ Get Donations by Date
 async function getDonationsByDate(req, res) {
   try {
-      const { date } = req.params;
-      const donations = await Donation.find({ expirationDate: new Date(date) })
-          .populate('products.product')
-          .populate('meals.meal');
+    const { date } = req.params;
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
 
-      if (donations.length === 0) {
-          return res.status(404).json({ message: 'No donations found for this date' });
-      }
+    const donations = await Donation.find({
+      expirationDate: { $gte: startOfDay, $lte: endOfDay }
+    })
+      .populate('products.product')
+      .populate('meals.meal');
 
-      res.status(200).json(donations);
+    if (donations.length === 0) {
+      return res.status(404).json({ message: 'No donations found for this date' });
+    }
+
+    res.status(200).json(donations);
   } catch (error) {
-      console.error('Error fetching donations by date:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error fetching donations by date:', error);
+    res.status(500).json({ message: 'Server error', error: error.message || error.toString() });
   }
 }
 
 // ✅ Get Donations by Type
 async function getDonationsByType(req, res) {
   try {
-      const { type } = req.params;
-      const donations = await Donation.find({ Type: type }) // Ensure case consistency
-          .populate('products.product')
-          .populate('meals.meal');
+    const { type } = req.params;
+    const donations = await Donation.find({ type })
+      .populate('products.product')
+      .populate('meals.meal');
 
-      if (donations.length === 0) {
-          return res.status(404).json({ message: 'No donations found for this type' });
-      }
+    if (donations.length === 0) {
+      return res.status(404).json({ message: 'No donations found for this type' });
+    }
 
-      res.status(200).json(donations);
+    res.status(200).json(donations);
   } catch (error) {
-      console.error('Error fetching donations by type:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error fetching donations by type:', error);
+    res.status(500).json({ message: 'Server error', error: error.message || error.toString() });
   }
 }
 
 // ✅ Get Donations by Category
 async function getDonationsByCategory(req, res) {
   try {
-      const { category } = req.params;
-      const donations = await Donation.find({ Category: category }) // Ensure case consistency
-          .populate('products.product')
-          .populate('meals.meal');
+    const { category } = req.params;
+    const donations = await Donation.find({ category })
+      .populate('products.product')
+      .populate('meals.meal');
 
-      if (donations.length === 0) {
-          return res.status(404).json({ message: 'No donations found for this category' });
-      }
+    if (donations.length === 0) {
+      return res.status(404).json({ message: 'No donations found for this category' });
+    }
 
-      res.status(200).json(donations);
+    res.status(200).json(donations);
   } catch (error) {
-      console.error('Error fetching donations by category:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error fetching donations by category:', error);
+    res.status(500).json({ message: 'Server error', error: error.message || error.toString() });
   }
 }
 
@@ -622,33 +690,65 @@ async function getDonationsByCategory(req, res) {
 
 
 
+// ✅ Get Donation by Request ID
+async function getDonationByRequestId(req, res) {
+  try {
+    const { requestId } = req.params;
+    const donations = await Donation.find({ linkedRequests: requestId })
+      .populate('products.product')
+      .populate('meals.meal');
 
-//AI PART 
-// ✅ Classify a food item
+    if (donations.length === 0) {
+      return res.status(404).json({ message: 'No donation found for this request' });
+    }
+
+    res.status(200).json(donations);
+  } catch (error) {
+    console.error('Error fetching donation by request ID:', error);
+    res.status(500).json({ message: 'Server error', error: error.message || error.toString() });
+  }
+}
+
+// ✅ Classify a Food Item
 async function classifyFood(req, res) {
   try {
-      const { name, description, category } = req.body;
+    const { name, description, category } = req.body;
 
-      if (!name || !description || !category) {
-          return res.status(400).json({ message: 'Name, description, and category are required' });
-      }
+    if (!name || !description || !category) {
+      return res.status(400).json({ message: 'Name, description, and category are required' });
+    }
 
-      if (!['packaged_products', 'prepared_meals'].includes(category)) {
-          return res.status(400).json({ message: 'Invalid category' });
-      }
+    if (!['packaged_products', 'prepared_meals'].includes(category)) {
+      return res.status(400).json({ message: 'Invalid category' });
+    }
 
-      const classification = await classifyFoodItem({ name, description, category });
-      res.status(200).json(classification);
+    const badWordChecks = [];
+    const nameCheck = checkBadWords(name);
+    if (nameCheck) badWordChecks.push({ field: 'name', ...nameCheck });
+    const descCheck = checkBadWords(description);
+    if (descCheck) badWordChecks.push({ field: 'description', ...descCheck });
+
+    if (badWordChecks.length > 0) {
+      return res.status(400).json({
+        message: 'Inappropriate language detected in submission',
+        badWordsDetected: badWordChecks
+      });
+    }
+
+    const classification = await classifyFoodItem({ name, description, category });
+    res.status(200).json(classification);
   } catch (error) {
-      console.error('Error classifying food item:', error);
-      res.status(500).json({ message: 'Failed to classify food item', error: error.message });
+    console.error('Error classifying food item:', error);
+    res.status(500).json({ message: 'Failed to classify food item', error: error.message || error.toString() });
   }
 }
+
+// ✅ Get Supply/Demand Prediction
 async function getSupplyDemandPrediction(req, res) {
   console.log('getSupplyDemandPrediction called');
   try {
     const { period } = req.query;
-    console.log('Fetching predictions for period:', period || 'week'); // Changed default to 'week'
+    console.log('Fetching predictions for period:', period || 'week');
     const predictions = await predictSupplyDemand(period || 'week');
     console.log('Predictions:', predictions);
     if (!predictions.supply || !predictions.demand) {
@@ -657,7 +757,7 @@ async function getSupplyDemandPrediction(req, res) {
     res.status(200).json(predictions);
   } catch (error) {
     console.error('Prediction Error Details:', error.stack);
-    res.status(500).json({ message: 'Failed to predict supply and demand', error: error.message });
+    res.status(500).json({ message: 'Failed to predict supply and demand', error: error.message || error.toString() });
   }
 }
 
@@ -690,68 +790,74 @@ const getDonationByRequestId = async (req, res) => {
       res.status(500).json({ message: 'Failed to fetch donations', error: error.message });
   }
 };
+// ✅ Match Donation to Requests
 async function matchDonationToRequests(donation) {
   const { category, products, meals, expirationDate, numberOfMeals: donatedMeals } = donation;
 
-  // Find pending requests that match the donation's category
   const requests = await RequestNeed.find({
-      category: donation.category,
-      status: 'pending',
-      expirationDate: { $gte: new Date() } // Ensure request is still valid
-  })
-      .populate('recipient'); // Only populate recipient, no need for requestedMeals
+    category: donation.category,
+    status: 'pending',
+    expirationDate: { $gte: new Date() }
+  }).populate('recipient');
 
   const matches = [];
   for (const request of requests) {
-      let matchScore = 0;
-      let fulfilledItems = [];
+    let matchScore = 0;
+    let fulfilledItems = [];
 
-      // Check if the request's needs match the donation
-      if (category === 'packaged_products') {
-          // Keep the existing logic for packaged_products
-          for (const reqProduct of request.requestedProducts || []) {
-              const matchingProduct = products.find(p => p.product.productType === reqProduct.product.productType);
-              if (matchingProduct) {
-                  const fulfilledQty = Math.min(matchingProduct.quantity, reqProduct.quantity);
-                  fulfilledItems.push({ product: reqProduct.product._id, quantity: fulfilledQty });
-                  matchScore += fulfilledQty * 10; // Score based on quantity fulfilled
-              }
-          }
-      } else if (category === 'prepared_meals') {
-          // For prepared_meals, match based on numberOfMeals
-          const requestedMeals = request.numberOfMeals || 0;
-          if (requestedMeals > 0 && donatedMeals > 0) {
-              // Calculate how many meals can be fulfilled
-              const fulfilledQty = Math.min(donatedMeals, requestedMeals);
-              fulfilledItems.push({ quantity: fulfilledQty }); // No specific meal, just the quantity
-              matchScore += fulfilledQty * 10; // Score based on quantity fulfilled
-          }
+    if (category === 'packaged_products') {
+      for (const reqProduct of request.requestedProducts || []) {
+        const matchingProduct = products.find(p => p.product.productType === reqProduct.product.productType);
+        if (matchingProduct) {
+          const fulfilledQty = Math.min(matchingProduct.quantity, reqProduct.quantity);
+          fulfilledItems.push({ product: reqProduct.product._id, quantity: fulfilledQty });
+          matchScore += fulfilledQty * 10;
+        }
+      }
+    } else if (category === 'prepared_meals') {
+      const requestedMeals = request.numberOfMeals || 0;
+      if (requestedMeals > 0 && donatedMeals > 0) {
+        const fulfilledQty = Math.min(donatedMeals, requestedMeals);
+        fulfilledItems.push({ quantity: fulfilledQty });
+        matchScore += fulfilledQty * 10;
+      }
+    }
+
+    if (fulfilledItems.length > 0) {
+      const daysUntilExpiration = (expirationDate - new Date()) / (1000 * 60 * 60 * 24);
+      if (daysUntilExpiration < 3) matchScore += 50;
+      else if (daysUntilExpiration < 7) matchScore += 20;
+
+      if (request.recipient.type === 'RELIEF' && daysUntilExpiration < 7) {
+        matchScore += 30;
+      } else if (request.recipient.type === 'SOCIAL_WELFARE') {
+        matchScore += 10;
       }
 
-      if (fulfilledItems.length > 0) {
-          // Adjust score based on expiration date
-          const daysUntilExpiration = (expirationDate - new Date()) / (1000 * 60 * 60 * 24);
-          if (daysUntilExpiration < 3) matchScore += 50; // Boost for near-expiring items
-          else if (daysUntilExpiration < 7) matchScore += 20; // Moderate boost for items expiring soon
-
-          // Adjust score based on recipient type
-          if (request.recipient.type === 'RELIEF' && daysUntilExpiration < 7) {
-              matchScore += 30; // Boost for relief organizations needing urgent supplies
-          } else if (request.recipient.type === 'SOCIAL_WELFARE') {
-              matchScore += 10; // Slight boost for social welfare organizations
-          }
-
-          matches.push({
-              request,
-              fulfilledItems,
-              matchScore
-          });
-      }
+      matches.push({
+        request,
+        fulfilledItems,
+        matchScore
+      });
+    }
   }
 
-  // Sort matches by score (descending)
   return matches.sort((a, b) => b.matchScore - a.matchScore);
 }
-// Ensure this function isn’t miscalled with a request ID
 
-module.exports = {matchDonationToRequests,getSupplyDemandPrediction,classifyFood,getDonationByRequestId,getDonationsByUserId ,getAllDonations, getDonationById, getDonationsByDate, getDonationsByType, getDonationsByCategory, createDonation, updateDonation, deleteDonation , getDonationsByStatus  };
+module.exports = {
+  matchDonationToRequests,
+  getDonationByRequestId,
+  getSupplyDemandPrediction,
+  classifyFood,
+  getDonationsByUserId,
+  getAllDonations,
+  getDonationById,
+  getDonationsByDate,
+  getDonationsByType,
+  getDonationsByCategory,
+  createDonation,
+  updateDonation,
+  deleteDonation,
+  getDonationsByStatus
+};

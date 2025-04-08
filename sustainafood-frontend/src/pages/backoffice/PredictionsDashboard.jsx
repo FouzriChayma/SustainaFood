@@ -8,7 +8,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import {  FaFilePdf } from "react-icons/fa";
 
-import '../../assets/styles/backoffcss/predictionsDashboard.css';
+import '../../assets/styles/backoffcss/PredictionsDashboard.css';
 import logo from '../../assets/images/logooo.png';  // Import the logo
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 

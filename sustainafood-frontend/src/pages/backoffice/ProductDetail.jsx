@@ -1,7 +1,7 @@
 // ProductDetail.js
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { getProductById } from '../../api/productservice'; // Assure-toi que le chemin est correct
+import { getProductById } from '../../api/productService'; // Assure-toi que le chemin est correct
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import "../../assets/styles/backoffcss/ProductDetail.css"; // Crée ce fichier CSS

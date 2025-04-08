@@ -25,7 +25,7 @@ export const AddDonation = () => {
   const [type, setType] = useState("donation");
   const [category, setCategory] = useState("prepared_meals");
   const [description, setDescription] = useState("");
-  const [numberOfMeals, setNumberOfMeals] = useState(""); // Total meals for display/validation
+  const [numberOfMeals, setNumberOfMeals] = useState("");
 
   // Error handling
   const [error, setError] = useState(null);
@@ -68,7 +68,6 @@ export const AddDonation = () => {
   const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
 
-  // Updated productTypes array with the specified values
   const productTypes = [
     "Canned_Goods", "Dry_Goods", "Beverages", "Snacks", "Cereals", "Baked_Goods",
     "Condiments", "Vegetables", "Fruits", "Meat", "Fish", "Dairy", "Eggs",
@@ -103,7 +102,6 @@ export const AddDonation = () => {
   }, [user]);
 
   useEffect(() => {
-    // Calculate total meals from manualMeals when in form mode (for donors only)
     if (category === "prepared_meals" && isDonner) {
       const total = manualMeals.reduce((sum, meal) => sum + (parseInt(meal.quantity) || 0), 0);
       setNumberOfMeals(total || "");
@@ -115,7 +113,7 @@ export const AddDonation = () => {
     if (file) {
       Papa.parse(file, {
         complete: (result) => {
-          console.log("Parsed CSV Products:", result.data); // Debugging
+          console.log("Parsed CSV Products:", result.data);
           setProducts(result.data);
         },
         header: true,
@@ -165,7 +163,6 @@ export const AddDonation = () => {
         tempErrors.numberOfMeals = "Number of meals must be a valid positive integer";
       }
 
-      // For donors, validate meal details
       if (isDonner) {
         if (mealsEntryMode === "csv" && meals.length === 0) {
           tempErrors.meals = "Meals list is required when uploading via CSV";
@@ -177,7 +174,6 @@ export const AddDonation = () => {
             tempErrors.meals = "All meals must have a name, type, description, and valid quantity";
           }
         }
-        // Validate that the total quantity of meals matches numberOfMeals
         const totalMeals = mealsEntryMode === "form"
           ? manualMeals.reduce((sum, meal) => sum + (parseInt(meal.quantity) || 0), 0)
           : meals.reduce((sum, meal) => sum + (parseInt(meal.quantity) || 0), 0);
@@ -196,13 +192,12 @@ export const AddDonation = () => {
         );
         if (invalidProducts.length > 0) {
           tempErrors.products = "All products must have a name, type, description, weight per unit, and total quantity greater than 0";
-          console.log("Invalid Products:", invalidProducts); // Debugging
         }
       }
     }
 
     setErrors(tempErrors);
-    console.log("Validation Errors:", tempErrors); // Debugging
+    console.log("Validation Errors:", tempErrors);
     return Object.keys(tempErrors).length === 0;
   };
 
@@ -327,7 +322,6 @@ export const AddDonation = () => {
 
     if (category === "prepared_meals") {
       donationData.append("numberOfMeals", numberOfMeals);
-      // For donors, send meal details; for recipients, only send numberOfMeals
       if (isDonner) {
         const mealsToSend = mealsEntryMode === "form" ? manualMeals : meals;
         const formattedMeals = mealsToSend.map(meal => ({
@@ -344,7 +338,6 @@ export const AddDonation = () => {
     if (category === "packaged_products") {
       const productsToSend = productEntryMode === "csv" ? products : manualProducts;
       if (isDonner) {
-        // For donors, send the full product details
         const formattedProducts = productsToSend.map(product => ({
           ...product,
           totalQuantity: parseInt(product.totalQuantity),
@@ -353,7 +346,6 @@ export const AddDonation = () => {
         console.log("Formatted Products to Send (Donor):", formattedProducts);
         donationData.append("products", JSON.stringify(formattedProducts));
       } else if (isRecipient) {
-        // For recipients, send requestedProducts with only the necessary fields
         const formattedRequestedProducts = productsToSend.map(product => ({
           name: product.name,
           productType: product.productType,
@@ -362,7 +354,7 @@ export const AddDonation = () => {
           weightUnit: product.weightUnit,
           weightUnitTotale: product.weightUnitTotale,
           totalQuantity: parseFloat(product.totalQuantity),
-          quantity: parseInt(product.totalQuantity), // Map totalQuantity to quantity
+          quantity: parseInt(product.totalQuantity),
           image: product.image,
           status: product.status,
         }));
@@ -380,20 +372,28 @@ export const AddDonation = () => {
         response = await addDonation(donationData);
         console.log("Donation created successfully:", response.data);
         showAlert("success", "Donation created successfully!");
+        window.history.back();
       } else if (isRecipient) {
         donationData.append("recipient", userid);
         console.log("Sending Request Data:", [...donationData.entries()]);
         response = await createrequests(donationData);
         console.log("Request created successfully:", response.data);
         showAlert("success", "Request created successfully!");
+        window.history.back();
       }
-      window.history.back();
-
     } catch (err) {
       console.error("Error creating donation/request:", err);
-      const errorMessage = err.response?.data?.message || "An error occurred while creating the donation/request.";
-      setError(errorMessage);
-      showAlert("error", errorMessage);
+      const errorData = err.response?.data;
+      if (errorData?.message === "Inappropriate language detected in submission" && errorData?.badWordsDetected) {
+        errorData.badWordsDetected.forEach(({ field, badWord }) => {
+          showAlert('error', `Inappropriate language detected in ${field}: "${badWord}"`);
+        });
+        setError("Please remove inappropriate language from your submission.");
+      } else {
+        const errorMessage = errorData?.message || "An error occurred while creating the donation/request.";
+        setError(errorMessage);
+        showAlert("error", errorMessage);
+      }
     }
   };
 
@@ -445,19 +445,21 @@ export const AddDonation = () => {
             <option value="prepared_meals">Prepared Meals</option>
             <option value="packaged_products">Packaged Products</option>
           </select>
+
           {category === "prepared_meals" && isRecipient && (
-          <>
-            <input
-              className="signup-input"
-              type="number"
-              placeholder="Total Number of Meals"
-              value={numberOfMeals}
-              onChange={(e) => setNumberOfMeals(e.target.value)}
-              required
-            />
-            {errors.numberOfMeals && <p className="error-message">{errors.numberOfMeals}</p>}
-          </>
+            <>
+              <input
+                className="signup-input"
+                type="number"
+                placeholder="Total Number of Meals"
+                value={numberOfMeals}
+                onChange={(e) => setNumberOfMeals(e.target.value)}
+                required
+              />
+              {errors.numberOfMeals && <p className="error-message">{errors.numberOfMeals}</p>}
+            </>
           )}
+
           <textarea className="signup-input" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} required />
           {errors.description && <p className="error-message">{errors.description}</p>}
 
@@ -469,12 +471,11 @@ export const AddDonation = () => {
                 placeholder={isDonner ? "Total Number of Meals" : "Enter the total number of meals you need"}
                 value={numberOfMeals}
                 onChange={(e) => setNumberOfMeals(e.target.value)}
-                readOnly={isDonner} // readOnly for donors, editable for recipients
+                readOnly={isDonner}
                 min="1"
               />
               {errors.numberOfMeals && <p className="error-message">{errors.numberOfMeals}</p>}
 
-              {/* Show meal details entry only for donors */}
               {isDonner && (
                 <>
                   <div className="radio-buttons-container-adddonation">

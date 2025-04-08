@@ -1,109 +1,123 @@
 pipeline {
-    agent any
+    // Agent doit avoir Docker installé ET l'utilisateur Jenkins doit avoir les permissions Docker
+    // Et l'outil NodeJS 'NodeJS-20' doit être configuré dans Jenkins -> Global Tool Configuration
+    agent any 
+
+    tools {
+        // === AJOUTÉ : S'assurer que Node 20 est utilisé ===
+        nodejs 'NodeJS-20' // Assurez-vous que ce nom correspond à votre config Jenkins
+    }
     environment {
-        // Define Node version (assuming NVM is pre-configured on the agent)
-        NODE_VERSION = '20' // Specify a Node.js version >= 20
+        // === AJOUTÉ : Configurer le PATH pour Node 20 ===
+        PATH = "${tool 'NodeJS-20'}/bin:${env.PATH}"
+        // === AJOUTÉ : Variables pour Docker MongoDB ===
+        MONGO_HOSTNAME = 'mongo-test-instance' 
+        MONGO_DB_NAME = 'testdb' 
     }
 
     stages {
 
-        // ✅ Étape 1: Installer les dépendances
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Backend dependencies
+                    sh 'node --version' // Vérifier la version
+                    sh 'npm --version'
                     dir('sustainafood-backend') {
                         sh 'npm install'
                     }
-                    // Frontend dependencies
                     dir('sustainafood-frontend') {
-                        sh 'npm install' // Remove --legacy-peer-deps, now handled by newer Node version
+                        sh 'npm install' 
                     }
                 }
             }
         }
 
-        // ✅ Étape 2: Exécuter les tests unitaires séparément (2FA & Sign-in)
-        stage('Run Backend Tests Separately') {
+        // === ÉTAPE MODIFIÉE : Exécuter les tests avec Docker pour MongoDB ===
+        stage('Run Backend Tests with Dockerized MongoDB') {
             steps {
                 script {
-                    dir('sustainafood-backend') {
-                        // ✅ Lancer user-2fa.test.js
-                        echo 'Running backend test: 2FA'
-                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                            sh 'npx jest test/user-2fa.test.js --detectOpenHandles --forceExit --testTimeout=100000' // Increased timeout
+                    // Construire l'URI MongoDB en utilisant les variables d'environnement
+                    def mongoUri = "mongodb://${env.MONGO_HOSTNAME}:27017/${env.MONGO_DB_NAME}" 
+
+                    echo "Tentative de démarrage du conteneur MongoDB (${env.MONGO_HOSTNAME})"
+                    // Démarrer le conteneur MongoDB en arrière-plan (-d) avec un nom spécifique
+                    docker.image('mongo:latest').withRun("--name ${env.MONGO_HOSTNAME} -d") { mongoContainer ->
+                        echo "Conteneur MongoDB (${mongoContainer.id}) démarré. Attente de l'initialisation..."
+                        sleep(15) // Attente simple
+
+                        try {
+                            echo "Exécution des tests dans un conteneur Node.js, connexion à ${mongoUri}"
+                            // Exécuter les commandes de test DANS un conteneur Node.js lié au conteneur Mongo
+                            docker.image('node:20').inside("--link ${env.MONGO_HOSTNAME}:${env.MONGO_HOSTNAME}") {
+                                
+                                sh 'node --version' // Vérifier Node dans le conteneur
+                                dir('sustainafood-backend') {
+                                    
+                                    echo 'Exécution des tests backend...'
+                                    // Passer l'URI via withEnv. 
+                                    // === IMPORTANT : Pas de catchError ici, l'échec du test DOIT faire échouer le pipeline ===
+                                    withEnv(["MONGO_URI=${mongoUri}"]) {
+                                        // Lancer TOUS les tests avec une seule commande (plus efficace)
+                                        sh 'npx jest --detectOpenHandles --forceExit --runInBand --testTimeout=100000' 
+                                        // --runInBand est souvent plus stable dans les environnements CI
+                                    }
+                                    echo 'Tests backend terminés dans le conteneur Node.js.'
+                                } 
+                            } // Conteneur Node arrêté/supprimé
+                        } finally {
+                            // Le nettoyage principal se fait dans post { always }
+                            echo "Bloc de test terminé."
                         }
+                    } // Conteneur MongoDB arrêté/supprimé (sauf si erreur grave)
+                } 
+            } 
+        } 
 
-                        // ✅ Lancer user-signin.test.js
-                        echo 'Running backend test: Sign-in'
-                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                            sh 'npx jest test/user-signin.test.js --detectOpenHandles --forceExit --testTimeout=100000' // Increased timeout
-                        }
+        // === SUPPRIMÉ : Étape 'Check Test Results' inutile si les tests échouent directement ===
 
-                        echo 'Backend tests completed.'
-                    }
-                }
-            }
-        }
-
-        // ✅ Étape 3: Check Test Results (Fail Pipeline if Tests Failed)
-        stage('Check Test Results') {
-            steps {
-                script {
-                    if (currentBuild.result == 'FAILURE') {
-                        error('Backend tests failed. Failing the pipeline.')
-                    }
-                }
-            }
-        }
-       
-        // ✅ Étape 4: Build Application
         stage('Build Application') {
             steps {
                 script {
+                     sh 'node --version' // Vérifier Node 20
                     // Backend build (optionnel)
                     dir('sustainafood-backend') {
                         echo 'Building backend...'
-                        // sh 'npm run build' // Uncomment if backend build is needed
+                        // sh 'npm run build' 
                         echo 'Backend build completed.'
                     }
 
                     // Frontend build
                     dir('sustainafood-frontend') {
                         echo 'Building frontend...'
-
-                        // Installer fontawesome icons (optional) - Only if needed
-                        sh 'npm install @fortawesome/fontawesome-svg-core'
-                        sh 'npm install @fortawesome/react-fontawesome'
-                        sh 'npm install @fortawesome/free-solid-svg-icons'
-
-                        // Build frontend
-                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {  // Ajout catchError
-                           sh 'npm run build'
-                        }
+                        // === SUPPRIMÉ : Installations redondantes de Font Awesome ===
+                        
+                        // === IMPORTANT : Pas de catchError ici, l'échec du build DOIT faire échouer le pipeline ===
+                        sh 'npm run build'
                         echo 'Frontend build completed.'
                     }
                 }
             }
         }
-        // ✅ Étape 5: Check Build Results (Fail Pipeline if Build Failed)
-        stage('Check Build Results') {
-            steps {
-                script {
-                    if (currentBuild.result == 'FAILURE') {
-                        error('Frontend build failed. Failing the pipeline.')
-                    }
-                }
-            }
-        }
-    }
+        
+        // === SUPPRIMÉ : Étape 'Check Build Results' inutile si le build échoue directement ===
+
+    } // fin stages
+
     post {
         always {
-            echo "Pipeline completed. Result: ${currentBuild.result}"
+            // === AJOUTÉ : Nettoyage fiable du conteneur Docker MongoDB ===
+            echo "Nettoyage post-build : Arrêt/Suppression du conteneur ${env.MONGO_HOSTNAME}"
+            sh(script: "docker stop ${env.MONGO_HOSTNAME} || true", returnStatus: true) // Ne pas échouer si déjà arrêté
+            sh(script: "docker rm ${env.MONGO_HOSTNAME} || true", returnStatus: true) // Ne pas échouer si déjà supprimé
+            
+            echo "Pipeline terminé. Résultat: ${currentBuild.result}"
         }
         failure {
-            // Send notification on failure
-            echo "Sending notification on failure..."
+            echo "Le pipeline a échoué."
+            // Envoyer une notification si configuré
         }
-    }
+        success {
+             echo "Le pipeline a réussi."
+        }
+    } // fin post
 }

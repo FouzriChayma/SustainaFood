@@ -54,6 +54,8 @@ import AiClassification from './pages/AiClassification';
 import DonationRecommendations from './pages/DonationRecommendations';
 import ViewDonationTransaction from "./pages/backoffice/ViewDonationTransaction.jsx";
 
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import PersonalStatus from './pages/PersonalStatus';
 const App = () => {
   return (
     <AlertProvider>
@@ -109,6 +111,8 @@ const App = () => {
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/account-settings" element={<AccountSettings />} />
           <Route path="/DonationRecommendations" element={<DonationRecommendations />} />
+          <Route path="/analytics" element={<AnalyticsDashboard />} />
+          <Route path="/PersonalStatus" element={<PersonalStatus />} />
         </Route>
 
         {/* Routes privées pour ong, restaurant, supermarket, student */}

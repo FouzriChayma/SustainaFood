@@ -57,7 +57,7 @@ const PaginationControls = styled.div`
 // Styled component for action status
 const ActionStatus = styled.span`
   font-weight: bold;
-  color: ${props => (props.status === "approved" ? "#228b22" : props.status === "rejected" ? "#ff4444" : "#333")};
+  color: ${props => (props.isapprovedfromadmin === "approved" ? "#228b22" : props.isapprovedfromadmin === "rejected" ? "#ff4444" : "#333")};
 `;
 
 const AnomaliesDashboard = () => {
@@ -95,7 +95,7 @@ const AnomaliesDashboard = () => {
     try {
       await axios.post(`http://localhost:3000/donation/donations/${donationId}/approve`);
       setAnomalies(anomalies.map(anomaly =>
-        anomaly.donationId === donationId ? { ...anomaly, status: "approved" } : anomaly
+        anomaly.donationId === donationId ? { ...anomaly, isapprovedfromadmin: "approved" } : anomaly
       ));
       showAlert('success', `Donation ${donationId} approved successfully!`); // Remplacement de alert()
     } catch (error) {
@@ -109,7 +109,7 @@ const AnomaliesDashboard = () => {
     try {
       await axios.post(`http://localhost:3000/donation/donations/${donationId}/reject`);
       setAnomalies(anomalies.map(anomaly =>
-        anomaly.donationId === donationId ? { ...anomaly, status: "rejected" } : anomaly
+        anomaly.donationId === donationId ? { ...anomaly, isapprovedfromadmin: "rejected" } : anomaly
       ));
       showAlert('success', `Donation ${donationId} rejected successfully!`); // Remplacement de alert()
     } catch (error) {
@@ -194,7 +194,7 @@ const AnomaliesDashboard = () => {
       anomaly.linkedRequests || 0,
       anomaly.anomalyScore.toFixed(3),
       anomaly.reason || "N/A",
-      anomaly.status.charAt(0).toUpperCase() + anomaly.status.slice(1) || "Pending"
+      anomaly.isapprovedfromadmin.charAt(0).toUpperCase() + anomaly.isapprovedfromadmin.slice(1) || "Pending"
     ]);
 
     autoTable(doc, {
@@ -316,9 +316,9 @@ const AnomaliesDashboard = () => {
                         <td>{anomaly.anomalyScore.toFixed(3)}</td>
                         <td>{anomaly.reason || "N/A"}</td>
                         <td>
-                          {anomaly.status === "approved" || anomaly.status === "rejected" ? (
-                            <ActionStatus status={anomaly.status}>
-                              {anomaly.status.charAt(0).toUpperCase() + anomaly.status.slice(1)}
+                          {anomaly.isapprovedfromadmin === "approved" || anomaly.isapprovedfromadmin === "rejected" ? (
+                            <ActionStatus isapprovedfromadmin={anomaly.isapprovedfromadmin}>
+                              {anomaly.isapprovedfromadmin.charAt(0).toUpperCase() + anomaly.isapprovedfromadmin.slice(1)}
                             </ActionStatus>
                           ) : (
                             <>

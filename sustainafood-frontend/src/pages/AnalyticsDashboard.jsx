@@ -7,6 +7,7 @@ import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import logo from '../assets/images/logooo.png';  // Import the logo
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -98,7 +99,10 @@ const AnalyticsDashboard = () => {
     const addHeader = () => {
       doc.setFillColor(245, 245, 245);
       doc.rect(0, 0, doc.internal.pageSize.width, 30, "F");
+      const imgWidth = 25, imgHeight = 25;
+      doc.addImage(logo, "PNG", 5, 5, imgWidth, imgHeight);
       doc.setDrawColor(144, 196, 60);
+     
       doc.setLineWidth(1.5);
       doc.line(0, 30, doc.internal.pageSize.width, 30);
       doc.setFontSize(20);

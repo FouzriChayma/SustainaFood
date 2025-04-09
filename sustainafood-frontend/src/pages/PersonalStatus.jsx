@@ -7,6 +7,7 @@ import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import logo from '../assets/images/logooo.png';  // Import the logo
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -26,8 +27,10 @@ const PersonalStatus = () => {
   useEffect(() => {
     if (authUser && (authUser._id || authUser.id)) {
       setUserId(authUser._id || authUser.id);
+      console.log("userId depuis authUser:", authUser._id || authUser.id);
     } else if (user) {
       setUserId(user._id || user.id || "");
+      console.log("userId depuis localStorage:", user._id || user.id);
     }
   }, [authUser]);
 
@@ -52,6 +55,7 @@ const PersonalStatus = () => {
           throw new Error(`Failed to fetch personal stats: ${response.status}`);
         }
         const data = await response.json();
+        console.log("Données de l'API:", data);
         setStatsData(data);
       } catch (err) {
         setError(err.message);
@@ -63,7 +67,8 @@ const PersonalStatus = () => {
     if (userId && (isDonor || isRecipient)) fetchPersonalStats();
   }, [userId, isDonor, isRecipient]);
 
-  const chartData = statsData
+  const chartData = statsData && 
+    (isDonor ? statsData.weeklyAcceptedTrends?.length > 0 : statsData.weeklyRequestTrends?.length > 0)
     ? {
         labels: isDonor
           ? statsData.weeklyAcceptedTrends.map((t) => `Week ${t._id}`)
@@ -100,6 +105,8 @@ const PersonalStatus = () => {
     const addHeader = () => {
       doc.setFillColor(245, 245, 245);
       doc.rect(0, 0, doc.internal.pageSize.width, 30, "F");
+      const imgWidth = 25, imgHeight = 25;
+      doc.addImage(logo, "PNG", 5, 5, imgWidth, imgHeight);
       doc.setDrawColor(144, 196, 60);
       doc.setLineWidth(1.5);
       doc.line(0, 30, doc.internal.pageSize.width, 30);
@@ -127,7 +134,7 @@ const PersonalStatus = () => {
     addHeader();
 
     let position = 40;
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.setTextColor(50, 62, 72);
     doc.setFont("helvetica", "bold");
     doc.text("Your Personal Statistics", 10, position);
@@ -198,42 +205,33 @@ const PersonalStatus = () => {
   if (error) return <div className="add-donation"><p className="error-message">{error}</p></div>;
   if (!isDonor && !isRecipient) return <div className="add-donation"><p>Access denied.</p></div>;
 
+  console.log("chartData avant rendu:", chartData);
+
   return (
     <>
       <Navbar />
       <div className="add-donation">
-        <div className="signup-form" style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
-          <h1 className="signup-h1" style={{ color: "#228b22", textAlign: "center" }}>
-            Your Personal Status
-          </h1>
-          <div style={{ border: "1px solid #ddd", borderRadius: "5px", padding: "15px", marginBottom: "20px" }}>
-            <h3 style={{ color: "#6b9e2f", marginBottom: "10px" }}>
-              {isDonor ? "Donor Stats" : "Recipient Stats"}
-            </h3>
-            {isDonor ? (
-              <>
-                <p><strong>Role:</strong> Donor ({user?.role})</p>
-                <p><strong>Accepted Donations:</strong> {statsData?.acceptedDonations || 0}</p>
-                <p><strong>Requests for Your Donations:</strong> {statsData?.requestsForDonations || 0}</p>
-              </>
-            ) : (
-              <>
-                <p><strong>Role:</strong> Recipient ({user?.role})</p>
-                <p><strong>Total Requests Made:</strong> {statsData?.totalRequests || 0}</p>
-                <p><strong>Accepted Donations:</strong> {statsData?.acceptedDonations || 0}</p>
-              </>
-            )}
-          </div>
+        <div className="signup-form">
+          <h1 className="signup-h1">{isDonor ? "Donor Personal Status" : "Recipient Personal Status"}</h1>
+          {isDonor ? (
+            <>
+              <p><strong>Role:</strong> Donor ({user?.role})</p>
+              <p><strong>Accepted Donations:</strong> {statsData?.acceptedDonations || 0}</p>
+              <p><strong>Requests for Your Donations:</strong> {statsData?.requestsForDonations || 0}</p>
+            </>
+          ) : (
+            <>
+              <p><strong>Role:</strong> Recipient ({user?.role})</p>
+              <p><strong>Total Requests Made:</strong> {statsData?.totalRequests || 0}</p>
+              <p><strong>Accepted Donations:</strong> {statsData?.acceptedDonations || 0}</p>
+            </>
+          )}
           {chartData && (
             <div ref={chartRef} style={{ maxWidth: "600px", margin: "20px auto" }}>
               <Bar data={chartData} options={chartOptions} />
             </div>
           )}
-          <button
-            className="signup-button"
-            onClick={downloadStatusReport}
-            style={{ backgroundColor: "#8dc73f", border: "none", padding: "10px 20px", cursor: "pointer" }}
-          >
+          <button className="signup-button" onClick={downloadStatusReport}>
             Download Status Report as PDF
           </button>
         </div>

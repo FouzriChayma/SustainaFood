@@ -7,6 +7,8 @@ const RequestNeed = require('../models/RequestNeed');
 const DonationRecommender=require('../aiService/mlModel');
 const User = require('../models/User');
 const nodemailer = require('nodemailer');
+const mongoose = require('mongoose');
+
 require('dotenv').config();
 // Route to get recommendations for a donation
 router.get('/donations/anomalies', async (req, res) => {
@@ -299,7 +301,6 @@ router.get('/donations/:requestId',donationController.getDonationByRequestId)
 // Donor Analytics
 // Donor Analytics
 // Donor Analytics
-const mongoose = require('mongoose');
 
 router.get("/api/analytics/donor/:donorId", async (req, res) => {
   const donorId = req.params.donorId;
@@ -364,6 +365,7 @@ router.get("/api/analytics/recipient/:recipientId", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 router.get("/api/personal-stats/donor/:donorId", async (req, res) => {
   const donorId = req.params.donorId;
   try {
@@ -371,14 +373,16 @@ router.get("/api/personal-stats/donor/:donorId", async (req, res) => {
       return res.status(400).json({ error: "Donor ID is required" });
     }
 
-    const donations = await Donation.find({ donor: donorId });
-    const acceptedDonations = donations.filter((d) => d.status === "fulfilled").length; // Assuming 'status' field exists
-    const requestsForDonations = await RequestNeed.countDocuments({ donation: { $in: donations.map((d) => d._id) } }); // Requests linked to donor's donations
+    const donorObjectId = new mongoose.Types.ObjectId(donorId); // Conversion en ObjectId
+    const donations = await Donation.find({ donor: donorObjectId });
+    const acceptedDonations = donations.filter((d) => d.status === "fulfilled").length;
+    const requestsForDonations = await RequestNeed.countDocuments({ donation: { $in: donations.map((d) => d._id) } });
     const weeklyAcceptedTrends = await Donation.aggregate([
-      { $match: { donor: donorId, status: "fulfilled" } },
-      { $group: { _id: { $week: "$created_at" }, count: { $sum: 1 } } },
+      { $match: { donor: donorObjectId, status: "fulfilled" } },
+      { $group: { _id: { $week: "$createdAt" }, count: { $sum: 1 } } }, // Corrigé : createdAt
       { $sort: { "_id": 1 } },
     ]);
+    console.log("weeklyAcceptedTrends:", weeklyAcceptedTrends); // Log pour débogage
 
     res.json({ acceptedDonations, requestsForDonations, weeklyAcceptedTrends });
   } catch (error) {
@@ -386,6 +390,7 @@ router.get("/api/personal-stats/donor/:donorId", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 router.get("/api/personal-stats/recipient/:recipientId", async (req, res) => {
   const recipientId = req.params.recipientId;
   try {
@@ -393,14 +398,16 @@ router.get("/api/personal-stats/recipient/:recipientId", async (req, res) => {
       return res.status(400).json({ error: "Recipient ID is required" });
     }
 
-    const requests = await RequestNeed.find({ recipient: recipientId });
+    const recipientObjectId = new mongoose.Types.ObjectId(recipientId); // Conversion en ObjectId
+    const requests = await RequestNeed.find({ recipient: recipientObjectId });
     const totalRequests = requests.length;
-    const acceptedDonations = requests.filter((r) => r.status === "fulfilled").length; // Assuming 'status' field exists
+    const acceptedDonations = requests.filter((r) => r.status === "fulfilled").length;
     const weeklyRequestTrends = await RequestNeed.aggregate([
-      { $match: { recipient: recipientId } },
-      { $group: { _id: { $week: "$created_at" }, count: { $sum: 1 } } },
+      { $match: { recipient: recipientObjectId } },
+      { $group: { _id: { $week: "$created_at" }, count: { $sum: 1 } } }, // Correct : created_at
       { $sort: { "_id": 1 } },
     ]);
+    console.log("weeklyRequestTrends:", weeklyRequestTrends); // Log pour débogage
 
     res.json({ totalRequests, acceptedDonations, weeklyRequestTrends });
   } catch (error) {

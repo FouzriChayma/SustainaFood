@@ -7,6 +7,7 @@ import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import logo from '../assets/images/logooo.png';  // Import the logo
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -26,8 +27,10 @@ const AnalyticsDashboard = () => {
   useEffect(() => {
     if (authUser && (authUser._id || authUser.id)) {
       setuserId(authUser._id || authUser.id);
+      console.log("userId depuis authUser :", authUser._id || authUser.id);
     } else if (user) {
       setuserId(user._id || user.id || "");
+      console.log("userId depuis localStorage :", user._id || user.id);
     }
   }, [authUser]);
 
@@ -38,20 +41,20 @@ const AnalyticsDashboard = () => {
         setLoading(false);
         return;
       }
-
+  
       try {
         setLoading(true);
         const endpoint = isDonor
-          ? `http://localhost:3000/donation/api/analytics/donor/${userId}` // Adjusted to port 5000
+          ? `http://localhost:3000/donation/api/analytics/donor/${userId}`
           : `http://localhost:3000/donation/api/analytics/recipient/${userId}`;
         console.log("Fetching from:", endpoint);
         const response = await fetch(endpoint);
         if (!response.ok) {
           const text = await response.text();
-          console.error("Response Error:", response.status, text);
-          throw new Error(`Failed to fetch analytics: ${response.status}`);
+          throw new Error(`Failed to fetch analytics: ${response.status} - ${text}`);
         }
         const data = await response.json();
+        console.log("Données de l'API :", data);
         setAnalyticsData(data);
       } catch (err) {
         setError(err.message);
@@ -59,16 +62,16 @@ const AnalyticsDashboard = () => {
         setLoading(false);
       }
     };
-
+  
     if (userId && (isDonor || isRecipient)) fetchAnalytics();
   }, [userId, isDonor, isRecipient]);
 
-  const chartData = analyticsData?.weeklyTrends // Changed to weeklyTrends
+  const chartData = analyticsData?.weeklyTrends && analyticsData.weeklyTrends.length > 0
     ? {
-        labels: analyticsData.weeklyTrends.map((t) => `Week ${t._id}`), // Changed to Week
+        labels: analyticsData.weeklyTrends.map((t) => `Week ${t._id}`),
         datasets: [
           {
-            label: isDonor ? "Donations per Week" : "Requests per Week", // Changed to per Week
+            label: isDonor ? "Donations per Week" : "Requests per Week",
             data: analyticsData.weeklyTrends.map((t) => t.count),
             backgroundColor: "#8dc73f",
             borderColor: "#6b9e2f",
@@ -82,7 +85,7 @@ const AnalyticsDashboard = () => {
     responsive: true,
     plugins: {
       legend: { position: "top" },
-      title: { display: true, text: "Weekly Activity" }, // Changed to Weekly
+      title: { display: true, text: "Weekly Activity" },
     },
   };
 
@@ -96,7 +99,10 @@ const AnalyticsDashboard = () => {
     const addHeader = () => {
       doc.setFillColor(245, 245, 245);
       doc.rect(0, 0, doc.internal.pageSize.width, 30, "F");
+      const imgWidth = 25, imgHeight = 25;
+      doc.addImage(logo, "PNG", 5, 5, imgWidth, imgHeight);
       doc.setDrawColor(144, 196, 60);
+     
       doc.setLineWidth(1.5);
       doc.line(0, 30, doc.internal.pageSize.width, 30);
       doc.setFontSize(20);
@@ -188,6 +194,8 @@ const AnalyticsDashboard = () => {
   if (loading) return <div className="add-donation"><p>Loading analytics...</p></div>;
   if (error) return <div className="add-donation"><p className="error-message">{error}</p></div>;
   if (!isDonor && !isRecipient) return <div className="add-donation"><p>Access denied.</p></div>;
+
+  console.log("chartData avant rendu :", chartData);
 
   return (
     <>

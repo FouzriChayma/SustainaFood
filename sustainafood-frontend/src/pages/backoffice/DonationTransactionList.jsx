@@ -1,19 +1,18 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom"; // Add this import
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import "../../assets/styles/backoffcss/studentList.css";
-import { FaEye, FaFilePdf, FaSort } from "react-icons/fa"; // Removed FaTrash
+import { FaEye, FaFilePdf, FaSort } from "react-icons/fa";
 import ReactPaginate from "react-paginate";
 import { Link } from "react-router-dom";
 import logo from '../../assets/images/logooo.png';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import {
-    getAllDonationTransactions,
-    // Removed deleteDonationTransaction since it's no longer used
-} from "../../api/donationTransactionService";
+import { getAllDonationTransactions } from "../../api/donationTransactionService";
 
 const DonationTransactionList = () => {
+    const navigate = useNavigate(); // Initialize navigate
     const [donationTransactions, setDonationTransactions] = useState([]);
     const [currentPage, setCurrentPage] = useState(0);
     const [searchQuery, setSearchQuery] = useState("");
@@ -25,12 +24,16 @@ const DonationTransactionList = () => {
 
     const pagesVisited = currentPage * transactionsPerPage;
 
+    const handleViewClick = (transactionId) => {
+        navigate(`/donation-transactions/view/${transactionId}`);
+    };
+
     useEffect(() => {
         const fetchDonationTransactions = async () => {
             setLoading(true);
             setError(null);
             try {
-                const transactions = await getAllDonationTransactions(); // Returns array directly
+                const transactions = await getAllDonationTransactions();
                 console.log("Fetched Transactions:", transactions);
                 if (Array.isArray(transactions)) {
                     setDonationTransactions(transactions);
@@ -88,14 +91,17 @@ const DonationTransactionList = () => {
         doc.text(`Generated: ${dateStr}`, doc.internal.pageSize.width - 50, 38);
 
         autoTable(doc, {
-            head: [["ID", "Request Need", "Donation", "Status", "Allocated Products", "Created At", "Updated At"]],
+            head: [["ID", "Request Need Title", "Donation Title", "Status", "Allocated Products", "Allocated Meals", "Created At", "Updated At"]],
             body: donationTransactions.map((tx) => [
                 tx.id?.toString() || "N/A",
-                tx.requestNeed?._id?.toString() || tx.requestNeed?.toString() || "N/A", // Handle nested or simple requestNeed
-                tx.donation?._id?.toString() || tx.donation?.toString() || "N/A", // Handle null donation
+                tx.requestNeed?.title || "N/A",
+                tx.donation?.title || "N/A",
                 tx.status || "N/A",
                 tx.allocatedProducts && tx.allocatedProducts.length > 0
-                    ? tx.allocatedProducts.map(p => `${p.product?._id || p.product || "N/A"} (Qty: ${p.quantity})`).join(", ")
+                    ? tx.allocatedProducts.map(p => `${p.product?.name || "N/A"} (Qty: ${p.quantity})`).join(", ")
+                    : "None",
+                tx.allocatedMeals && tx.allocatedMeals.length > 0
+                    ? tx.allocatedMeals.map(m => `${m.meal?.mealName || "N/A"} (Qty: ${m.quantity})`).join(", ")
                     : "None",
                 tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : "N/A",
                 tx.updatedAt ? new Date(tx.updatedAt).toLocaleDateString() : "N/A",
@@ -148,8 +154,8 @@ const DonationTransactionList = () => {
         const updatedAtString = tx.updatedAt ? new Date(tx.updatedAt).toLocaleDateString() : "";
         return (
             (tx.id?.toString() || "").includes(searchQuery) ||
-            (tx.requestNeed?._id?.toString() || tx.requestNeed?.toString() || "").includes(searchQuery) ||
-            (tx.donation?._id?.toString() || tx.donation?.toString() || "").includes(searchQuery) ||
+            (tx.requestNeed?.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (tx.donation?.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
             (tx.status || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
             createdAtString.includes(searchQuery) ||
             updatedAtString.includes(searchQuery)
@@ -209,10 +215,11 @@ const DonationTransactionList = () => {
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Request Need</th>
-                                <th>Donation</th>
+                                <th>Request Need Title</th>
+                                <th>Donation Title</th>
                                 <th>Status</th>
                                 <th>Allocated Products</th>
+                                <th>Allocated Meals</th>
                                 <th>Created At</th>
                                 <th>Updated At</th>
                                 <th>Actions</th>
@@ -221,13 +228,13 @@ const DonationTransactionList = () => {
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan="8" style={{ textAlign: "center" }}>
+                                    <td colSpan="9" style={{ textAlign: "center" }}>
                                         Loading...
                                     </td>
                                 </tr>
                             ) : error ? (
                                 <tr>
-                                    <td colSpan="8" style={{ textAlign: "center", color: "red" }}>
+                                    <td colSpan="9" style={{ textAlign: "center", color: "red" }}>
                                         {error}
                                     </td>
                                 </tr>
@@ -235,29 +242,31 @@ const DonationTransactionList = () => {
                                 displayTransactions.map((tx) => (
                                     <tr key={tx._id}>
                                         <td>{tx.id || "N/A"}</td>
-                                        <td>{tx.requestNeed?._id?.toString() || tx.requestNeed?.toString() || "N/A"}</td>
-                                        <td>{tx.donation?._id?.toString() || tx.donation?.toString() || "N/A"}</td>
+                                        <td>{tx.requestNeed?.title || "N/A"}</td>
+                                        <td>{tx.donation?.title || "N/A"}</td>
                                         <td>{tx.status || "N/A"}</td>
                                         <td>
                                             {tx.allocatedProducts && tx.allocatedProducts.length > 0
-                                                ? tx.allocatedProducts.map(p => `${p.product?._id || p.product || "N/A"} (Qty: ${p.quantity})`).join(", ")
+                                                ? tx.allocatedProducts.map(p => `${p.product?.name || "N/A"} (Qty: ${p.quantity})`).join(", ")
+                                                : "None"}
+                                        </td>
+                                        <td>
+                                            {tx.allocatedMeals && tx.allocatedMeals.length > 0
+                                                ? tx.allocatedMeals.map(m => `${m.meal?.mealName || "N/A"} (Qty: ${m.quantity})`).join(", ")
                                                 : "None"}
                                         </td>
                                         <td>{tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : "N/A"}</td>
                                         <td>{tx.updatedAt ? new Date(tx.updatedAt).toLocaleDateString() : "N/A"}</td>
                                         <td className="action-buttons">
-                                            <button className="view-btn">
-                                                <Link to={`/donation-transactions/view/${tx._id}`}>
-                                                    <FaEye />
-                                                </Link>
+                                            <button className="view-btn" onClick={() => handleViewClick(tx._id)}>
+                                                <FaEye />
                                             </button>
-                                            {/* Removed delete button */}
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="8" style={{ textAlign: "center" }}>
+                                    <td colSpan="9" style={{ textAlign: "center" }}>
                                         No transactions available
                                     </td>
                                 </tr>

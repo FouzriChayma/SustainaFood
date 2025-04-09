@@ -29,6 +29,8 @@ const donationSchema = new Schema({
     description: { type: String, maxlength: 500 },
     category: { type: String, enum: Object.values(Category), required: true }, // Lowercase naming
     isAnomaly: { type: Boolean, default: false }, // Nouveau champ
+    isapprovedfromadmin: { type: String, enum: Object.values(Status), default: Status.PENDING},
+
     products: [{
         product: { type: Schema.Types.ObjectId, ref: 'Product', required: true }, // Reference to Product
         quantity: { type: Number, required: true, min: 0 } // Donated quantity

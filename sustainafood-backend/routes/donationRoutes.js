@@ -27,7 +27,7 @@ router.get('/donations/anomalies', async (req, res) => {
               linkedRequests: anomaly.linkedRequests,
               anomalyScore: anomaly.anomalyScore,
               reason: anomaly.reason,
-              status: 'pending' // Statut par défaut si donation introuvable
+              isapprovedfromadmin: 'pending' // Statut par défaut si donation introuvable
             };
           }
           return {
@@ -44,7 +44,7 @@ router.get('/donations/anomalies', async (req, res) => {
             linkedRequests: anomaly.linkedRequests,
             anomalyScore: anomaly.anomalyScore,
             reason: anomaly.reason,
-            status: donation.status // Inclure le statut de la donation
+            isapprovedfromadmin: donation.isapprovedfromadmin // Inclure le statut de la donation
           };
         })
       );
@@ -81,7 +81,7 @@ router.post('/donations/:id/approve', async (req, res) => {
       if (!donation) return res.status(404).json({ message: 'Donation not found' });
   
       // Mettre à jour le statut et isAnomaly
-      donation.status = 'approved';
+      donation.isapprovedfromadmin = 'approved';
       donation.isAnomaly = false; // Une fois approuvée, ce n'est plus une anomalie
       await donation.save();
   
@@ -134,7 +134,7 @@ router.post('/donations/:id/reject', async (req, res) => {
     const donation = await Donation.findById(req.params.id).populate('donor', 'name email');
     if (!donation) return res.status(404).json({ message: 'Donation not found' });
 
-    donation.status = 'rejected';
+    donation.isapprovedfromadmin = 'rejected';
     await donation.save();
 
     const transporter = nodemailer.createTransport({
@@ -181,57 +181,65 @@ SustainaFood Team`,
 });
 
 async function matchDonationToRequests(donation) {
-    const { category, products, meals, expirationDate, numberOfMeals: donatedMeals } = donation;
+  const { category, products, meals, expirationDate, numberOfMeals: donatedMeals } = donation;
 
-    const requests = await RequestNeed.find({
-        category: donation.category,
-        status: 'pending',
-        expirationDate: { $gte: new Date() }
-    }).populate('recipient');
+  const requests = await RequestNeed.find({
+      category: donation.category,
+      status: 'pending',
+      expirationDate: { $gte: new Date() }
+  }).populate('recipient');
 
-    const matches = [];
-    for (const request of requests) {
-        let matchScore = 0;
-        let fulfilledItems = [];
+  const matches = [];
+  for (const request of requests) {
+      let matchScore = 0;
+      let fulfilledItems = [];
 
-        if (category === 'packaged_products') {
-            for (const reqProduct of request.requestedProducts || []) {
-                const matchingProduct = products.find(p => p.product.productType === reqProduct.product.productType);
-                if (matchingProduct) {
-                    const fulfilledQty = Math.min(matchingProduct.quantity, reqProduct.quantity);
-                    fulfilledItems.push({ product: reqProduct.product._id, quantity: fulfilledQty });
-                    matchScore += fulfilledQty * 10;
-                }
-            }
-        } else if (category === 'prepared_meals') {
-            const requestedMeals = request.numberOfMeals || 0;
-            if (requestedMeals > 0 && donatedMeals > 0) {
-                const fulfilledQty = Math.min(donatedMeals, requestedMeals);
-                fulfilledItems.push({ quantity: fulfilledQty });
-                matchScore += fulfilledQty * 10;
-            }
-        }
+      if (category === 'packaged_products') {
+          const requestedProducts = request.requestedProducts || [];
+          for (const reqProduct of requestedProducts) {
+              // Handle both nested and flat structures
+              const reqProductType = reqProduct.product?.productType || reqProduct.productType;
+              const reqQuantity = reqProduct.quantity || reqProduct.totalQuantity || 0;
 
-        if (fulfilledItems.length > 0) {
-            const daysUntilExpiration = (expirationDate - new Date()) / (1000 * 60 * 60 * 24);
-            if (daysUntilExpiration < 3) matchScore += 50;
-            else if (daysUntilExpiration < 7) matchScore += 20;
+              const matchingProduct = products.find(p => p.productType === reqProductType);
+              if (matchingProduct) {
+                  const fulfilledQty = Math.min(matchingProduct.totalQuantity || matchingProduct.quantity || 0, reqQuantity);
+                  fulfilledItems.push({ 
+                      product: reqProduct.product?._id || reqProduct._id || reqProduct.productType, 
+                      quantity: fulfilledQty 
+                  });
+                  matchScore += fulfilledQty * 10;
+              }
+          }
+      } else if (category === 'prepared_meals') {
+          const requestedMeals = request.numberOfMeals || 0;
+          if (requestedMeals > 0 && donatedMeals > 0) {
+              const fulfilledQty = Math.min(donatedMeals, requestedMeals);
+              fulfilledItems.push({ quantity: fulfilledQty });
+              matchScore += fulfilledQty * 10;
+          }
+      }
 
-            if (request.recipient.type === 'RELIEF' && daysUntilExpiration < 7) {
-                matchScore += 30;
-            } else if (request.recipient.type === 'SOCIAL_WELFARE') {
-                matchScore += 10;
-            }
+      if (fulfilledItems.length > 0) {
+          const daysUntilExpiration = (new Date(expirationDate) - new Date()) / (1000 * 60 * 60 * 24);
+          if (daysUntilExpiration < 3) matchScore += 50;
+          else if (daysUntilExpiration < 7) matchScore += 20;
 
-            matches.push({
-                request,
-                fulfilledItems,
-                matchScore
-            });
-        }
-    }
+          if (request.recipient?.type === 'RELIEF' && daysUntilExpiration < 7) {
+              matchScore += 30;
+          } else if (request.recipient?.type === 'SOCIAL_WELFARE') {
+              matchScore += 10;
+          }
 
-    return matches.sort((a, b) => b.matchScore - a.matchScore);
+          matches.push({
+              request,
+              fulfilledItems,
+              matchScore
+          });
+      }
+  }
+
+  return matches.sort((a, b) => b.matchScore - a.matchScore);
 }
 
 // Other routes (e.g., for getting donations by user ID)
@@ -287,6 +295,111 @@ router.put('/:id', donationController.updateDonation);
 
 // ✅ Delete a donation (and delete associated products)
 router.delete('/:id', donationController.deleteDonation);
+router.get('/donations/:requestId',donationController.getDonationByRequestId)
+// Donor Analytics
+// Donor Analytics
+// Donor Analytics
+router.get("/api/analytics/donor/:donorId", async (req, res) => {
+  const donorId = req.params.donorId;
+  try {
+    if (!donorId) {
+      return res.status(400).json({ error: "Donor ID is required" });
+    }
 
+    const donations = await Donation.find({ donor: donorId });
+    const totalDonations = donations.length;
+    const totalItems = donations.reduce((sum, d) => {
+      if (d.category === "prepared_meals") {
+        return sum + (d.numberOfMeals || 0);
+      }
+      return sum + (d.products ? d.products.reduce((s, p) => s + (p.totalQuantity || 0), 0) : 0);
+    }, 0);
+    const categories = [...new Set(donations.map((d) => d.category))];
+    const weeklyTrends = await Donation.aggregate([
+      { $match: { donor: donorId } },
+      { $group: { _id: { $week: "$created_at" }, count: { $sum: 1 } } }, // Changed to $week
+      { $sort: { "_id": 1 } },
+    ]);
 
+    res.json({ totalDonations, totalItems, categories, weeklyTrends }); // Changed to weeklyTrends
+  } catch (error) {
+    console.error("Donor Analytics Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Recipient Analytics
+router.get("/api/analytics/recipient/:recipientId", async (req, res) => {
+  const recipientId = req.params.recipientId;
+  try {
+    if (!recipientId) {
+      return res.status(400).json({ error: "Recipient ID is required" });
+    }
+
+    const requests = await RequestNeed.find({ recipient: recipientId });
+    const totalRequests = requests.length;
+    const fulfilledRequests = requests.filter((r) => r.status === "fulfilled").length;
+    const totalFulfilledItems = requests.reduce((sum, r) => {
+      if (r.category === "prepared_meals") {
+        return sum + (r.numberOfMeals || 0);
+      }
+      return sum + ((r.requestedProducts || []).reduce((s, p) => s + (p.quantity || 0), 0));
+    }, 0);
+    const categories = [...new Set(requests.map((r) => r.category))];
+    const weeklyTrends = await RequestNeed.aggregate([
+      { $match: { recipient: recipientId } },
+      { $group: { _id: { $week: "$created_at" }, count: { $sum: 1 } } }, // Changed to $week
+      { $sort: { "_id": 1 } },
+    ]);
+
+    res.json({ totalRequests, fulfilledRequests, totalFulfilledItems, categories, weeklyTrends }); // Changed to weeklyTrends
+  } catch (error) {
+    console.error("Recipient Analytics Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+router.get("/api/personal-stats/donor/:donorId", async (req, res) => {
+  const donorId = req.params.donorId;
+  try {
+    if (!donorId) {
+      return res.status(400).json({ error: "Donor ID is required" });
+    }
+
+    const donations = await Donation.find({ donor: donorId });
+    const acceptedDonations = donations.filter((d) => d.status === "fulfilled").length; // Assuming 'status' field exists
+    const requestsForDonations = await RequestNeed.countDocuments({ donation: { $in: donations.map((d) => d._id) } }); // Requests linked to donor's donations
+    const weeklyAcceptedTrends = await Donation.aggregate([
+      { $match: { donor: donorId, status: "fulfilled" } },
+      { $group: { _id: { $week: "$created_at" }, count: { $sum: 1 } } },
+      { $sort: { "_id": 1 } },
+    ]);
+
+    res.json({ acceptedDonations, requestsForDonations, weeklyAcceptedTrends });
+  } catch (error) {
+    console.error("Donor Personal Stats Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+router.get("/api/personal-stats/recipient/:recipientId", async (req, res) => {
+  const recipientId = req.params.recipientId;
+  try {
+    if (!recipientId) {
+      return res.status(400).json({ error: "Recipient ID is required" });
+    }
+
+    const requests = await RequestNeed.find({ recipient: recipientId });
+    const totalRequests = requests.length;
+    const acceptedDonations = requests.filter((r) => r.status === "fulfilled").length; // Assuming 'status' field exists
+    const weeklyRequestTrends = await RequestNeed.aggregate([
+      { $match: { recipient: recipientId } },
+      { $group: { _id: { $week: "$created_at" }, count: { $sum: 1 } } },
+      { $sort: { "_id": 1 } },
+    ]);
+
+    res.json({ totalRequests, acceptedDonations, weeklyRequestTrends });
+  } catch (error) {
+    console.error("Recipient Personal Stats Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 module.exports = router;

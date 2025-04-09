@@ -54,14 +54,17 @@ async function getAllDonationTransactions(req, res) {
 }
 
 // ✅ Get donation transaction by ID
+
 async function getDonationTransactionById(req, res) {
     try {
         const { id } = req.params;
         const transaction = await DonationTransaction.findById(id)
-            .populate('requestNeed')
-            .populate('donation')
-            .populate('allocatedProducts.product')
-            .populate('allocatedMeals.meal'); // Populate allocatedMeals
+            .populate('requestNeed', 'title') // Populate requestNeed with specific fields
+            .populate('donation', 'title') // Populate donation with specific fields
+            .populate('allocatedProducts.product', 'name') // Populate product details
+            .populate('allocatedMeals.meal', 'mealName') // Populate meal details
+            .populate('donor', 'name role photo') // Populate donor details
+            .populate('recipient', 'name role photo'); // Populate recipient details
 
         if (!transaction) {
             return res.status(404).json({ message: 'Donation transaction not found' });
@@ -69,7 +72,8 @@ async function getDonationTransactionById(req, res) {
 
         res.status(200).json(transaction);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
+        console.error('Error fetching transaction by ID:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 }
 

@@ -52,7 +52,10 @@ import PredictionsDashboard from './pages/backoffice/PredictionsDashboard';
 import ListRequestsDonation from './pages/ListRequestsDonation';
 import AiClassification from './pages/AiClassification';
 import DonationRecommendations from './pages/DonationRecommendations';
+import ViewDonationTransaction from "./pages/backoffice/ViewDonationTransaction.jsx";
 
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import PersonalStatus from './pages/PersonalStatus';
 const App = () => {
   return (
     <AlertProvider>
@@ -88,6 +91,7 @@ const App = () => {
           <Route path="/admin-profile" element={<AdminProfile />} />
           <Route path="/Donations" element={<DonationList />} />
           <Route path="/DonationTransList" element={<DonationTransactionList />} />
+          <Route path="/donation-transactions/view/:transactionId" element={<ViewDonationTransaction/>} />
           <Route path="/food-donation/requests" element={<RequestTable />} />
           <Route path="/food-donation/product" element={<ProductList />} />
           <Route path="/requests/view/:id" element={<RequestDetails />} />
@@ -107,6 +111,8 @@ const App = () => {
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/account-settings" element={<AccountSettings />} />
           <Route path="/DonationRecommendations" element={<DonationRecommendations />} />
+          <Route path="/analytics" element={<AnalyticsDashboard />} />
+          <Route path="/PersonalStatus" element={<PersonalStatus />} />
         </Route>
 
         {/* Routes privées pour ong, restaurant, supermarket, student */}

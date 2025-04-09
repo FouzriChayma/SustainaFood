@@ -12,6 +12,27 @@ const Meals=require('../models/Meals');
 const fs = require('fs');
 const upload = multer().none(); // Create multer instance to handle FormData
 
+const badWords = [
+    "damn",
+    "hell",
+    "idiot",
+    "stupid",
+    "fuck",
+    "t**t"
+  ];
+  // Fonction utilitaire pour vérifier les "bad words"
+const containsBadWords = (text) => {
+    if (!text || typeof text !== 'string') return false;
+    const lowerText = text.toLowerCase();
+    return badWords.some(word => lowerText.includes(word));
+  };
+  
+  const checkBadWords = (text) => {
+    if (!text || typeof text !== 'string') return null;
+    const lowerText = text.toLowerCase();
+    const badWord = badWords.find(word => lowerText.includes(word));
+    return badWord ? { containsBadWords: true, badWord } : null;
+  };
 // ✅ Get all requests
 async function getAllRequests(req, res) {
     try {
@@ -21,6 +42,20 @@ async function getAllRequests(req, res) {
         res.status(200).json(requests);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
+    }
+}
+
+// ✅ Get all requests for backoffice
+async function getAllRequestsbackoffice(req, res) {
+    try {
+        const requests = await RequestNeed.find()
+            .populate('recipient', 'name role photo') // Populate recipient details
+            .populate('requestedProducts.product', 'name') // Populate product details
+            .populate('requestedMeals.meal', 'mealName'); // Populate meal details
+        res.status(200).json(requests);
+    } catch (error) {
+        console.error('Error fetching all requests:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 }
 
@@ -80,315 +115,369 @@ async function getRequestsByStatus(req, res) {
 // ✅ Create a new request
 async function createRequest(req, res) {
     console.log("Request body received:", req.body);
-
+  
     try {
-        let {
-            title,
-            location,
-            expirationDate,
-            description,
-            category,
-            recipient,
-            requestedProducts,
-            requestedMeals,
-            status,
-            linkedDonation,
-            numberOfMeals,
-        } = req.body;
-
-        // Ensure requestedProducts is parsed correctly
-        if (typeof requestedProducts === 'string') {
-            try {
-                requestedProducts = JSON.parse(requestedProducts);
-            } catch (error) {
-                return res.status(400).json({ message: "Invalid requestedProducts format" });
-            }
-        }
-        if (!Array.isArray(requestedProducts)) {
-            requestedProducts = [];
-        }
-
-        // Ensure requestedMeals is parsed correctly
-        if (typeof requestedMeals === 'string') {
-            try {
-                requestedMeals = JSON.parse(requestedMeals);
-            } catch (error) {
-                return res.status(400).json({ message: "Invalid requestedMeals format" });
-            }
-        }
-        if (!Array.isArray(requestedMeals)) {
-            requestedMeals = [];
-        }
-
-        // Validate and filter products
-        requestedProducts = requestedProducts.map((product, index) => {
-            if (!product.name || typeof product.name !== 'string' || !product.name.trim()) {
-                throw new Error(`Product at index ${index} is missing a valid name`);
-            }
-            if (!product.productType || typeof product.productType !== 'string') {
-                throw new Error(`Product at index ${index} is missing a valid productType`);
-            }
-            if (!product.productDescription || typeof product.productDescription !== 'string' || !product.productDescription.trim()) {
-                throw new Error(`Product at index ${index} is missing a valid productDescription`);
-            }
-            const weightPerUnit = parseFloat(product.weightPerUnit);
-            if (isNaN(weightPerUnit) || weightPerUnit <= 0) {
-                throw new Error(`Product at index ${index} has an invalid weightPerUnit: ${product.weightPerUnit}. Must be a positive number`);
-            }
-            const totalQuantity = parseInt(product.totalQuantity);
-            if (isNaN(totalQuantity) || totalQuantity <= 0) {
-                throw new Error(`Product at index ${index} has an invalid totalQuantity: ${product.totalQuantity}. Must be a positive integer`);
-            }
-            if (!product.status || typeof product.status !== 'string') {
-                throw new Error(`Product at index ${index} is missing a valid status`);
-            }
-            return product;
+      let {
+        title,
+        location,
+        expirationDate,
+        description,
+        category,
+        recipient,
+        requestedProducts,
+        requestedMeals,
+        status,
+        linkedDonation,
+        numberOfMeals,
+      } = req.body;
+  
+      // Vérification des "bad words"
+      const badWordChecks = [];
+      const titleCheck = checkBadWords(title);
+      if (titleCheck) badWordChecks.push({ field: 'title', ...titleCheck });
+      const locationCheck = checkBadWords(location);
+      if (locationCheck) badWordChecks.push({ field: 'location', ...locationCheck });
+      const descriptionCheck = checkBadWords(description);
+      if (descriptionCheck) badWordChecks.push({ field: 'description', ...descriptionCheck });
+  
+      for (const product of requestedProducts || []) {
+        const nameCheck = checkBadWords(product.name);
+        if (nameCheck) badWordChecks.push({ field: `product name "${product.name}"`, ...nameCheck });
+        const descCheck = checkBadWords(product.productDescription);
+        if (descCheck) badWordChecks.push({ field: `product description for "${product.name}"`, ...descCheck });
+      }
+      for (const meal of requestedMeals || []) {
+        const nameCheck = checkBadWords(meal.mealName);
+        if (nameCheck) badWordChecks.push({ field: `meal name "${meal.mealName}"`, ...nameCheck });
+        const descCheck = checkBadWords(meal.mealDescription);
+        if (descCheck) badWordChecks.push({ field: `meal description for "${meal.mealName}"`, ...descCheck });
+      }
+  
+      if (badWordChecks.length > 0) {
+        return res.status(400).json({
+          message: 'Inappropriate language detected in submission',
+          badWordsDetected: badWordChecks
         });
-
-        // Validate expirationDate
-        if (isNaN(new Date(expirationDate).getTime())) {
-            return res.status(400).json({ message: "Invalid expiration date format" });
+      }
+  
+      // Ensure requestedProducts is parsed correctly
+      if (typeof requestedProducts === 'string') {
+        try {
+          requestedProducts = JSON.parse(requestedProducts);
+        } catch (error) {
+          return res.status(400).json({ message: "Invalid requestedProducts format" });
         }
-
-        // Validate numberOfMeals for prepared meals
-        let totalMeals = 0;
-        if (category === 'prepared_meals') {
-            const parsedNumberOfMeals = parseInt(numberOfMeals, 10);
-            if (isNaN(parsedNumberOfMeals) || parsedNumberOfMeals <= 0) {
-                return res.status(400).json({ message: 'numberOfMeals must be a valid positive integer for prepared meals' });
-            }
-            totalMeals = parsedNumberOfMeals;
+      }
+      if (!Array.isArray(requestedProducts)) {
+        requestedProducts = [];
+      }
+  
+      // Ensure requestedMeals is parsed correctly
+      if (typeof requestedMeals === 'string') {
+        try {
+          requestedMeals = JSON.parse(requestedMeals);
+        } catch (error) {
+          return res.status(400).json({ message: "Invalid requestedMeals format" });
         }
-
-        // Create the request without products or meals first
-        const newRequest = new RequestNeed({
-            title,
-            location,
-            expirationDate: new Date(expirationDate),
-            description,
-            category: category || undefined,
-            recipient,
-            requestedProducts: [], // Initially empty
-            requestedMeals: [],    // Initially empty
-            status: status || "pending",
-            linkedDonation: linkedDonation || null,
-            numberOfMeals: category === 'prepared_meals' ? totalMeals : undefined,
-            isaPost:true,
-        });
-
-        await newRequest.save(); // Save to obtain the request _id
-        const requestId = newRequest._id;
-
-        // Handle products for packaged_products
-        if (category === 'packaged_products' && requestedProducts.length > 0) {
-            // Get the current counter value and increment it for the number of products
-            const counter = await Counter.findOneAndUpdate(
-                { _id: 'ProductId' }, 
-                { $inc: { seq: requestedProducts.length } }, 
-                { new: true, upsert: true }
-            );
-
-            const startId = counter.seq - requestedProducts.length + 1;
-
-            // Create Product documents with auto-incremented IDs
-            const productDocs = requestedProducts.map((product, index) => ({
-                id: startId + index,
-                name: product.name,
-                productType: product.productType,
-                productDescription: product.productDescription,
-                weightPerUnit: product.weightPerUnit,
-                weightUnit: product.weightUnit,
-                weightUnitTotale: product.weightUnitTotale,
-                totalQuantity: product.totalQuantity,
-                image: product.image,
-                status: product.status,
-                request: requestId,
-            }));
-
-            try {
-                const createdProducts = await Product.insertMany(productDocs);
-                // Map created products to the requestedProducts array with quantities
-                newRequest.requestedProducts = createdProducts.map(product => ({
-                    product: product._id,
-                    quantity: parseInt(product.totalQuantity),
-                }));
-            } catch (error) {
-                console.error("Product Creation Error:", error);
-                return res.status(400).json({ message: "Failed to create products", error: error.message });
-            }
+      }
+      if (!Array.isArray(requestedMeals)) {
+        requestedMeals = [];
+      }
+  
+      // Validate and filter products
+      requestedProducts = requestedProducts.map((product, index) => {
+        if (!product.name || typeof product.name !== 'string' || !product.name.trim()) {
+          throw new Error(`Product at index ${index} is missing a valid name`);
         }
-
-        // Save the updated request
-        await newRequest.save();
-
-        // Fetch the populated request for the response
-        const populatedRequest = await RequestNeed.findById(newRequest._id)
-            .populate('recipient')
-            .populate('requestedProducts.product') 
-            .populate('requestedMeals.meal');
-
-        console.log("Saved request:", populatedRequest);
-        res.status(201).json({ message: 'Request created successfully', newRequest: populatedRequest });
+        if (!product.productType || typeof product.productType !== 'string') {
+          throw new Error(`Product at index ${index} is missing a valid productType`);
+        }
+        if (!product.productDescription || typeof product.productDescription !== 'string' || !product.productDescription.trim()) {
+          throw new Error(`Product at index ${index} is missing a valid productDescription`);
+        }
+        const weightPerUnit = parseFloat(product.weightPerUnit);
+        if (isNaN(weightPerUnit) || weightPerUnit <= 0) {
+          throw new Error(`Product at index ${index} has an invalid weightPerUnit: ${product.weightPerUnit}. Must be a positive number`);
+        }
+        const totalQuantity = parseInt(product.totalQuantity);
+        if (isNaN(totalQuantity) || totalQuantity <= 0) {
+          throw new Error(`Product at index ${index} has an invalid totalQuantity: ${product.totalQuantity}. Must be a positive integer`);
+        }
+        if (!product.status || typeof product.status !== 'string') {
+          throw new Error(`Product at index ${index} is missing a valid status`);
+        }
+        return product;
+      });
+  
+      // Validate expirationDate
+      if (isNaN(new Date(expirationDate).getTime())) {
+        return res.status(400).json({ message: "Invalid expiration date format" });
+      }
+  
+      // Validate numberOfMeals for prepared meals
+      let totalMeals = 0;
+      if (category === 'prepared_meals') {
+        const parsedNumberOfMeals = parseInt(numberOfMeals, 10);
+        if (isNaN(parsedNumberOfMeals) || parsedNumberOfMeals <= 0) {
+          return res.status(400).json({ message: 'numberOfMeals must be a valid positive integer for prepared meals' });
+        }
+        totalMeals = parsedNumberOfMeals;
+      }
+  
+      // Create the request without products or meals first
+      const newRequest = new RequestNeed({
+        title,
+        location,
+        expirationDate: new Date(expirationDate),
+        description,
+        category: category || undefined,
+        recipient,
+        requestedProducts: [],
+        requestedMeals: [],
+        status: status || "pending",
+        linkedDonation: linkedDonation || null,
+        numberOfMeals: category === 'prepared_meals' ? totalMeals : undefined,
+        isaPost: true,
+      });
+  
+      await newRequest.save();
+      const requestId = newRequest._id;
+  
+      // Handle products for packaged_products
+      if (category === 'packaged_products' && requestedProducts.length > 0) {
+        const counter = await Counter.findOneAndUpdate(
+          { _id: 'ProductId' },
+          { $inc: { seq: requestedProducts.length } },
+          { new: true, upsert: true }
+        );
+  
+        const startId = counter.seq - requestedProducts.length + 1;
+  
+        const productDocs = requestedProducts.map((product, index) => ({
+          id: startId + index,
+          name: product.name,
+          productType: product.productType,
+          productDescription: product.productDescription,
+          weightPerUnit: product.weightPerUnit,
+          weightUnit: product.weightUnit,
+          weightUnitTotale: product.weightUnitTotale,
+          totalQuantity: product.totalQuantity,
+          image: product.image,
+          status: product.status,
+          request: requestId,
+        }));
+  
+        try {
+          const createdProducts = await Product.insertMany(productDocs);
+          newRequest.requestedProducts = createdProducts.map(product => ({
+            product: product._id,
+            quantity: parseInt(product.totalQuantity),
+          }));
+        } catch (error) {
+          console.error("Product Creation Error:", error);
+          return res.status(400).json({ message: "Failed to create products", error: error.message });
+        }
+      }
+  
+      await newRequest.save();
+  
+      const populatedRequest = await RequestNeed.findById(newRequest._id)
+        .populate('recipient')
+        .populate('requestedProducts.product')
+        .populate('requestedMeals.meal');
+  
+      console.log("Saved request:", populatedRequest);
+      res.status(201).json({ message: 'Request created successfully', newRequest: populatedRequest });
     } catch (error) {
-        console.error("Request Creation Error:", error);
-        res.status(500).json({
-            message: "Failed to create request",
-            error: error.message || error,
-        });
+      console.error("Request Creation Error:", error);
+      res.status(500).json({
+        message: "Failed to create request",
+        error: error.message || error,
+      });
     }
-}
-
+  }
 
 // ✅ Update a request by ID
 async function updateRequest(req, res) {
     try {
-        const { id } = req.params;
-        const { requestedProducts, numberOfMeals, mealName, mealDescription, mealType, ...requestData } = req.body;
-
-        // ### Input Validation
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ message: 'Valid Request ID is required' });
+      const { id } = req.params;
+      const { requestedProducts, numberOfMeals, mealName, mealDescription, mealType, ...requestData } = req.body;
+  
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: 'Valid Request ID is required' });
+      }
+  
+      // Vérification des "bad words" dans les champs mis à jour
+      const badWordChecks = [];
+      if (requestData.title) {
+        const titleCheck = checkBadWords(requestData.title);
+        if (titleCheck) badWordChecks.push({ field: 'title', ...titleCheck });
+      }
+      if (requestData.location) {
+        const locationCheck = checkBadWords(requestData.location);
+        if (locationCheck) badWordChecks.push({ field: 'location', ...locationCheck });
+      }
+      if (requestData.description) {
+        const descriptionCheck = checkBadWords(requestData.description);
+        if (descriptionCheck) badWordChecks.push({ field: 'description', ...descriptionCheck });
+      }
+      for (const product of requestedProducts || []) {
+        if (product.name) {
+          const nameCheck = checkBadWords(product.name);
+          if (nameCheck) badWordChecks.push({ field: `product name "${product.name}"`, ...nameCheck });
         }
-
-        // Validate required fields
-        if (!requestData.title || typeof requestData.title !== 'string' || requestData.title.trim() === '') {
-            return res.status(400).json({ message: 'Title is required and must be a non-empty string' });
+        if (product.productDescription) {
+          const descCheck = checkBadWords(product.productDescription);
+          if (descCheck) badWordChecks.push({ field: `product description for "${product.name}"`, ...descCheck });
         }
-        if (!requestData.location || typeof requestData.location !== 'string' || requestData.location.trim() === '') {
-            return res.status(400).json({ message: 'Location is required and must be a non-empty string' });
+      }
+      if (mealName) {
+        const nameCheck = checkBadWords(mealName);
+        if (nameCheck) badWordChecks.push({ field: 'meal name', ...nameCheck });
+      }
+      if (mealDescription) {
+        const descCheck = checkBadWords(mealDescription);
+        if (descCheck) badWordChecks.push({ field: 'meal description', ...descCheck });
+      }
+  
+      if (badWordChecks.length > 0) {
+        return res.status(400).json({
+          message: 'Inappropriate language detected in submission',
+          badWordsDetected: badWordChecks
+        });
+      }
+  
+      // Validate required fields
+      if (!requestData.title || typeof requestData.title !== 'string' || requestData.title.trim() === '') {
+        return res.status(400).json({ message: 'Title is required and must be a non-empty string' });
+      }
+      if (!requestData.location || typeof requestData.location !== 'string' || requestData.location.trim() === '') {
+        return res.status(400).json({ message: 'Location is required and must be a non-empty string' });
+      }
+      if (!requestData.category || !['packaged_products', 'prepared_meals'].includes(requestData.category)) {
+        return res.status(400).json({ message: 'Category must be either "packaged_products" or "prepared_meals"' });
+      }
+      if (requestData.expirationDate && isNaN(new Date(requestData.expirationDate).getTime())) {
+        return res.status(400).json({ message: 'Expiration Date must be a valid date' });
+      }
+      if (requestData.status && !['available', 'pending', 'reserved'].includes(requestData.status)) {
+        return res.status(400).json({ message: 'Status must be one of: available, pending, reserved' });
+      }
+  
+      const existingRequest = await RequestNeed.findById(id);
+      if (!existingRequest) {
+        return res.status(404).json({ message: 'Request not found' });
+      }
+  
+      let updatedProducts = [];
+      if (requestData.category === 'packaged_products') {
+        if (!requestedProducts || !Array.isArray(requestedProducts)) {
+          return res.status(400).json({ message: 'requestedProducts array is required for packaged_products category' });
         }
-        if (!requestData.category || !['packaged_products', 'prepared_meals'].includes(requestData.category)) {
-            return res.status(400).json({ message: 'Category must be either "packaged_products" or "prepared_meals"' });
+  
+        for (const item of requestedProducts) {
+          if (!item.product || typeof item.product !== 'object') {
+            return res.status(400).json({ message: 'Each requested product must have a product object' });
+          }
+          if (typeof item.quantity !== 'number' || item.quantity < 0) {
+            return res.status(400).json({ message: `Invalid quantity for product: ${item.quantity}` });
+          }
+  
+          const { productType, productDescription, weightPerUnit, weightUnit, status } = item.product;
+  
+          if (!productType || typeof productType !== 'string' || productType.trim() === '') {
+            return res.status(400).json({ message: 'productType is required for each product' });
+          }
+          if (!productDescription || typeof productDescription !== 'string' || productDescription.trim() === '') {
+            return res.status(400).json({ message: 'productDescription is required for each product' });
+          }
+          if (typeof weightPerUnit !== 'number' || weightPerUnit <= 0) {
+            return res.status(400).json({ message: 'weightPerUnit must be a positive number for each product' });
+          }
+          if (!weightUnit || !['kg', 'g', 'lb', 'oz'].includes(weightUnit)) {
+            return res.status(400).json({ message: 'weightUnit must be one of: kg, g, lb, oz' });
+          }
+          if (status && !['available', 'pending', 'reserved'].includes(status)) {
+            return res.status(400).json({ message: 'Product status must be one of: available, pending, reserved' });
+          }
+  
+          let productDoc = await Product.findOne({
+            productType: productType,
+            productDescription: productDescription
+          });
+  
+          if (!productDoc) {
+            const counter = await Counter.findOneAndUpdate(
+              { _id: 'ProductId' },
+              { $inc: { seq: 1 } },
+              { new: true, upsert: true }
+            );
+  
+            productDoc = new Product({
+              id: counter.seq.toString(),
+              name: productType,
+              productType: productType,
+              productDescription: productDescription,
+              weightPerUnit: Number(weightPerUnit),
+              weightUnit: weightUnit,
+              weightUnitTotale: weightUnit,
+              totalQuantity: Number(item.quantity),
+              status: status || 'available'
+            });
+            await productDoc.save();
+          } else {
+            productDoc.totalQuantity = (productDoc.totalQuantity || 0) + Number(item.quantity);
+            await productDoc.save();
+          }
+  
+          updatedProducts.push({
+            product: productDoc._id,
+            quantity: Number(item.quantity)
+          });
         }
-        if (requestData.expirationDate && isNaN(new Date(requestData.expirationDate).getTime())) {
-            return res.status(400).json({ message: 'Expiration Date must be a valid date' });
+      } else if (requestData.category === 'prepared_meals') {
+        if (typeof numberOfMeals !== 'number' || numberOfMeals <= 0) {
+          return res.status(400).json({ message: 'numberOfMeals must be a positive number for prepared_meals category' });
         }
-        if (requestData.status && !['available', 'pending', 'reserved'].includes(requestData.status)) {
-            return res.status(400).json({ message: 'Status must be one of: available, pending, reserved' });
+        if (!mealName || typeof mealName !== 'string' || mealName.trim() === '') {
+          return res.status(400).json({ message: 'mealName is required for prepared_meals category' });
         }
-
-        // Fetch the existing request to determine its category
-        const existingRequest = await RequestNeed.findById(id);
-        if (!existingRequest) {
-            return res.status(404).json({ message: 'Request not found' });
+        if (!mealDescription || typeof mealDescription !== 'string' || mealDescription.trim() === '') {
+          return res.status(400).json({ message: 'mealDescription is required for prepared_meals category' });
         }
-
-        // Validate based on category
-        let updatedProducts = [];
-        if (requestData.category === 'packaged_products') {
-            if (!requestedProducts || !Array.isArray(requestedProducts)) {
-                return res.status(400).json({ message: 'requestedProducts array is required for packaged_products category' });
-            }
-
-            // Validate and process requestedProducts
-            for (const item of requestedProducts) {
-                if (!item.product || typeof item.product !== 'object') {
-                    return res.status(400).json({ message: 'Each requested product must have a product object' });
-                }
-                if (typeof item.quantity !== 'number' || item.quantity < 0) {
-                    return res.status(400).json({ message: `Invalid quantity for product: ${item.quantity}` });
-                }
-
-                const { productType, productDescription, weightPerUnit, weightUnit, status } = item.product;
-
-                if (!productType || typeof productType !== 'string' || productType.trim() === '') {
-                    return res.status(400).json({ message: 'productType is required for each product' });
-                }
-                if (!productDescription || typeof productDescription !== 'string' || productDescription.trim() === '') {
-                    return res.status(400).json({ message: 'productDescription is required for each product' });
-                }
-                if (typeof weightPerUnit !== 'number' || weightPerUnit <= 0) {
-                    return res.status(400).json({ message: 'weightPerUnit must be a positive number for each product' });
-                }
-                if (!weightUnit || !['kg', 'g', 'lb', 'oz'].includes(weightUnit)) {
-                    return res.status(400).json({ message: 'weightUnit must be one of: kg, g, lb, oz' });
-                }
-                if (status && !['available', 'pending', 'reserved'].includes(status)) {
-                    return res.status(400).json({ message: 'Product status must be one of: available, pending, reserved' });
-                }
-
-                // Check if a Product with the same productType and productDescription already exists
-                let productDoc = await Product.findOne({
-                    productType: productType,
-                    productDescription: productDescription
-                });
-
-                if (!productDoc) {
-                    // Generate a unique id for the Product using the Counter model
-                    const counter = await Counter.findOneAndUpdate(
-                        { _id: 'ProductId' },
-                        { $inc: { seq: 1 } },
-                        { new: true, upsert: true }
-                    );
-
-                    productDoc = new Product({
-                        id: counter.seq.toString(),
-                        name: productType,
-                        productType: productType,
-                        productDescription: productDescription,
-                        weightPerUnit: Number(weightPerUnit),
-                        weightUnit: weightUnit,
-                        weightUnitTotale: weightUnit,
-                        totalQuantity: Number(item.quantity),
-                        status: status || 'available'
-                    });
-                    await productDoc.save();
-                } else {
-                    // Update the existing product's totalQuantity
-                    productDoc.totalQuantity = (productDoc.totalQuantity || 0) + Number(item.quantity);
-                    await productDoc.save();
-                }
-
-                updatedProducts.push({
-                    product: productDoc._id,
-                    quantity: Number(item.quantity)
-                });
-            }
-        } else if (requestData.category === 'prepared_meals') {
-            if (typeof numberOfMeals !== 'number' || numberOfMeals <= 0) {
-                return res.status(400).json({ message: 'numberOfMeals must be a positive number for prepared_meals category' });
-            }
-            if (!mealName || typeof mealName !== 'string' || mealName.trim() === '') {
-                return res.status(400).json({ message: 'mealName is required for prepared_meals category' });
-            }
-            if (!mealDescription || typeof mealDescription !== 'string' || mealDescription.trim() === '') {
-                return res.status(400).json({ message: 'mealDescription is required for prepared_meals category' });
-            }
-            if (!mealType || !['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert', 'Other'].includes(mealType)) {
-                return res.status(400).json({ message: 'mealType must be one of: Breakfast, Lunch, Dinner, Snack, Dessert, Other' });
-            }
-            // Clear requestedProducts for prepared_meals
-            updatedProducts = [];
-        } else {
-            return res.status(400).json({ message: 'Invalid request category' });
+        if (!mealType || !['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert', 'Other'].includes(mealType)) {
+          return res.status(400).json({ message: 'mealType must be one of: Breakfast, Lunch, Dinner, Snack, Dessert, Other' });
         }
-
-        // ### Update the Request
-        const updatedRequest = await RequestNeed.findByIdAndUpdate(
-            id,
-            {
-                ...requestData,
-                requestedProducts: updatedProducts,
-                numberOfMeals: requestData.category === 'prepared_meals' ? numberOfMeals : undefined,
-                mealName: requestData.category === 'prepared_meals' ? mealName : undefined,
-                mealDescription: requestData.category === 'prepared_meals' ? mealDescription : undefined,
-                mealType: requestData.category === 'prepared_meals' ? mealType : undefined,
-            },
-            { new: true }
-        )
-            .populate('recipient')
-            .populate('requestedProducts.product');
-
-        if (!updatedRequest) {
-            return res.status(404).json({ message: 'Request not found' });
-        }
-
-        res.status(200).json({ message: 'Request updated successfully', updatedRequest });
+        updatedProducts = [];
+      } else {
+        return res.status(400).json({ message: 'Invalid request category' });
+      }
+  
+      const updatedRequest = await RequestNeed.findByIdAndUpdate(
+        id,
+        {
+          ...requestData,
+          requestedProducts: updatedProducts,
+          numberOfMeals: requestData.category === 'prepared_meals' ? numberOfMeals : undefined,
+          mealName: requestData.category === 'prepared_meals' ? mealName : undefined,
+          mealDescription: requestData.category === 'prepared_meals' ? mealDescription : undefined,
+          mealType: requestData.category === 'prepared_meals' ? mealType : undefined,
+        },
+        { new: true }
+      )
+        .populate('recipient')
+        .populate('requestedProducts.product');
+  
+      if (!updatedRequest) {
+        return res.status(404).json({ message: 'Request not found' });
+      }
+  
+      res.status(200).json({ message: 'Request updated successfully', updatedRequest });
     } catch (error) {
-        console.error('Update Request Error:', error);
-        res.status(500).json({ message: 'Failed to update request', error: error.message });
+      console.error('Update Request Error:', error);
+      res.status(500).json({ message: 'Failed to update request', error: error.message });
     }
-}
+  }
 
 // ✅ Delete a request by ID
 async function deleteRequest(req, res) {
@@ -408,6 +497,7 @@ async function deleteRequest(req, res) {
 }
 
 
+// ✅ Create request for existing donation
 async function createRequestNeedForExistingDonation(req, res) {
     try {
         const { donationId } = req.params;
@@ -430,7 +520,10 @@ async function createRequestNeedForExistingDonation(req, res) {
             return res.status(404).json({ message: 'Donation not found' });
         }
 
-        
+        // Validate donation state
+        if (donation.status !== 'pending') {
+            return res.status(400).json({ message: 'Donation is not available for requests (status must be pending)' });
+        }
         if (new Date(donation.expirationDate) <= new Date()) {
             return res.status(400).json({ message: 'Donation has expired' });
         }
@@ -451,6 +544,7 @@ async function createRequestNeedForExistingDonation(req, res) {
         let totalMeals = 0;
 
         if (isMealDonation) {
+            // Validate requestedMeals
             if (!requestedMeals || !Array.isArray(requestedMeals)) {
                 return res.status(400).json({ message: 'requestedMeals must be an array for meal donations' });
             }
@@ -486,6 +580,7 @@ async function createRequestNeedForExistingDonation(req, res) {
                 return res.status(400).json({ message: `Total requested meals (${totalMeals}) exceed available number of meals (${donation.numberOfMeals})` });
             }
         } else {
+            // Validate requestedProducts
             if (!requestedProducts || !Array.isArray(requestedProducts)) {
                 return res.status(400).json({ message: 'requestedProducts must be an array for product donations' });
             }
@@ -526,7 +621,7 @@ async function createRequestNeedForExistingDonation(req, res) {
             requestedMeals: isMealDonation ? validatedMeals : [],
             status: 'pending',
             linkedDonation: [donationId],
-            isaPost: false,
+            isaPost:false,
             numberOfMeals: isMealDonation ? totalMeals : undefined,
         });
 
@@ -538,28 +633,6 @@ async function createRequestNeedForExistingDonation(req, res) {
             { $push: { linkedRequests: newRequest._id } },
             { new: true }
         );
-
-        // Create a DonationTransaction with status 'pending'
-        const counter = await Counter.findOneAndUpdate(
-            { _id: 'DonationTransactionId' },
-            { $inc: { seq: 1 } },
-            { new: true, upsert: true }
-        );
-        if (!counter) throw new Error('Failed to increment DonationTransactionId counter');
-        const transactionId = counter.seq;
-
-        const transaction = new DonationTransaction({
-            id: transactionId,
-            donation: donationId,
-            requestNeed: newRequest._id,
-            donor: donation.donor,
-            recipient: recipientId,
-            allocatedProducts: validatedProducts,
-            allocatedMeals: validatedMeals,
-            status: 'pending',
-        });
-
-        await transaction.save();
 
         // Fetch the populated request for the response
         const populatedRequest = await RequestNeed.findById(newRequest._id)
@@ -593,17 +666,17 @@ Request Details:
 - Recipient: ${recipient.name || 'Unknown Recipient'}
 ${isMealDonation ? 
     `- Requested Meals: ${validatedMeals.map(item => {
-        const mealEntry = donation.meals.find(m => m.meal._id.toString() === item.meal.toString());
-        return `${mealEntry.meal.mealName} (Quantity: ${item.quantity})`;
+      const mealEntry = donation.meals.find(m => m.meal._id.toString() === item.meal.toString());
+      return `${mealEntry.meal.mealName} (Quantity: ${item.quantity})`;
     }).join(', ')} (Total: ${totalMeals})` :
     `- Requested Products: ${validatedProducts.map(item => {
-        const productEntry = donation.products.find(p => p.product._id.toString() === item.product.toString());
-        return `${productEntry.product.name} (Quantity: ${item.quantity})`;
+      const productEntry = donation.products.find(p => p.product._id.toString() === item.product.toString());
+      return `${productEntry.product.name} (Quantity: ${item.quantity})`;
     }).join(', ')}`
 }
 - Expiration Date: ${newRequest.expirationDate.toLocaleDateString()}
 
-Please review the request in your dashboard and accept or reject it.
+You can review the request in your dashboard.
 
 Best regards,
 Your Platform Team`,
@@ -631,7 +704,7 @@ Your Platform Team`,
                             }
                             <li><strong>Expiration Date:</strong> ${newRequest.expirationDate.toLocaleDateString()}</li>
                         </ul>
-                        <p>Please review the request in your dashboard and accept or reject it.</p>
+                        <p>You can review the request in your dashboard.</p>
                         <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
                     </div>
                 `,
@@ -651,16 +724,15 @@ Your Platform Team`,
         res.status(201).json({
             message: 'Request created successfully for the donation',
             request: populatedRequest,
-            transactionId: transaction._id, // Return the transaction ID for further actions
         });
     } catch (error) {
-        console.error('Create Request Error:', error);
-        res.status(500).json({
-            message: 'Failed to create request for the donation',
-            error: error.message,
-        });
+      console.error('Create Request Error:', error);
+      res.status(500).json({
+        message: 'Failed to create request for the donation',
+        error: error.message,
+      });
     }
-}
+  }
 
 async function addDonationToRequest(req, res) {
     try {
@@ -1439,4 +1511,5 @@ module.exports = {
     getRequestWithDonations,
     getRequestsByDonationId,UpdateAddDonationToRequest,
     rejectRequest,
+    getAllRequestsbackoffice
 };

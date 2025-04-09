@@ -147,7 +147,38 @@ export const rejectDonationTransaction = async (transactionId, reason) => {
     }
 };
 
+// Fetch transactions by Donation ID
+async function getTransactionByRequestId(req, res) {
+  try {
+    const { requestId } = req.params;
 
+    if (!mongoose.Types.ObjectId.isValid(requestId)) {
+      return res.status(400).json({ message: 'Invalid request ID' });
+    }
+
+    const transaction = await DonationTransaction.findOne({ requestNeed: requestId })
+      .populate({
+        path: 'requestNeed',
+        populate: [
+          { path: 'recipient' },
+          { path: 'requestedProducts.product' },
+          { path: 'requestedMeals.meal' },
+        ],
+      })
+      .populate('donation')
+      .populate('allocatedProducts.product')
+      .populate('allocatedMeals.meal');
+
+    if (!transaction) {
+      return res.status(404).json({ message: 'Transaction not found for this request' });
+    }
+
+    res.status(200).json(transaction);
+  } catch (error) {
+    console.error('Error fetching transaction:', error);
+    res.status(500).json({ message: 'Failed to fetch transaction', error: error.message });
+  }
+}
 // Create and accept a donation transaction
 export const createAndAcceptDonationTransaction = async (donationId, requestNeedId) => {
     try {
@@ -175,7 +206,32 @@ export const createAndAcceptDonationTransaction = async (donationId, requestNeed
         throw error;
     }
 };
-
+export const createAndAcceptDonationTransactionBiderc = async (donationId, requestNeedId) => {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) throw new Error('No authentication token found');
+        
+        const response = await axios.post(
+            `${API_BASE}/create-et-accept`,
+            { donationId, requestNeedId },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        console.log(`Full API Response (createAndAcceptDonationTransactionBiderc):`, response);
+        return response.data;
+    } catch (error) {
+        console.error(`Error creating and accepting donation transaction:`, {
+            message: error.message,
+            response: error.response ? error.response.data : null,
+            status: error.response ? error.response.status : null,
+        });
+        throw error;
+    }
+};
 // Fetch a donation transaction by ID
 export const getDonationTransactionById = async (id) => {
     try {

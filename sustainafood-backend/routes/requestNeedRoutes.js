@@ -16,4 +16,6 @@ router.put('/UpdateAddDonationToRequest/:requestId/donations', requestNeedContro
 router.post('/requestdonation/:donationId', requestNeedController.createRequestNeedForExistingDonation);
 router.get('/:requestId/with-donations', requestNeedController.getRequestWithDonations);
 router.get('/donation/:donationId', requestNeedController.getRequestsByDonationId);
+// New route for rejecting a request
+router.put('/:requestId/reject', requestNeedController.rejectRequest);
 module.exports = router;

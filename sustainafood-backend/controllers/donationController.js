@@ -2,8 +2,9 @@ const Donation = require('../models/Donation');
 const Product = require('../models/Product');
 const Counter = require('../models/Counter');
 const mongoose = require('mongoose');
-const Meal = require('../models/Meals');
-const RequestNeed = require('../models/RequestNeed');
+const Meal = require('../models/Meals');         // Adjust path to your model
+const RequestNeed = require('../models/RequestNeed'); // Add this import
+
 const { classifyFoodItem } = require('../aiService/classifyFoodItem');
 const { predictSupplyDemand } = require('../aiService/predictSupplyDemand');
 const User = require('../models/User');
@@ -685,8 +686,12 @@ async function getDonationsByCategory(req, res) {
   }
 }
 
+
+
+
+
 // ✅ Get Donation by Request ID
-async function getDonationByRequestId(req, res) {
+/*async function getDonationByRequestId(req, res) {
   try {
     const { requestId } = req.params;
     const donations = await Donation.find({ linkedRequests: requestId })
@@ -702,7 +707,7 @@ async function getDonationByRequestId(req, res) {
     console.error('Error fetching donation by request ID:', error);
     res.status(500).json({ message: 'Server error', error: error.message || error.toString() });
   }
-}
+}*/
 
 // ✅ Classify a Food Item
 async function classifyFood(req, res) {
@@ -756,6 +761,35 @@ async function getSupplyDemandPrediction(req, res) {
   }
 }
 
+const getDonationByRequestId = async (req, res) => {
+  try {
+      const { requestId } = req.params;
+
+      // First, fetch the RequestNeed document to get the linkedDonation IDs
+      const request = await RequestNeed.findById(requestId);
+      if (!request) {
+          return res.status(404).json({ message: 'Request not found' });
+      }
+
+      // Get the list of donation IDs from the linkedDonation field
+      const donationIds = request.linkedDonation || [];
+
+      if (donationIds.length === 0) {
+          return res.status(200).json([]); // No linked donations, return empty array
+      }
+
+      // Fetch the donations using the linkedDonation IDs
+      const donations = await Donation.find({ _id: { $in: donationIds } })
+          .populate('products.product')
+          .populate('meals.meal')
+          .populate('donor'); // Populate donor to get donor details
+
+      res.status(200).json(donations);
+  } catch (error) {
+      console.error('Error fetching donations:', error);
+      res.status(500).json({ message: 'Failed to fetch donations', error: error.message });
+  }
+};
 // ✅ Match Donation to Requests
 async function matchDonationToRequests(donation) {
   const { category, products, meals, expirationDate, numberOfMeals: donatedMeals } = donation;

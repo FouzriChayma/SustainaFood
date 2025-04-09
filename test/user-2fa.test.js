@@ -24,7 +24,7 @@ afterAll(async () => {
 describe('✅ TEST Get User By ID (GET /users/details/:id)', () => {
   
   // Utilisation d'un ID spécifique présent dans votre base de données
-  const EXISTING_USER_ID = '67f269dc76e0210e95aaecb1';
+  const EXISTING_USER_ID = '67f40161eb96068aecab0ca8';
 
   // Un ObjectId plausible mais probablement inexistant
   const NON_EXISTENT_USER_ID = '111111111111111111111111';
@@ -42,10 +42,10 @@ describe('✅ TEST Get User By ID (GET /users/details/:id)', () => {
     expect(res.statusCode).toBe(200); // Attente d'un succès
     expect(res.body).toHaveProperty('_id');
     expect(res.body._id).toBe(EXISTING_USER_ID); // Vérifie que l'ID correspond
-    expect(res.body).toHaveProperty('email', 'mohamed@gmail.com'); // Vérifie l'email spécifique
-    expect(res.body).toHaveProperty('name', 'mohamed'); // Vérifie le nom spécifique
+    expect(res.body).toHaveProperty('email', 'mohamedtr@gmail.com'); // Vérifie l'email spécifique
+    expect(res.body).toHaveProperty('name', 'mohamed trabelsi'); // Vérifie le nom spécifique
     expect(res.body).toHaveProperty('role', 'student'); // Vérifie le rôle spécifique
-    expect(res.body).toHaveProperty('phone', 52352644); // Vérifie le téléphone spécifique
+    expect(res.body).toHaveProperty('phone', 52352633); // Vérifie le téléphone spécifique
     // Ajoutez d'autres assertions pour les champs à vérifier
     expect(res.body.isBlocked).toBe(false);
     expect(res.body.isActive).toBe(true); // Selon vos données en DB

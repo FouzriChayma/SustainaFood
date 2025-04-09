@@ -7,7 +7,7 @@ const mongoUri = 'mongodb://localhost:27017/sustainafood'; // ⚠️ Ta base de 
 
 beforeAll(async () => {
   await mongoose.connect(mongoUri, {
-    // (Tu peux retirer les warnings ici aussi, voir plus bas)
+    //(Tu peux retirer les warnings ici aussi, voir plus bas)
   });
 });
 
@@ -19,7 +19,7 @@ describe('✅ TEST SIGN IN SUR DONNEES EXISTANTES', () => {
 
   it('✅ Devrait se connecter avec un utilisateur existant', async () => {
     const res = await request(app).post('/users/login').send({
-      email: "mohamed@gmail.com", // Met ton email existant ici
+      email: "mohamedtr@gmail.com", // Met ton email existant ici
       password: "Dhia1@"        // Met ton mot de passe correspondant
     });
 
@@ -34,7 +34,7 @@ describe('✅ TEST SIGN IN SUR DONNEES EXISTANTES', () => {
 
   it('❌ Devrait échouer avec un mauvais mot de passe pour cet email', async () => {
     const res = await request(app).post('/users/login').send({
-      email: "mohamed@gmail.com", // Même email
+      email: "mohamedtr@gmail.com", // Même email
       password: "45454" // Mauvais mot de passe
     });
 

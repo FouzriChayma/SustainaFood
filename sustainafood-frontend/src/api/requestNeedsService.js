@@ -56,6 +56,10 @@ export const addDonationToRequest = async (requestId, donationData) => {
 export const getrequests = async () => {
   return axios.get(`http://localhost:3000/request/`);
 };
+
+export const getrequestsback = async () => {
+  return axios.get(`http://localhost:3000/request/requests`);
+};
 export const getRequestsByRecipientId = async (id) => {
   const token = localStorage.getItem('token');
   return axios.get(`http://localhost:3000/request/recipient/${id}`, {

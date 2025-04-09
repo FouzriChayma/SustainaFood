@@ -776,7 +776,7 @@ const DetailsDonations = () => {
             </Button>
           )}
 
-          {!isTheOwner && isRecipient && (
+          {!isTheOwner && isRecipient && donation.status !== "fulfilled" && (
             <Button
               variant={isAddingRequest ? "cancel" : "add"}
               onClick={() => setIsAddingRequest(!isAddingRequest)}

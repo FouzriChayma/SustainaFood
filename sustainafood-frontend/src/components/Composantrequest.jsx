@@ -55,18 +55,22 @@ const StatusBadge = styled.span`
     font-weight: bold;
     color: white;
     background: ${({ status }) => {
-        switch (status) {
-            case 'pending':
-                return 'orange';
-            case 'approved':
-                return '#228b22';
-            case 'rejected':
-                return 'red';
-            default:
-                return '#888';
-        }
+      switch (status) {
+        case 'pending':
+          return '#f0ad4e'; // Orange for pending (🕒)
+        case 'fulfilled':
+          return '#28a745'; // Green for fulfilled (✅)
+        case 'partially_fulfilled':
+          return '#6c757d'; // Grey for partially fulfilled (❌)
+        case 'approved':
+          return '#228b22'; // Green for approved (if still used elsewhere)
+        case 'rejected':
+          return '#dc3545'; // Red for rejected
+        default:
+          return '#888'; // Default grey for unknown statuses
+      }
     }};
-`;
+  `;
 
 // Product list
 const ProductList = styled.ul`

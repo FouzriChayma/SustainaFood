@@ -52,6 +52,8 @@ import PredictionsDashboard from './pages/backoffice/PredictionsDashboard';
 import ListRequestsDonation from './pages/ListRequestsDonation';
 import AiClassification from './pages/AiClassification';
 import DonationRecommendations from './pages/DonationRecommendations';
+import ViewDonationTransaction from "./pages/backoffice/ViewDonationTransaction.jsx";
+
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import PersonalStatus from './pages/PersonalStatus';
 const App = () => {
@@ -89,6 +91,7 @@ const App = () => {
           <Route path="/admin-profile" element={<AdminProfile />} />
           <Route path="/Donations" element={<DonationList />} />
           <Route path="/DonationTransList" element={<DonationTransactionList />} />
+          <Route path="/donation-transactions/view/:transactionId" element={<ViewDonationTransaction/>} />
           <Route path="/food-donation/requests" element={<RequestTable />} />
           <Route path="/food-donation/product" element={<ProductList />} />
           <Route path="/requests/view/:id" element={<RequestDetails />} />

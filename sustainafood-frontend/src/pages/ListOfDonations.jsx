@@ -416,8 +416,8 @@ const ListOfDonations = () => {
               <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                 <option value="all">🟢 All Statuses</option>
                 <option value="pending">🕒 Pending</option>
-                <option value="approved">✅ Accepted</option>
-                <option value="rejected">❌ Rejected</option>
+                <option value="fulfilled">✅ Fulfilled</option>
+                <option value="partially_fulfilled">❌ Partially fulfilled</option>
               </Select>
               <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
                 <option value="all">📦 All Categories</option>

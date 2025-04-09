@@ -3,10 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { getDonationByRequestId , getDonationById } from '../api/donationService';
+import { getDonationTransactionsByRequestNeedId } from '../api/donationTransactionService';
 import { getRequestById } from '../api/requestNeedsService';
-import { getUserById } from '../api/userService';
-import { createAndAcceptDonationTransactionBiderc , rejectDonation } from '../api/donationTransactionService';
+import { createAndAcceptDonationTransactionBiderc , rejectDonationTransaction } from '../api/donationTransactionService';
 import imgmouna from '../assets/images/imgmouna.png';
 import styled, { createGlobalStyle } from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
@@ -382,9 +381,9 @@ const StatusBadge = styled.span`
 
 const ListDonationsRequest = () => {
   const { showAlert } = useAlert();
-  const { id } = useParams();
-  const [donations, setDonations] = useState([]);
-  const [filteredDonations, setFilteredDonations] = useState([]);
+  const { id } = useParams(); // requestNeedId
+  const [transactions, setTransactions] = useState([]);
+  const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -404,9 +403,9 @@ const ListDonationsRequest = () => {
         const requestResponse = await getRequestById(id);
         setRequest(requestResponse.data);
 
-        const donationData = await getDonationByRequestId(id);
-        const donationsArray = Array.isArray(donationData) ? donationData : [];
-        setDonations(donationsArray);
+        const transactionData = await getDonationTransactionsByRequestNeedId(id);
+        const transactionsArray = Array.isArray(transactionData) ? transactionData : [];
+        setTransactions(transactionsArray);
       } catch (err) {
         console.error('Fetch error:', err.response?.data || err.message);
         setError(err.response?.data?.message || 'Failed to fetch data');
@@ -419,159 +418,168 @@ const ListDonationsRequest = () => {
   }, [id]);
 
   useEffect(() => {
-    if (!request || donations.length === 0) return;
+    if (!request || transactions.length === 0) return;
 
-    let updatedDonations = [...donations];
+    let updatedTransactions = [...transactions];
 
     // Apply filters
     if (filterOption === 'pending' || filterOption === 'approved' || filterOption === 'rejected') {
-      updatedDonations = updatedDonations.filter(d => d.status === filterOption);
+      updatedTransactions = updatedTransactions.filter(t => t.status === filterOption);
     } else if (filterOption === 'full') {
-      updatedDonations = updatedDonations.filter(donation =>
-        donation.products.every(item => {
-          const requestedProduct = request.requestedProducts?.find(
-            rp => rp.productType === item.product?.productType || rp._id === item.product?._id
-          );
-          return requestedProduct && item.quantity >= requestedProduct.totalQuantity;
-        })
-      );
+      updatedTransactions = updatedTransactions.filter(transaction => {
+        if (transaction.donation.category === 'packaged_products') {
+          return transaction.allocatedProducts.every(item => {
+            const requestedProduct = request.requestedProducts?.find(
+              rp => rp.product.toString() === item.product.toString()
+            );
+            return requestedProduct && item.quantity >= requestedProduct.quantity;
+          });
+        } else if (transaction.donation.category === 'prepared_meals') {
+          const totalAllocated = transaction.allocatedMeals.reduce((sum, m) => sum + m.quantity, 0);
+          return totalAllocated >= request.numberOfMeals;
+        }
+        return false;
+      });
     }
 
     // Apply search
     if (searchQuery) {
-      updatedDonations = updatedDonations.filter(donation => {
+      updatedTransactions = updatedTransactions.filter(transaction => {
+        const donation = transaction.donation;
         const productMatch = donation.products?.some(product =>
           product.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           product.product?.productType?.toLowerCase().includes(searchQuery.toLowerCase())
         );
+        const mealMatch = donation.meals?.some(meal =>
+          meal.meal?.mealName?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
         const donorMatch = donation.donor?.name?.toLowerCase().includes(searchQuery.toLowerCase());
-        return productMatch || donorMatch;
+        return productMatch || mealMatch || donorMatch;
       });
     }
 
     // Apply sorting
-    updatedDonations.sort((a, b) => {
+    updatedTransactions.sort((a, b) => {
+      const donationA = a.donation;
+      const donationB = b.donation;
       if (sortOption === 'title') {
-        return a.title.localeCompare(b.title);
+        return donationA.title.localeCompare(donationB.title);
       } else if (sortOption === 'donor') {
-        return (a.donor?.name || '').localeCompare(b.donor?.name || '');
+        return (donationA.donor?.name || '').localeCompare(donationB.donor?.name || '');
       } else if (sortOption === 'status') {
         return a.status.localeCompare(b.status);
       } else {
-        return new Date(a.expirationDate) - new Date(b.expirationDate);
+        return new Date(donationA.expirationDate) - new Date(donationB.expirationDate);
       }
     });
 
-    setFilteredDonations(updatedDonations);
+    setFilteredTransactions(updatedTransactions);
     setCurrentPage(1);
-  }, [donations, request, filterOption, sortOption, searchQuery]);
-
-  // ... (rest of the state and functions remain unchanged)
+  }, [transactions, request, filterOption, sortOption, searchQuery]);
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentDonations = filteredDonations.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredDonations.length / itemsPerPage);
+  const currentTransactions = filteredTransactions.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  const handleAcceptDonation = async (donationId) => {
-    if (!window.confirm('Are you sure you want to accept this donation?')) return;
+  const handleAcceptDonation = async (transactionId) => {
+    if (!window.confirm('Are you sure you want to accept this transaction?')) return;
 
     try {
-        setProcessing(prev => ({ ...prev, [donationId]: 'accepting' }));
+      setProcessing(prev => ({ ...prev, [transactionId]: 'accepting' }));
 
-        // Find the donation to get the allocated quantities
-        const donation = donations.find(d => d._id === donationId);
+      const transaction = transactions.find(t => t._id === transactionId);
+      const donation = transaction.donation;
 
-        // Optimistic update for donation status
-        setDonations(prev => prev.map(d => 
-            d._id === donationId ? { ...d, status: 'approved' } : d
-        ));
+      // Optimistic update
+      setTransactions(prev => prev.map(t => 
+        t._id === transactionId ? { ...t, status: 'approved' } : t
+      ));
 
-        // Optimistic update for request quantities
-        if (donation.category === 'prepared_meals') {
-            const mealsToAllocate = donation.numberOfMeals || 0;
-            setRequest(prev => ({
-                ...prev,
-                numberOfMeals: prev.numberOfMeals - mealsToAllocate
-            }));
-        } else if (donation.category === 'packaged_products') {
-            setRequest(prev => ({
-                ...prev,
-                requestedProducts: prev.requestedProducts.map(rp => {
-                    const donatedProduct = donation.products.find(dp => 
-                        dp.product._id === rp.product._id
-                    );
-                    if (donatedProduct) {
-                        return {
-                            ...rp,
-                            quantity: rp.quantity - donatedProduct.quantity
-                        };
-                    }
-                    return rp;
-                })
-            }));
-        }
+      if (donation.category === 'prepared_meals') {
+        const totalAllocated = transaction.allocatedMeals.reduce((sum, m) => sum + m.quantity, 0);
+        setRequest(prev => ({
+          ...prev,
+          numberOfMeals: prev.numberOfMeals - totalAllocated
+        }));
+      } else if (donation.category === 'packaged_products') {
+        setRequest(prev => ({
+          ...prev,
+          requestedProducts: prev.requestedProducts.map(rp => {
+            const allocatedProduct = transaction.allocatedProducts.find(ap => 
+              ap.product.toString() === rp.product.toString()
+            );
+            if (allocatedProduct) {
+              return {
+                ...rp,
+                quantity: rp.quantity - allocatedProduct.quantity
+              };
+            }
+            return rp;
+          })
+        }));
+      }
 
-        // Call the backend to create the transaction and update the donation
-        const response = await createAndAcceptDonationTransactionBiderc(donationId, id);
-        console.log('createAndAcceptDonationTransactionBiderc response:', response);
+      const response = await createAndAcceptDonationTransactionBiderc(
+        donation._id,
+        id,
+        transaction.allocatedProducts,
+        transaction.allocatedMeals
+      );
+      console.log('createAndAcceptDonationTransactionBiderc response:', response);
 
-        // Destructure the response directly
-        const { donation: updatedDonation, request: updatedRequest } = response;
+      const { transaction: updatedTransaction, donation: updatedDonation, request: updatedRequest } = response;
+      setTransactions(prev => prev.map(t => 
+        t._id === transactionId ? updatedTransaction : t
+      ));
+      setRequest(updatedRequest);
 
-        // Update the local state with the updated data
-        setDonations(prev => prev.map(d => 
-            d._id === donationId ? updatedDonation : d
-        ));
-        setRequest(updatedRequest);
-
-        setFilterOption('all');
-        showAlert('success', 'Donation accepted and transaction created successfully!');
+      setFilterOption('all');
+      showAlert('success', 'Transaction accepted successfully!');
     } catch (error) {
-        console.error('Error accepting donation:', error.response?.data || error.message);
-        const errorMessage = error.response?.data?.message || 'An unexpected error occurred while accepting the donation.';
-        
-        // Revert the optimistic updates on error
-        setDonations(prev => prev.map(d => 
-            d._id === donationId ? { ...d, status: 'pending' } : d
-        ));
-        setRequest(prev => ({ ...prev }));
+      console.error('Error accepting transaction:', error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || 'An unexpected error occurred while accepting the transaction.';
+      
+      setTransactions(prev => prev.map(t => 
+        t._id === transactionId ? { ...t, status: 'pending' } : t
+      ));
+      setRequest(prev => ({ ...prev }));
 
-        showAlert('error', errorMessage);
+      showAlert('error', errorMessage);
     } finally {
-        setProcessing(prev => ({ ...prev, [donationId]: false }));
+      setProcessing(prev => ({ ...prev, [transactionId]: false }));
     }
-};
+  };
 
-  const handleRejectDonation = async (donationId) => {
+  const handleRejectDonation = async (transactionId) => {
     if (!rejectionReason) {
       showAlert('warning', 'Please provide a reason for rejection');
       return;
     }
 
     try {
-      setProcessing(prev => ({ ...prev, [donationId]: 'rejecting' }));
-      await rejectDonation(donationId, rejectionReason); 
+      setProcessing(prev => ({ ...prev, [transactionId]: 'rejecting' }));
+      await rejectDonationTransaction(transactionId, rejectionReason);
 
-      setDonations(prev => prev.map(d => 
-        d._id === donationId ? { ...d, status: 'rejected' } : d
+      setTransactions(prev => prev.map(t => 
+        t._id === transactionId ? { ...t, status: 'rejected', rejectionReason } : t
       ));
       setCurrentRejectionId(null);
       setRejectionReason('');
-     
-      showAlert('success', 'Donation rejected successfully!');
+
+      showAlert('success', 'Transaction rejected successfully!');
     } catch (error) {
-      console.error('Error rejecting donation:', error.response?.data || error.message);
-      showAlert('error', 'Failed to reject donation');
+      console.error('Error rejecting transaction:', error.response?.data || error.message);
+      showAlert('error', 'Failed to reject transaction');
     } finally {
-      setProcessing(prev => ({ ...prev, [donationId]: false }));
+      setProcessing(prev => ({ ...prev, [transactionId]: false }));
     }
   };
 
-  const openRejectionDialog = (donationId) => {
-    setCurrentRejectionId(donationId);
+  const openRejectionDialog = (transactionId) => {
+    setCurrentRejectionId(transactionId);
     setRejectionReason('');
   };
 
@@ -585,11 +593,11 @@ const ListDonationsRequest = () => {
     </>
   );
 
-  if (!request || donations.length === 0) return (
+  if (!request || transactions.length === 0) return (
     <>
       <Navbar />
       <ErrorContainer>
-        {request ? `No donations found for request: ${request.title}` : 'Request not found'}
+        {request ? `No transactions found for request: ${request.title}` : 'Request not found'}
       </ErrorContainer>
       <Footer />
     </>
@@ -601,7 +609,7 @@ const ListDonationsRequest = () => {
       <Navbar />
       <DonationContainer>
         <DonationTitle>
-          🤝 Donations for Request: <br />
+          🤝 Transactions for Request: <br />
           <span className="request-title">{request.title}</span>
         </DonationTitle>
 
@@ -610,18 +618,17 @@ const ListDonationsRequest = () => {
             <SearchIcon />
             <SearchInput
               type="text"
-              placeholder="Search by product or donor..."
+              placeholder="Search by product, meal, or donor..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </SearchContainer>
 
           <Select value={filterOption} onChange={(e) => setFilterOption(e.target.value)}>
-            <option value="all">🟢 All Donations</option>
+            <option value="all">🟢 All Transactions</option>
             <option value="pending">🟠 Pending</option>
             <option value="approved">🟢 Approved</option>
             <option value="rejected">🔴 Rejected</option>
-            <option value="full">✅ Full Quantity Only</option>
           </Select>
 
           <Select value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
@@ -632,13 +639,14 @@ const ListDonationsRequest = () => {
           </Select>
         </Controls>
 
-        {currentDonations.length > 0 ? (
-          currentDonations.map((donation) => {
+        {currentTransactions.length > 0 ? (
+          currentTransactions.map((transaction) => {
+            const donation = transaction.donation;
             const userPhoto = donation.donor?.photo
               ? `http://localhost:3000/${donation.donor.photo}`
               : imgmouna;
             return (
-              <DonationCard key={donation._id}>
+              <DonationCard key={transaction._id}>
                 <ProfileInfo>
                   <ProfileImg
                     src={userPhoto}
@@ -652,7 +660,8 @@ const ListDonationsRequest = () => {
                   <ProfileText>{donation.donor?.role || 'N/A'}</ProfileText>
                 </ProfileInfo>
                 <DonationDetails>
-                  <DonationDetail><strong>Title:</strong> {donation.title || 'Untitled'}</DonationDetail>
+                  <DonationDetail><strong>Transaction ID:</strong> {transaction.id}</DonationDetail>
+                  <DonationDetail><strong>Donation Title:</strong> {donation.title || 'Untitled'}</DonationDetail>
                   <DonationDetail><strong>Location:</strong> {donation.location || 'Not specified'}</DonationDetail>
                   <DonationDetail>
                     <strong>Expiration Date:</strong> {donation.expirationDate ? new Date(donation.expirationDate).toLocaleDateString() : 'Not set'}
@@ -660,71 +669,69 @@ const ListDonationsRequest = () => {
                   <DonationDetail><strong>Category:</strong> {donation.category || 'Not specified'}</DonationDetail>
                   <DonationDetail>
                     <strong>Status:</strong>
-                    <StatusBadge className={donation.status || 'pending'}>
-                      {donation.status || 'pending'}
+                    <StatusBadge className={transaction.status || 'pending'}>
+                      {transaction.status || 'pending'}
                     </StatusBadge>
                   </DonationDetail>
                   {donation.category === 'prepared_meals' && (
-                    <>
-                      <DonationDetail>
-                        <strong>Total Meals Donated:</strong> {donation.numberOfMeals || 'N/A'}
-                      </DonationDetail>
-                    </>
+                    <DonationDetail>
+                      <strong>Total Meals Donated:</strong> {donation.numberOfMeals || 'N/A'}
+                    </DonationDetail>
+                  )}
+                  {transaction.rejectionReason && (
+                    <DonationDetail>
+                      <strong>Rejection Reason:</strong> {transaction.rejectionReason}
+                    </DonationDetail>
                   )}
                 </DonationDetails>
                 <ProductSection>
-  <ProductsTitle>{donation.category === 'prepared_meals' ? 'Meals:' : 'Products:'}</ProductsTitle>
-  <ProductList>
-    {donation.category === 'prepared_meals' ? (
-      donation.meals && donation.meals.length > 0 ? (
-        donation.meals.map((item, itemIndex) => (
-          <ProductItem key={item._id || itemIndex}>
-            <ProductDetails>
-              <span><strong>Name:</strong> {item.meal?.mealName || 'N/A'}</span>
-              <span><strong>Type:</strong> {item.meal?.mealType || 'N/A'}</span>
-            </ProductDetails>
-            <ProductQuantity>
-              <strong>Quantity Given:</strong> {item.quantity || 0}
-            </ProductQuantity>
-          </ProductItem>
-        ))
-      ) : (
-        <ProductItem>No meals available</ProductItem>
-      )
-    ) : (
-      donation.products && donation.products.length > 0 ? (
-        donation.products.map((item, itemIndex) => {
-          const requestedProduct = request.requestedProducts?.find(
-            rp => rp.productType === item.product?.productType || rp._id === item.product?._id
-          );
-          return (
-            <ProductItem key={item._id || itemIndex}>
-              <ProductDetails>
-                <span><strong>Name:</strong> {item.product?.name || 'N/A'}</span>
-                <span><strong>Type:</strong> {item.product?.productType || 'N/A'}</span>
-                <span><strong>Weight:</strong> {item.product?.weightPerUnit ? `${item.product.weightPerUnit} ${item.product.weightUnit || ''}` : 'N/A'}</span>
-              </ProductDetails>
-              <ProductQuantity>
-                <strong>Quantity Given:</strong> {item.quantity || 0}
-              </ProductQuantity>
-            </ProductItem>
-          );
-        })
-      ) : (
-        <ProductItem>No products available</ProductItem>
-      )
-    )}
-  </ProductList>
-</ProductSection>
+                  <ProductsTitle>{donation.category === 'prepared_meals' ? 'Allocated Meals:' : 'Allocated Products:'}</ProductsTitle>
+                  <ProductList>
+                    {donation.category === 'prepared_meals' ? (
+                      transaction.allocatedMeals && transaction.allocatedMeals.length > 0 ? (
+                        transaction.allocatedMeals.map((item, itemIndex) => (
+                          <ProductItem key={item._id || itemIndex}>
+                            <ProductDetails>
+                              <span><strong>Name:</strong> {item.meal?.mealName || 'N/A'}</span>
+                              <span><strong>Type:</strong> {item.meal?.mealType || 'N/A'}</span>
+                            </ProductDetails>
+                            <ProductQuantity>
+                              <strong>Quantity:</strong> {item.quantity || 0}
+                            </ProductQuantity>
+                          </ProductItem>
+                        ))
+                      ) : (
+                        <ProductItem>No meals allocated</ProductItem>
+                      )
+                    ) : (
+                      transaction.allocatedProducts && transaction.allocatedProducts.length > 0 ? (
+                        transaction.allocatedProducts.map((item, itemIndex) => (
+                          <ProductItem key={item._id || itemIndex}>
+                            <ProductDetails>
+                              <span><strong>Name:</strong> {item.product?.name || 'N/A'}</span>
+                              <span><strong>Type:</strong> {item.product?.productType || 'N/A'}</span>
+                              <span><strong>Weight:</strong> {item.product?.weightPerUnit ? `${item.product.weightPerUnit} ${item.product.weightUnit || ''}` : 'N/A'}</span>
+                            </ProductDetails>
+                            <ProductQuantity>
+                              <strong>Quantity:</strong> {item.quantity || 0}
+                            </ProductQuantity>
+                          </ProductItem>
+                        ))
+                      ) : (
+                        <ProductItem>No products allocated</ProductItem>
+                      )
+                    )}
+                  </ProductList>
+                </ProductSection>
                 <ButtonContainer>
-                  {(!donation.status || donation.status === 'pending') ? (
+                  {transaction.status === 'pending' ? (
                     <>
                       <ActionButton
                         className="accept-btn"
-                        onClick={() => handleAcceptDonation(donation._id)}
-                        disabled={processing[donation._id]}
+                        onClick={() => handleAcceptDonation(transaction._id)}
+                        disabled={processing[transaction._id]}
                       >
-                        {processing[donation._id] === 'accepting' ? (
+                        {processing[transaction._id] === 'accepting' ? (
                           <>
                             <Spinner size="sm" /> Processing...
                           </>
@@ -732,18 +739,18 @@ const ListDonationsRequest = () => {
                       </ActionButton>
                       <ActionButton
                         className="reject-btn"
-                        onClick={() => openRejectionDialog(donation._id)}
-                        disabled={processing[donation._id]}
+                        onClick={() => openRejectionDialog(transaction._id)}
+                        disabled={processing[transaction._id]}
                       >
                         ✖ Reject
                       </ActionButton>
                     </>
                   ) : (
                     <div style={{
-                      color: donation.status === 'approved' ? 'green' : 'red',
+                      color: transaction.status === 'approved' ? 'green' : 'red',
                       fontWeight: 'bold'
                     }}>
-                      Status: {donation.status}
+                      Status: {transaction.status}
                     </div>
                   )}
                 </ButtonContainer>
@@ -751,14 +758,14 @@ const ListDonationsRequest = () => {
             );
           })
         ) : (
-          <NoDonations>No matching donations found.</NoDonations>
+          <NoDonations>No matching transactions found.</NoDonations>
         )}
 
         {currentRejectionId && (
           <RejectionModal>
             <ModalContent>
               <h3>Reason for Rejection</h3>
-              <p>Please explain why you're rejecting this donation:</p>
+              <p>Please explain why you're rejecting this transaction:</p>
               <ModalTextarea
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}

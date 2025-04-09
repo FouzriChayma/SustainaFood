@@ -233,9 +233,14 @@ export const createAndAcceptDonationTransactionBiderc = async (donationId, reque
     }
 };
 // Fetch a donation transaction by ID
+
 export const getDonationTransactionById = async (id) => {
     try {
-        const response = await axios.get(`${API_BASE}/${id}`);
+        const response = await axios.get(`${API_BASE}/${id}`, {
+            params: {
+                populate: 'requestNeed donation allocatedProducts.product allocatedMeals.meal donor recipient'
+            }
+        });
         console.log(`Full API Response (getDonationTransactionById ${id}):`, response);
         return response.data;
     } catch (error) {

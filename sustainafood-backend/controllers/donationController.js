@@ -570,7 +570,7 @@ async function getDonationsByStatus(req, res) {
 async function getAllDonations(req, res) {
   try {
     const donations = await Donation.find({ isaPost: true, isAnomaly: false,status: { $ne: 'rejected' } })
-      .populate('donor', 'name role email')
+      .populate('donor', 'name role email photo')
       .populate('products.product')
       .populate('meals.meal')
       .populate('linkedRequests');
@@ -587,7 +587,7 @@ async function getDonationById(req, res) {
   try {
     const { id } = req.params;
     const donation = await Donation.findById(id)
-      .populate('donor', 'name role email')
+      .populate('donor', 'name role email photo')
       .populate('products.product')
       .populate('meals.meal');
 

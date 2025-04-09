@@ -692,7 +692,7 @@ const DetailsRequest = () => {
           ) : status || "Unknown"}</p>
           {category === 'prepared_meals' && (
             <>
-              <p><strong>🍽️ Number of Meals:</strong> {isEditing ? <input type="number" value={editedRequest.numberOfMeals} onChange={(e) => setEditedRequest({ ...editedRequest, numberOfMeals: Number(e.target.value) })} placeholder="🍽️ Number of Meals" /> : numberOfMeals || "Not specified"}</p>
+              <p><strong>🍽️ Number of Meals:</strong> {isEditing ? <input type="number" value={editedRequest.numberOfMeals} onChange={(e) => setEditedRequest({ ...editedRequest, numberOfMeals: Number(e.target.value) })} placeholder="🍽️ Number of Meals" /> : numberOfMeals || "no more meals needed"}</p>
               {mealName || mealDescription || mealType ? (
                 <>
                   <p><strong>🍽️ Meal Name:</strong> {isEditing ? <input type="text" value={editedRequest.mealName} onChange={(e) => setEditedRequest({ ...editedRequest, mealName: e.target.value })} placeholder="🍽️ Meal Name" /> : mealName || "Not specified"}</p>
@@ -985,7 +985,7 @@ const DetailsRequest = () => {
 
           <Button variant="back" onClick={() => window.history.back()}>🔙 Go Back</Button>
 
-          {!isTheOwner && (
+          {!isTheOwner && request.status !== "fulfilled" && (
             <Button
               variant={isAddingDonation ? "cancel" : "add"}
               onClick={() => setIsAddingDonation(!isAddingDonation)}

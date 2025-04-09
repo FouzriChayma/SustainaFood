@@ -692,12 +692,10 @@ async function addDonationToRequest(req, res) {
                 return res.status(400).json({ message: 'Products array is required for packaged_products category' });
             }
 
-            // Create a map of requested products with their quantities
             const productMap = new Map(
                 request.requestedProducts.map(p => [p.product?._id.toString(), p.quantity])
             );
 
-            // Validate and map the products from the request body
             donationProducts = products.map(({ product, quantity }) => {
                 if (!product || !mongoose.Types.ObjectId.isValid(product)) {
                     throw new Error(`Invalid product ID: ${product}`);
@@ -723,7 +721,6 @@ async function addDonationToRequest(req, res) {
                 return res.status(400).json({ message: 'numberOfMeals must be a positive number for prepared_meals category' });
             }
 
-            // Validate meals input
             for (const meal of meals) {
                 if (!meal.mealName || typeof meal.mealName !== 'string' || meal.mealName.trim() === '') {
                     return res.status(400).json({ message: 'Each meal must have a valid mealName' });
@@ -739,18 +736,14 @@ async function addDonationToRequest(req, res) {
                 }
             }
 
-            // Create or find Meals documents and build donationMeals
             donationMeals = [];
             for (const meal of meals) {
-                // Check if a Meals document already exists with the same mealName and mealType
                 let mealDoc = await Meals.findOne({
                     mealName: meal.mealName,
                     mealType: meal.mealType
                 });
 
-                // If not found, create a new Meals document
                 if (!mealDoc) {
-                    // Generate a unique id for the Meals document using the Counter model
                     const counter = await Counter.findOneAndUpdate(
                         { _id: 'MealId' },
                         { $inc: { seq: 1 } },
@@ -767,14 +760,12 @@ async function addDonationToRequest(req, res) {
                     await mealDoc.save();
                 }
 
-                // Add to donationMeals with the meal ID
                 donationMeals.push({
                     meal: mealDoc._id,
                     quantity: Number(meal.quantity)
                 });
             }
 
-            // Validate numberOfMeals
             const totalMeals = donationMeals.reduce((sum, m) => sum + m.quantity, 0);
             if (totalMeals !== numberOfMeals) {
                 return res.status(400).json({
@@ -796,7 +787,7 @@ async function addDonationToRequest(req, res) {
             meals: donationMeals,
             numberOfMeals: request.category === 'prepared_meals' ? numberOfMeals : undefined,
             expirationDate: expirationDate || request.expirationDate,
-            isaPost:false,
+            isaPost: false,
             linkedRequests: [requestId],
         });
 
@@ -805,9 +796,31 @@ async function addDonationToRequest(req, res) {
         // ### Update Request's linkedDonation Field
         if (!request.linkedDonation) {
             request.linkedDonation = [];
-          }
-          request.linkedDonation.push(savedDonation._id);
-          await request.save();
+        }
+        request.linkedDonation.push(savedDonation._id);
+        await request.save();
+
+        // ### Create a DonationTransaction with status 'pending'
+        const counter = await Counter.findOneAndUpdate(
+            { _id: 'DonationTransactionId' },
+            { $inc: { seq: 1 } },
+            { new: true, upsert: true }
+        );
+        if (!counter) throw new Error('Failed to increment DonationTransactionId counter');
+        const transactionId = counter.seq;
+
+        const transaction = new DonationTransaction({
+            id: transactionId,
+            donation: savedDonation._id,
+            requestNeed: requestId,
+            donor: savedDonation.donor,
+            recipient: request.recipient,
+            allocatedProducts: donationProducts,
+            allocatedMeals: donationMeals,
+            status: 'pending',
+        });
+
+        await transaction.save();
 
         // ### Send Notification Email
         const recipient = request.recipient;
@@ -828,7 +841,6 @@ async function addDonationToRequest(req, res) {
                 },
             });
 
-            // Prepare email content with fallbacks
             const productList = populatedDonation.products?.length > 0
                 ? populatedDonation.products
                     .map(p => `${p.product?.name || 'Unknown Product'} (Quantity: ${p.quantity || 0})`)
@@ -880,7 +892,6 @@ Your Platform Team`,
                 attachments: [],
             };
 
-            // Add logo attachment if the file exists
             const logoPath = path.join(__dirname, '../uploads/logo.png');
             const fs = require('fs');
             if (fs.existsSync(logoPath)) {
@@ -891,7 +902,6 @@ Your Platform Team`,
                 });
             } else {
                 console.warn('Logo file not found at:', logoPath);
-                // Remove the logo from the HTML if the file is missing
                 mailOptions.html = mailOptions.html.replace('<img src="cid:logo" alt="Platform Logo" style="max-width: 150px; height: auto;" />', '');
             }
 
@@ -900,7 +910,6 @@ Your Platform Team`,
                 console.log(`Email sent to ${recipient.email}`);
             } catch (emailError) {
                 console.error('Failed to send email:', emailError);
-                // Continue with the response even if email fails
             }
         } else {
             console.warn('Recipient email not found for request:', requestId);
@@ -910,6 +919,7 @@ Your Platform Team`,
         res.status(201).json({
             message: 'Donation added to request successfully',
             donation: savedDonation,
+            transactionId: transaction._id, // Include transaction ID in the response
         });
     } catch (error) {
         console.error('Donation Error:', error);

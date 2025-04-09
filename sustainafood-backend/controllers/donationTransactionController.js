@@ -74,11 +74,19 @@ async function getDonationTransactionById(req, res) {
 }
 
 // ✅ Get donation transactions by RequestNeed ID
+// In donationTransactionController.js
 async function getDonationTransactionsByRequestNeedId(req, res) {
     try {
         const { requestNeedId } = req.params;
         const transactions = await DonationTransaction.find({ requestNeed: requestNeedId })
-            .populate('donation')
+            .populate({
+                path: 'donation',
+                populate: [
+                    { path: 'donor' }, // Populate the donor field
+                    { path: 'meals.meal', model: 'Meals' }, // Ensure meals are populated
+                ],
+            })
+            .populate('requestNeed')
             .populate('allocatedProducts.product')
             .populate('allocatedMeals.meal'); // Populate allocatedMeals
 
@@ -88,7 +96,8 @@ async function getDonationTransactionsByRequestNeedId(req, res) {
 
         res.status(200).json(transactions);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
+        console.error('Error fetching transactions:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 }
 
@@ -97,9 +106,24 @@ async function getDonationTransactionsByDonationId(req, res) {
     try {
         const { donationId } = req.params;
         const transactions = await DonationTransaction.find({ donation: donationId })
-            .populate('requestNeed')
+            .populate({
+                path: 'donation',
+                populate: [
+                    { path: 'donor' },
+                    { path: 'meals.meal', model: 'Meals' },
+                    { path: 'products.product', model: 'Product' },
+                ],
+            })
+            .populate({
+                path: 'requestNeed',
+                populate: [
+                    { path: 'recipient' },
+                    { path: 'requestedProducts.product', model: 'Product' },
+                    { path: 'requestedMeals.meal', model: 'Meals' },
+                ],
+            })
             .populate('allocatedProducts.product')
-            .populate('allocatedMeals.meal'); // Populate allocatedMeals
+            .populate('allocatedMeals.meal');
 
         if (!transactions.length) {
             return res.status(404).json({ message: 'No transactions found for this donation' });
@@ -107,7 +131,8 @@ async function getDonationTransactionsByDonationId(req, res) {
 
         res.status(200).json(transactions);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
+        console.error('Error fetching transactions:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 }
 
@@ -353,94 +378,200 @@ async function rejectDonationTransaction(req, res) {
         const { transactionId } = req.params;
         const { rejectionReason } = req.body;
 
+        // Validate input
+        if (!transactionId) {
+            return res.status(400).json({ message: 'Transaction ID is required' });
+        }
+        if (!rejectionReason) {
+            return res.status(400).json({ message: 'Rejection reason is required' });
+        }
+
+        // Find the transaction and populate related fields
         const transaction = await DonationTransaction.findById(transactionId)
-            .populate('donation')
-            .populate('requestNeed');
+            .populate({
+                path: 'donation',
+                populate: [
+                    { path: 'donor' },
+                    { path: 'meals.meal', model: 'Meals' },
+                    { path: 'products.product', model: 'Product' },
+                ],
+            })
+            .populate({
+                path: 'requestNeed',
+                populate: [
+                    { path: 'recipient' },
+                    { path: 'requestedProducts.product', model: 'Product' },
+                ],
+            })
+            .populate('recipient')
+            .populate('donor')
+            .populate('allocatedProducts.product')
+            .populate('allocatedMeals.meal');
+
         if (!transaction) {
             return res.status(404).json({ message: 'Transaction not found' });
         }
 
+        // Check if the transaction is in a rejectable state
         if (transaction.status !== 'pending') {
-            return res.status(400).json({ 
-                message: `Transaction cannot be rejected in its current state (${transaction.status})`
+            return res.status(400).json({
+                message: `Transaction cannot be rejected in its current state (${transaction.status})`,
             });
         }
 
+        // Update the transaction
         transaction.status = 'rejected';
         transaction.responseDate = new Date();
-        transaction.rejectionReason = rejectionReason || 'No reason provided';
+        transaction.rejectionReason = rejectionReason;
         await transaction.save();
 
+        // Update the donation: Remove the requestNeed from linkedRequests
         const donation = transaction.donation;
         if (donation) {
-            donation.status = 'rejected';
+            donation.linkedRequests = donation.linkedRequests.filter(
+                (reqId) => reqId.toString() !== transaction.requestNeed._id.toString()
+            );
+            // Check if there are other pending/accepted transactions for this donation
+            const otherTransactions = await DonationTransaction.find({
+                donation: donation._id,
+                status: { $in: ['pending', 'approved'] },
+            });
+            donation.status = otherTransactions.length > 0 ? 'approved' : 'pending';
             await donation.save();
         }
 
+        // Update the requestNeed: Remove the donation from linkedDonation
         const requestNeed = transaction.requestNeed;
         if (requestNeed) {
-            requestNeed.status = 'rejected';
+            requestNeed.linkedDonation = requestNeed.linkedDonation.filter(
+                (donId) => donId.toString() !== transaction.donation._id.toString()
+            );
+            // Check if there are other pending/accepted transactions for this request
+            const otherTransactions = await DonationTransaction.find({
+                requestNeed: requestNeed._id,
+                status: { $in: ['pending', 'approved'] },
+            });
+            requestNeed.status = otherTransactions.length > 0 ? 'partially_fulfilled' : 'pending';
             await requestNeed.save();
         }
 
         // Send notification to recipient
-        const recipient = await User.findById(transaction.recipient);
+        const recipient = transaction.recipient || (requestNeed && requestNeed.recipient);
         if (recipient && recipient.email) {
-            const transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS,
-                },
-                tls: {
-                    rejectUnauthorized: false,
-                },
-            });
+            try {
+                const transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: process.env.EMAIL_USER || 'your-email@gmail.com',
+                        pass: process.env.EMAIL_PASS || 'your-email-password',
+                    },
+                    tls: {
+                        rejectUnauthorized: false,
+                    },
+                });
 
-            const mailOptions = {
-                from: process.env.EMAIL_USER,
-                to: recipient.email,
-                subject: `Your Request "${requestNeed.title}" Has Been Rejected`,
-                text: `Dear ${recipient.name || 'Recipient'},
+                const mailOptions = {
+                    from: process.env.EMAIL_USER || 'your-email@gmail.com',
+                    to: recipient.email,
+                    subject: `Your Request "${requestNeed.title}" Transaction Has Been Rejected`,
+                    text: `Dear ${recipient.name || 'Recipient'},
 
-We regret to inform you that your request titled "${requestNeed.title}" has been rejected.
+We regret to inform you that a transaction for your request titled "${requestNeed.title}" has been rejected.
 
 Details:
 - Donation Title: ${donation.title}
-- Rejection Reason: ${rejectionReason || 'No reason provided'}
+- Rejection Reason: ${rejectionReason}
 
 If you have any questions, please contact our support team.
 
 Best regards,
 Your Platform Team`,
-                html: `
-                    <div style="font-family: Arial, sans-serif; color: black;">
-                        <h2 style="color: #dc3545;">Your Request Has Been Rejected</h2>
-                        <p>Dear ${recipient.name || 'Recipient'},</p>
-                        <p>We regret to inform you that your request titled "<strong>${requestNeed.title}</strong>" has been rejected.</p>
-                        <h3>Details:</h3>
-                        <ul>
-                            <li><strong>Donation Title:</strong> ${donation.title}</li>
-                            <li><strong>Rejection Reason:</strong> ${rejectionReason || 'No reason provided'}</li>
-                        </ul>
-                        <p>If you have any questions, please contact our support team.</p>
-                        <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
-                    </div>
-                `,
-            };
+                    html: `
+                        <div style="font-family: Arial, sans-serif; color: black;">
+                            <h2 style="color: #dc3545;">Your Request Transaction Has Been Rejected</h2>
+                            <p>Dear ${recipient.name || 'Recipient'},</p>
+                            <p>We regret to inform you that a transaction for your request titled "<strong>${requestNeed.title}</strong>" has been rejected.</p>
+                            <h3>Details:</h3>
+                            <ul>
+                                <li><strong>Donation Title:</strong> ${donation.title}</li>
+                                <li><strong>Rejection Reason:</strong> ${rejectionReason}</li>
+                            </ul>
+                            <p>If you have any questions, please contact our support team.</p>
+                            <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
+                        </div>
+                    `,
+                };
 
-            await transporter.sendMail(mailOptions);
-            console.log(`Email sent to ${recipient.email}`);
+                await transporter.sendMail(mailOptions);
+                console.log(`Email sent to ${recipient.email}`);
+            } catch (emailError) {
+                console.error(`Failed to send email to ${recipient.email}:`, emailError.message);
+            }
         }
 
-        res.status(200).json({ 
-            message: 'Donation rejected successfully', 
-            transaction 
+        // Send notification to donor
+        const donor = transaction.donor || (donation && donation.donor);
+        if (donor && donor.email) {
+            try {
+                const transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: process.env.EMAIL_USER || 'your-email@gmail.com',
+                        pass: process.env.EMAIL_PASS || 'your-email-password',
+                    },
+                    tls: {
+                        rejectUnauthorized: false,
+                    },
+                });
+
+                const mailOptions = {
+                    from: process.env.EMAIL_USER || 'your-email@gmail.com',
+                    to: donor.email,
+                    subject: `Your Donation "${donation.title}" Transaction Has Been Rejected`,
+                    text: `Dear ${donor.name || 'Donor'},
+
+We regret to inform you that a transaction for your donation titled "${donation.title}" has been rejected.
+
+Details:
+- Request Title: ${requestNeed.title}
+- Rejection Reason: ${rejectionReason}
+
+If you have any questions, please contact our support team.
+
+Best regards,
+Your Platform Team`,
+                    html: `
+                        <div style="font-family: Arial, sans-serif; color: black;">
+                            <h2 style="color: #dc3545;">Your Donation Transaction Has Been Rejected</h2>
+                            <p>Dear ${donor.name || 'Donor'},</p>
+                            <p>We regret to inform you that a transaction for your donation titled "<strong>${donation.title}</strong>" has been rejected.</p>
+                            <h3>Details:</h3>
+                            <ul>
+                                <li><strong>Request Title:</strong> ${requestNeed.title}</li>
+                                <li><strong>Rejection Reason:</strong> ${rejectionReason}</li>
+                            </ul>
+                            <p>If you have any questions, please contact our support team.</p>
+                            <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
+                        </div>
+                    `,
+                };
+
+                await transporter.sendMail(mailOptions);
+                console.log(`Email sent to ${donor.email}`);
+            } catch (emailError) {
+                console.error(`Failed to send email to ${donor.email}:`, emailError.message);
+            }
+        }
+
+        res.status(200).json({
+            message: 'Transaction rejected successfully',
+            transaction,
         });
     } catch (error) {
-        res.status(500).json({ 
-            message: 'Failed to reject donation', 
-            error: error.message 
+        console.error('Error rejecting transaction:', error);
+        res.status(500).json({
+            message: 'Failed to reject transaction',
+            error: error.message,
         });
     }
 }
@@ -448,6 +579,7 @@ Your Platform Team`,
 // ✅ Create and accept a donation transaction
 // ✅ Create and accept a donation transaction
 // ✅ Create and accept a donation transaction
+// ✅ Update and accept an existing donation transaction
 async function createAndAcceptDonationTransaction(req, res) {
     try {
         const { donationId, requestNeedId, allocatedProducts = [], allocatedMeals = [] } = req.body;
@@ -458,354 +590,86 @@ async function createAndAcceptDonationTransaction(req, res) {
             return res.status(400).json({ message: 'donationId and requestNeedId are required' });
         }
 
-        // Fetch donation with necessary data
-        const donation = await Donation.findById(donationId)
-            .populate('donor')
-            .populate('products.product')
-            .populate('meals.meal');
-        if (!donation) return res.status(404).json({ message: 'Donation not found' });
-
-        // Only check if donation is fulfilled
-        if (donation.status === 'fulfilled') {
-            return res.status(400).json({ 
-                message: 'Donation is already completely fulfilled' 
-            });
-        }
-
-        // Fetch request with necessary data
-        const requestNeed = await RequestNeed.findById(requestNeedId)
-            .populate('recipient')
-            .populate('requestedProducts.product')
-            .populate('requestedMeals.meal');
-        if (!requestNeed) return res.status(404).json({ message: 'RequestNeed not found' });
-
-        // Validate category match
-        if (donation.category !== requestNeed.category) {
-            return res.status(400).json({ message: 'Donation and request categories do not match' });
-        }
-
-        let isFullyFulfilled = false;
-
-        // Handle packaged products
-        if (donation.category === 'packaged_products') {
-            if (!allocatedProducts.length) {
-                return res.status(400).json({ message: 'No products allocated for this request' });
-            }
-
-            // Validate and update quantities
-            for (const allocated of allocatedProducts) {
-                const donationProduct = donation.products.find(p => 
-                    p.product._id.toString() === allocated.product
-                );
-                
-                if (!donationProduct) {
-                    return res.status(400).json({ 
-                        message: `Product ${allocated.product} not found in donation` 
-                    });
-                }
-
-                if (allocated.quantity > donationProduct.quantity) {
-                    return res.status(400).json({
-                        message: `Requested quantity (${allocated.quantity}) exceeds available quantity (${donationProduct.quantity})`
-                    });
-                }
-
-                // Update donation quantity
-                donationProduct.quantity -= allocated.quantity;
-            }
-
-            // Check if fully fulfilled
-            const remainingProducts = donation.products.reduce((sum, p) => sum + p.quantity, 0);
-            isFullyFulfilled = remainingProducts === 0;
-            donation.status = isFullyFulfilled ? 'fulfilled' : 'approved';
-        }
-
-        // Handle prepared meals
-        if (donation.category === 'prepared_meals') {
-            if (!allocatedMeals.length) {
-                return res.status(400).json({ message: 'No meals allocated for this request' });
-            }
-            for (const allocated of allocatedMeals) {
-                const donationMeal = donation.meals.find(m => 
-                    m.meal._id.toString() === allocated.meal
-                );
-                if (!donationMeal) {
-                    return res.status(400).json({ 
-                        message: `Meal ${allocated.meal} not found in donation` 
-                    });
-                }
-                if (allocated.quantity > donationMeal.quantity) {
-                    return res.status(400).json({
-                        message: `Requested quantity (${allocated.quantity}) exceeds available quantity (${donationMeal.quantity})`
-                    });
-                }
-                donationMeal.quantity -= allocated.quantity;
-            }
-            const totalAllocated = allocatedMeals.reduce((sum, m) => sum + m.quantity, 0);
-            donation.remainingMeals = (donation.remainingMeals || donation.numberOfMeals) - totalAllocated;
-            if (donation.remainingMeals < 0) donation.remainingMeals = 0;
-            isFullyFulfilled = donation.remainingMeals === 0;
-            donation.status = isFullyFulfilled ? 'fulfilled' : 'approved';
-        }
-
-        await donation.save();
-
-        // Update request status
-        requestNeed.status = isFullyFulfilled ? 'fulfilled' : 'approved';
-        await requestNeed.save();
-
-        // Create transaction
-        const counter = await Counter.findOneAndUpdate(
-            { _id: 'DonationTransactionId' },
-            { $inc: { seq: 1 } },
-            { new: true, upsert: true }
-        );
-        if (!counter) throw new Error('Failed to increment DonationTransactionId counter');
-
-        const transaction = new DonationTransaction({
-            id: counter.seq,
+        // Find the existing transaction
+        const transaction = await DonationTransaction.findOne({
             donation: donationId,
             requestNeed: requestNeedId,
-            donor: donation.donor,
-            recipient: requestNeed.recipient,
-            allocatedProducts,
-            allocatedMeals,
-            status: 'approved',
-            responseDate: new Date()
-        });
+            status: 'pending',
+        })
+            .populate({
+                path: 'donation',
+                populate: [
+                    { path: 'donor' },
+                    { path: 'meals.meal', model: 'Meals' },
+                    { path: 'products.product', model: 'Product' },
+                ],
+            })
+            .populate({
+                path: 'requestNeed',
+                populate: [
+                    { path: 'recipient' },
+                    { path: 'requestedProducts.product', model: 'Product' },
+                    { path: 'requestedMeals.meal', model: 'Meals' },
+                ],
+            })
+            .populate('allocatedProducts.product')
+            .populate('allocatedMeals.meal');
 
-        await transaction.save();
-
-        // Send email notification to donor
-        if (donation.donor.email) {
-            const subject = `Your Donation "${donation.title}" Has Been Accepted`;
-            let allocatedItemsText = '';
-            
-            if (donation.category === 'packaged_products') {
-                allocatedItemsText = allocatedProducts.map(ap => {
-                    const product = donation.products.find(p => 
-                        p.product._id.toString() === ap.product
-                    )?.product;
-                    return `${product?.name || 'Unknown Product'} (Quantity: ${ap.quantity})`;
-                }).join(', ');
-            } else if (donation.category === 'prepared_meals') {
-                allocatedItemsText = allocatedMeals.map(am => {
-                    const meal = donation.meals.find(m => 
-                        m.meal._id.toString() === am.meal
-                    )?.meal;
-                    return `${meal?.mealName || 'Unknown Meal'} (Quantity: ${am.quantity})`;
-                }).join(', ');
-            }
-
-            const text = `Dear ${donation.donor.name || 'Donor'},
-
-Your donation titled "${donation.title}" has been accepted.
-
-Donation Details:
-- Title: ${donation.title}
-- Request: ${requestNeed.title}
-- Allocated Items: ${allocatedItemsText}
-- Accepted On: ${new Date().toLocaleDateString()}
-
-Thank you for your generosity!
-
-Best regards,
-Your Platform Team`;
-
-            const html = `
-                <div style="font-family: Arial, sans-serif; color: black;">
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        <img src="cid:logo" alt="Platform Logo" style="max-width: 150px; height: auto;" />
-                    </div>
-                    <h2 style="color: #228b22;">Your Donation Has Been Accepted</h2>
-                    <p>Dear ${donation.donor.name || 'Donor'},</p>
-                    <p>Your donation titled "<strong>${donation.title}</strong>" has been accepted.</p>
-                    <h3>Donation Details:</h3>
-                    <ul>
-                        <li><strong>Title:</strong> ${donation.title}</li>
-                        <li><strong>Request:</strong> ${requestNeed.title}</li>
-                        <li><strong>Allocated Items:</strong> ${allocatedItemsText}</li>
-                        <li><strong>Accepted On:</strong> ${new Date().toLocaleDateString()}</li>
-                    </ul>
-                    <p>Thank you for your generosity!</p>
-                    <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
-                </div>
-            `;
-
-            const attachments = [
-                {
-                    filename: 'logo.png',
-                    path: path.join(__dirname, '../uploads/logo.png'),
-                    cid: 'logo',
-                },
-            ];
-
-            await sendEmail(donation.donor.email, subject, text, html, attachments);
+        if (!transaction) {
+            return res.status(404).json({ message: 'Pending transaction not found for this donation and request' });
         }
 
-        res.status(201).json({ 
-            message: 'Transaction created successfully',
-            donation,
-            request: requestNeed,
-            transaction
-        });
-
-    } catch (error) {
-        console.error('Error creating transaction:', error);
-        res.status(500).json({ 
-            message: 'Failed to create transaction', 
-            error: error.message 
-        });
-    }
-}
-
-// ✅ Create and accept a donation transaction
-async function createAndAcceptDonationTransactionBiderc(req, res) {
-    try {
-        const { donationId, requestNeedId, allocatedProducts = [], allocatedMeals = [] } = req.body;
-        const user = req.user;
-
-        // Validate input
-        if (!donationId || !requestNeedId) {
-            return res.status(400).json({ message: 'donationId and requestNeedId are required' });
-        }
-
-        // Fetch donation with necessary data
-        const donation = await Donation.findById(donationId)
-            .populate('donor')
-            .populate('products.product')
-            .populate('meals.meal');
-        if (!donation) return res.status(404).json({ message: 'Donation not found' });
-
-        // Check if donation is already fulfilled
-        if (donation.status === 'fulfilled') {
-            return res.status(400).json({ 
-                message: 'Donation is already completely fulfilled' 
-            });
-        }
-
-        // Fetch request with necessary data
-        const requestNeed = await RequestNeed.findById(requestNeedId)
-            .populate('recipient')
-            .populate('requestedProducts.product')
-            .populate('requestedMeals.meal');
-        if (!requestNeed) return res.status(404).json({ message: 'RequestNeed not found' });
+        const donation = transaction.donation;
+        const requestNeed = transaction.requestNeed;
 
         // Validate category match
         if (donation.category !== requestNeed.category) {
-            return res.status(400).json({ 
-                message: `Donation and request categories do not match (donation: ${donation.category}, request: ${requestNeed.category})` 
+            return res.status(400).json({
+                message: `Donation and request categories do not match (donation: ${donation.category}, request: ${requestNeed.category})`,
             });
         }
 
         let isFullyFulfilled = false;
-        let finalAllocatedProducts = allocatedProducts;
-        let finalAllocatedMeals = allocatedMeals;
-
-        // Handle packaged products
-        if (donation.category === 'packaged_products') {
-            // Validate that the donation has products
-            if (!donation.products || donation.products.length === 0) {
-                return res.status(400).json({ 
-                    message: 'Donation has no products to allocate' 
-                });
-            }
-
-            // If allocatedProducts is not provided, allocate all available products from the donation
-            if (!allocatedProducts.length) {
-                finalAllocatedProducts = donation.products.map(product => ({
-                    product: product.product._id.toString(),
-                    quantity: product.quantity
-                }));
-            }
-
-            // Validate and update quantities
-            for (const allocated of finalAllocatedProducts) {
-                const donationProduct = donation.products.find(p => 
-                    p.product._id.toString() === allocated.product.toString()
-                );
-                
-                if (!donationProduct) {
-                    return res.status(400).json({ 
-                        message: `Product ${allocated.product} not found in donation` 
-                    });
-                }
-
-                if (allocated.quantity > donationProduct.quantity) {
-                    return res.status(400).json({
-                        message: `Requested quantity (${allocated.quantity}) exceeds available quantity (${donationProduct.quantity}) for product ${allocated.product}`
-                    });
-                }
-
-                // Update donation quantity
-                donationProduct.quantity -= allocated.quantity;
-
-                // Update request quantity
-                const requestProduct = requestNeed.requestedProducts.find(rp => 
-                    rp.product._id.toString() === allocated.product.toString()
-                );
-                if (requestProduct) {
-                    requestProduct.quantity -= allocated.quantity;
-                    if (requestProduct.quantity < 0) requestProduct.quantity = 0;
-                }
-            }
-
-            // Remove products with quantity 0
-            donation.products = donation.products.filter(p => p.quantity > 0);
-
-            // Check if donation is fully fulfilled
-            const remainingProducts = donation.products.reduce((sum, p) => sum + p.quantity, 0);
-            isFullyFulfilled = remainingProducts === 0;
-            donation.status = isFullyFulfilled ? 'fulfilled' : 'approved';
-
-            // Check if request is fully fulfilled
-            const remainingRequestProducts = requestNeed.requestedProducts.reduce((sum, rp) => sum + rp.quantity, 0);
-            requestNeed.status = remainingRequestProducts === 0 ? 'fulfilled' : 'partially_fulfilled';
-        }
+        let finalAllocatedProducts = allocatedProducts.length ? allocatedProducts : transaction.allocatedProducts;
+        let finalAllocatedMeals = allocatedMeals.length ? allocatedMeals : transaction.allocatedMeals;
 
         // Handle prepared meals
         if (donation.category === 'prepared_meals') {
-            // Validate that the donation has meals
-            if (!donation.meals || donation.meals.length === 0) {
-                return res.status(400).json({ 
-                    message: 'Donation has no meals to allocate' 
-                });
-            }
-
-            // If allocatedMeals is not provided, allocate all available meals from the donation
-            if (!allocatedMeals.length) {
-                finalAllocatedMeals = donation.meals.map(meal => ({
-                    meal: meal.meal._id.toString(),
-                    quantity: Math.min(meal.quantity, requestNeed.numberOfMeals) // Allocate up to the requested number of meals
-                }));
+            if (!finalAllocatedMeals.length) {
+                return res.status(400).json({ message: 'No meals allocated for this request' });
             }
 
             let totalAllocated = 0;
             for (const allocated of finalAllocatedMeals) {
-                const donationMeal = donation.meals.find(m => 
-                    m.meal._id.toString() === allocated.meal.toString()
+                const donationMeal = donation.meals.find((m) =>
+                    m.meal && allocated.meal && m.meal._id.toString() === allocated.meal._id.toString()
                 );
                 if (!donationMeal) {
-                    return res.status(400).json({ 
-                        message: `Meal ${allocated.meal} not found in donation` 
+                    console.error('Meal not found in donation:', {
+                        allocatedMeal: allocated,
+                        donationMeals: donation.meals,
+                    });
+                    return res.status(400).json({
+                        message: `Meal ${allocated.meal?._id || allocated.meal} not found in donation`,
                     });
                 }
                 if (allocated.quantity > donationMeal.quantity) {
                     return res.status(400).json({
-                        message: `Requested quantity (${allocated.quantity}) exceeds available quantity (${donationMeal.quantity}) for meal ${allocated.meal}`
+                        message: `Requested quantity (${allocated.quantity}) exceeds available quantity (${donationMeal.quantity}) for meal ${allocated.meal._id}`,
                     });
                 }
                 donationMeal.quantity -= allocated.quantity;
                 totalAllocated += allocated.quantity;
             }
 
-            // Remove meals with quantity 0 to avoid validation error
-            donation.meals = donation.meals.filter(m => m.quantity > 0);
+            // Remove meals with quantity 0
+            donation.meals = donation.meals.filter((m) => m.quantity > 0);
 
             donation.remainingMeals = (donation.remainingMeals || donation.numberOfMeals) - totalAllocated;
             if (donation.remainingMeals < 0) donation.remainingMeals = 0;
             isFullyFulfilled = donation.remainingMeals === 0;
-            donation.status = isFullyFulfilled ? 'fulfilled' : 'approved';
+            // Update donation status: partially_fulfilled if remainingMeals > 0, fulfilled if remainingMeals === 0
+            donation.status = isFullyFulfilled ? 'fulfilled' : 'partially_fulfilled';
 
             // Update request numberOfMeals
             requestNeed.numberOfMeals -= totalAllocated;
@@ -813,7 +677,55 @@ async function createAndAcceptDonationTransactionBiderc(req, res) {
             requestNeed.status = requestNeed.numberOfMeals === 0 ? 'fulfilled' : 'partially_fulfilled';
         }
 
-        // Update bidirectional linking
+        // Handle packaged products
+        if (donation.category === 'packaged_products') {
+            if (!finalAllocatedProducts.length) {
+                return res.status(400).json({ message: 'No products allocated for this request' });
+            }
+
+            for (const allocated of finalAllocatedProducts) {
+                const donationProduct = donation.products.find((p) =>
+                    p.product && allocated.product && p.product._id.toString() === allocated.product._id.toString()
+                );
+                if (!donationProduct) {
+                    console.error('Product not found in donation:', {
+                        allocatedProduct: allocated,
+                        donationProducts: donation.products,
+                    });
+                    return res.status(400).json({
+                        message: `Product ${allocated.product?._id || allocated.product} not found in donation`,
+                    });
+                }
+                if (allocated.quantity > donationProduct.quantity) {
+                    return res.status(400).json({
+                        message: `Requested quantity (${allocated.quantity}) exceeds available quantity (${donationProduct.quantity}) for product ${allocated.product._id}`,
+                    });
+                }
+                donationProduct.quantity -= allocated.quantity;
+
+                const requestProduct = requestNeed.requestedProducts.find((rp) =>
+                    rp.product && allocated.product && rp.product._id.toString() === allocated.product._id.toString()
+                );
+                if (requestProduct) {
+                    requestProduct.quantity -= allocated.quantity;
+                    if (requestProduct.quantity < 0) requestProduct.quantity = 0;
+                }
+            }
+
+            donation.products = donation.products.filter((p) => p.quantity > 0);
+            const remainingProducts = donation.products.reduce((sum, p) => sum + p.quantity, 0);
+            isFullyFulfilled = remainingProducts === 0;
+            // Update donation status: partially_fulfilled if remainingProducts > 0, fulfilled if remainingProducts === 0
+            donation.status = isFullyFulfilled ? 'fulfilled' : 'partially_fulfilled';
+
+            const remainingRequestProducts = requestNeed.requestedProducts.reduce(
+                (sum, rp) => sum + rp.quantity,
+                0
+            );
+            requestNeed.status = remainingRequestProducts === 0 ? 'fulfilled' : 'partially_fulfilled';
+        }
+
+        // Ensure bidirectional linking
         donation.linkedRequests = donation.linkedRequests || [];
         if (!donation.linkedRequests.includes(requestNeedId)) {
             donation.linkedRequests.push(requestNeedId);
@@ -828,47 +740,337 @@ async function createAndAcceptDonationTransactionBiderc(req, res) {
         await donation.save();
         await requestNeed.save();
 
-        // Create transaction
-        const counter = await Counter.findOneAndUpdate(
-            { _id: 'DonationTransactionId' },
-            { $inc: { seq: 1 } },
-            { new: true, upsert: true }
-        );
-        if (!counter) throw new Error('Failed to increment DonationTransactionId counter');
-
-        const transaction = new DonationTransaction({
-            id: counter.seq,
-            donation: donationId,
-            requestNeed: requestNeedId,
-            donor: donation.donor,
-            recipient: requestNeed.recipient,
-            allocatedProducts: finalAllocatedProducts,
-            allocatedMeals: finalAllocatedMeals,
-            status: 'approved',
-            responseDate: new Date()
-        });
-
+        // Update the transaction
+        transaction.status = 'approved';
+        transaction.responseDate = new Date();
+        transaction.allocatedProducts = finalAllocatedProducts;
+        transaction.allocatedMeals = finalAllocatedMeals;
         await transaction.save();
 
-        // Send email notification to donor
-        if (donation.donor.email) {
+        // Send email notifications
+        if (donation.donor && donation.donor.email) {
             const subject = `Your Donation "${donation.title}" Has Been Accepted`;
             let allocatedItemsText = '';
-            
-            if (donation.category === 'packaged_products') {
-                allocatedItemsText = finalAllocatedProducts.map(ap => {
-                    const product = donation.products.find(p => 
-                        p.product._id.toString() === ap.product.toString()
-                    )?.product;
-                    return `${product?.name || 'Unknown Product'} (Quantity: ${ap.quantity})`;
-                }).join(', ');
-            } else if (donation.category === 'prepared_meals') {
-                allocatedItemsText = finalAllocatedMeals.map(am => {
-                    const meal = donation.meals.find(m => 
-                        m.meal._id.toString() === am.meal.toString()
-                    )?.meal;
-                    return `${meal?.mealName || 'Unknown Meal'} (Quantity: ${am.quantity})`;
-                }).join(', ');
+            if (donation.category === 'prepared_meals') {
+                allocatedItemsText = finalAllocatedMeals
+                    .map((am) => {
+                        const meal = donation.meals.find((m) =>
+                            m.meal && am.meal && m.meal._id.toString() === am.meal._id.toString()
+                        )?.meal;
+                        return `${meal?.mealName || 'Unknown Meal'} (Quantity: ${am.quantity})`;
+                    })
+                    .join(', ');
+            } else if (donation.category === 'packaged_products') {
+                allocatedItemsText = finalAllocatedProducts
+                    .map((ap) => {
+                        const product = donation.products.find((p) =>
+                            p.product && ap.product && p.product._id.toString() === ap.product._id.toString()
+                        )?.product;
+                        return `${product?.name || 'Unknown Product'} (Quantity: ${ap.quantity})`;
+                    })
+                    .join(', ');
+            }
+
+            const text = `Dear ${donation.donor.name || 'Donor'},
+
+Your donation titled "${donation.title}" has been accepted.
+
+Donation Details:
+- Title: ${donation.title}
+- Request: ${requestNeed.title}
+- Allocated Items: ${allocatedItemsText}
+- Accepted On: ${new Date().toLocaleDateString()}
+- Status: ${donation.status}
+
+Thank you for your generosity!
+
+Best regards,
+Your Platform Team`;
+
+            const html = `
+                <div style="font-family: Arial, sans-serif; color: black;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <img src="cid:logo" alt="Platform Logo" style="max-width: 150px; height: auto;" />
+                    </div>
+                    <h2 style="color: #228b22;">Your Donation Has Been Accepted</h2>
+                    <p>Dear ${donation.donor.name || 'Donor'},</p>
+                    <p>Your donation titled "<strong>${donation.title}</strong>" has been accepted.</p>
+                    <h3>Donation Details:</h3>
+                    <ul>
+                        <li><strong>Title:</strong> ${donation.title}</li>
+                        <li><strong>Request:</strong> ${requestNeed.title}</li>
+                        <li><strong>Allocated Items:</strong> ${allocatedItemsText}</li>
+                        <li><strong>Accepted On:</strong> ${new Date().toLocaleDateString()}</li>
+                        <li><strong>Status:</strong> ${donation.status}</li>
+                    </ul>
+                    <p>Thank you for your generosity!</p>
+                    <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
+                </div>
+            `;
+
+            const attachments = [
+                {
+                    filename: 'logo.png',
+                    path: path.join(__dirname, '../uploads/logo.png'),
+                    cid: 'logo',
+                },
+            ];
+
+            await sendEmail(donation.donor.email, subject, text, html, attachments);
+        }
+
+        const recipient = requestNeed.recipient;
+        if (recipient && recipient.email) {
+            const subject = `Your Request "${requestNeed.title}" Has Been Fulfilled`;
+            const text = `Dear ${recipient.name || 'Recipient'},
+
+Your request titled "${requestNeed.title}" has been fulfilled.
+
+Details:
+- Donation Title: ${donation.title}
+- Status: ${requestNeed.status}
+
+Thank you for using our platform!
+
+Best regards,
+Your Platform Team`;
+
+            const html = `
+                <div style="font-family: Arial, sans-serif; color: black;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <img src="cid:logo" alt="Platform Logo" style="max-width: 150px; height: auto;" />
+                    </div>
+                    <h2 style="color: #228b22;">Your Request Has Been Fulfilled</h2>
+                    <p>Dear ${recipient.name || 'Recipient'},</p>
+                    <p>Your request titled "<strong>${requestNeed.title}</strong>" has been fulfilled.</p>
+                    <h3>Details:</h3>
+                    <ul>
+                        <li><strong>Donation Title:</strong> ${donation.title}</li>
+                        <li><strong>Status:</strong> ${requestNeed.status}</li>
+                    </ul>
+                    <p>Thank you for using our platform!</p>
+                    <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
+                </div>
+            `;
+
+            const attachments = [
+                {
+                    filename: 'logo.png',
+                    path: path.join(__dirname, '../uploads/logo.png'),
+                    cid: 'logo',
+                },
+            ];
+
+            await sendEmail(recipient.email, subject, text, html, attachments);
+        }
+
+        res.status(200).json({
+            message: 'Transaction accepted successfully',
+            donation,
+            request: requestNeed,
+            transaction,
+        });
+    } catch (error) {
+        console.error('Error accepting transaction:', error);
+        res.status(500).json({
+            message: 'Failed to accept transaction',
+            error: error.message,
+        });
+    }
+}
+
+// ✅ Create and accept a donation transaction
+// ✅ Update and accept an existing donation transaction (bidirectional)
+// In donationTransactionController.js
+async function createAndAcceptDonationTransactionBiderc(req, res) {
+    try {
+        const { donationId, requestNeedId, allocatedProducts = [], allocatedMeals = [] } = req.body;
+        const user = req.user;
+
+        // Validate input
+        if (!donationId || !requestNeedId) {
+            return res.status(400).json({ message: 'donationId and requestNeedId are required' });
+        }
+
+        // Find the existing transaction
+        const transaction = await DonationTransaction.findOne({
+            donation: donationId,
+            requestNeed: requestNeedId,
+            status: 'pending',
+        })
+            .populate({
+                path: 'donation',
+                populate: [
+                    { path: 'donor' },
+                    { path: 'meals.meal', model: 'Meals' },
+                    { path: 'products.product', model: 'Product' }, // Ensure products are populated
+                ],
+            })
+            .populate('requestNeed')
+            .populate('allocatedProducts.product')
+            .populate('allocatedMeals.meal');
+
+        if (!transaction) {
+            return res.status(404).json({ message: 'Pending transaction not found for this donation and request' });
+        }
+
+        const donation = transaction.donation;
+        const requestNeed = transaction.requestNeed;
+
+        // Validate category match
+        if (donation.category !== requestNeed.category) {
+            return res.status(400).json({
+                message: `Donation and request categories do not match (donation: ${donation.category}, request: ${requestNeed.category})`,
+            });
+        }
+
+        let isFullyFulfilled = false;
+        let finalAllocatedProducts = allocatedProducts.length ? allocatedProducts : transaction.allocatedProducts;
+        let finalAllocatedMeals = allocatedMeals.length ? allocatedMeals : transaction.allocatedMeals;
+
+        // Handle prepared meals
+        if (donation.category === 'prepared_meals') {
+            if (!finalAllocatedMeals.length) {
+                return res.status(400).json({ message: 'No meals allocated for this request' });
+            }
+
+            let totalAllocated = 0;
+            for (const allocated of finalAllocatedMeals) {
+                const donationMeal = donation.meals.find((m) =>
+                    m.meal && allocated.meal && m.meal._id.toString() === allocated.meal._id.toString()
+                );
+                if (!donationMeal) {
+                    console.error('Meal not found in donation:', {
+                        allocatedMeal: allocated,
+                        donationMeals: donation.meals,
+                    });
+                    return res.status(400).json({
+                        message: `Meal ${allocated.meal?._id || allocated.meal} not found in donation`,
+                    });
+                }
+                if (allocated.quantity > donationMeal.quantity) {
+                    return res.status(400).json({
+                        message: `Requested quantity (${allocated.quantity}) exceeds available quantity (${donationMeal.quantity}) for meal ${allocated.meal._id}`,
+                    });
+                }
+                donationMeal.quantity -= allocated.quantity;
+                totalAllocated += allocated.quantity;
+            }
+
+            // Remove meals with quantity 0
+            donation.meals = donation.meals.filter((m) => m.quantity > 0);
+
+            donation.remainingMeals = (donation.remainingMeals || donation.numberOfMeals) - totalAllocated;
+            if (donation.remainingMeals < 0) donation.remainingMeals = 0;
+            isFullyFulfilled = donation.remainingMeals === 0;
+            donation.status = isFullyFulfilled ? 'fulfilled' : 'approved';
+
+            // Update request numberOfMeals
+            requestNeed.numberOfMeals -= totalAllocated;
+            if (requestNeed.numberOfMeals < 0) requestNeed.numberOfMeals = 0;
+            requestNeed.status = requestNeed.numberOfMeals === 0 ? 'fulfilled' : 'partially_fulfilled';
+        }
+
+        // Handle packaged products
+        if (donation.category === 'packaged_products') {
+            if (!finalAllocatedProducts.length) {
+                return res.status(400).json({ message: 'No products allocated for this request' });
+            }
+
+            for (const allocated of finalAllocatedProducts) {
+                // Log the allocated product for debugging
+                console.log('Allocated Product:', allocated);
+
+                // Find the product in the donation's products array
+                const donationProduct = donation.products.find((p) =>
+                    p.product && allocated.product && p.product._id.toString() === allocated.product._id.toString()
+                );
+
+                if (!donationProduct) {
+                    console.error('Product not found in donation:', {
+                        allocatedProduct: allocated,
+                        donationProducts: donation.products,
+                    });
+                    return res.status(400).json({
+                        message: `Product ${allocated.product?._id || allocated.product} not found in donation`,
+                    });
+                }
+
+                if (allocated.quantity > donationProduct.quantity) {
+                    return res.status(400).json({
+                        message: `Requested quantity (${allocated.quantity}) exceeds available quantity (${donationProduct.quantity}) for product ${allocated.product._id}`,
+                    });
+                }
+
+                donationProduct.quantity -= allocated.quantity;
+
+                // Update the request's requestedProducts
+                const requestProduct = requestNeed.requestedProducts.find((rp) =>
+                    rp.product && allocated.product && rp.product._id.toString() === allocated.product._id.toString()
+                );
+                if (requestProduct) {
+                    requestProduct.quantity -= allocated.quantity;
+                    if (requestProduct.quantity < 0) requestProduct.quantity = 0;
+                }
+            }
+
+            // Remove products with quantity 0
+            donation.products = donation.products.filter((p) => p.quantity > 0);
+            const remainingProducts = donation.products.reduce((sum, p) => sum + p.quantity, 0);
+            isFullyFulfilled = remainingProducts === 0;
+            donation.status = isFullyFulfilled ? 'fulfilled' : 'approved';
+
+            const remainingRequestProducts = requestNeed.requestedProducts.reduce(
+                (sum, rp) => sum + rp.quantity,
+                0
+            );
+            requestNeed.status = remainingRequestProducts === 0 ? 'fulfilled' : 'partially_fulfilled';
+        }
+
+        // Ensure bidirectional linking
+        donation.linkedRequests = donation.linkedRequests || [];
+        if (!donation.linkedRequests.includes(requestNeedId)) {
+            donation.linkedRequests.push(requestNeedId);
+        }
+
+        requestNeed.linkedDonation = requestNeed.linkedDonation || [];
+        if (!requestNeed.linkedDonation.includes(donationId)) {
+            requestNeed.linkedDonation.push(donationId);
+        }
+
+        // Save the updated donation and request
+        await donation.save();
+        await requestNeed.save();
+
+        // Update the transaction
+        transaction.status = 'approved';
+        transaction.responseDate = new Date();
+        transaction.allocatedProducts = finalAllocatedProducts;
+        transaction.allocatedMeals = finalAllocatedMeals;
+        await transaction.save();
+
+        // Send email notifications
+        if (donation.donor && donation.donor.email) {
+            const subject = `Your Donation "${donation.title}" Has Been Accepted`;
+            let allocatedItemsText = '';
+            if (donation.category === 'prepared_meals') {
+                allocatedItemsText = finalAllocatedMeals
+                    .map((am) => {
+                        const meal = donation.meals.find((m) =>
+                            m.meal && am.meal && m.meal._id.toString() === am.meal._id.toString()
+                        )?.meal;
+                        return `${meal?.mealName || 'Unknown Meal'} (Quantity: ${am.quantity})`;
+                    })
+                    .join(', ');
+            } else if (donation.category === 'packaged_products') {
+                allocatedItemsText = finalAllocatedProducts
+                    .map((ap) => {
+                        const product = donation.products.find((p) =>
+                            p.product && ap.product && p.product._id.toString() === ap.product._id.toString()
+                        )?.product;
+                        return `${product?.name || 'Unknown Product'} (Quantity: ${ap.quantity})`;
+                    })
+                    .join(', ');
             }
 
             const text = `Dear ${donation.donor.name || 'Donor'},
@@ -917,7 +1119,6 @@ Your Platform Team`;
             await sendEmail(donation.donor.email, subject, text, html, attachments);
         }
 
-        // Send email notification to recipient
         const recipient = await User.findById(requestNeed.recipient);
         if (recipient && recipient.email) {
             const subject = `Your Request "${requestNeed.title}" Has Been Fulfilled`;
@@ -963,18 +1164,17 @@ Your Platform Team`;
             await sendEmail(recipient.email, subject, text, html, attachments);
         }
 
-        res.status(201).json({ 
-            message: 'Transaction created successfully',
+        res.status(200).json({
+            message: 'Transaction accepted successfully',
             donation,
             request: requestNeed,
-            transaction
+            transaction,
         });
-
     } catch (error) {
-        console.error('Error creating transaction:', error);
-        res.status(500).json({ 
-            message: 'Failed to create transaction', 
-            error: error.message 
+        console.error('Error accepting transaction:', error);
+        res.status(500).json({
+            message: 'Failed to accept transaction',
+            error: error.message,
         });
     }
 }

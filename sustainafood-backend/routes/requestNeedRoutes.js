@@ -4,6 +4,7 @@ const authMiddleware = require('../Middleware/auth'); // Your authentication mid
 const requestNeedController = require('../controllers/requestNeedController');
 
 router.get('/', requestNeedController.getAllRequests);
+router.get('/requests',requestNeedController.getAllRequestsbackoffice);
 router.get('/:id', requestNeedController.getRequestById);
 router.get('/recipient/:recipientId', requestNeedController.getRequestsByRecipientId);
 router.get('/status/:status', requestNeedController.getRequestsByStatus);

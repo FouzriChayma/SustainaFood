@@ -4,7 +4,6 @@ import Navbar from "../../components/backoffcom/Navbar";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaFilePdf, FaEye } from "react-icons/fa";
-import { getrequests } from "../../api/requestNeedsService";
 import "../../assets/styles/backoffcss/RequestTable.css";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -81,7 +80,7 @@ const [statusFilter, setStatusFilter] = useState("");
     const fetchRequests = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:3000/request");
+        const response = await axios.get("http://localhost:3000/request/requests");
         const sanitizedData = response.data.map(sanitizeRequest);
         setRequests(sanitizedData);
         setLoading(false);

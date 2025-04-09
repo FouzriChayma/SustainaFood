@@ -24,6 +24,20 @@ async function getAllRequests(req, res) {
     }
 }
 
+// ✅ Get all requests for backoffice
+async function getAllRequestsbackoffice(req, res) {
+    try {
+        const requests = await RequestNeed.find()
+            .populate('recipient', 'name role photo') // Populate recipient details
+            .populate('requestedProducts.product', 'name') // Populate product details
+            .populate('requestedMeals.meal', 'mealName'); // Populate meal details
+        res.status(200).json(requests);
+    } catch (error) {
+        console.error('Error fetching all requests:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+}
+
 // ✅ Get request by ID
 async function getRequestById(req, res) {
     try {
@@ -1429,4 +1443,5 @@ module.exports = {
     getRequestWithDonations,
     getRequestsByDonationId,UpdateAddDonationToRequest,
     rejectRequest,
+    getAllRequestsbackoffice
 };

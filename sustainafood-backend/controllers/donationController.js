@@ -570,7 +570,7 @@ async function getDonationsByStatus(req, res) {
 async function getAllDonations(req, res) {
   try {
     const donations = await Donation.find({ isaPost: true, isAnomaly: false })
-      .populate('donor', 'name role email')
+      .populate('donor', 'name role email photo')
       .populate('products.product')
       .populate('meals.meal')
       .populate('linkedRequests');

@@ -1,46 +1,24 @@
-/**
- * Fichier de Test d'Intégration pour la création de Donations (POST /donation)
- * Stratégie : Nettoyage Ciblé Après Chaque Test (Targeted Cleanup)
- *
- * OBJECTIF : Laisser la base de données dans le même état après l'exécution
- *            complète de la suite qu'elle était avant. Les données ajoutées
- *            par un test sont supprimées après ce test.
- *
- * MÉTHODE :
- * 1. Pas de nettoyage global au début (pas de deleteMany dans beforeEach).
- * 2. Les tests qui créent des données (cas de succès) enregistrent les IDs créés.
- * 3. `afterEach` supprime SPÉCIFIQUEMENT les documents dont les IDs ont été enregistrés.
- * 4. L'utilisateur de test créé pour la suite est supprimé dans `afterAll`.
- *
- * RISQUES : Voir les commentaires dans le code. Principalement lié aux échecs
- *           imprévus qui pourraient empêcher un nettoyage correct.
- */
+
 const request = require('supertest');
 const mongoose = require('mongoose');
 
-// --- Imports (Vérifiez les chemins !) ---
-const app = require('../app'); // Assure-toi que c'est le bon chemin vers ton app Express
+const app = require('../app'); 
 const User = require('../models/User');
 const Donation = require('../models/Donation');
 const Product = require('../models/Product');
-const Meal = require('../models/Meals'); // Vérifiez le nom 'Meals' ou 'Meal'
+const Meal = require('../models/Meals'); 
 const Counter = require('../models/Counter');
 
-// --- Configuration de la Base de Données ---
-// ⚠️ Utilise ta chaîne de connexion. C'est la base sur laquelle les tests s'exécuteront.
-const mongoUri = process.env.MONGO_TEST_URI || 'mongodb://localhost:27017/sustainafood';
-// -------------------------------------------
 
-// --- Variables globales pour le suivi du nettoyage ---
-let testUser; // Utilisateur de test créé spécifiquement pour cette exécution
-let testUserCreatedByThisRun = false; // Flag pour savoir si on doit supprimer l'utilisateur dans afterAll
-// Ces variables vont stocker les IDs des documents créés PAR LE TEST ACTUEL
+const mongoUri = process.env.MONGO_TEST_URI || 'mongodb://localhost:27017/sustainafood';
+
+let testUser; 
+let testUserCreatedByThisRun = false; 
 let createdDonationId = null;
 let createdProductIds = [];
 let createdMealIds = [];
 
 
-// --- Données de Test Réutilisables ---
 const validProductData = [{
     name: "Test Product DB Cleanup Targeted", productType: "Canned_Goods", productDescription: "Valid test product for targeted cleanup",
     weightPerUnit: 0.5, weightUnit: "kg", totalQuantity: 10, status: "available"
@@ -52,10 +30,7 @@ const validMealData = [{
 const calculatedNumberOfMeals = validMealData.reduce((sum, meal) => sum + meal.quantity, 0);
 
 
-// --- Fonctions d'Aide ---
 
-// Crée un utilisateur de test UNIQUE pour CETTE EXÉCUTION de test.
-// Sera supprimé dans afterAll.
 const createTransientTestUser = async () => {
     const uniqueEmail = `test_donor_transient_cleanup_${Date.now()}@test.target`;
     console.log(`SETUP: Tentative de création de l'utilisateur TRANSIENT : ${uniqueEmail}`);
@@ -363,14 +338,6 @@ describe('POST /donation (Targeted Cleanup Strategy)', () => {
               console.log(`TEST OK: Échec attendu pour JSON produits invalide.`);
          });
 
-        //  it('❌ should return 400 if a product is invalid (missing name)', async () => {
-        //     if (!testUser?._id) throw new Error("Test setup failed: testUser not available");
-        //     const invalidProduct = [{ productType: "Fruit", totalQuantity: 1 }]; // name manquant
-        //     const testData = { ...getValidBaseData('packaged_products'), products: invalidProduct };
-        //      console.log(`TEST START: Fail - invalid product data (missing name)`);
-        //     const res = await buildPostRequest(testData);
-        //     await expectFailure(res, 400, 'products.name'); // Mongoose validation error path
-        //      console.log(`TEST OK: Échec attendu pour produit invalide.`);
-        // });
+    
     });
 });

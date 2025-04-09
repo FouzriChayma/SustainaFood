@@ -1,18 +1,11 @@
-/**
- * auth.test.js
- * Test d'intégration pour les routes d'inscription (signup) et de connexion (signin).
- * Stratégie: Création d'un utilisateur spécifique pour le test, puis nettoyage.
- * !!! CHEMIN SIGNUP CORRIGÉ POUR '/users/create' !!!
- */
+
 const request = require('supertest');
 const mongoose = require('mongoose');
-const app = require('../app'); // Assure-toi que le chemin est correct
-const User = require('../models/User'); // Assure-toi que le chemin est correct
+const app = require('../app'); 
+const User = require('../models/User'); 
 
-// --- Configuration DB ---
 const mongoUri = process.env.MONGO_TEST_URI || 'mongodb://localhost:27017/sustainafood'; // Utiliser une DB dédiée si possible
 
-// --- Données de Test ---
 const testUserEmail = `auth-test-${Date.now()}@test.com`;
 const testUserPassword = "Password123!";
 
@@ -28,7 +21,6 @@ const validSignupData = {
 
 let createdUserId = null;
 
-// --- Hooks Jest ---
 
 beforeAll(async () => {
   try {
@@ -69,13 +61,13 @@ describe('Authentication Flow (Signup & Signin)', () => {
 
   // --- Tests Signup (Inscription) ---
   // Utilisation du chemin '/users/create' trouvé dans routes/users.js
-  describe("POST /users/create (Signup)", () => { // <-- Description mise à jour
+  describe("POST /users/create (Signup)", () => { 
 
     it('✅ devrait inscrire un nouvel utilisateur avec des données valides', async () => {
       console.log(`\n--- TEST: Signup Réussi ---`);
-      console.log(`[TEST] Envoi POST /users/create pour ${validSignupData.email}`); // <-- Chemin corrigé
+      console.log(`[TEST] Envoi POST /users/create pour ${validSignupData.email}`); 
       const res = await request(app)
-        .post('/users/create') // <---------------------------------------- CHANGÉ ICI
+        .post('/users/create') 
         .send(validSignupData);
       console.log('[TEST] Réponse reçue (Signup Réussi):', { status: res.statusCode, body: res.body });
 
@@ -92,9 +84,9 @@ describe('Authentication Flow (Signup & Signin)', () => {
 
     it('❌ devrait échouer à inscrire avec un email déjà existant', async () => {
       console.log(`\n--- TEST: Signup Échoué (Email Dupliqué) ---`);
-      console.log(`[TEST] Envoi POST /users/create pour ${validSignupData.email} (encore)`); // <-- Chemin corrigé
+      console.log(`[TEST] Envoi POST /users/create pour ${validSignupData.email} (encore)`); 
        const res = await request(app)
-        .post('/users/create') // <---------------------------------------- CHANGÉ ICI
+        .post('/users/create') 
         .send(validSignupData);
        console.log('[TEST] Réponse reçue (Email Dupliqué):', { status: res.statusCode, body: res.body });
 
@@ -107,9 +99,9 @@ describe('Authentication Flow (Signup & Signin)', () => {
     it('❌ devrait échouer si les mots de passe ne correspondent pas', async () => {
         console.log(`\n--- TEST: Signup Échoué (MDP Discordants) ---`);
         const invalidData = { ...validSignupData, email: `mismatch-${Date.now()}@test.com`, confirmPassword: 'differentPassword123!' };
-        console.log(`[TEST] Envoi POST /users/create pour ${invalidData.email} avec MDP discordants`); // <-- Chemin corrigé
+        console.log(`[TEST] Envoi POST /users/create pour ${invalidData.email} avec MDP discordants`); 
         const res = await request(app)
-            .post('/users/create') // <---------------------------------------- CHANGÉ ICI
+            .post('/users/create') 
             .send(invalidData);
         console.log('[TEST] Réponse reçue (MDP Discordants):', { status: res.statusCode, body: res.body });
 
@@ -123,13 +115,12 @@ describe('Authentication Flow (Signup & Signin)', () => {
         console.log(`\n--- TEST: Signup Échoué (Champ Manquant) ---`);
         const invalidData = { ...validSignupData, email: `missing-${Date.now()}@test.com` };
         delete invalidData.name;
-        console.log(`[TEST] Envoi POST /users/create pour ${invalidData.email} sans nom`); // <-- Chemin corrigé
+        console.log(`[TEST] Envoi POST /users/create pour ${invalidData.email} sans nom`); 
         const res = await request(app)
-            .post('/users/create') // <---------------------------------------- CHANGÉ ICI
+            .post('/users/create') 
             .send(invalidData);
          console.log('[TEST] Réponse reçue (Champ Manquant):', { status: res.statusCode, body: res.body });
 
-        // Attentes
         expect(res.statusCode).toBe(400);
         expect(res.body).toHaveProperty('error');
         expect(res.body.error).toMatch(/Veuillez remplir tous les champs|Path `name` is required/i);
@@ -137,22 +128,20 @@ describe('Authentication Flow (Signup & Signin)', () => {
   });
 
   // --- Tests Signin (Connexion) ---
-  // La route /users/login était déjà correcte
   describe('POST /users/login (Signin)', () => {
 
     it('✅ devrait connecter l\'utilisateur précédemment inscrit avec succès', async () => {
-       expect(createdUserId).not.toBeNull(); // Important: Vérifie que le signup a réussi
+       expect(createdUserId).not.toBeNull(); 
        console.log(`\n--- TEST: Signin Réussi ---`);
        console.log(`[TEST] Envoi POST /users/login pour ${testUserEmail}`);
       const res = await request(app)
-        .post('/users/login') // <-- Chemin correct
+        .post('/users/login') 
         .send({
           email: testUserEmail,
           password: testUserPassword
         });
        console.log('[TEST] Réponse reçue (Signin Réussi):', { status: res.statusCode, body: res.body });
 
-       // Attentes
        expect(res.statusCode).toBe(200);
        expect(res.body).toHaveProperty('token');
        expect(res.body).toHaveProperty('role', validSignupData.role);
@@ -165,14 +154,13 @@ describe('Authentication Flow (Signup & Signin)', () => {
       console.log(`\n--- TEST: Signin Échoué (Mauvais MDP) ---`);
       console.log(`[TEST] Envoi POST /users/login pour ${testUserEmail} avec MAUVAIS MDP`);
       const res = await request(app)
-        .post('/users/login') // <-- Chemin correct
+        .post('/users/login') 
         .send({
           email: testUserEmail,
           password: wrongPassword
         });
       console.log('[TEST] Réponse reçue (Mauvais MDP):', { status: res.statusCode, body: res.body });
 
-      // Attentes
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty('error', 'Invalid credentials');
       expect(res.body).not.toHaveProperty('token');
@@ -183,14 +171,13 @@ describe('Authentication Flow (Signup & Signin)', () => {
        console.log(`\n--- TEST: Signin Échoué (Email Inexistant) ---`);
        console.log(`[TEST] Envoi POST /users/login pour ${nonExistentEmail}`);
       const res = await request(app)
-        .post('/users/login') // <-- Chemin correct
+        .post('/users/login') 
         .send({
           email: nonExistentEmail,
           password: "anypassword"
         });
       console.log('[TEST] Réponse reçue (Email Inexistant):', { status: res.statusCode, body: res.body });
 
-      // Attentes
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty('error', 'Invalid credentials');
       expect(res.body).not.toHaveProperty('token');

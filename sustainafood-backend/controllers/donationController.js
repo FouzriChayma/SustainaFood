@@ -587,7 +587,7 @@ async function getDonationById(req, res) {
   try {
     const { id } = req.params;
     const donation = await Donation.findById(id)
-      .populate('donor', 'name role email')
+      .populate('donor', 'name role email photo')
       .populate('products.product')
       .populate('meals.meal');
 

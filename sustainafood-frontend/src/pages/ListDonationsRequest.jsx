@@ -629,7 +629,6 @@ const ListDonationsRequest = () => {
             <option value="pending">🟠 Pending</option>
             <option value="approved">🟢 Approved</option>
             <option value="rejected">🔴 Rejected</option>
-            <option value="full">✅ Full Quantity Only</option>
           </Select>
 
           <Select value={sortOption} onChange={(e) => setSortOption(e.target.value)}>

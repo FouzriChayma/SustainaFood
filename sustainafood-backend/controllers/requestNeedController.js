@@ -422,18 +422,15 @@ async function updateRequest(req, res) {
           });
         }
       } else if (requestData.category === 'prepared_meals') {
-        if (typeof numberOfMeals !== 'number' || numberOfMeals <= 0) {
-          return res.status(400).json({ message: 'numberOfMeals must be a positive number for prepared_meals category' });
+        // Validate numberOfMeals if provided
+        if (numberOfMeals !== undefined) {
+          if (typeof numberOfMeals !== 'number' || numberOfMeals <= 0) {
+            return res.status(400).json({ message: 'numberOfMeals must be a positive number for prepared_meals category' });
+          }
         }
-        if (!mealName || typeof mealName !== 'string' || mealName.trim() === '') {
-          return res.status(400).json({ message: 'mealName is required for prepared_meals category' });
-        }
-        if (!mealDescription || typeof mealDescription !== 'string' || mealDescription.trim() === '') {
-          return res.status(400).json({ message: 'mealDescription is required for prepared_meals category' });
-        }
-        if (!mealType || !['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert', 'Other'].includes(mealType)) {
-          return res.status(400).json({ message: 'mealType must be one of: Breakfast, Lunch, Dinner, Snack, Dessert, Other' });
-        }
+  
+   
+  
         updatedProducts = [];
       } else {
         return res.status(400).json({ message: 'Invalid request category' });
@@ -444,10 +441,10 @@ async function updateRequest(req, res) {
         {
           ...requestData,
           requestedProducts: updatedProducts,
-          numberOfMeals: requestData.category === 'prepared_meals' ? numberOfMeals : undefined,
-          mealName: requestData.category === 'prepared_meals' ? mealName : undefined,
-          mealDescription: requestData.category === 'prepared_meals' ? mealDescription : undefined,
-          mealType: requestData.category === 'prepared_meals' ? mealType : undefined,
+          numberOfMeals: requestData.category === 'prepared_meals' ? (numberOfMeals !== undefined ? numberOfMeals : existingRequest.numberOfMeals) : undefined,
+          mealName: requestData.category === 'prepared_meals' ? (mealName !== undefined ? mealName : existingRequest.mealName) : undefined,
+          mealDescription: requestData.category === 'prepared_meals' ? (mealDescription !== undefined ? mealDescription : existingRequest.mealDescription) : undefined,
+          mealType: requestData.category === 'prepared_meals' ? (mealType !== undefined ? mealType : existingRequest.mealType) : undefined,
         },
         { new: true }
       )

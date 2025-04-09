@@ -6,6 +6,7 @@ body {
     padding: 0;
     color: #333;
 }
+
 .profile-container-predections {
     flex: 1;
     padding: 20px;
@@ -14,7 +15,6 @@ body {
     align-items: center;
     margin: auto;
 }
-
 
 /* ======= Conteneur du Rapport ======= */
 .report-container {
@@ -34,7 +34,6 @@ body {
 h1 {
     font-size: 26px;
     text-align: center;
-
     font-weight: bold;
 }
 
@@ -60,22 +59,33 @@ h4 {
 }
 
 /* ======= Liste des Analyses ======= */
-ul {
-    padding-left: 20px;
-    list-style: none;
+.ul-predactions {
+    padding-left: 0; /* Remove default padding */
+    margin: 10px 0; /* Add consistent margin */
+    list-style: none; /* Remove default bullets */
 }
 
-ul li {
-    padding: 8px;
+.ul-predactions .li-predactions {
+    display: flex; /* Use flexbox for better alignment */
+    align-items: center; /* Vertically center the emoji and text */
+    padding: 8px 12px; /* Add more padding for better spacing */
     margin: 5px 0;
     background: rgba(40, 167, 69, 0.1);
     border-left: 5px solid #28a745;
     border-radius: 5px;
     transition: all 0.3s ease;
     font-size: 15px;
+    line-height: 1.5; /* Improve readability */
 }
 
-ul li:hover {
+.ul-predactions .li-predactions::before {
+    content: "•"; /* Add a custom bullet point */
+    color: #28a745; /* Match the border color */
+    font-size: 20px;
+    margin-right: 10px; /* Space between bullet and text */
+}
+
+.ul-predactions .li-predactions:hover {
     background: rgba(40, 167, 69, 0.2);
     border-left: 5px solid #218838;
 }
@@ -128,7 +138,7 @@ ul li:hover {
         font-size: 18px;
     }
 
-    ul li {
+    .ul-predactions .li-predactions {
         font-size: 14px;
     }
 }

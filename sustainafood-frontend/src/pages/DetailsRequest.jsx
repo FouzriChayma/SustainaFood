@@ -286,15 +286,7 @@ const DetailsRequest = () => {
       if (typeof editedRequest.numberOfMeals !== 'number' || editedRequest.numberOfMeals <= 0) {
         errors.numberOfMeals = "Number of Meals must be a positive number";
       }
-      if (!editedRequest.mealName || editedRequest.mealName.trim() === '') {
-        errors.mealName = "Meal Name is required";
-      }
-      if (!editedRequest.mealDescription || editedRequest.mealDescription.trim() === '') {
-        errors.mealDescription = "Meal Description is required";
-      }
-      if (!editedRequest.mealType || !mealTypes.includes(editedRequest.mealType)) {
-        errors.mealType = `Meal Type must be one of: ${mealTypes.join(', ')}`;
-      }
+     
     }
 
     return errors;

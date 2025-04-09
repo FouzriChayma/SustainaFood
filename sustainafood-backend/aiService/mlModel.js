@@ -160,9 +160,9 @@ class DonationRecommender {
   }
 
 
-  async  detectAnomalies() {
+  async detectAnomalies() {
     const donations = await Donation.find();
-    const currentDate = new Date('2025-04-02');
+    const currentDate = new Date(); // Use current date instead of hardcoded '2025-04-02'
   
     console.log('Found donations in detectAnomalies:', donations.length, donations);
   
@@ -178,18 +178,18 @@ class DonationRecommender {
       const daysToExpiry = d.expirationDate
         ? Math.max(0, Math.ceil((new Date(d.expirationDate) - currentDate) / (1000 * 60 * 60 * 24)))
         : 1000;
-      const numLinkedRequests = d.linkedRequests ? d.linkedRequests.length : 0;
   
-      if (quantity > 1000 || daysToExpiry < 3) {
+      // Check for large quantity (100–20,000) and near expiry (≤4 days), exclude quantity = 1
+      if (quantity >= 100 && quantity <= 20000 && daysToExpiry <= 4 && quantity !== 1) {
         return [{
           donationId: d._id,
           donor: d.donor,
           title: d.title,
           quantity,
           daysToExpiry,
-          linkedRequests: numLinkedRequests,
-          anomalyScore: 0.1,
-          reason: `Extreme value detected: ${quantity > 1000 ? 'High quantity' : ''}${daysToExpiry < 3 ? ' Near expiry' : ''}`
+          linkedRequests: d.linkedRequests ? d.linkedRequests.length : 0,
+          anomalyScore: 0.9, // High score for rule-based detection
+          reason: `Large quantity (${quantity}) near expiry (${daysToExpiry} days)`
         }];
       }
       return [];
@@ -252,10 +252,26 @@ class DonationRecommender {
       score
     })));
   
-    const threshold = 0.4; // Seuil ajusté
+    const threshold = 0.4; // Adjusted threshold
   
+    // Filter anomalies based on Isolation Forest and specific rules
     const anomalies = donations
-      .filter((_, idx) => anomalyScores[idx] < threshold)
+      .filter((d, idx) => {
+        const quantity = d.category === 'prepared_meals'
+          ? d.numberOfMeals || 0
+          : d.products ? d.products.reduce((sum, p) => sum + p.quantity, 0) : 0;
+        const daysToExpiry = d.expirationDate
+          ? Math.max(0, Math.ceil((new Date(d.expirationDate) - currentDate) / (1000 * 60 * 60 * 24)))
+          : 1000;
+  
+        // Conditions: large quantity (100–20,000), near expiry (≤4 days), not small (quantity ≠ 1)
+        const isLargeQuantity = quantity >= 100 && quantity <= 20000;
+        const isNearExpiry = daysToExpiry <= 4;
+        const isSmallDonation = quantity === 1;
+  
+        // Anomaly if: low score (Isolation Forest) AND meets specific rules
+        return anomalyScores[idx] < threshold && isLargeQuantity && isNearExpiry && !isSmallDonation;
+      })
       .map((d) => ({
         donationId: d._id,
         title: d.title,
@@ -268,7 +284,7 @@ class DonationRecommender {
           : 'N/A',
         linkedRequests: d.linkedRequests ? d.linkedRequests.length : 0,
         anomalyScore: anomalyScores[donations.indexOf(d)],
-        reason: 'Suspicious pattern (e.g., high quantity, near expiry, or unusual linked requests)'
+        reason: `Large quantity (${d.category === 'prepared_meals' ? d.numberOfMeals || 0 : d.products.reduce((sum, p) => sum + p.quantity, 0)}) near expiry (${d.expirationDate ? Math.ceil((new Date(d.expirationDate) - currentDate) / (1000 * 60 * 60 * 24)) : 'N/A'} days)`
       }));
   
     console.log('Detected anomalies:', anomalies);

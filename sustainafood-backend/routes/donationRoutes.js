@@ -27,7 +27,7 @@ router.get('/donations/anomalies', async (req, res) => {
               linkedRequests: anomaly.linkedRequests,
               anomalyScore: anomaly.anomalyScore,
               reason: anomaly.reason,
-              status: 'pending' // Statut par défaut si donation introuvable
+              isapprovedfromadmin: 'pending' // Statut par défaut si donation introuvable
             };
           }
           return {
@@ -44,7 +44,7 @@ router.get('/donations/anomalies', async (req, res) => {
             linkedRequests: anomaly.linkedRequests,
             anomalyScore: anomaly.anomalyScore,
             reason: anomaly.reason,
-            status: donation.status // Inclure le statut de la donation
+            isapprovedfromadmin: donation.isapprovedfromadmin // Inclure le statut de la donation
           };
         })
       );
@@ -81,7 +81,7 @@ router.post('/donations/:id/approve', async (req, res) => {
       if (!donation) return res.status(404).json({ message: 'Donation not found' });
   
       // Mettre à jour le statut et isAnomaly
-      donation.status = 'approved';
+      donation.isapprovedfromadmin = 'approved';
       donation.isAnomaly = false; // Une fois approuvée, ce n'est plus une anomalie
       await donation.save();
   
@@ -134,7 +134,7 @@ router.post('/donations/:id/reject', async (req, res) => {
     const donation = await Donation.findById(req.params.id).populate('donor', 'name email');
     if (!donation) return res.status(404).json({ message: 'Donation not found' });
 
-    donation.status = 'rejected';
+    donation.isapprovedfromadmin = 'rejected';
     await donation.save();
 
     const transporter = nodemailer.createTransport({

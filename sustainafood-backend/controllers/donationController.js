@@ -568,7 +568,7 @@ async function getDonationsByStatus(req, res) {
 // ✅ Get All Donations
 async function getAllDonations(req, res) {
   try {
-    const donations = await Donation.find({ isaPost: true, isAnomaly: false })
+    const donations = await Donation.find({ isaPost: true, isAnomaly: false,status: { $ne: 'rejected' } })
       .populate('donor', 'name role email')
       .populate('products.product')
       .populate('meals.meal')

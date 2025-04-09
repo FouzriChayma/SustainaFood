@@ -24,7 +24,7 @@ afterAll(async () => {
 describe('✅ TEST Get User By ID (GET /users/details/:id)', () => {
   
   // Utilisation d'un ID spécifique présent dans votre base de données
-  const EXISTING_USER_ID = '67f40161eb96068aecab0ca8';
+  const EXISTING_USER_ID = '67f6625cd1e8ee6a55a6d61e';
 
   // Un ObjectId plausible mais probablement inexistant
   const NON_EXISTENT_USER_ID = '111111111111111111111111';

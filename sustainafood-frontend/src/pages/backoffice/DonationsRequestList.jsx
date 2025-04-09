@@ -1,65 +1,18 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
-import { FaFilePdf, FaEye, FaSearch } from "react-icons/fa";
-import { getrequests } from "../../api/requestNeedsService";
+import { getRequestById } from "../../api/requestNeedsService";
+import { getDonationByRequestId, getDonationById } from "../../api/donationService";
+import { getUserById } from "../../api/userService";
+import { createAndAcceptDonationTransaction, rejectDonation } from "../../api/donationTransactionService";
 import "../../assets/styles/backoffcss/RequestTable.css";
-import { Link, useParams } from "react-router-dom";
-import axios from "axios";
-import imgmouna from '../../assets/images/imgmouna.png';
-import logo from '../../assets/images/logooo.png';
-import { getDonationByRequestId, getDonationById } from '../../api/donationService';
-import { getRequestById } from '../../api/requestNeedsService';
-import { getUserById } from '../../api/userService';
-import { createAndAcceptDonationTransaction, rejectDonation } from '../../api/donationTransactionService';
-import styled from 'styled-components';
-import { useAlert } from '../../contexts/AlertContext';
+import { useParams } from "react-router-dom";
+import styled from "styled-components";
+import { useAlert } from "../../contexts/AlertContext";
 import "../../assets/styles/backoffcss/RequestDetail.css";
+import imgmouna from "../../assets/images/imgmouna.png";
 
-// Styled Components
-const Button = styled.button`
-  display: inline-block;
-  padding: 12px 20px;
-  font-size: 16px;
-  font-weight: 600;
-  text-align: center;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin: 8px;
-  color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-
-  ${({ variant }) => variant === 'add' && `
-    background: #228b22;
-    &:hover { background: #1e7b1e; transform: translateY(-2px); }
-  `}
-  ${({ variant }) => variant === 'cancel' && `
-    background: #dc3545;
-    &:hover { background: #b02a37; transform: translateY(-2px); }
-  `}
-  ${({ variant }) => variant === 'submit' && `
-    background: #28a745;
-    &:hover { background: #218838; transform: translateY(-2px); }
-  `}
-  ${({ variant }) => variant === 'donate' && `
-    background: #228b22;
-    &:hover { background: #1e7b1e; transform: translateY(-2px); }
-  `}
-  ${({ variant }) => variant === 'back' && `
-    background: #6c757d;
-    &:hover { background: #5a6268; transform: translateY(-2px); }
-  `}
-
-  &:active {
-    transform: translateY(1px);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  }
-`;
-
+// Styled Components (inchangés, inclus pour référence)
 const DonationCard = styled.div`
   background: #f8f9fa;
   border-left: 4px solid #228b22;
@@ -187,36 +140,32 @@ const ButtonContainer = styled.div`
   margin-top: 15px;
 `;
 
-const ActionButton = styled.button`
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
+
+
+const Button = styled.button`
+  display: inline-block;
+  padding: 12px 20px;
   font-size: 16px;
-  font-weight: bold;
-  transition: background 0.3s ease-in-out;
+  font-weight: 600;
+  text-align: center;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 8px;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
-  &.accept-btn {
-    background-color: #28a745;
-    color: white;
+  ${({ variant }) =>
+    variant === "back" &&
+    `
+    background: #6c757d;
+    &:hover { background: #5a6268; transform: translateY(-2px); }
+  `}
 
-    &:hover {
-      background-color: #218838;
-    }
-  }
-
-  &.reject-btn {
-    background-color: #dc3545;
-    color: white;
-
-    &:hover {
-      background-color: #c82333;
-    }
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  &:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 `;
 
@@ -226,8 +175,8 @@ const ErrorContainer = styled.div`
   align-items: center;
   height: 100vh;
   margin-top: -500px;
-  margin-left:200px;
-  color: #4CAF50;
+  margin-left: 200px;
+  color: #4caf50;
   font-size: 1.5rem;
   text-align: center;
   padding: 20px;
@@ -266,6 +215,42 @@ const PaginationControls = styled.div`
   }
 `;
 
+const RejectionModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+`;
+
+const ModalTextarea = styled.textarea`
+  width: 100%;
+  min-height: 100px;
+  margin: 10px 0;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+`;
+
+const ModalButtons = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+`;
+
 const DonationsRequestList = () => {
   const { showAlert } = useAlert();
   const { id } = useParams();
@@ -277,78 +262,12 @@ const DonationsRequestList = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(3);
-  const [filterOption, setFilterOption] = useState('all');
-  const [sortOption, setSortOption] = useState('date');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filterOption, setFilterOption] = useState("all");
+  const [sortOption, setSortOption] = useState("date");
+  const [searchQuery, setSearchQuery] = useState("");
   const [processing, setProcessing] = useState({});
   const [currentRejectionId, setCurrentRejectionId] = useState(null);
-  const [rejectionReason, setRejectionReason] = useState('');
-
-  const DonationCardComponent = ({
-    donation,
-    handleAcceptDonation,
-    handleRejectDonation,
-    processing,
-    openRejectionDialog,
-    currentRejectionId,
-    rejectionReason,
-    setRejectionReason
-  }) => (
-    <DonationCard>
-      <ProfileInfo>
-      <ProfileImg 
-            src={
-                users[donation.donor]?.photo 
-                ? `http://localhost:3000/${users[donation.donor].photo}`
-                : imgmouna
-            } 
-            alt="Donor" 
-            />
-        <ProfileText>{users[donation.donor]?.name || 'Unknown Donor'} </ProfileText><br/>
-        <ProfileText> {users[donation.donor]?.role || 'Unknown Donor'}</ProfileText>
-
-      </ProfileInfo>
-      <DonationDetails>
-        <DonationDetail><strong>Status:</strong> {donation.status}</DonationDetail>
-        <DonationDetail><strong>Date:</strong> {new Date(donation.createdAt).toLocaleDateString()}</DonationDetail>
-      </DonationDetails>
-      <ProductSection>
-        <ProductsTitle>Products:</ProductsTitle>
-        <ProductList>
-          {donation.products?.map((item, index) => (
-            <ProductItem key={index}>
-              <ProductDetails >
-                <div style={{display:"flex"}}>
-                <p> <strong>Name:</strong>{item.product?.name || item.product?.productType || 'Unknown Product'}</p>
-                <p>📦 <strong>Type:</strong> {item.product?.productType || 'Not specified'}</p>
-                        <p>⚖️ <strong>Weight:</strong> {item.product?.weightPerUnit || 0} {item.product?.weightUnit || ''}</p>
-                        <p>🔢 <strong>Quantity:</strong> {item.quantity || 0} {item.product?.weightUnitTotale || ''}</p>
-                        <p>🟢 <strong>Status:</strong> {item.product?.status || 'Unknown'}</p>
-            </div>  </ProductDetails>
-              <ProductQuantity>{item.quantity}</ProductQuantity>
-            </ProductItem>
-          ))}
-        </ProductList>
-      </ProductSection>
-      
-      {currentRejectionId === donation._id && (
-        <div>
-          <textarea
-            value={rejectionReason}
-            onChange={(e) => setRejectionReason(e.target.value)}
-            placeholder="Reason for rejection"
-          />
-          <Button
-            variant="submit"
-            onClick={() => handleRejectDonation(donation._id)}
-            disabled={processing[donation._id]}
-          >
-            Submit Rejection
-          </Button>
-        </div>
-      )}
-    </DonationCard>
-  );
+  const [rejectionReason, setRejectionReason] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -356,28 +275,49 @@ const DonationsRequestList = () => {
         setLoading(true);
         const [requestResponse, donationData] = await Promise.all([
           getRequestById(id),
-          getDonationByRequestId(id)
+          getDonationByRequestId(id),
         ]);
+
+        console.log("Request Response:", requestResponse.data);
+        console.log("Donation Data:", donationData);
 
         setRequest(requestResponse.data);
         const donationsArray = Array.isArray(donationData) ? donationData : [];
         setDonations(donationsArray);
 
         if (donationsArray.length > 0) {
-          const uniqueDonorIds = [...new Set(donationsArray.map(d => d.donor))];
-          const userPromises = uniqueDonorIds.map(id => 
+          // Extraire l'ID du donateur à partir de l'objet donor
+          const uniqueDonorIds = [
+            ...new Set(
+              donationsArray.map((d) =>
+                d.donor && typeof d.donor === "object" ? d.donor._id : d.donor
+              )
+            ),
+          ].filter((id) => id); // Filtrer les valeurs undefined/null
+          console.log("Unique Donor IDs:", uniqueDonorIds);
+
+          const userPromises = uniqueDonorIds.map((id) =>
             getUserById(id)
-              .then(response => ({ id, data: response.data }))
-              .catch(() => ({ id, data: null }))
+              .then((response) => {
+                console.log(`User data for ${id}:`, response.data);
+                return { id, data: response.data };
+              })
+              .catch((err) => {
+                console.error(`Error fetching user ${id}:`, err);
+                return { id, data: null };
+              })
           );
-          
+
           const userResults = await Promise.all(userPromises);
-          setUsers(Object.fromEntries(
+          const usersMap = Object.fromEntries(
             userResults.map(({ id, data }) => [id, data])
-          ));
+          );
+          console.log("Users Map:", usersMap);
+          setUsers(usersMap);
         }
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch data');
+        setError(err.response?.data?.message || "Failed to fetch data");
+        console.error("Fetch Error:", err);
       } finally {
         setLoading(false);
       }
@@ -387,46 +327,72 @@ const DonationsRequestList = () => {
   }, [id]);
 
   useEffect(() => {
-    if (!donations.length) return;
+    if (!donations.length || !request) return;
 
     let result = [...donations];
 
-    if (filterOption !== 'all') {
-      if (['pending', 'approved', 'rejected'].includes(filterOption)) {
-        result = result.filter(d => d.status === filterOption);
-      } else if (filterOption === 'full') {
-        result = result.filter(donation =>
-          donation.products.every(item => {
+    if (filterOption !== "all") {
+      if (["pending", "approved", "rejected"].includes(filterOption)) {
+        result = result.filter((d) => d.status === filterOption);
+      } else if (filterOption === "full") {
+        result = result.filter((donation) =>
+          donation.products.every((item) => {
             const requestedProduct = request?.requestedProducts?.find(
-              rp => rp.productType === item.product?.productType || rp._id === item.product?._id
+              (rp) =>
+                rp.productType === item.product?.productType ||
+                rp._id === item.product?._id
             );
-            return requestedProduct && item.quantity >= requestedProduct.totalQuantity;
+            return (
+              requestedProduct && item.quantity >= requestedProduct.totalQuantity
+            );
           })
         );
       }
     }
 
     if (searchQuery) {
-      result = result.filter(donation => {
-        const productMatch = donation.products?.some(product => 
-          product.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.product?.productType?.toLowerCase().includes(searchQuery.toLowerCase())
+      result = result.filter((donation) => {
+        const productMatch = donation.products?.some(
+          (product) =>
+            product.product?.name
+              ?.toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            product.product?.productType
+              ?.toLowerCase()
+              .includes(searchQuery.toLowerCase())
         );
-        const donorMatch = users[donation.donor]?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+        const donorId =
+          donation.donor && typeof donation.donor === "object"
+            ? donation.donor._id
+            : donation.donor;
+        const donorMatch = users[donorId]?.name
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase());
         return productMatch || donorMatch;
       });
     }
 
     result.sort((a, b) => {
+      const donorAId =
+        a.donor && typeof a.donor === "object" ? a.donor._id : a.donor;
+      const donorBId =
+        b.donor && typeof b.donor === "object" ? b.donor._id : b.donor;
       switch (sortOption) {
-        case 'title': return (a.title || '').localeCompare(b.title || '');
-        case 'donor': return (users[a.donor]?.name || '').localeCompare(users[b.donor]?.name || '');
-        case 'status': return a.status.localeCompare(b.status);
-        default: return new Date(b.createdAt) - new Date(a.createdAt);
+        case "title":
+          return (a.title || "").localeCompare(b.title || "");
+        case "donor":
+          return (users[donorAId]?.name || "").localeCompare(
+            users[donorBId]?.name || ""
+          );
+        case "status":
+          return a.status.localeCompare(b.status);
+        default:
+          return new Date(b.createdAt) - new Date(a.createdAt);
       }
     });
 
     setFilteredDonations(result);
+    setCurrentPage(1);
   }, [donations, request, users, filterOption, sortOption, searchQuery]);
 
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -440,86 +406,29 @@ const DonationsRequestList = () => {
     }
   };
 
-  const handleAcceptDonation = async (donationId) => {
-    if (!window.confirm('Are you sure you want to accept this donation?')) return;
 
-    try {
-      setProcessing(prev => ({ ...prev, [donationId]: 'accepting' }));
-      setDonations(prev => prev.map(d => 
-        d._id === donationId ? { ...d, status: 'approved' } : d
-      ));
-      setRequest(prev => ({
-        ...prev,
-        numberOfMeals: prev.numberOfMeals - 2
-      }));
-      
-      const response = await createAndAcceptDonationTransaction(donationId, id);
-      const updatedDonationResponse = await getDonationById(donationId);
-      const updatedDonation = updatedDonationResponse.data;
-
-      setDonations(prev => prev.map(d => 
-        d._id === donationId ? updatedDonation : d
-      ));
-
-      const updatedRequestResponse = await getRequestById(id);
-      setRequest(updatedRequestResponse.data);
-
-      setFilterOption('all');
-      showAlert('success', 'Donation accepted and transaction created successfully!');
-    } catch (error) {
-      console.error('Error accepting donation:', error.response?.data || error.message);
-      const errorMessage = error.response?.data?.message || 'Error accepting donation';
-      setDonations(prev => prev.map(d => 
-        d._id === donationId ? { ...d, status: 'pending' } : d
-      ));
-      showAlert('error', errorMessage);
-    } finally {
-      setProcessing(prev => ({ ...prev, [donationId]: false }));
-    }
-  };
-
-  const handleRejectDonation = async (donationId) => {
-    if (!rejectionReason) {
-      showAlert('warning', 'Please provide a reason for rejection');
-      return;
-    }
-
-    try {
-      setProcessing(prev => ({ ...prev, [donationId]: 'rejecting' }));
-      await rejectDonation(donationId, rejectionReason);
-
-      setDonations(prev => prev.map(d => 
-        d._id === donationId ? { ...d, status: 'rejected' } : d
-      ));
-      setCurrentRejectionId(null);
-      setRejectionReason('');
-
-      showAlert('success', 'Donation rejected successfully!');
-    } catch (error) {
-      console.error('Error rejecting donation:', error.response?.data || error.message);
-      showAlert('error', 'Failed to reject donation');
-    } finally {
-      setProcessing(prev => ({ ...prev, [donationId]: false }));
-    }
-  };
 
   const openRejectionDialog = (donationId) => {
     setCurrentRejectionId(donationId);
-    setRejectionReason('');
+    setRejectionReason("");
   };
 
   if (loading) return <div className="loading-message">Loading...</div>;
 
-  if (error) return (
-    <>
-      <Navbar />
-      <Sidebar />
-      <ErrorContainer>
-        {error}<br></br>
-        <Button variant="back" onClick={() => window.history.back()}>🔙 Go Back</Button>
-      </ErrorContainer>
-    </>
-  );
+  if (error)
+    return (
+      <>
+        <Navbar />
+        <Sidebar />
+        <ErrorContainer>
+          {error}
+          <br />
+          <Button variant="back" onClick={() => window.history.back()}>
+            🔙 Go Back
+          </Button>
+        </ErrorContainer>
+      </>
+    );
 
   return (
     <div className="request-detail-container">
@@ -527,20 +436,29 @@ const DonationsRequestList = () => {
       <div className="request-detail-content">
         <Navbar />
         <div className="container my-5">
-          <h1>Donations for Request: {request?.title || 'Loading...'}</h1>
-          <div className="header-container" style={{ display: 'flex', justifyContent: 'space-between',marginTop:'20px' ,padding:'10px' }}>
-        
+          <h1>Donations for Request: {request?.title || "Loading..."}</h1>
+          <div
+            className="header-container"
+            style={{ display: "flex", justifyContent: "space-between", marginTop: "20px", padding: "10px" ,backgroundColor:"white"}}
+          >
             <div className="filter-container">
-            <Button variant="back" onClick={() => window.history.back()}>🔙 Go Back</Button>
-
-              <select onChange={(e) => setFilterOption(e.target.value)} value={filterOption}>
+              <Button variant="back" onClick={() => window.history.back()}>
+                🔙 Go Back
+              </Button>
+              <select
+                onChange={(e) => setFilterOption(e.target.value)}
+                value={filterOption}
+              >
                 <option value="all">All</option>
                 <option value="pending">Pending</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
                 <option value="full">Full</option>
               </select>
-              <select onChange={(e) => setSortOption(e.target.value)} value={sortOption}>
+              <select
+                onChange={(e) => setSortOption(e.target.value)}
+                value={sortOption}
+              >
                 <option value="date">Sort by Date</option>
                 <option value="title">Sort by Title</option>
                 <option value="donor">Sort by Donor</option>
@@ -550,21 +468,147 @@ const DonationsRequestList = () => {
           </div>
 
           {currentItems.length > 0 ? (
-            currentItems.map(donation => (
-              <DonationCardComponent
-                key={donation._id}
-                donation={donation}
-                handleAcceptDonation={handleAcceptDonation}
-                handleRejectDonation={handleRejectDonation}
-                processing={processing}
-                openRejectionDialog={openRejectionDialog}
-                currentRejectionId={currentRejectionId}
-                rejectionReason={rejectionReason}
-                setRejectionReason={setRejectionReason}
-              />
-            ))
+            currentItems.map((donation) => {
+              const donorId =
+                donation.donor && typeof donation.donor === "object"
+                  ? donation.donor._id
+                  : donation.donor;
+              const userPhoto = users[donorId]?.photo
+                ? `http://localhost:3000/${users[donorId].photo}`
+                : imgmouna;
+
+              return (
+                <DonationCard key={donation._id}>
+                  <ProfileInfo>
+                    <ProfileImg
+                      src={userPhoto}
+                      alt="Donor"
+                      onError={(e) => {
+                        e.target.src = imgmouna;
+                        console.error(`Failed to load image: ${userPhoto}`);
+                      }}
+                    />
+                    <ProfileText>{users[donorId]?.name || "Unknown"}</ProfileText>
+                    <ProfileText>{users[donorId]?.role || "N/A"}</ProfileText>
+                  </ProfileInfo>
+                  <DonationDetails>
+                    <DonationDetail>
+                      <strong>Title:</strong> {donation.title || "Untitled"}
+                    </DonationDetail>
+                    <DonationDetail>
+                      <strong>Location:</strong> {donation.location || "Not specified"}
+                    </DonationDetail>
+                    <DonationDetail>
+                      <strong>Expiration Date:</strong>{" "}
+                      {donation.expirationDate
+                        ? new Date(donation.expirationDate).toLocaleDateString()
+                        : "Not set"}
+                    </DonationDetail>
+                    <DonationDetail>
+                      <strong>Category:</strong> {donation.category || "Not specified"}
+                    </DonationDetail>
+                    <DonationDetail>
+                      <strong>Status:</strong> {donation.status || "pending"}
+                    </DonationDetail>
+                    {donation.category === "prepared_meals" && (
+                      <DonationDetail>
+                        <strong>Total Meals Donated:</strong>{" "}
+                        {donation.numberOfMeals || "N/A"}
+                      </DonationDetail>
+                    )}
+                  </DonationDetails>
+                  <ProductSection>
+                    <ProductsTitle>
+                      {donation.category === "prepared_meals" ? "Meals:" : "Products:"}
+                    </ProductsTitle>
+                    <ProductList>
+                      {donation.category === "prepared_meals" ? (
+                        donation.meals && donation.meals.length > 0 ? (
+                          donation.meals.map((item, itemIndex) => (
+                            <ProductItem key={item._id || itemIndex}>
+                              <ProductDetails>
+                                <span>
+                                  <strong>Name:</strong> {item.meal?.mealName || "N/A"}
+                                </span>
+                                <span>
+                                  <strong>Type:</strong> {item.meal?.mealType || "N/A"}
+                                </span>
+                              </ProductDetails>
+                              <ProductQuantity>
+                                <strong>Quantity Given:</strong> {item.quantity || 0}
+                              </ProductQuantity>
+                            </ProductItem>
+                          ))
+                        ) : (
+                          <ProductItem>No meals available</ProductItem>
+                        )
+                      ) : (
+                        donation.products && donation.products.length > 0 ? (
+                          donation.products.map((item, itemIndex) => (
+                            <ProductItem key={item._id || itemIndex}>
+                              <ProductDetails>
+                                <span>
+                                  <strong>Name:</strong> {item.product?.name || "N/A"}
+                                </span>
+                                <span>
+                                  <strong>Type:</strong>{" "}
+                                  {item.product?.productType || "N/A"}
+                                </span>
+                                <span>
+                                  <strong>Weight:</strong>{" "}
+                                  {item.product?.weightPerUnit
+                                    ? `${item.product.weightPerUnit} ${item.product.weightUnit || ""}`
+                                    : "N/A"}
+                                </span>
+                              </ProductDetails>
+                              <ProductQuantity>
+                                <strong>Quantity Given:</strong> {item.quantity || 0}
+                              </ProductQuantity>
+                            </ProductItem>
+                          ))
+                        ) : (
+                          <ProductItem>No products available</ProductItem>
+                        )
+                      )}
+                    </ProductList>
+                  </ProductSection>
+                  
+                </DonationCard>
+              );
+            })
           ) : (
             <p>No donations match the current filters</p>
+          )}
+
+          {currentRejectionId && (
+            <RejectionModal>
+              <ModalContent>
+                <h3>Reason for Rejection</h3>
+                <p>Please explain why you're rejecting this donation:</p>
+                <ModalTextarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Enter rejection reason (required)..."
+                />
+                <ModalButtons>
+                  <Button
+                    variant="cancel"
+                    onClick={() => setCurrentRejectionId(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="submit"
+                    onClick={() => handleRejectDonation(currentRejectionId)}
+                    disabled={!rejectionReason || processing[currentRejectionId]}
+                  >
+                    {processing[currentRejectionId] === "rejecting"
+                      ? "Submitting..."
+                      : "Submit Rejection"}
+                  </Button>
+                </ModalButtons>
+              </ModalContent>
+            </RejectionModal>
           )}
 
           <PaginationControls>

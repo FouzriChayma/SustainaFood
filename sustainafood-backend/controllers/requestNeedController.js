@@ -517,10 +517,7 @@ async function createRequestNeedForExistingDonation(req, res) {
             return res.status(404).json({ message: 'Donation not found' });
         }
 
-        // Validate donation state
-        if (donation.status !== 'pending') {
-            return res.status(400).json({ message: 'Donation is not available for requests (status must be pending)' });
-        }
+        
         if (new Date(donation.expirationDate) <= new Date()) {
             return res.status(400).json({ message: 'Donation has expired' });
         }
@@ -541,7 +538,6 @@ async function createRequestNeedForExistingDonation(req, res) {
         let totalMeals = 0;
 
         if (isMealDonation) {
-            // Validate requestedMeals
             if (!requestedMeals || !Array.isArray(requestedMeals)) {
                 return res.status(400).json({ message: 'requestedMeals must be an array for meal donations' });
             }
@@ -577,7 +573,6 @@ async function createRequestNeedForExistingDonation(req, res) {
                 return res.status(400).json({ message: `Total requested meals (${totalMeals}) exceed available number of meals (${donation.numberOfMeals})` });
             }
         } else {
-            // Validate requestedProducts
             if (!requestedProducts || !Array.isArray(requestedProducts)) {
                 return res.status(400).json({ message: 'requestedProducts must be an array for product donations' });
             }
@@ -618,7 +613,7 @@ async function createRequestNeedForExistingDonation(req, res) {
             requestedMeals: isMealDonation ? validatedMeals : [],
             status: 'pending',
             linkedDonation: [donationId],
-            isaPost:false,
+            isaPost: false,
             numberOfMeals: isMealDonation ? totalMeals : undefined,
         });
 
@@ -630,6 +625,28 @@ async function createRequestNeedForExistingDonation(req, res) {
             { $push: { linkedRequests: newRequest._id } },
             { new: true }
         );
+
+        // Create a DonationTransaction with status 'pending'
+        const counter = await Counter.findOneAndUpdate(
+            { _id: 'DonationTransactionId' },
+            { $inc: { seq: 1 } },
+            { new: true, upsert: true }
+        );
+        if (!counter) throw new Error('Failed to increment DonationTransactionId counter');
+        const transactionId = counter.seq;
+
+        const transaction = new DonationTransaction({
+            id: transactionId,
+            donation: donationId,
+            requestNeed: newRequest._id,
+            donor: donation.donor,
+            recipient: recipientId,
+            allocatedProducts: validatedProducts,
+            allocatedMeals: validatedMeals,
+            status: 'pending',
+        });
+
+        await transaction.save();
 
         // Fetch the populated request for the response
         const populatedRequest = await RequestNeed.findById(newRequest._id)
@@ -663,17 +680,17 @@ Request Details:
 - Recipient: ${recipient.name || 'Unknown Recipient'}
 ${isMealDonation ? 
     `- Requested Meals: ${validatedMeals.map(item => {
-      const mealEntry = donation.meals.find(m => m.meal._id.toString() === item.meal.toString());
-      return `${mealEntry.meal.mealName} (Quantity: ${item.quantity})`;
+        const mealEntry = donation.meals.find(m => m.meal._id.toString() === item.meal.toString());
+        return `${mealEntry.meal.mealName} (Quantity: ${item.quantity})`;
     }).join(', ')} (Total: ${totalMeals})` :
     `- Requested Products: ${validatedProducts.map(item => {
-      const productEntry = donation.products.find(p => p.product._id.toString() === item.product.toString());
-      return `${productEntry.product.name} (Quantity: ${item.quantity})`;
+        const productEntry = donation.products.find(p => p.product._id.toString() === item.product.toString());
+        return `${productEntry.product.name} (Quantity: ${item.quantity})`;
     }).join(', ')}`
 }
 - Expiration Date: ${newRequest.expirationDate.toLocaleDateString()}
 
-You can review the request in your dashboard.
+Please review the request in your dashboard and accept or reject it.
 
 Best regards,
 Your Platform Team`,
@@ -701,7 +718,7 @@ Your Platform Team`,
                             }
                             <li><strong>Expiration Date:</strong> ${newRequest.expirationDate.toLocaleDateString()}</li>
                         </ul>
-                        <p>You can review the request in your dashboard.</p>
+                        <p>Please review the request in your dashboard and accept or reject it.</p>
                         <p style="margin-top: 20px;">Best regards,<br>Your Platform Team</p>
                     </div>
                 `,
@@ -721,15 +738,17 @@ Your Platform Team`,
         res.status(201).json({
             message: 'Request created successfully for the donation',
             request: populatedRequest,
+            transactionId: transaction._id, // Return the transaction ID for further actions
         });
     } catch (error) {
-      console.error('Create Request Error:', error);
-      res.status(500).json({
-        message: 'Failed to create request for the donation',
-        error: error.message,
-      });
+        console.error('Create Request Error:', error);
+        res.status(500).json({
+            message: 'Failed to create request for the donation',
+            error: error.message,
+        });
     }
-  }
+}
+
 
 async function addDonationToRequest(req, res) {
     try {

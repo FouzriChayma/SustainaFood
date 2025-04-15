@@ -280,29 +280,32 @@ const DonorProfile = () => {
                 </DetailText>
                 <h4>📦 Available Products:</h4>
                 <ProductList>
-                  {Array.isArray(donation.products) && donation.products.length > 0 ? (
-                    donation.products.map((product, index) => (
-                      <ProductItem key={index}>
-                        <span>
-                          <strong>Name:</strong> {product.name || 'Not specified'}
-                        </span>
-                        <span>
-                          <strong>Quantity:</strong> {product.totalQuantity || product.quantity || 0}{' '}
-                          {product.weightUnitTotale || ''}
-                        </span>
-                        <span>
-                          <strong>Status:</strong> {product.status || 'Unknown'}
-                        </span>
-                      </ProductItem>
-                    ))
-                  ) : (
-                    <ProductItem>
-                      {donation.category === 'prepared_meals'
-                        ? `🍽️ Number of meals: ${donation.numberOfMeals || 'Not specified'}`
-                        : 'No products available'}
-                    </ProductItem>
-                  )}
-                </ProductList>
+  {Array.isArray(donation.products) && donation.products.length > 0 ? (
+    donation.products.map((pro, index) => {
+      console.log('Product Entry:', pro); // Debug the product entry
+      return (
+        <ProductItem key={index}>
+          <span>
+            <strong>Name:</strong> {pro.product?.name || 'Not specified'}
+          </span>
+          <span>
+            <strong>Quantity:</strong> {pro.quantity || 0}{' '}
+            {pro.product?.weightUnitTotale || pro.product?.weightUnit || ''}
+          </span>
+          <span>
+            <strong>Status:</strong> {pro.product?.status || 'Unknown'}
+          </span>
+        </ProductItem>
+      );
+    })
+  ) : (
+    <ProductItem>
+      {donation.category === 'prepared_meals'
+        ? `🍽️ Number of meals: ${donation.numberOfMeals || 'Not specified'}`
+        : 'No products available'}
+    </ProductItem>
+  )}
+</ProductList>
                 <BtnSeeMore to={`/DetailsDonations/${donation._id}`}>See More</BtnSeeMore>
               </ProjectCard>
             ))

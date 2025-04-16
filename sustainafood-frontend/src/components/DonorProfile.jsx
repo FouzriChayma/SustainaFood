@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { getDonationByUserId } from '../api/donationService';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import Navbar from '../components/Navbar'; // Assuming these exist in your project
-import Footer from '../components/Footer'; // Assuming these exist in your project
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 // Styled Components
 const Container = styled.div`
@@ -171,10 +171,48 @@ const ProductItem = styled.li`
   margin-bottom: 8px;
 `;
 
+// New Styled Components for No Donations Message
+const NoDonationsContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 600px;
+  margin: 20px auto;
+`;
+
+const NoDonationsMessage = styled.p`
+  font-size: 18px;
+  color: #444;
+  line-height: 1.6;
+  margin-bottom: 20px;
+`;
+
+const AddDonationButton = styled(Link)`
+  display: inline-block;
+  text-decoration: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 8px;
+  background: #228b22;
+  color: white;
+  transition: background 0.3s ease-in-out;
+
+  &:hover {
+    background: #1e7a1e;
+  }
+`;
+
 const DonorProfile = () => {
   // Retrieve user from localStorage and set userid synchronously
   const user = JSON.parse(localStorage.getItem('user'));
-  const userid = user ? (user._id || user.id) : null; // Use _id or id, fallback to null
+  const userid = user ? (user._id || user.id) : null;
 
   // State variables
   const [donations, setDonations] = useState([]);
@@ -183,7 +221,7 @@ const DonorProfile = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 3; // Set to 3; change to 2 for max 2 per page
+  const itemsPerPage = 3;
 
   // Fetch donations
   useEffect(() => {
@@ -280,37 +318,44 @@ const DonorProfile = () => {
                 </DetailText>
                 <h4>📦 Available Products:</h4>
                 <ProductList>
-  {Array.isArray(donation.products) && donation.products.length > 0 ? (
-    donation.products.map((pro, index) => {
-      console.log('Product Entry:', pro); // Debug the product entry
-      return (
-        <ProductItem key={index}>
-          <span>
-            <strong>Name:</strong> {pro.product?.name || 'Not specified'}
-          </span>
-          <span>
-            <strong>Quantity:</strong> {pro.quantity || 0}{' '}
-            {pro.product?.weightUnitTotale || pro.product?.weightUnit || ''}
-          </span>
-          <span>
-            <strong>Status:</strong> {pro.product?.status || 'Unknown'}
-          </span>
-        </ProductItem>
-      );
-    })
-  ) : (
-    <ProductItem>
-      {donation.category === 'prepared_meals'
-        ? `🍽️ Number of meals: ${donation.numberOfMeals || 'Not specified'}`
-        : 'No products available'}
-    </ProductItem>
-  )}
-</ProductList>
+                  {Array.isArray(donation.products) && donation.products.length > 0 ? (
+                    donation.products.map((pro, index) => {
+                      console.log('Product Entry:', pro);
+                      return (
+                        <ProductItem key={index}>
+                          <span>
+                            <strong>Name:</strong> {pro.product?.name || 'Not specified'}
+                          </span>
+                          <span>
+                            <strong>Quantity:</strong> {pro.quantity || 0}{' '}
+                            {pro.product?.weightUnitTotale || pro.product?.weightUnit || ''}
+                          </span>
+                          <span>
+                            <strong>Status:</strong> {pro.product?.status || 'Unknown'}
+                          </span>
+                        </ProductItem>
+                      );
+                    })
+                  ) : (
+                    <ProductItem>
+                      {donation.category === 'prepared_meals'
+                        ? `🍽️ Number of meals: ${donation.numberOfMeals || 'Not specified'}`
+                        : 'No products available'}
+                    </ProductItem>
+                  )}
+                </ProductList>
                 <BtnSeeMore to={`/DetailsDonations/${donation._id}`}>See More</BtnSeeMore>
               </ProjectCard>
             ))
           ) : (
-            <DetailText>No donations found.</DetailText>
+            <NoDonationsContainer>
+              <NoDonationsMessage>
+                It looks like you haven't made any donations yet! Share your generosity and join us in making an impact—your contribution could change someone's life!
+              </NoDonationsMessage>
+              <AddDonationButton to="/addDonation">
+                Add a Donation
+              </AddDonationButton>
+            </NoDonationsContainer>
           )}
         </ProjectsContainer>
 

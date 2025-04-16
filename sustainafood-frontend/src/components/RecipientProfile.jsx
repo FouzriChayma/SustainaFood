@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { getRequestsByRecipientId } from '../api/requestNeedsService';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import Navbar from '../components/Navbar'; // Assuming these exist in your project
-import Footer from '../components/Footer'; // Assuming these exist in your project
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
-// Styled Components (unchanged)
+// Styled Components
 const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -171,10 +171,48 @@ const ProductItem = styled.li`
   margin-bottom: 8px;
 `;
 
+// Styled Components for No Requests Message
+const NoRequestsContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 600px;
+  margin: 20px auto;
+`;
+
+const NoRequestsMessage = styled.p`
+  font-size: 18px;
+  color: #444;
+  line-height: 1.6;
+  margin-bottom: 20px;
+`;
+
+const AddRequestButton = styled(Link)`
+  display: inline-block;
+  text-decoration: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 8px;
+  background: #228b22;
+  color: white;
+  transition: background 0.3s ease-in-out;
+
+  &:hover {
+    background: #1e7a1e;
+  }
+`;
+
 const RecipientProfile = () => {
   // Retrieve user ID from localStorage
   const user = JSON.parse(localStorage.getItem('user'));
-  const userid = user?._id; // Assuming _id is the field in your user object
+  const userid = user?._id || user?.id;
 
   // State variables
   const [requests, setRequests] = useState([]);
@@ -183,18 +221,23 @@ const RecipientProfile = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 3; // Set to 3; change to 2 if you prefer max 2 per page
+  const itemsPerPage = 3;
 
   // Fetch requests
   useEffect(() => {
     const fetchRequests = async () => {
       try {
         const response = await getRequestsByRecipientId(userid);
-        console.log('Requests Data:', response.data); // Debug log
+        console.log('Requests Data:', response.data);
         setRequests(response.data || []);
       } catch (err) {
-        console.error('Fetch Error:', err);
-        setError(err.response?.data?.message || 'Error fetching request data');
+        // If the error is a 404 with "No requests found for this recipient," treat it as an empty result
+        if (err.response?.status === 404 && err.response?.data?.message === 'No requests found for this recipient') {
+          setRequests([]); // Set requests to empty array instead of setting an error
+        } else {
+          console.error('Fetch Error:', err);
+          setError(err.response?.data?.message || 'Error fetching request data');
+        }
       } finally {
         setLoading(false);
       }
@@ -310,7 +353,14 @@ const RecipientProfile = () => {
               </ProjectCard>
             ))
           ) : (
-            <DetailText>No requests found.</DetailText>
+            <NoRequestsContainer>
+              <NoRequestsMessage>
+                It looks like you haven't made any requests yet! Share your needs and join us in making a difference—your next step could help someone in need!
+              </NoRequestsMessage>
+              <AddRequestButton to="/addDonation">
+                Add a Request
+              </AddRequestButton>
+            </NoRequestsContainer>
           )}
         </ProjectsContainer>
 

@@ -32,11 +32,18 @@ const requestNeedSchema = new Schema({
         maxlength: [100, 'Title cannot exceed 100 characters'],
         trim: true
     },
-    location: { 
-        type: String, 
-        required: [true, 'Location is required'],
-        trim: true 
-    },
+    location: {
+        type: {
+          type: String,
+          enum: ['Point'],
+          default: 'Point',
+          required: true
+        },
+        coordinates: {
+          type: [Number], // [longitude, latitude]
+          required: true
+        }
+      },
     expirationDate: {
         type: Date,
         required: [true, 'Expiration date is required'],

@@ -70,7 +70,18 @@ const donationSchema = new Schema({
         }
     },
     remainingMeals: { type: Number, min: 0 }, // New field to track remaining meals
-    location: { type: String, required: true },
+    location: {
+        type: {
+          type: String,
+          enum: ['Point'],
+          default: 'Point',
+          required: true
+        },
+        coordinates: {
+          type: [Number], // [longitude, latitude]
+          required: true
+        }
+      },
     expirationDate: {
         type: Date,
         required: true,

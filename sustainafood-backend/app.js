@@ -15,6 +15,7 @@ var donationTransactionRoutes = require('./routes/donationTransactionRoutes');
 var statsRoutes = require("./routes/statsRoutes"); // Importer les routes de statistiques
 var app = express();
 var notificationRoutes=require('./routes/notificationRoutes');
+var deliveryRoutes=require('./routes/deliveryRoutes');
 const cron = require('node-cron');
 const DonationRecommender = require('./aiService/mlModel');
 // var passport = require("passport"); // ✅ Importer Passport
@@ -37,6 +38,7 @@ app.use(cors());
 // Routes
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/deliveries', deliveryRoutes);
 app.use('/product', productRouter);
 app.use('/donation',donationRouter);
 app.use('/auth', authRouter); // 🔹 Ajouter la route d'authentification

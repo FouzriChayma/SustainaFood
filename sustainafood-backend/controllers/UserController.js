@@ -888,5 +888,13 @@ const send2FACodeforsigninwithgoogle = async (req, res) => {
         return res.status(500).json({ message: "Failed to send 2FA code via SMS", details: error.message });
     }
 };
+const getTransporters = async (req, res) => {
+    try {
+      const transporters = await User.find({ role: 'transporter' });
+      res.status(200).json({ data: transporters });
+    } catch (error) {
+      res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+    }
+  };
 
-module.exports = {onUpdateDescription,send2FACode,send2FACodeforsigninwithgoogle,changePassword,updateUserWithEmail, createUser,addUser, getUsers, getUserById,updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter ,deactivateAccount  , validate2FACode , toggle2FA};
+module.exports = {getTransporters,onUpdateDescription,send2FACode,send2FACodeforsigninwithgoogle,changePassword,updateUserWithEmail, createUser,addUser, getUsers, getUserById,updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter ,deactivateAccount  , validate2FACode , toggle2FA};

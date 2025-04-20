@@ -1,201 +1,316 @@
-.add-donation{
-    background-color: white;
-    max-width: 1000px;
-    position: relative;
-    margin: 80px auto;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);   
-    
+.addDonation {
+  background-color: white;
+  max-width: 1100px;
+  position: relative;
+  margin: 40px auto;
+  padding: 15px;
+  border:  #d1d5db;
+  border-radius: 15px;
+  box-shadow: none;
+}
+
+.addDonation-logo {
+  height: 150px;
+  display: block;
+  margin: 0 auto 15px;
+}
+
+.addDonation-h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #000;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.addDonation-input-container {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.addDonation-input-container label {
+  position: absolute;
+  top: 50%; /* Start inside the input */
+  left: 10px; /* Small offset from the left */
+  transform: translateY(-50%); /* Center vertically inside the input */
+  font-size: 0.875rem; /* Same size as input text initially */
+  font-weight: normal;
+  color: #666; /* Gray color to mimic placeholder */
+  text-transform: uppercase;
+  background-color: transparent; /* No background initially */
+  padding: 0; /* No padding initially */
+  pointer-events: none; /* Prevent label from being clickable */
+  transition: all 0.2s ease; /* Smooth transition for animation */
+}
+
+.addDonation-input-container .addDonation-input:focus + label,
+.addDonation-input-container .addDonation-input:not(:placeholder-shown) + label {
+  top: 0; /* Move to the top border */
+  transform: translateY(-50%); /* Center on the border */
+  font-size: 0.75rem; /* Smaller font size when moved */
+  font-weight: 500;
+  color: #000; /* Black color when moved */
+  background-color: white; /* Background to create the "notch" effect */
+  padding: 0 5px; /* Padding to create space around the label */
+}
+
+/* Special case for select and date inputs, which don't use placeholder */
+.addDonation-input-container select.addDonation-input:focus + label,
+.addDonation-input-container select.addDonation-input:not([value=""]) + label,
+.addDonation-input-container input[type="date"].addDonation-input:focus + label,
+.addDonation-input-container input[type="date"].addDonation-input:not([value=""]) + label {
+  top: 0;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #000;
+  background-color: white;
+  padding: 0 5px;
+}
+
+.addDonation-input {
+  width: 100%;
+  padding: 11px 10px; /* Consistent padding */
+  font-size: 0.875rem;
+  color: #000;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  box-sizing: border-box;
+  background-color: #fff;
+}
+
+/* Ensure placeholder is transparent since the label acts as the placeholder */
+.addDonation-input::placeholder {
+  color: transparent;
+}
+
+.addDonation-input:focus {
+  outline: none;
+  border-color: #8dc73f;
+}
+
+.addDonation-input[type="date"] {
+  color: #000;
+}
+
+.addDonation-input-container select.addDonation-input {
+  appearance: auto;
+  padding-right: 30px;
+}
+
+/* Ensure textarea has the same styling as input */
+.addDonation-input-container textarea.addDonation-input {
+  resize: vertical; /* Allow vertical resizing only */
+}
+
+
+.addDonation-file-name{
+  color: gray;
+  font-size: 15px;
 
 }
-.file-name a {
-  color: #007bff;
-  text-decoration: underline;
+.addDonation-container-btn-file {
+  margin-top: 10px;
+  display: flex;
+  position: relative;
+  align-items: center;
+  background-color: black;
+  color: #fff;
+  border-style: none;
+  padding: 0.7em 1em;
+  border-radius: 0.5em;
+  overflow: hidden;
+  z-index: 1;
+  box-shadow: 4px 8px 10px -3px rgba(0, 0, 0, 0.356);
+  transition: all 250ms;
+}
+
+.addDonation-container-btn-file input[type="file"] {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
   cursor: pointer;
 }
-.adddonation-logo{
-    height: 100px;
+
+.addDonation-container-btn-file > svg {
+  margin-right: 1em;
 }
-/* From Uiverse.io by omar49511 */ 
-.container-btn-file {
-    margin-left: -655px;
-    margin-top: 10px;
-    display: flex
-;
-    position: relative;
-    align-items: center;
-    background-color: BLACK;
-    color: #fff;
-    border-style: none;
-    padding: 0.7em 1em;
-    border-radius: 0.5em;
-    overflow: hidden;
-    z-index: 1;
-    box-shadow: 4px 8px 10px -3px rgba(0, 0, 0, 0.356);
-    transition: all 250ms;
+
+.addDonation-container-btn-file::before {
+  content: "";
+  margin-left: -19px;
+  position: absolute;
+  height: 100%;
+  width: 0;
+  border-radius: 0.5em;
+  background-color: #8dc73f;
+  z-index: -1;
+  transition: all 350ms;
 }
-  .container-btn-file input[type="file"] {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-  }
-  .container-btn-file > svg {
-    margin-right: 1em;
-  }
-  .container-btn-file::before {
-    content: "";
-    margin-left: -19px;
-    position: absolute;
-    height: 100%;
-    width: 0;
-    border-radius: 0.5em;
-    background-color: #8dc73f;
-    z-index: -1;
-    transition: all 350ms;
-  }
-  .container-btn-file:hover::before {
-    width: 100%;
-  }
-  
-  .radio-buttons-container-adddonation {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-  }
-  
-  .radio-button-adddonation {
-    display: inline-block;
-    position: relative;
-    cursor: pointer;
-  }
-  
-  .radio-button__input-adddonation {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-  
-  .radio-button__label-adddonation {
-    display: inline-block;
-    padding-left: 30px;
-    margin-bottom: 10px;
-    position: relative;
-    font-size: 16px;
-    color: #000;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
-  }
-  
-  .radio-button__custom-adddonation {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 2px solid #555;
-    transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
-  }
-  
-  .radio-button__input-adddonation:checked + .radio-button__label-adddonation .radio-button__custom-adddonation {
-    transform: translateY(-50%) scale(0.9);
-    border: 5px solid #8dc73f;
-    color: #8dc73f;
-  }
-  
-  .radio-button__input-adddonation:checked + .radio-button__label-adddonation {
-    color: #8dc73f;
-  }
-  
-  .radio-button__label-adddonation:hover .radio-button__custom-adddonation {
-    transform: translateY(-50%) scale(1.2);
-    border-color: #8dc73f;
-    box-shadow: 0 0 10px #4c8bf580;
-  }
-  
-  /* ✅ Empêcher le tableau de dépasser */
-.product-table-container {
+
+.addDonation-container-btn-file:hover::before {
+  width: 100%;
+}
+
+.addDonation-radio-buttons-container {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.addDonation-radio-button {
+  display: inline-block;
+  position: relative;
+  cursor: pointer;
+}
+
+.addDonation-radio-button__input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.addDonation-radio-button__label {
+  display: inline-block;
+  padding-left: 30px;
+  margin-bottom: 10px;
+  position: relative;
+  font-size: 16px;
+  color: #000;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.addDonation-radio-button__custom {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #555;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.addDonation-radio-button__input:checked + .addDonation-radio-button__label .addDonation-radio-button__custom {
+  transform: translateY(-50%) scale(0.9);
+  border: 5px solid #8dc73f;
+  color: #8dc73f;
+}
+
+.addDonation-radio-button__input:checked + .addDonation-radio-button__label {
+  color: #8dc73f;
+}
+
+.addDonation-radio-button__label:hover .addDonation-radio-button__custom {
+  transform: translateY(-50%) scale(1.2);
+  border-color: #8dc73f;
+  box-shadow: 0 0 10px #4c8bf580;
+}
+
+.addDonation-product-table-container {
   width: 100%;
   max-width: 100%;
-  overflow-x: auto; /* Permet un défilement horizontal si nécessaire */
+  overflow-x: auto;
   margin-top: 20px;
   border-radius: 8px;
   padding: 10px;
   background: white;
 }
 
-/* ✅ Adapter la largeur du tableau */
-.product-table {
+.addDonation-product-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed; /* Fixer la largeur des colonnes */
+  table-layout: fixed;
 }
 
-/* ✅ Rendre les colonnes plus lisibles */
-.product-table th, 
-.product-table td {
+.addDonation-product-table th,
+.addDonation-product-table td {
   padding: 8px;
   border: 1px solid #ccc;
   text-align: center;
-  white-space: nowrap; /* Empêcher les sauts de ligne */
+  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; /* Ajouter "..." si le texte est trop long */
+  text-overflow: ellipsis;
 }
 
-/* ✅ Style des en-têtes */
-.product-table th {
-  background: #8dc73f; /* Vert pour l'en-tête */
+.addDonation-product-table th {
+  background: #8dc73f;
   color: white;
   font-weight: bold;
 }
 
-/* ✅ Ajuster les colonnes trop grandes */
-.product-table th:nth-child(1), /* Name */
-.product-table th:nth-child(3), /* Quantity */
-.product-table th:nth-child(5), /* Status */
-.product-table th:nth-child(7), /* Weight Unit */
-.product-table th:nth-child(8), /* Total Weight */
-.product-table th:nth-child(9) { /* Actions */
-  width: 10%; /* Réduction de la largeur */
+.addDonation-product-table th:nth-child(1),
+.addDonation-product-table th:nth-child(3),
+.addDonation-product-table th:nth-child(5),
+.addDonation-product-table th:nth-child(7),
+.addDonation-product-table th:nth-child(8),
+.addDonation-product-table th:nth-child(9) {
+  width: 10%;
 }
 
-.product-table th:nth-child(2), /* Weight per Unit */
-.product-table th:nth-child(4), /* Product Description */
-.product-table th:nth-child(6) { /* Product Type */
-  width: 15%; /* Augmentation de la largeur */
+.addDonation-product-table th:nth-child(2),
+.addDonation-product-table th:nth-child(4),
+.addDonation-product-table th:nth-child(6) {
+  width: 15%;
 }
 
-/* ✅ Alignement des icônes d'actions */
-.action-buttons {
+.addDonation-action-buttons {
   display: flex;
   justify-content: center;
   gap: 5px;
 }
 
-/* ✅ Correction du bouton rouge flottant */
-.red-edit-button {
+.addDonation-red-edit-button {
   position: relative;
   z-index: 1;
 }
 
-/* ✅ Ajustement responsive */
 @media screen and (max-width: 768px) {
-  .product-table-container {
-      padding: 5px;
+  .addDonation-product-table-container {
+    padding: 5px;
   }
 
-  .product-table th, 
-  .product-table td {
-      font-size: 12px; /* Texte plus petit sur mobile */
-      padding: 5px;
+  .addDonation-product-table th,
+  .addDonation-product-table td {
+    font-size: 12px;
+    padding: 5px;
   }
-  
-  .action-buttons {
-      flex-direction: column;
+
+  .addDonation-action-buttons {
+    flex-direction: column;
   }
+}
+
+.addDonation-button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background-color: #8dc73f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.addDonation-button:hover {
+  background-color: #6ea72e;
+}
+
+.addDonation-error-message {
+  color: red;
+  font-size: 0.75rem;
+  margin-top: 5px;
+}
+
+.addDonation-char-count {
+  font-size: 0.75rem;
+  color: gray;
+  text-align: right;
+  margin-top: 5px;
 }

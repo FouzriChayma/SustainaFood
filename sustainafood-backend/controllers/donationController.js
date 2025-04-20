@@ -2,9 +2,8 @@ const Donation = require('../models/Donation');
 const Product = require('../models/Product');
 const Counter = require('../models/Counter');
 const mongoose = require('mongoose');
-const Meal = require('../models/Meals');         // Adjust path to your model
-const RequestNeed = require('../models/RequestNeed'); // Add this import
-
+const Meal = require('../models/Meals');
+const RequestNeed = require('../models/RequestNeed');
 const { classifyFoodItem } = require('../aiService/classifyFoodItem');
 const { predictSupplyDemand } = require('../aiService/predictSupplyDemand');
 const User = require('../models/User');
@@ -60,12 +59,27 @@ async function createDonation(req, res) {
 
     console.log("Incoming Request Body:", req.body);
 
-    // Vérification des "bad words"
+    // Parse location from JSON string
+    let parsedLocation;
+    try {
+      parsedLocation = JSON.parse(location);
+      if (
+        parsedLocation.type !== 'Point' ||
+        !Array.isArray(parsedLocation.coordinates) ||
+        parsedLocation.coordinates.length !== 2 ||
+        typeof parsedLocation.coordinates[0] !== 'number' ||
+        typeof parsedLocation.coordinates[1] !== 'number'
+      ) {
+        throw new Error('Invalid location format: must be a GeoJSON Point with [longitude, latitude]');
+      }
+    } catch (error) {
+      throw new Error('Invalid location format: must be a valid GeoJSON string');
+    }
+
+    // Vérification des "bad words" (skip location as it's GeoJSON)
     const badWordChecks = [];
     const titleCheck = checkBadWords(title);
     if (titleCheck) badWordChecks.push({ field: 'title', ...titleCheck });
-    const locationCheck = checkBadWords(location);
-    if (locationCheck) badWordChecks.push({ field: 'location', ...locationCheck });
     const descriptionCheck = checkBadWords(description);
     if (descriptionCheck) badWordChecks.push({ field: 'description', ...descriptionCheck });
 
@@ -180,7 +194,7 @@ async function createDonation(req, res) {
     if (!title || typeof title !== 'string' || !title.trim()) {
       throw new Error('Missing or invalid required field: title');
     }
-    if (!location || typeof location !== 'string' || !location.trim()) {
+    if (!parsedLocation) {
       throw new Error('Missing or invalid required field: location');
     }
     if (!expirationDate || isNaN(new Date(expirationDate).getTime())) {
@@ -211,7 +225,7 @@ async function createDonation(req, res) {
 
     newDonation = new Donation({
       title,
-      location,
+      location: parsedLocation, // Use parsed GeoJSON object
       expirationDate: new Date(expirationDate),
       description,
       category: category || 'prepared_meals',
@@ -222,7 +236,9 @@ async function createDonation(req, res) {
       remainingMeals: category === 'prepared_meals' ? (providedNumberOfMeals || calculatedNumberOfMeals) : undefined,
       products: [],
       status: status || 'pending',
-      isAnomaly: false
+      isAnomaly: false,
+      created_at: new Date(),
+      updated_at: new Date(),
     });
 
     let mealEntries = [];
@@ -312,7 +328,7 @@ async function createDonation(req, res) {
 async function updateDonation(req, res) {
   try {
     const { id } = req.params;
-    const { products, meals, ...donationData } = req.body;
+    const { products, meals, location, ...donationData } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid donation ID' });
@@ -323,15 +339,30 @@ async function updateDonation(req, res) {
       return res.status(404).json({ message: 'Donation not found' });
     }
 
-    // Vérification des "bad words" dans les champs mis à jour
+    // Parse location if provided
+    let parsedLocation;
+    if (location) {
+      try {
+        parsedLocation = JSON.parse(location);
+        if (
+          parsedLocation.type !== 'Point' ||
+          !Array.isArray(parsedLocation.coordinates) ||
+          parsedLocation.coordinates.length !== 2 ||
+          typeof parsedLocation.coordinates[0] !== 'number' ||
+          typeof parsedLocation.coordinates[1] !== 'number'
+        ) {
+          throw new Error('Invalid location format: must be a GeoJSON Point with [longitude, latitude]');
+        }
+      } catch (error) {
+        throw new Error('Invalid location format: must be a valid GeoJSON string');
+      }
+    }
+
+    // Vérification des "bad words" (skip location)
     const badWordChecks = [];
     if (donationData.title) {
       const titleCheck = checkBadWords(donationData.title);
       if (titleCheck) badWordChecks.push({ field: 'title', ...titleCheck });
-    }
-    if (donationData.location) {
-      const locationCheck = checkBadWords(donationData.location);
-      if (locationCheck) badWordChecks.push({ field: 'location', ...locationCheck });
     }
     if (donationData.description) {
       const descriptionCheck = checkBadWords(donationData.description);
@@ -478,7 +509,6 @@ async function updateDonation(req, res) {
 
     const allowedFields = [
       'title',
-      'location',
       'expirationDate',
       'type',
       'category',
@@ -491,6 +521,9 @@ async function updateDonation(req, res) {
         updateData[field] = donationData[field];
       }
     });
+    if (parsedLocation) {
+      updateData.location = parsedLocation;
+    }
 
     const updatedDonation = await Donation.findByIdAndUpdate(
       id,
@@ -532,7 +565,7 @@ async function deleteDonation(req, res) {
       const productIds = donation.products.map(entry => entry.product);
       await Product.deleteMany({ _id: { $in: productIds } });
     }
-    if (donation.meals && donation.meals.length > 0) {
+    if (donation.meals && donation.products.length > 0) {
       const mealIds = donation.meals.map(entry => entry.meal);
       await Meal.deleteMany({ _id: { $in: mealIds } });
     }
@@ -569,7 +602,7 @@ async function getDonationsByStatus(req, res) {
 // ✅ Get All Donations
 async function getAllDonations(req, res) {
   try {
-    const donations = await Donation.find({ isaPost: true, isAnomaly: false,status: { $ne: 'rejected' } })
+    const donations = await Donation.find({ isaPost: true, isAnomaly: false, status: { $ne: 'rejected' } })
       .populate('donor', 'name role email photo')
       .populate('products.product')
       .populate('meals.meal')
@@ -686,28 +719,36 @@ async function getDonationsByCategory(req, res) {
   }
 }
 
-
-
-
-
 // ✅ Get Donation by Request ID
-/*async function getDonationByRequestId(req, res) {
+const getDonationByRequestId = async (req, res) => {
   try {
     const { requestId } = req.params;
-    const donations = await Donation.find({ linkedRequests: requestId })
-      .populate('products.product')
-      .populate('meals.meal');
 
-    if (donations.length === 0) {
-      return res.status(404).json({ message: 'No donation found for this request' });
+    // First, fetch the RequestNeed document to get the linkedDonation IDs
+    const request = await RequestNeed.findById(requestId);
+    if (!request) {
+      return res.status(404).json({ message: 'Request not found' });
     }
+
+    // Get the list of donation IDs from the linkedDonation field
+    const donationIds = request.linkedDonation || [];
+
+    if (donationIds.length === 0) {
+      return res.status(200).json([]); // No linked donations, return empty array
+    }
+
+    // Fetch the donations using the linkedDonation IDs
+    const donations = await Donation.find({ _id: { $in: donationIds } })
+      .populate('products.product')
+      .populate('meals.meal')
+      .populate('donor');
 
     res.status(200).json(donations);
   } catch (error) {
-    console.error('Error fetching donation by request ID:', error);
-    res.status(500).json({ message: 'Server error', error: error.message || error.toString() });
+    console.error('Error fetching donations:', error);
+    res.status(500).json({ message: 'Failed to fetch donations', error: error.message });
   }
-}*/
+};
 
 // ✅ Classify a Food Item
 async function classifyFood(req, res) {
@@ -761,35 +802,6 @@ async function getSupplyDemandPrediction(req, res) {
   }
 }
 
-const getDonationByRequestId = async (req, res) => {
-  try {
-      const { requestId } = req.params;
-
-      // First, fetch the RequestNeed document to get the linkedDonation IDs
-      const request = await RequestNeed.findById(requestId);
-      if (!request) {
-          return res.status(404).json({ message: 'Request not found' });
-      }
-
-      // Get the list of donation IDs from the linkedDonation field
-      const donationIds = request.linkedDonation || [];
-
-      if (donationIds.length === 0) {
-          return res.status(200).json([]); // No linked donations, return empty array
-      }
-
-      // Fetch the donations using the linkedDonation IDs
-      const donations = await Donation.find({ _id: { $in: donationIds } })
-          .populate('products.product')
-          .populate('meals.meal')
-          .populate('donor'); // Populate donor to get donor details
-
-      res.status(200).json(donations);
-  } catch (error) {
-      console.error('Error fetching donations:', error);
-      res.status(500).json({ message: 'Failed to fetch donations', error: error.message });
-  }
-};
 // ✅ Match Donation to Requests
 async function matchDonationToRequests(donation) {
   const { category, products, meals, expirationDate, numberOfMeals: donatedMeals } = donation;

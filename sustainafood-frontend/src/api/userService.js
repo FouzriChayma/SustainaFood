@@ -74,7 +74,9 @@ export const deactivateAccount = async (userId, token) => {
   );
 };
 
-
+export const getTransporters = async () => {
+  return await axios.get(`http://localhost:3000/users/transporters`);
+};
 
 // 🔹 Toggle 2FA Status
 export const toggle2FA = async (email) => {

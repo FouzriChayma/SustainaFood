@@ -47,6 +47,7 @@ const Role = Object.freeze({
 
 // User schema definition
 const userSchema = new Schema({
+  licenseNumber: { type: String, match: [/^\d{8}$/, 'Invalid license number'] },
   description:{ type: String},
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },

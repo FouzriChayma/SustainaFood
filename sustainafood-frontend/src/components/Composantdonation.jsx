@@ -118,7 +118,7 @@ export const Composantdonation = ({ donation }) => {
   const {
     _id,
     title,
-    location,
+    address,
     expirationDate,
     numberOfMeals = 0,
     products = [],
@@ -134,7 +134,7 @@ export const Composantdonation = ({ donation }) => {
     <Card>
       <div>
         <Title>🛒 {title || 'Untitled Donation'}</Title>
-        <Details>📍 <strong>Location:</strong> {location || 'Not specified'}</Details>
+        <Details>📍 <strong>Location:</strong> {address || 'Not specified'}</Details>
         <Details>
           📆 <strong>Expiration:</strong>{' '}
           {expirationDate ? new Date(expirationDate).toLocaleDateString() : 'Not defined'}

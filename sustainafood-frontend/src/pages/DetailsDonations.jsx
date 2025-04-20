@@ -10,8 +10,9 @@ import { FaEdit, FaTrash, FaSave, FaTimes, FaEye } from "react-icons/fa";
 import styled from 'styled-components';
 import logo from "../assets/images/LogoCh.png";
 import { useAlert } from '../contexts/AlertContext';
-import axios from 'axios'; // Import axios for API calls
-import {createnotification} from '../api/notificationService'; // Import the function to create a notification
+import { createnotification } from '../api/notificationService';
+import LocationPicker from "../components/LocationPicker";
+
 // Styled Components for Buttons
 const Button = styled.button`
   display: inline-block;
@@ -108,10 +109,13 @@ const DetailsDonations = () => {
   const isDonor = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
   const { showAlert } = useAlert();
+  const [isMapOpen, setIsMapOpen] = useState(false);
+  const [address, setAddress] = useState(""); // Will store human-readable address
 
   const [editedDonation, setEditedDonation] = useState({
     title: "",
-    location: "",
+    location: { type: 'Point', coordinates: [0, 0] }, // GeoJSON object
+    address: "", // Human-readable address
     expirationDate: "",
     type: "",
     category: "",
@@ -122,7 +126,6 @@ const DetailsDonations = () => {
     donationType: 'products',
   });
 
-  // Define the structured productTypes array
   const productTypes = [
     {
       category: "Non-Perishable",
@@ -177,7 +180,8 @@ const DetailsDonations = () => {
         setDonation(fetchedDonation);
         setEditedDonation({
           title: fetchedDonation.title || "",
-          location: fetchedDonation.location || "",
+          location: fetchedDonation.location || { type: 'Point', coordinates: [0, 0] },
+          address: fetchedDonation.address || "", // Set the human-readable address
           expirationDate: fetchedDonation.expirationDate || "",
           type: fetchedDonation.type || "",
           category: fetchedDonation.category || "",
@@ -207,6 +211,7 @@ const DetailsDonations = () => {
           numberOfMeals: fetchedDonation.numberOfMeals || 0,
           donationType,
         });
+        setAddress(fetchedDonation.address || ""); // Set address for display
         setRequestQuantities((hasProducts ? fetchedDonation.products : []).map(item => item.quantity || 0));
         setRequestMealQuantities((hasMeals ? fetchedDonation.meals : []).map(item => item.quantity || 0));
       } catch (err) {
@@ -224,17 +229,16 @@ const DetailsDonations = () => {
     }
   }, [donation, userid]);
 
-  // Function to send a notification to the donor
   const sendNotificationToDonor = async (recipientName, donationTitle, donorId) => {
     try {
       const message = `${recipientName} has created a new request for your donation "${donationTitle}" 5 minutes ago`;
       const notificationData = {
-        sender: user?._id || user?.id, // Recipient (the one creating the request)
-        receiver: donorId, // Donor (the one who created the donation)
+        sender: user?._id || user?.id,
+        receiver: donorId,
         message: message,
         isRead: false,
       };
-      await  createnotification(notificationData);
+      await createnotification(notificationData);
       console.log('Notification sent successfully to donor');
     } catch (error) {
       console.error('Error sending notification to donor:', error);
@@ -284,8 +288,23 @@ const DetailsDonations = () => {
       return;
     }
 
+    // Validate location
+    if (
+      !editedDonation.location ||
+      editedDonation.location.type !== 'Point' ||
+      !Array.isArray(editedDonation.location.coordinates) ||
+      editedDonation.location.coordinates.length !== 2 ||
+      typeof editedDonation.location.coordinates[0] !== 'number' ||
+      typeof editedDonation.location.coordinates[1] !== 'number'
+    ) {
+      showAlert('error', 'Invalid location format. Please select a valid location.');
+      return;
+    }
+
     const donationData = {
       ...editedDonation,
+      location: JSON.stringify(editedDonation.location), // Stringify the GeoJSON object
+      address: editedDonation.address, // Human-readable address
       products: editedDonation.donationType === 'products'
         ? editedDonation.products.map(item => ({
             id: item.id || null,
@@ -325,6 +344,16 @@ const DetailsDonations = () => {
         console.error("Error updating donation:", error.response?.data || error);
         showAlert('error', 'Failed to update donation: ' + (error.response?.data?.message || error.message));
       });
+  };
+
+  const handleLocationSelect = (selectedLocation, selectedAddress) => {
+    setEditedDonation({
+      ...editedDonation,
+      location: selectedLocation, // Update with GeoJSON object
+      address: selectedAddress, // Update with human-readable address
+    });
+    setAddress(selectedAddress);
+    setIsMapOpen(false);
   };
 
   const handleProductChange = (index, field, value) => {
@@ -458,7 +487,6 @@ const DetailsDonations = () => {
       setRequestQuantities(donation.products?.map(() => 0) || []);
       setRequestMealQuantities(donation.meals?.map(() => 0) || []);
 
-      // Send notification to the donor
       const donorId = donation.donor?._id || donation.donor;
       const recipientName = user?.name || 'A recipient';
       const donationTitle = donation.title || 'Untitled Donation';
@@ -509,7 +537,6 @@ const DetailsDonations = () => {
       setRequestQuantities(donation.products?.map(() => 0) || []);
       setRequestMealQuantities(donation.meals?.map(() => 0) || []);
 
-      // Send notification to the donor
       const donorId = donation.donor?._id || donation.donor;
       const recipientName = user?.name || 'A recipient';
       const donationTitle = donation.title || 'Untitled Donation';
@@ -526,14 +553,15 @@ const DetailsDonations = () => {
   if (error) return <div>{error}</div>;
   if (!donation) return <div>No donation found.</div>;
 
-  const { title, location, expirationDate, products, meals } = donation;
+  const { title, expirationDate, products, meals } = donation;
 
   return (
     <>
       <Navbar />
       <div className="donation-cardlist">
+        {isMapOpen && <div className="donation-map-backdrop" onClick={() => setIsMapOpen(false)} />}
         <div className="donation-card-content">
-          <img src={logo} alt="Logo" className="adddonation-logo" style={{ marginLeft: "47%" }} />
+          <img src={logo} alt="Logo" className="addDonation-logo" style={{ marginLeft: "47%" }} />
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             {isEditing ? (
@@ -562,9 +590,47 @@ const DetailsDonations = () => {
             )}
           </div>
 
-          <p><strong>📍 Location:</strong> {isEditing ? <input type="text" value={editedDonation.location} onChange={(e) => setEditedDonation({ ...editedDonation, location: e.target.value })} placeholder="📍 Location" /> : location || "Unknown location"}</p>
-          <p><strong>📆 Expiration Date:</strong> {isEditing ? <input type="date" value={editedDonation.expirationDate ? new Date(editedDonation.expirationDate).toISOString().split('T')[0] : ''} onChange={(e) => setEditedDonation({ ...editedDonation, expirationDate: e.target.value })} /> : expirationDate ? new Date(expirationDate).toLocaleDateString() : "Not set"}</p>
-      
+          <p>
+            <strong>📍 Address:</strong>{" "}
+            {isEditing ? (
+              <>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  onClick={() => setIsMapOpen(true)}
+                  placeholder="📍 Enter Address"
+                  readOnly
+                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #ced4da', borderRadius: '6px', fontSize: '16px', background: '#f8f9fa' }}
+                />
+                {isMapOpen && (
+                  <LocationPicker
+                    isOpen={isMapOpen}
+                    onClose={() => setIsMapOpen(false)}
+                    onLocationChange={(loc) => setEditedDonation({ ...editedDonation, location: loc })}
+                    onAddressChange={setAddress}
+                    onSelect={handleLocationSelect}
+                    initialAddress={address}
+                  />
+                )}
+              </>
+            ) : (
+              address || "Unknown address"
+            )}
+          </p>
+          <p>
+            <strong>📆 Expiration Date:</strong>{" "}
+            {isEditing ? (
+              <input
+                type="date"
+                value={editedDonation.expirationDate ? new Date(editedDonation.expirationDate).toISOString().split('T')[0] : ''}
+                onChange={(e) => setEditedDonation({ ...editedDonation, expirationDate: e.target.value })}
+              />
+            ) : (
+              expirationDate ? new Date(expirationDate).toLocaleDateString() : "Not set"
+            )}
+          </p>
+
           {editedDonation.donationType === 'meals' && isEditing && editedDonation.category === 'prepared_meals' && (
             <p>
               <strong>🔢 Total Number of Meals:</strong>

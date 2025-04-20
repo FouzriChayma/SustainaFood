@@ -304,7 +304,7 @@ const RecipientProfile = () => {
               <ProjectCard key={request._id}>
                 <Title>🛒 {request.title || 'Untitled'}</Title>
                 <DetailText>
-                  <strong>📍 Location:</strong> {request.location || 'Not specified'}
+                  <strong>📍 Location:</strong> {request.address || 'Not specified'}
                 </DetailText>
                 <DetailText>
                   <strong>📆 Before Date:</strong>{' '}

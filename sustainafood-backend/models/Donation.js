@@ -82,6 +82,7 @@ const donationSchema = new Schema({
           required: true
         }
       },
+      address: {type:String}, // Nouveau champ pour l'adresse lisible
     expirationDate: {
         type: Date,
         required: true,

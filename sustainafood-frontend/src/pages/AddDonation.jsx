@@ -311,7 +311,7 @@ export const AddDonation = () => {
         tempErrors.numberOfMeals =
           "Number of meals must be a valid positive integer";
       }
-console.log("isDonner", isDonner);
+      console.log("isDonner", isDonner);
       if (isDonner) {
         if (mealsEntryMode === "csv" && meals.length === 0) {
           tempErrors.meals = "Meals list is required when uploading via CSV";
@@ -513,6 +513,7 @@ console.log("isDonner", isDonner);
     const donationData = new FormData();
     donationData.append("title", title);
     donationData.append("location", JSON.stringify(location));
+    donationData.append("address", address); // Added address field
     donationData.append("expirationDate", expirationDate);
     donationData.append("description", description);
     donationData.append("category", category);
@@ -845,7 +846,7 @@ console.log("isDonner", isDonner);
                   </p>
                   <div className="addDonation-file-actions">
                     <FaEdit
-                      className="addDonation-fa-edit"
+                      className="AddDonation-fa-edit"
                       onClick={() => mealsFileInputRef.current.click()}
                     />
                     <FaTrash

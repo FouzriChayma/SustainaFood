@@ -298,7 +298,7 @@ const DonorProfile = () => {
               <ProjectCard key={donation._id}>
                 <Title>🛒 {donation.title || 'Untitled'}</Title>
                 <DetailText>
-                  <strong>📍 Location:</strong> {donation.location || 'Not specified'}
+                  <strong>📍 Location:</strong> {donation.address || 'Not specified'}
                 </DetailText>
                 <DetailText>
                   <strong>📆 Expiration Date:</strong>{' '}

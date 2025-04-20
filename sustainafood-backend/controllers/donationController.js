@@ -39,6 +39,7 @@ const checkBadWords = (text) => {
 };
 
 // ✅ Create a Donation
+// ✅ Create a Donation
 async function createDonation(req, res) {
   let newDonation;
 
@@ -46,6 +47,7 @@ async function createDonation(req, res) {
     let {
       title,
       location,
+      address, // Correction de l'orthographe (adress → address)
       expirationDate,
       description,
       category,
@@ -76,12 +78,19 @@ async function createDonation(req, res) {
       throw new Error('Invalid location format: must be a valid GeoJSON string');
     }
 
-    // Vérification des "bad words" (skip location as it's GeoJSON)
+    // Validation du champ address
+    if (!address || typeof address !== 'string' || !address.trim()) {
+      throw new Error('Missing or invalid required field: address');
+    }
+
+    // Vérification des "bad words" (inclure address)
     const badWordChecks = [];
     const titleCheck = checkBadWords(title);
     if (titleCheck) badWordChecks.push({ field: 'title', ...titleCheck });
     const descriptionCheck = checkBadWords(description);
     if (descriptionCheck) badWordChecks.push({ field: 'description', ...descriptionCheck });
+    const addressCheck = checkBadWords(address);
+    if (addressCheck) badWordChecks.push({ field: 'address', ...addressCheck });
 
     for (const product of products || []) {
       const nameCheck = checkBadWords(product.name);
@@ -226,6 +235,7 @@ async function createDonation(req, res) {
     newDonation = new Donation({
       title,
       location: parsedLocation, // Use parsed GeoJSON object
+      address, // Ajout du champ address
       expirationDate: new Date(expirationDate),
       description,
       category: category || 'prepared_meals',
@@ -358,7 +368,7 @@ async function updateDonation(req, res) {
       }
     }
 
-    // Vérification des "bad words" (skip location)
+    // Vérification des "bad words" (skip location and address)
     const badWordChecks = [];
     if (donationData.title) {
       const titleCheck = checkBadWords(donationData.title);
@@ -367,6 +377,10 @@ async function updateDonation(req, res) {
     if (donationData.description) {
       const descriptionCheck = checkBadWords(donationData.description);
       if (descriptionCheck) badWordChecks.push({ field: 'description', ...descriptionCheck });
+    }
+    if (donationData.address) {
+      const addressCheck = checkBadWords(donationData.address);
+      if (addressCheck) badWordChecks.push({ field: 'address', ...addressCheck });
     }
     for (const product of products || []) {
       if (product.name) {
@@ -513,7 +527,8 @@ async function updateDonation(req, res) {
       'type',
       'category',
       'description',
-      'numberOfMeals'
+      'numberOfMeals',
+      'address' // Added address to allowed fields
     ];
     const updateData = {};
     allowedFields.forEach((field) => {

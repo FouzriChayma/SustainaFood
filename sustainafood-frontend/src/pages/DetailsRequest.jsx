@@ -11,7 +11,9 @@ import { useNavigate } from "react-router-dom";
 import { useAlert } from '../contexts/AlertContext';
 import Papa from "papaparse";
 import axios from 'axios';
-import {createnotification} from '../api/notificationService'; // Import the function to create a notification
+import { createnotification } from '../api/notificationService';
+import LocationPicker from "../components/LocationPicker";
+
 // Styled Components for Buttons
 const Button = styled.button`
   display: inline-block;
@@ -137,9 +139,12 @@ const DetailsRequest = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const [userid, setUserid] = useState("");
   const [isTheOwner, setIsTheOwner] = useState(false);
+  const [isMapOpen, setIsMapOpen] = useState(false);
+  const [address, setAddress] = useState(""); // Will store human-readable address
   const [editedRequest, setEditedRequest] = useState({
     title: "",
-    location: "",
+    location: { type: 'Point', coordinates: [0, 0] }, // GeoJSON object
+    address: "", // Human-readable address
     expirationDate: "",
     description: "",
     category: "",
@@ -187,7 +192,8 @@ const DetailsRequest = () => {
         setRequest(fetchedRequest);
         setEditedRequest({
           title: fetchedRequest.title || "",
-          location: fetchedRequest.location || "",
+          location: fetchedRequest.location || { type: 'Point', coordinates: [0, 0] },
+          address: fetchedRequest.address || "", // Set the human-readable address
           expirationDate: fetchedRequest.expirationDate || "",
           description: fetchedRequest.description || "",
           category: fetchedRequest.category || "",
@@ -198,6 +204,7 @@ const DetailsRequest = () => {
           mealDescription: fetchedRequest.mealDescription || "",
           mealType: fetchedRequest.mealType || "",
         });
+        setAddress(fetchedRequest.address || ""); // Set address for display
         setDonationQuantities(fetchedRequest.requestedProducts.map(() => 0));
       } catch (err) {
         setError(err.response?.data?.message || 'Error fetching request data');
@@ -221,22 +228,19 @@ const DetailsRequest = () => {
     }
   }, [manualDonationMeals, mealsEntryMode, request?.category]);
 
-  // Function to send a notification to the recipient
   const sendNotificationToRecipient = async (donorName, requestTitle, recipientId) => {
     try {
-      const message = `${donorName} has added a new donation for your request "${requestTitle}"  `;
+      const message = `${donorName} has added a new donation for your request "${requestTitle}"`;
       const notificationData = {
-        sender: user?._id || user?.id, // Donor
-        receiver: recipientId, // Recipient of the request
+        sender: user?._id || user?.id,
+        receiver: recipientId,
         message: message,
         isRead: false,
       };
-
-      await  createnotification(notificationData);
+      await createnotification(notificationData);
       console.log('Notification sent successfully');
     } catch (error) {
       console.error('Error sending notification:', error);
-      // Don't interrupt the donation process if notification fails
       showAlert('warning', 'Donation added, but failed to send notification to recipient');
     }
   };
@@ -247,8 +251,18 @@ const DetailsRequest = () => {
     if (!editedRequest.title || editedRequest.title.trim() === '') {
       errors.title = "Title is required";
     }
-    if (!editedRequest.location || editedRequest.location.trim() === '') {
-      errors.location = "Location is required";
+    if (
+      !editedRequest.location ||
+      editedRequest.location.type !== 'Point' ||
+      !Array.isArray(editedRequest.location.coordinates) ||
+      editedRequest.location.coordinates.length !== 2 ||
+      typeof editedRequest.location.coordinates[0] !== 'number' ||
+      typeof editedRequest.location.coordinates[1] !== 'number'
+    ) {
+      errors.location = "A valid GeoJSON Point location is required";
+    }
+    if (!editedRequest.address || editedRequest.address.trim() === '') {
+      errors.address = "Address is required";
     }
     if (!editedRequest.category || !['packaged_products', 'prepared_meals'].includes(editedRequest.category)) {
       errors.category = "Category must be either 'packaged_products' or 'prepared_meals'";
@@ -286,7 +300,6 @@ const DetailsRequest = () => {
       if (typeof editedRequest.numberOfMeals !== 'number' || editedRequest.numberOfMeals <= 0) {
         errors.numberOfMeals = "Number of Meals must be a positive number";
       }
-     
     }
 
     return errors;
@@ -314,7 +327,8 @@ const DetailsRequest = () => {
     try {
       const requestData = {
         title: editedRequest.title,
-        location: editedRequest.location,
+        location: JSON.stringify(editedRequest.location), // Stringify the GeoJSON object
+        address: editedRequest.address, // Human-readable address
         expirationDate: editedRequest.expirationDate,
         description: editedRequest.description,
         category: editedRequest.category,
@@ -335,6 +349,16 @@ const DetailsRequest = () => {
       const errorMessage = error.response?.data?.message || 'Failed to update request';
       showAlert('error', errorMessage);
     }
+  };
+
+  const handleLocationSelect = (selectedLocation, selectedAddress) => {
+    setEditedRequest({
+      ...editedRequest,
+      location: selectedLocation, // Update with GeoJSON object
+      address: selectedAddress, // Update with human-readable address
+    });
+    setAddress(selectedAddress);
+    setIsMapOpen(false);
   };
 
   const handleProductChange = (index, field, value) => {
@@ -372,7 +396,8 @@ const DetailsRequest = () => {
     setIsEditing(false);
     setEditedRequest({
       title: request.title || "",
-      location: request.location || "",
+      location: request.location || { type: 'Point', coordinates: [0, 0] },
+      address: request.address || "",
       expirationDate: request.expirationDate || "",
       description: request.description || "",
       category: request.category || "",
@@ -383,6 +408,7 @@ const DetailsRequest = () => {
       mealDescription: request.mealDescription || "",
       mealType: request.mealType || "",
     });
+    setAddress(request.address || "");
   };
 
   const handleDonationQuantityChange = (index, value) => {
@@ -552,7 +578,6 @@ const DetailsRequest = () => {
         donations: [...(prev.donations || []), response.donation],
       }));
 
-      // Send notification to the recipient
       const recipientId = request.recipient?._id || request.recipient;
       const donorName = user?.name || 'A donor';
       const requestTitle = request.title || 'Untitled Request';
@@ -590,7 +615,6 @@ const DetailsRequest = () => {
         donations: [...(prev.donations || []), response.donation],
       }));
 
-      // Send notification to the recipient
       const recipientId = request.recipient?._id || request.recipient;
       const donorName = user?.name || 'A donor';
       const requestTitle = request.title || 'Untitled Request';
@@ -609,7 +633,6 @@ const DetailsRequest = () => {
 
   const {
     title,
-    location,
     expirationDate,
     description,
     category,
@@ -625,8 +648,9 @@ const DetailsRequest = () => {
     <>
       <Navbar />
       <div className="donation-cardlist">
+        {isMapOpen && <div className="donation-map-backdrop" onClick={() => setIsMapOpen(false)} />}
         <div className="donation-card-content">
-          <img src={logo} alt="Logo" className="adddonation-logo" style={{ marginLeft: "47%" }} />
+          <img src={logo} alt="Logo" className="addDonation-logo" style={{ marginLeft: "47%" }} />
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             {isEditing ? (
@@ -666,7 +690,34 @@ const DetailsRequest = () => {
             )}
           </div>
 
-          <p><strong>📍 Location:</strong> {isEditing ? <input type="text" value={editedRequest.location} onChange={(e) => setEditedRequest({ ...editedRequest, location: e.target.value })} placeholder="📍 Location" /> : location || "Unknown location"}</p>
+          <p>
+            <strong>📍 Address:</strong>{" "}
+            {isEditing ? (
+              <>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  onClick={() => setIsMapOpen(true)}
+                  placeholder="📍 Enter Address"
+                  readOnly
+                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #ced4da', borderRadius: '6px', fontSize: '16px', background: '#f8f9fa' }}
+                />
+                {isMapOpen && (
+                  <LocationPicker
+                    isOpen={isMapOpen}
+                    onClose={() => setIsMapOpen(false)}
+                    onLocationChange={(loc) => setEditedRequest({ ...editedRequest, location: loc })}
+                    onAddressChange={setAddress}
+                    onSelect={handleLocationSelect}
+                    initialAddress={address}
+                  />
+                )}
+              </>
+            ) : (
+              address || "Unknown address"
+            )}
+          </p>
           <p><strong>📆 Expiration Date:</strong> {isEditing ? <input type="date" value={editedRequest.expirationDate ? new Date(editedRequest.expirationDate).toISOString().split('T')[0] : ''} onChange={(e) => setEditedRequest({ ...editedRequest, expirationDate: e.target.value })} /> : expirationDate ? new Date(expirationDate).toLocaleDateString() : "Not set"}</p>
           <p><strong>📝 Description:</strong> {isEditing ? <textarea value={editedRequest.description} onChange={(e) => setEditedRequest({ ...editedRequest, description: e.target.value })} placeholder="📝 Description" /> : description || "No description"}</p>
           <p><strong>📂 Category:</strong> {isEditing ? (
@@ -684,7 +735,7 @@ const DetailsRequest = () => {
           ) : status || "Unknown"}</p>
           {category === 'prepared_meals' && (
             <>
-              <p><strong>🍽️ Number of Meals:</strong> {isEditing ? <input type="number" value={editedRequest.numberOfMeals} onChange={(e) => setEditedRequest({ ...editedRequest, numberOfMeals: Number(e.target.value) })} placeholder="🍽️ Number of Meals" /> : numberOfMeals || "no more meals needed"}</p>
+              <p><strong>🍽️ Number of Meals:</strong> {isEditing ? <input type="number" value={editedRequest.numberOfMeals} onChange={(e) => setEditedRequest({ ...editedRequest, numberOfMeals: Number(e.target.value) })} placeholder="🍽️ Number of Meals" /> : numberOfMeals || "No more meals needed"}</p>
               {mealName || mealDescription || mealType ? (
                 <>
                   <p><strong>🍽️ Meal Name:</strong> {isEditing ? <input type="text" value={editedRequest.mealName} onChange={(e) => setEditedRequest({ ...editedRequest, mealName: e.target.value })} placeholder="🍽️ Meal Name" /> : mealName || "Not specified"}</p>
@@ -793,7 +844,6 @@ const DetailsRequest = () => {
             )}
           </ul>
 
-          {/* Donation Form */}
           {isAddingDonation && (
             <DonationForm>
               <h4>Specify the donation</h4>

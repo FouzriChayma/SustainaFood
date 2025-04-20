@@ -118,7 +118,7 @@ export const Composantrequest = ({ request }) => {
   const {
     _id,
     title,
-    location,
+    address,
     expirationDate,
     description,
     category,
@@ -134,7 +134,7 @@ export const Composantrequest = ({ request }) => {
     <Card>
       <div>
         <Title>🛒 {title || 'Untitled Request'}</Title>
-        <Details>📍 <strong>Location:</strong> {location || 'Not specified'}</Details>
+        <Details>📍 <strong>Location:</strong> {address || 'Not specified'}</Details>
         <Details>📆 <strong>Expiration:</strong> {expirationDate ? new Date(expirationDate).toLocaleDateString() : 'Not defined'}</Details>
         <Details>📝 <strong>Description:</strong> {description || 'No description'}</Details>
         <Details>📂 <strong>Category:</strong> {category || 'Not specified'}</Details>

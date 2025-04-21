@@ -33,4 +33,6 @@ router.put('/:transactionId/reject', donationTransactionController.rejectDonatio
 router.post('/create-and-accept', donationTransactionController.createAndAcceptDonationTransaction);
 router.post('/create-et-accept', donationTransactionController.createAndAcceptDonationTransactionBiderc);
 router.put('/donation/:donationId/reject', donationTransactionController.rejectDonation);
+// ✅ Get donations by Donor ID
+router.get('/donor/:donorId', donationTransactionController.getDonationTransactionsByDonorId);
 module.exports = router;

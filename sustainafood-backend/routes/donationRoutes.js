@@ -273,11 +273,14 @@ router.get('/donations/predict-supply-demand', (req, res, next) => {
 // ✅ Get all donations
 router.get('/', donationController.getAllDonations);
 
+
 // ✅ Get donation by ID
 router.get('/:id', donationController.getDonationById);
 
 // ✅ Get donations by User ID
 router.get('/user/:userId', donationController.getDonationsByUserId);
+// ✅ Get donations by Donor ID not post
+router.get('/donor/:donorId', donationController.getRequestDonationsByUserId);
 
 // ✅ Get donations by Date
 router.get('/date/:date', donationController.getDonationsByDate);

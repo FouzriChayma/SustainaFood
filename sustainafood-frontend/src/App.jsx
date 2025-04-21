@@ -56,6 +56,7 @@ import ViewDonationTransaction from "./pages/backoffice/ViewDonationTransaction.
 
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import PersonalStatus from './pages/PersonalStatus';
+import MyDonationsRequest from "./pages/MyDonationsRequest.jsx";
 const App = () => {
   return (
     <AlertProvider>
@@ -135,8 +136,8 @@ const App = () => {
           <Route path="/mydonations" element={<MyDonations />} />
           <Route path="/ListRequestsDonation/:donationId" element={<ListRequestsDonation />} />
           <Route path="/AiClassification" element={<AiClassification />} />
-
-        </Route>
+          <Route path="/donor/:donorId/requests" element={<MyDonationsRequest />} />
+          </Route>
 
         {/* Route pour les pages non trouvées */}
         <Route path="*" element={<NotFound />} />

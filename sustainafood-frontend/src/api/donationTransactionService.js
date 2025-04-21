@@ -1,6 +1,6 @@
 // src/api/donationTransactionService.js
 import axios from 'axios';
-const API_BASE = 'http://localhost:3000/donationTransaction';
+export const API_BASE = 'http://localhost:3000/donationTransaction';
 
 // Fetch all donation transactions
 export const getAllDonationTransactions = async () => {
@@ -295,7 +295,20 @@ export const rejectRequest = async (requestId, reason) => {
       { headers: { Authorization: `Bearer ${token}` } }
     );
   };
+  
+// New function for fetching transactions by donor ID
+export const getDonationTransactionsByDonorId = async (donorId) => {
+    try {
+        const response = await axios.get(`${API_BASE}/donor/${donorId}`);
+        console.log(`Full API Response (getDonationTransactionsByDonorId ${donorId}):`, response);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching donation transactions for Donor ID ${donorId}:`, error.message);
+        throw error;
+    }
+};
 export default {
+    getDonationTransactionsByDonorId,
     getAllDonationTransactions,
     getDonationTransactionById,
     getDonationTransactionsByRequestNeedId,

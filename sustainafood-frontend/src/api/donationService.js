@@ -35,6 +35,10 @@ export const getDonationsByUserId = async (id) => {
 
   return axios.get(`http://localhost:3000/donation/user/${id}`);
 }
+export const getRequestDonationsByUserId = async (id) => {
+
+  return axios.get(`http://localhost:3000/donation/donor/${id}`);
+}
 export const deleteDonation = async (id) => {
   return axios.delete(`http://localhost:3000/donation/${id}`);
 };

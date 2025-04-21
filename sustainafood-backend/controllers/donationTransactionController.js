@@ -1311,12 +1311,57 @@ Your Platform Team`;
         });
     }
 }
+async function getDonationTransactionsByDonorId(req, res) {
+    try {
+        const { donorId } = req.params;
 
+        // First, find all donations by the donor
+        const donations = await Donation.find({ donor: donorId }).select('_id');
+
+        if (!donations.length) {
+            return res.status(404).json({ message: 'No donations found for this donor' });
+        }
+
+        // Extract donation IDs
+        const donationIds = donations.map(d => d._id);
+
+        // Find transactions associated with these donations
+        const transactions = await DonationTransaction.find({ donation: { $in: donationIds } })
+            .populate({
+                path: 'donation',
+                populate: [
+                    { path: 'donor', select: 'name photo' }, // Select only name and photo
+                    { path: 'meals.meal', model: 'Meals' },
+                    { path: 'products.product', model: 'Product' },
+                ],
+            })
+            .populate({
+                path: 'requestNeed',
+                populate: [
+                    { path: 'recipient' },
+                    { path: 'requestedProducts.product', model: 'Product' },
+                    { path: 'requestedMeals.meal', model: 'Meals' },
+                ],
+            })
+            .populate('allocatedProducts.product')
+            .populate('allocatedMeals.meal');
+
+        if (!transactions.length) {
+            return res.status(404).json({ message: 'No transactions found for this donor' });
+        }
+
+        res.status(200).json(transactions);
+    } catch (error) {
+        console.error('Error fetching transactions by donor:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+}
 module.exports = {
     getAllDonationTransactions,
     getDonationTransactionById,
     getDonationTransactionsByRequestNeedId,
     getDonationTransactionsByDonationId,
+    getDonationTransactionsByDonorId,
     getDonationTransactionsByStatus,
     createDonationTransaction,
     updateDonationTransaction,

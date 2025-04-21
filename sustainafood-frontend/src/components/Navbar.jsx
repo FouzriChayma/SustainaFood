@@ -128,6 +128,7 @@ const Navbar = () => {
                   {isDonner && <Link to="/addDonation">Add Donation</Link>}
                   {isRecipient && <Link to="/addDonation">Add Request</Link>}
                   {isDonner && <Link to="/DonationRecommendations">Donation Recommendations</Link>}
+                  {isDonner && <Link to={`/donor/${user?._id || user?.id}/requests`}>My Donation Requests</Link>}
                 </div>
               )}
             </div>
@@ -152,7 +153,6 @@ const Navbar = () => {
               <span className="dropdown-toggle">Analytics & Reporting</span>
               {dropdownOpen === "analytics" && (
                 <div className="dropdown-content">
-                  
                   {isRecipient && <Link to="/analytics">Request Statistics</Link>}
                   {isDonner && <Link to="/analytics">Donation Statistics</Link>}
                   <Link to="/PersonalStatus">Personal Stats</Link>

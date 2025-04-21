@@ -140,11 +140,14 @@ const DetailsRequest = () => {
   const [userid, setUserid] = useState("");
   const [isTheOwner, setIsTheOwner] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
-  const [address, setAddress] = useState(""); // Will store human-readable address
+  const [isDonationMapOpen, setIsDonationMapOpen] = useState(false); // État pour la carte de la donation
+  const [address, setAddress] = useState(""); // Adresse lisible pour la requête
+  const [donationAddress, setDonationAddress] = useState(""); // Adresse lisible pour la donation
+  const [donationLocation, setDonationLocation] = useState({ type: 'Point', coordinates: [0, 0] }); // Localisation GeoJSON pour la donation
   const [editedRequest, setEditedRequest] = useState({
     title: "",
-    location: { type: 'Point', coordinates: [0, 0] }, // GeoJSON object
-    address: "", // Human-readable address
+    location: { type: 'Point', coordinates: [0, 0] },
+    address: "",
     expirationDate: "",
     description: "",
     category: "",
@@ -193,7 +196,7 @@ const DetailsRequest = () => {
         setEditedRequest({
           title: fetchedRequest.title || "",
           location: fetchedRequest.location || { type: 'Point', coordinates: [0, 0] },
-          address: fetchedRequest.address || "", // Set the human-readable address
+          address: fetchedRequest.address || "",
           expirationDate: fetchedRequest.expirationDate || "",
           description: fetchedRequest.description || "",
           category: fetchedRequest.category || "",
@@ -204,8 +207,7 @@ const DetailsRequest = () => {
           mealDescription: fetchedRequest.mealDescription || "",
           mealType: fetchedRequest.mealType || "",
         });
-        setAddress(fetchedRequest.address || ""); // Set address for display
-        setDonationQuantities(fetchedRequest.requestedProducts.map(() => 0));
+        setAddress(fetchedRequest.address || "");
       } catch (err) {
         setError(err.response?.data?.message || 'Error fetching request data');
       } finally {
@@ -327,8 +329,8 @@ const DetailsRequest = () => {
     try {
       const requestData = {
         title: editedRequest.title,
-        location: JSON.stringify(editedRequest.location), // Stringify the GeoJSON object
-        address: editedRequest.address, // Human-readable address
+        location: JSON.stringify(editedRequest.location),
+        address: editedRequest.address,
         expirationDate: editedRequest.expirationDate,
         description: editedRequest.description,
         category: editedRequest.category,
@@ -354,11 +356,17 @@ const DetailsRequest = () => {
   const handleLocationSelect = (selectedLocation, selectedAddress) => {
     setEditedRequest({
       ...editedRequest,
-      location: selectedLocation, // Update with GeoJSON object
-      address: selectedAddress, // Update with human-readable address
+      location: selectedLocation,
+      address: selectedAddress,
     });
     setAddress(selectedAddress);
     setIsMapOpen(false);
+  };
+
+  const handleDonationLocationSelect = (selectedLocation, selectedAddress) => {
+    setDonationLocation(selectedLocation);
+    setDonationAddress(selectedAddress);
+    setIsDonationMapOpen(false);
   };
 
   const handleProductChange = (index, field, value) => {
@@ -491,6 +499,12 @@ const DetailsRequest = () => {
 
   const validateDonation = () => {
     let tempErrors = {};
+    if (!donationLocation || donationLocation.type !== 'Point' || !Array.isArray(donationLocation.coordinates) || donationLocation.coordinates.length !== 2) {
+      tempErrors.location = "A valid location is required for the donation";
+    }
+    if (!donationAddress || donationAddress.trim() === '') {
+      tempErrors.address = "A valid address is required for the donation";
+    }
     if (request.category === "prepared_meals") {
       const totalMeals = mealsEntryMode === "form"
         ? manualDonationMeals.reduce((sum, meal) => sum + (parseInt(meal.quantity) || 0), 0)
@@ -533,6 +547,8 @@ const DetailsRequest = () => {
       const donationData = {
         donor: user?._id || user?.id,
         expirationDate: request.expirationDate || new Date().toISOString(),
+        location: donationLocation, // Ajouter la localisation GeoJSON
+        address: donationAddress, // Ajouter l'adresse lisible
       };
 
       if (request.category === "packaged_products") {
@@ -573,6 +589,8 @@ const DetailsRequest = () => {
         mealType: "Lunch",
         quantity: ""
       }]);
+      setDonationLocation({ type: 'Point', coordinates: [0, 0] }); // Réinitialiser la localisation
+      setDonationAddress(""); // Réinitialiser l'adresse
       setRequest(prev => ({
         ...prev,
         donations: [...(prev.donations || []), response.donation],
@@ -606,10 +624,14 @@ const DetailsRequest = () => {
         products: donationProducts,
         donor: userid,
         expirationDate: request.expirationDate || new Date().toISOString(),
+        location: donationLocation,
+        address: donationAddress,
       };
 
       const response = await addDonationToRequest(id, donationData);
       setIsAddingDonation(false);
+      setDonationLocation({ type: 'Point', coordinates: [0, 0] });
+      setDonationAddress("");
       setRequest(prev => ({
         ...prev,
         donations: [...(prev.donations || []), response.donation],
@@ -648,7 +670,7 @@ const DetailsRequest = () => {
     <>
       <Navbar />
       <div className="donation-cardlist">
-        {isMapOpen && <div className="donation-map-backdrop" onClick={() => setIsMapOpen(false)} />}
+        {(isMapOpen || isDonationMapOpen) && <div className="donation-map-backdrop" onClick={() => { setIsMapOpen(false); setIsDonationMapOpen(false); }} />}
         <div className="donation-card-content">
           <img src={logo} alt="Logo" className="addDonation-logo" style={{ marginLeft: "47%" }} />
 
@@ -847,6 +869,29 @@ const DetailsRequest = () => {
           {isAddingDonation && (
             <DonationForm>
               <h4>Specify the donation</h4>
+              <div>
+                <label>📍 Donation Location</label>
+                <input
+                  type="text"
+                  value={donationAddress}
+                  onChange={(e) => setDonationAddress(e.target.value)}
+                  onClick={() => setIsDonationMapOpen(true)}
+                  placeholder="📍 Select Donation Location"
+                  readOnly
+                />
+                {isDonationMapOpen && (
+                  <LocationPicker
+                    isOpen={isDonationMapOpen}
+                    onClose={() => setIsDonationMapOpen(false)}
+                    onLocationChange={setDonationLocation}
+                    onAddressChange={setDonationAddress}
+                    onSelect={handleDonationLocationSelect}
+                    initialAddress={donationAddress}
+                  />
+                )}
+                {donationErrors.location && <p className="error-message">{donationErrors.location}</p>}
+                {donationErrors.address && <p className="error-message">{donationErrors.address}</p>}
+              </div>
               {request.category === "packaged_products" && requestedProducts.map((item, index) => (
                 <div key={index}>
                   <label>

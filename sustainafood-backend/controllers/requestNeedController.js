@@ -661,7 +661,7 @@ async function deleteRequest(req, res) {
 async function createRequestNeedForExistingDonation(req, res) {
   try {
     const { donationId } = req.params;
-    const { recipientId, requestedProducts, requestedMeals, description, numberOfMeals } = req.body;
+    const { recipientId, requestedProducts, requestedMeals, description, numberOfMeals, location, address } = req.body;
 
     // Validate input
     if (!donationId || !mongoose.Types.ObjectId.isValid(donationId)) {
@@ -774,7 +774,8 @@ async function createRequestNeedForExistingDonation(req, res) {
     // Create the new RequestNeed
     const newRequest = new RequestNeed({
       title: `Request for ${donation.title}`,
-      location: donation.location, // Use donation's GeoJSON location directly
+      location: location, // Use donation's GeoJSON location directly
+      address:address,
       expirationDate: donation.expirationDate,
       description: description || '',
       category: donation.category,
@@ -919,7 +920,7 @@ Your Platform Team`,
 async function addDonationToRequest(req, res) {
   try {
     const { requestId } = req.params;
-    const { products, meals, donor, expirationDate, numberOfMeals } = req.body;
+    const { products, meals, donor, expirationDate, numberOfMeals ,address , location} = req.body;
 
     // Input Validation
     if (!requestId || !mongoose.Types.ObjectId.isValid(requestId)) {
@@ -1037,7 +1038,8 @@ async function addDonationToRequest(req, res) {
       donor: donor,
       description: `Donation for request ${request.title}`,
       category: request.category,
-      location: request.location, // Use request's GeoJSON location
+      location: location, // Use request's GeoJSON location
+      address: address,
       products: donationProducts,
       meals: donationMeals,
       numberOfMeals: request.category === 'prepared_meals' ? numberOfMeals : undefined,

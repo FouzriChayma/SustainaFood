@@ -91,6 +91,12 @@ const DonationForm = styled.div`
       outline: none;
     }
   }
+
+  .error-message {
+    color: red;
+    font-size: 14px;
+    margin-top: 5px;
+  }
 `;
 
 const DetailsDonations = () => {
@@ -105,17 +111,21 @@ const DetailsDonations = () => {
   const [isTheOwner, setIsTheOwner] = useState(false);
   const [requestQuantities, setRequestQuantities] = useState([]);
   const [requestMealQuantities, setRequestMealQuantities] = useState([]);
+  const [isMapOpen, setIsMapOpen] = useState(false);
+  const [isRequestMapOpen, setIsRequestMapOpen] = useState(false); // State for request location picker
+  const [address, setAddress] = useState(""); // Address for the donation
+  const [requestAddress, setRequestAddress] = useState(""); // Address for the request
+  const [requestLocation, setRequestLocation] = useState({ type: 'Point', coordinates: [0, 0] }); // Location for the request
+  const [requestErrors, setRequestErrors] = useState({}); // Validation errors for the request
   const navigate = useNavigate();
   const isDonor = user?.role === "restaurant" || user?.role === "supermarket";
   const isRecipient = user?.role === "ong" || user?.role === "student";
   const { showAlert } = useAlert();
-  const [isMapOpen, setIsMapOpen] = useState(false);
-  const [address, setAddress] = useState(""); // Will store human-readable address
 
   const [editedDonation, setEditedDonation] = useState({
     title: "",
-    location: { type: 'Point', coordinates: [0, 0] }, // GeoJSON object
-    address: "", // Human-readable address
+    location: { type: 'Point', coordinates: [0, 0] },
+    address: "",
     expirationDate: "",
     type: "",
     category: "",
@@ -181,7 +191,7 @@ const DetailsDonations = () => {
         setEditedDonation({
           title: fetchedDonation.title || "",
           location: fetchedDonation.location || { type: 'Point', coordinates: [0, 0] },
-          address: fetchedDonation.address || "", // Set the human-readable address
+          address: fetchedDonation.address || "",
           expirationDate: fetchedDonation.expirationDate || "",
           type: fetchedDonation.type || "",
           category: fetchedDonation.category || "",
@@ -211,7 +221,7 @@ const DetailsDonations = () => {
           numberOfMeals: fetchedDonation.numberOfMeals || 0,
           donationType,
         });
-        setAddress(fetchedDonation.address || ""); // Set address for display
+        setAddress(fetchedDonation.address || "");
         setRequestQuantities((hasProducts ? fetchedDonation.products : []).map(item => item.quantity || 0));
         setRequestMealQuantities((hasMeals ? fetchedDonation.meals : []).map(item => item.quantity || 0));
       } catch (err) {
@@ -288,7 +298,6 @@ const DetailsDonations = () => {
       return;
     }
 
-    // Validate location
     if (
       !editedDonation.location ||
       editedDonation.location.type !== 'Point' ||
@@ -303,8 +312,8 @@ const DetailsDonations = () => {
 
     const donationData = {
       ...editedDonation,
-      location: JSON.stringify(editedDonation.location), // Stringify the GeoJSON object
-      address: editedDonation.address, // Human-readable address
+      location: JSON.stringify(editedDonation.location),
+      address: editedDonation.address,
       products: editedDonation.donationType === 'products'
         ? editedDonation.products.map(item => ({
             id: item.id || null,
@@ -349,11 +358,17 @@ const DetailsDonations = () => {
   const handleLocationSelect = (selectedLocation, selectedAddress) => {
     setEditedDonation({
       ...editedDonation,
-      location: selectedLocation, // Update with GeoJSON object
-      address: selectedAddress, // Update with human-readable address
+      location: selectedLocation,
+      address: selectedAddress,
     });
     setAddress(selectedAddress);
     setIsMapOpen(false);
+  };
+
+  const handleRequestLocationSelect = (selectedLocation, selectedAddress) => {
+    setRequestLocation(selectedLocation);
+    setRequestAddress(selectedAddress);
+    setIsRequestMapOpen(false);
   };
 
   const handleProductChange = (index, field, value) => {
@@ -444,7 +459,51 @@ const DetailsDonations = () => {
     setRequestMealQuantities(newQuantities);
   };
 
+  const validateRequest = () => {
+    let tempErrors = {};
+    if (
+      !requestLocation ||
+      requestLocation.type !== 'Point' ||
+      !Array.isArray(requestLocation.coordinates) ||
+      requestLocation.coordinates.length !== 2 ||
+      typeof requestLocation.coordinates[0] !== 'number' ||
+      typeof requestLocation.coordinates[1] !== 'number'
+    ) {
+      tempErrors.location = "A valid location is required for the request";
+    }
+    if (!requestAddress || requestAddress.trim() === '') {
+      tempErrors.address = "A valid address is required for the request";
+    }
+    if (editedDonation.donationType === 'products') {
+      const hasValidQuantity = requestQuantities.some(qty => qty > 0);
+      if (!hasValidQuantity) {
+        tempErrors.products = "Please specify at least one product quantity to request";
+      }
+      requestQuantities.forEach((qty, index) => {
+        if (qty > donation.products[index].quantity) {
+          tempErrors[`product_${index}`] = `Quantity (${qty}) exceeds available amount (${donation.products[index].quantity}) for ${donation.products[index].product?.name || 'product'}`;
+        }
+      });
+    } else {
+      const totalRequestedMeals = requestMealQuantities.reduce((sum, qty) => sum + Number(qty), 0);
+      if (!totalRequestedMeals || totalRequestedMeals <= 0) {
+        tempErrors.meals = "Total number of meals must be greater than 0";
+      } else if (totalRequestedMeals > donation.numberOfMeals) {
+        tempErrors.meals = `Total requested meals (${totalRequestedMeals}) exceed available meals (${donation.numberOfMeals})`;
+      }
+      requestMealQuantities.forEach((qty, index) => {
+        if (qty > donation.meals[index].quantity) {
+          tempErrors[`meal_${index}`] = `Quantity (${qty}) exceeds available amount (${donation.meals[index].quantity}) for ${donation.meals[index].meal?.mealName || 'meal'}`;
+        }
+      });
+    }
+    setRequestErrors(tempErrors);
+    return Object.keys(tempErrors).length === 0;
+  };
+
   const handleSubmitRequest = async () => {
+    if (!validateRequest()) return;
+
     try {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token found');
@@ -468,11 +527,6 @@ const DetailsDonations = () => {
         ? requestMealQuantities.reduce((sum, qty) => sum + Number(qty), 0)
         : 0;
 
-      if (editedDonation.donationType === 'meals' && totalRequestedMeals > donation.numberOfMeals) {
-        showAlert('error', `Total requested meals (${totalRequestedMeals}) exceed available meals (${donation.numberOfMeals})`);
-        return;
-      }
-
       const requestData = {
         donationId: id,
         requestedProducts: requestedItems,
@@ -480,12 +534,16 @@ const DetailsDonations = () => {
         recipientId: user?._id || user?.id,
         description: editedDonation.description || '',
         numberOfMeals: totalRequestedMeals,
+        location: requestLocation, // Add GeoJSON location
+        address: requestAddress, // Add readable address
       };
 
       const response = await createRequestNeedForExistingDonation(id, requestData);
       setIsAddingRequest(false);
       setRequestQuantities(donation.products?.map(() => 0) || []);
       setRequestMealQuantities(donation.meals?.map(() => 0) || []);
+      setRequestLocation({ type: 'Point', coordinates: [0, 0] }); // Reset location
+      setRequestAddress(""); // Reset address
 
       const donorId = donation.donor?._id || donation.donor;
       const recipientName = user?.name || 'A recipient';
@@ -500,6 +558,8 @@ const DetailsDonations = () => {
   };
 
   const handleRequestAll = async () => {
+    if (!validateRequest()) return;
+
     try {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token found');
@@ -530,12 +590,16 @@ const DetailsDonations = () => {
         recipientId: user?._id || user?.id,
         description: editedDonation.description || '',
         numberOfMeals: totalRequestedMeals,
+        location: requestLocation,
+        address: requestAddress,
       };
 
       const response = await createRequestNeedForExistingDonation(id, requestData);
       setIsAddingRequest(false);
       setRequestQuantities(donation.products?.map(() => 0) || []);
       setRequestMealQuantities(donation.meals?.map(() => 0) || []);
+      setRequestLocation({ type: 'Point', coordinates: [0, 0] });
+      setRequestAddress("");
 
       const donorId = donation.donor?._id || donation.donor;
       const recipientName = user?.name || 'A recipient';
@@ -559,7 +623,7 @@ const DetailsDonations = () => {
     <>
       <Navbar />
       <div className="donation-cardlist">
-        {isMapOpen && <div className="donation-map-backdrop" onClick={() => setIsMapOpen(false)} />}
+        {(isMapOpen || isRequestMapOpen) && <div className="donation-map-backdrop" onClick={() => { setIsMapOpen(false); setIsRequestMapOpen(false); }} />}
         <div className="donation-card-content">
           <img src={logo} alt="Logo" className="addDonation-logo" style={{ marginLeft: "47%" }} />
 
@@ -796,6 +860,29 @@ const DetailsDonations = () => {
           {isAddingRequest && (
             <DonationForm>
               <h4>Specify the Request</h4>
+              <div>
+                <label>📍 Request Location</label>
+                <input
+                  type="text"
+                  value={requestAddress}
+                  onChange={(e) => setRequestAddress(e.target.value)}
+                  onClick={() => setIsRequestMapOpen(true)}
+                  placeholder="📍 Select Request Location"
+                  readOnly
+                />
+                {isRequestMapOpen && (
+                  <LocationPicker
+                    isOpen={isRequestMapOpen}
+                    onClose={() => setIsRequestMapOpen(false)}
+                    onLocationChange={setRequestLocation}
+                    onAddressChange={setRequestAddress}
+                    onSelect={handleRequestLocationSelect}
+                    initialAddress={requestAddress}
+                  />
+                )}
+                {requestErrors.location && <p className="error-message">{requestErrors.location}</p>}
+                {requestErrors.address && <p className="error-message">{requestErrors.address}</p>}
+              </div>
               {editedDonation.donationType === 'products' ? (
                 donation.products.map((item, index) => (
                   <div key={index}>
@@ -810,6 +897,7 @@ const DetailsDonations = () => {
                       onChange={(e) => handleRequestQuantityChange(index, e.target.value)}
                       placeholder="Quantity to request"
                     />
+                    {requestErrors[`product_${index}`] && <p className="error-message">{requestErrors[`product_${index}`]}</p>}
                   </div>
                 ))
               ) : (
@@ -826,6 +914,8 @@ const DetailsDonations = () => {
                       onChange={(e) => handleRequestMealQuantityChange(index, e.target.value)}
                       placeholder="Quantity to request"
                     />
+                    {requestErrors[`meal_${index}`] && <p className="error-message">{requestErrors[`meal_${index}`]}</p>}
+                    {requestErrors.meals && <p className="error-message">{requestErrors.meals}</p>}
                   </div>
                 ))
               )}

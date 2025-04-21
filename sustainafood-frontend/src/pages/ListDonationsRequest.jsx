@@ -662,7 +662,7 @@ const ListDonationsRequest = () => {
                 <DonationDetails>
                   <DonationDetail><strong>Transaction ID:</strong> {transaction.id}</DonationDetail>
                   <DonationDetail><strong>Donation Title:</strong> {donation.title || 'Untitled'}</DonationDetail>
-                  <DonationDetail><strong>Location:</strong> {donation.location || 'Not specified'}</DonationDetail>
+                  <DonationDetail><strong>Location:</strong> {donation.address || 'Not specified'}</DonationDetail>
                   <DonationDetail>
                     <strong>Expiration Date:</strong> {donation.expirationDate ? new Date(donation.expirationDate).toLocaleDateString() : 'Not set'}
                   </DonationDetail>

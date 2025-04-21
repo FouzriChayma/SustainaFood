@@ -696,7 +696,7 @@ const ListRequestsDonation = () => {
                 <TransactionDetails>
                   <TransactionDetail><strong>Transaction ID:</strong> {transaction.id}</TransactionDetail>
                   <TransactionDetail><strong>Request Title:</strong> {request.title || 'Untitled'}</TransactionDetail>
-                  <TransactionDetail><strong>Location:</strong> {request.location || 'Not specified'}</TransactionDetail>
+                  <TransactionDetail><strong>Location:</strong> {request.address || 'Not specified'}</TransactionDetail>
                   <TransactionDetail><strong>Description:</strong> {request.description || 'No description'}</TransactionDetail>
                   <TransactionDetail>
                     <strong>Status:</strong>

@@ -57,6 +57,7 @@ import ViewDonationTransaction from "./pages/backoffice/ViewDonationTransaction.
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import PersonalStatus from './pages/PersonalStatus';
 import MyDonationsRequest from "./pages/MyDonationsRequest.jsx";
+import MyRequestDonation from "./pages/MyRequestDonation.jsx";
 const App = () => {
   return (
     <AlertProvider>
@@ -129,6 +130,8 @@ const App = () => {
         <Route element={<PrivateRoute roles={["ong", "student"]} />}>
           <Route path="/myrequest" element={<MyRequest />} />
           <Route path="/ListDonationsRequest/:id" element={<ListDonationsRequest />} />
+          <Route path="/recipient/:recipientId/transactions" element={<MyRequestDonation />} />
+
         </Route>
 
         {/* Routes privées pour supermarket, restaurant */}

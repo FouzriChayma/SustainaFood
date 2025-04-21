@@ -235,25 +235,7 @@ async function deleteDonationTransaction(req, res) {
 }
 
 // ✅ Get transactions by recipient ID
-async function getTransactionsByRecipientId(req, res) {
-    try {
-        const { recipientId } = req.params;
-        const transactions = await DonationTransaction.find({ recipient: recipientId })
-            .populate('requestNeed')
-            .populate('donation')
-            .populate('allocatedProducts.product')
-            .populate('allocatedMeals.meal') // Populate allocatedMeals
-            .populate('donor');
 
-        if (!transactions.length) {
-            return res.status(404).json({ message: 'No transactions found for this recipient' });
-        }
-
-        res.status(200).json(transactions);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
-    }
-}
 
 // ✅ Accept a donation transaction
 async function acceptDonationTransaction(req, res) {
@@ -1353,6 +1335,42 @@ async function getDonationTransactionsByDonorId(req, res) {
         res.status(200).json(transactions);
     } catch (error) {
         console.error('Error fetching transactions by donor:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+}
+
+async function getTransactionsByRecipientId(req, res) {
+    try {
+        const { recipientId } = req.params;
+        const transactions = await DonationTransaction.find({ recipient: recipientId })
+            .populate({
+                path: 'requestNeed',
+                populate: [
+                    { path: 'recipient', select: 'name photo' },
+                    { path: 'requestedProducts.product', model: 'Product' },
+                    { path: 'requestedMeals.meal', model: 'Meals' },
+                ],
+            })
+            .populate({
+                path: 'donation',
+                populate: [
+                    { path: 'donor', select: 'name photo' },
+                    { path: 'meals.meal', model: 'Meals' },
+                    { path: 'products.product', model: 'Product' },
+                ],
+            })
+            .populate('allocatedProducts.product')
+            .populate('allocatedMeals.meal')
+            .populate('donor');
+
+
+        if (!transactions.length) {
+            return res.status(404).json({ message: 'No transactions found for this recipient' });
+        }
+
+        res.status(200).json(transactions);
+    } catch (error) {
+        console.error('Error fetching transactions by recipient:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 }

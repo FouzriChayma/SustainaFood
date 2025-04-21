@@ -1,3 +1,4 @@
+// src/components/Navbar.jsx
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaSignOutAlt, FaBell, FaSignInAlt, FaUserPlus } from "react-icons/fa";
@@ -129,8 +130,7 @@ const Navbar = () => {
                   {isRecipient && <Link to="/addDonation">Add Request</Link>}
                   {isDonner && <Link to="/DonationRecommendations">Donation Recommendations</Link>}
                   {isDonner && <Link to={`/donor/${user?._id || user?.id}/requests`}>My Donation Transactions</Link>}
-                  {isRecipient && <Link to={`/recipient/${user?._id || user?.id}/transactions`}>My Requests  Transactions</Link>}
-
+                  {isRecipient && <Link to={`/recipient/${user?._id || user?.id}/transactions`}>My Requests Transactions</Link>}
                 </div>
               )}
             </div>
@@ -142,6 +142,11 @@ const Navbar = () => {
               <span className="dropdown-toggle">Transporter</span>
               {dropdownOpen === "transporter" && (
                 <div className="dropdown-content">
+                  {isTransporter && (
+                    <Link to={`/transporter/${user?._id || user?.id}/dashboard`}>
+                      Transporter Dashboard
+                    </Link>
+                  )}
                   <Link to="#">Assigned Deliveries</Link>
                   {isTransporter && <Link to="#">Route Optimization</Link>}
                 </div>

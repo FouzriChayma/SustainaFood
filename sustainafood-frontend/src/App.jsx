@@ -75,8 +75,6 @@ const App = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/two-fa-verification" element={<TwoFAVerification />} />
         <Route path="/ListDonationsRequest/:id" element={<ListDonationsRequest />} />
-      
-
         {/* Routes privées pour les admins */}
         <Route element={<PrivateRoute roles={["admin"]} />}>
           <Route path="/dashboard" element={<Dashboard />} />

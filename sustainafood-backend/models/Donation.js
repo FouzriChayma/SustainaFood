@@ -63,7 +63,6 @@ const donationSchema = new Schema({
             function() { return this.category === 'prepared_meals'; },
             'Number of meals is required for prepared meals'
         ],
-        min: [1, 'Number of meals cannot be negative'],
         validate: {
             validator: Number.isInteger,
             message: 'Number of meals must be an integer'

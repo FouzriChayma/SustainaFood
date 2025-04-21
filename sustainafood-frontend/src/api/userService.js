@@ -120,3 +120,37 @@ export const changePassword = async (userId, currentPassword, newPassword) => {
 export const send2FACodeforsigninwithgoogle = async (email) => {
   return axios.post("http://localhost:3000/users/send2FACodeforsigninwithgoogle", { email });
 };
+export const updateTransporterLocation = async (transporterId, { location, address }) => {
+  try {
+    const response = await axios.put(
+      `http://localhost:3000/users/${transporterId}/location`,
+      { location, address }, // Send location as object (backend expects JSON)
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('updateTransporterLocation error:', error.response?.data || error.message);
+    throw error.response?.data || { message: 'Failed to update transporter location' };
+  }
+};
+export const updateTransporterAvailability = async (transporterId, isAvailable) => {
+  try {
+    const response = await axios.put(
+      `http://localhost:3000/users/update-availability/${transporterId}`,
+      { isAvailable },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    return response;
+  } catch (error) {
+    console.error('Error updating availability:', error);
+    throw error.response?.data || { message: 'Failed to update availability' };
+  }
+};

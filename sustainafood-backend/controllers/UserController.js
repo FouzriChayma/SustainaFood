@@ -4,7 +4,10 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const twilio = require('twilio');
+const mongoose = require("mongoose");
+
 const crypto = require("crypto"); // For generating random reset codes
+const { console } = require("inspector");
 require("dotenv").config(); // Load environment variables
 
 // Initialize Twilio client
@@ -896,5 +899,102 @@ const getTransporters = async (req, res) => {
       res.status(500).json({ message: 'Erreur serveur.', error: error.message });
     }
   };
-
-module.exports = {getTransporters,onUpdateDescription,send2FACode,send2FACodeforsigninwithgoogle,changePassword,updateUserWithEmail, createUser,addUser, getUsers, getUserById,updateUser, deleteUser, user_signin,getUserByEmailAndPassword , resetPassword ,validateResetCode,sendResetCode , toggleBlockUser , viewStudent , viewRestaurant , viewSupermarket, viewNGO , viewTransporter ,deactivateAccount  , validate2FACode , toggle2FA};
+  const updateTransporterLocation = async (req, res) => {
+    try {
+      const { transporterId } = req.params;
+      const { location, address } = req.body;
+  
+      // Validate transporterId
+      if (!mongoose.Types.ObjectId.isValid(transporterId)) {
+        return res.status(400).json({ message: 'ID du chauffeur invalide' });
+      }
+  
+      // Validate location (GeoJSON Point)
+      if (!location || location.type !== 'Point' || !Array.isArray(location.coordinates) || location.coordinates.length !== 2 || typeof location.coordinates[0] !== 'number' || typeof location.coordinates[1] !== 'number') {
+        return res.status(400).json({ message: 'Format de localisation invalide. Attendu: { type: "Point", coordinates: [longitude, latitude] }' });
+      }
+  
+      // Find transporter
+      const transporter = await User.findById(transporterId);
+      if (!transporter || transporter.role !== 'transporter') {
+        return res.status(404).json({ message: 'Chauffeur non trouvé' });
+      }
+  
+      // Update location and address
+      transporter.location = location;
+      if (address) {
+        transporter.address = address;
+      }
+  
+      // Save changes
+      await transporter.save();
+      console.log('Updated transporter:', transporter);
+  
+      res.status(200).json({
+        message: 'Localisation du chauffeur mise à jour avec succès',
+        transporter: {
+          _id: transporter._id,
+          name: transporter.name,
+          role: transporter.role,
+          location: transporter.location,
+          address: transporter.address,
+          isAvailable: transporter.isAvailable,
+        },
+      });
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la localisation:', error);
+      res.status(500).json({
+        message: 'Erreur serveur lors de la mise à jour de la localisation',
+        error: error.message,
+      });
+    }
+  };
+ // backend/controllers/userController.js
+ const updateTransporterAvailability = async (req, res) => {
+    try {
+      const { transporterId } = req.params;
+      const { isAvailable } = req.body;
+  
+      const user = await User.findById(transporterId);
+      if (!user || user.role !== 'transporter') {
+        return res.status(404).json({ message: 'Transporter not found' });
+      }
+  
+      user.isAvailable = isAvailable;
+      await user.save();
+  
+      res.status(200).json({ message: 'Availability updated', isAvailable });
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to update availability', error: error.message });
+    }
+  };
+module.exports = {getUsers,
+    updateTransporterAvailability,
+    generate2FACode,
+    getUserById,
+    deleteUser,
+    addUser,
+    updateUser,
+    onUpdateDescription,
+    getTransporters,
+    user_signin,
+    getUserByEmailAndPassword,
+    sendResetCode,
+    validateResetCode,
+    resetPassword,
+    toggleBlockUser,
+    viewStudent,
+    viewRestaurant,
+    viewSupermarket,
+    viewNGO,
+    viewTransporter,
+    updateUserWithEmail,
+    createUser,
+    deactivateAccount,
+    changePassword,
+    send2FACode,
+    validate2FACode,
+    toggle2FA,
+    send2FACodeforsigninwithgoogle,
+    updateTransporterLocation,
+};

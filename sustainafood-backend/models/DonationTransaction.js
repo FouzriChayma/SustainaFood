@@ -34,11 +34,11 @@ const donationTransactionSchema = new Schema({
     },
     allocatedProducts: [{
         product: { type: Schema.Types.ObjectId, ref: 'Product' },
-        quantity: { type: Number, required: true, min: 1 }
+        quantity: { type: Number }
     }],
     allocatedMeals: [{ // New field for allocated meals
         meal: { type: Schema.Types.ObjectId, ref: 'Meals' },
-        quantity: { type: Number, required: true, min: 1 }
+        quantity: { type: Number}
     }] ,
     status: { 
         type: String, 

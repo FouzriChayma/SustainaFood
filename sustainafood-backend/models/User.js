@@ -1,9 +1,8 @@
 // models/User.js
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const Counter = require('./Counter'); // Import the Counter model
+const Counter = require('./Counter');
 
-// Define possible values for sexe, ONG type, and vehicle type
 const Sexe = Object.freeze({
   MALE: 'male',
   FEMALE: 'female',
@@ -34,8 +33,6 @@ const VehiculeType = Object.freeze({
   SCOOTER: 'scooter'
 });
 
-
-
 const Role = Object.freeze({
   ADMIN: 'admin',
   ONG: 'ong',
@@ -45,15 +42,14 @@ const Role = Object.freeze({
   TRANSPORTER: 'transporter'
 });
 
-// User schema definition
 const userSchema = new Schema({
   licenseNumber: { type: String, match: [/^\d{8}$/, 'Invalid license number'] },
-  description:{ type: String},
+  description: { type: String },
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String },
   role: { type: String, enum: Object.values(Role) },
-  id: { type: Number }, // Auto-incremented custom ID
+  id: { type: Number },
   phone: { type: Number },
   address: { type: String },
   photo: { type: String },
@@ -62,19 +58,35 @@ const userSchema = new Schema({
   vehiculeType: { type: String, enum: Object.values(VehiculeType), default: null },
   image_carte_etudiant: { type: String },
   num_cin: { type: String },
-  id_fiscale: { type: String }, // Renamed for consistency
+  id_fiscale: { type: String },
   type: { type: String, enum: Object.values(OngType) },
-  taxReference: { type: String }, // Renamed for clarity
+  taxReference: { type: String },
   isBlocked: { type: Boolean, default: false },
   resetCode: { type: String },
   isActive: { type: Boolean, default: true },
   resetCodeExpires: { type: Date },
   twoFACode: { type: String },
   twoFACodeExpires: { type: Date },
-  is2FAEnabled: { type: Boolean, default: false }
+  is2FAEnabled: { type: Boolean, default: false },
+  // Ajouts pour les chauffeurs
+
+  isAvailable: { type: Boolean, default: true }, // Disponibilité du chauffeur
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point',
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      default: [0, 0],
+    },
+  },
 });
 
-// Pre-save hook to auto-increment `id` before saving a new user
+// Index géospatial pour les recherches de localisation
+userSchema.index({ currentLocation: '2dsphere' });
+
 userSchema.pre('save', async function (next) {
   if (this.isNew) {
     try {
@@ -90,7 +102,6 @@ userSchema.pre('save', async function (next) {
   }
   next();
 });
-
-// Create and export the User model
+userSchema.index({ location: '2dsphere' }); // Enable geospatial queries
 const User = mongoose.model('User', userSchema);
 module.exports = User;

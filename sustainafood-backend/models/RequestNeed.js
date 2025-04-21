@@ -97,7 +97,6 @@ const requestNeedSchema = new Schema({
             function() { return this.category === 'prepared_meals'; },
             'required for prepared meals'
         ],
-        min: [0, 'Number of meals cannot be negative'],
         validate: {
             validator: function(value) {
                 // Skip validation if value is null/undefined and not required

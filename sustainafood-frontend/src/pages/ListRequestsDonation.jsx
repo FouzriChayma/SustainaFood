@@ -9,7 +9,7 @@ import styled, { createGlobalStyle } from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
 import { useAlert } from '../contexts/AlertContext';
 import { useParams, useNavigate } from 'react-router-dom';
-
+ 
 // Global Styles
 const GlobalStyle = createGlobalStyle`
   body {

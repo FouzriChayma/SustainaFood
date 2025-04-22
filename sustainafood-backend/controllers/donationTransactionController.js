@@ -728,9 +728,11 @@ async function createAndAcceptDonationTransaction(req, res) {
       const delivery = new Delivery({
         donationTransaction: transaction._id,
         transporter: selectedTransporter ? selectedTransporter._id : null,
+        pickupCoordinates: donation.location,
+        deliveryCoordinates: requestNeed.location,
         pickupAddress: donation.address,
         deliveryAddress: requestNeed.address,
-        status: 'pending',
+        status: null,
       });
       await delivery.save();
   
@@ -1198,7 +1200,9 @@ async function createAndAcceptDonationTransaction(req, res) {
         transporter: selectedTransporter ? selectedTransporter._id : null,
         pickupAddress: donation.address,
         deliveryAddress: requestNeed.address,
-        status: 'pending',
+        pickupCoordinates: donation.location,
+        deliveryCoordinates: requestNeed.location,
+        status: null,
       });
       await delivery.save();
   

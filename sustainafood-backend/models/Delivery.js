@@ -14,11 +14,31 @@ const deliverySchema = new mongoose.Schema({
   },
   pickupAddress: { type: String, required: true }, // Adresse lisible du donateur
   deliveryAddress: { type: String, required: true }, // Adresse lisible du bénéficiaire
-  status: {
-    type: String,
-    enum: ['pending', 'picked_up', 'in_progress', 'delivered', 'failed'], // Changed rejected to failed
-    default: 'pending',
+  pickupCoordinates: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point',
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      default: [0, 0],
+    },
   },
+  deliveryCoordinates: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point',
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      default: [0, 0],
+    },
+  },
+  status: { type: String, enum: ['pending', 'picked_up', 'in_progress', 'delivered', 'failed', null], default: null },
+ 
+  
   createdAt: {
     type: Date,
     default: Date.now,

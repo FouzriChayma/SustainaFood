@@ -2,15 +2,17 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getDeliveriesByTransporter, updateDeliveryStatus } from '../api/deliveryService';
-import { getUserById } from '../api/userService';
-import { getRequestById } from '../api/requestNeedsService'; // Ensure this is implemented
+import { getUserById, updateTransporterLocation } from '../api/userService';
+import { getRequestById } from '../api/requestNeedsService';
+import DeleveryMap from '../components/DeleveryMap';
 import imgmouna from '../assets/images/imgmouna.png';
 import styled, { createGlobalStyle } from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
 import { useAlert } from '../contexts/AlertContext';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
-// Global Styles and Styled Components (unchanged from your code)
+// Global Styles and Styled Components (unchanged, with additions)
 const GlobalStyle = createGlobalStyle`
   body {
     margin: 0;
@@ -196,6 +198,15 @@ const ActionButton = styled.button`
     }
   }
 
+  &.map-btn {
+    background-color: #28a745;
+    color: white;
+
+    &:hover {
+      background-color: #218838;
+    }
+  }
+
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -306,6 +317,11 @@ const StatusBadge = styled.span`
   font-weight: bold;
   margin-left: 5px;
   
+  &.no-status {
+    background-color: #e9ecef;
+    color: #495057;
+  }
+  
   &.pending {
     background-color: #fff3cd;
     color: #856404;
@@ -347,6 +363,15 @@ const Spinner = styled.div`
   }
 `;
 
+const RouteInfo = styled.div`
+  margin-top: 10px;
+  padding: 10px;
+  background: #e9ecef;
+  border-radius: 5px;
+  font-size: 14px;
+  color: #333;
+`;
+
 const AssignedDeliveries = () => {
   const { showAlert } = useAlert();
   const { transporterId } = useParams();
@@ -361,6 +386,33 @@ const AssignedDeliveries = () => {
   const [sortOption, setSortOption] = useState('date');
   const [searchQuery, setSearchQuery] = useState('');
   const [processing, setProcessing] = useState({});
+  const [isMapOpen, setIsMapOpen] = useState(null); // Track which delivery's map is open
+  const [routeInfo, setRouteInfo] = useState({});
+  const [transporterLocation, setTransporterLocation] = useState({ type: 'Point', coordinates: [0, 0] });
+
+  // Fetch transporter's initial location
+  useEffect(() => {
+    const fetchTransporterLocation = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (user?.location) {
+          setTransporterLocation(user.location);
+        } else if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            ({ coords }) => {
+              const newLocation = { type: 'Point', coordinates: [coords.longitude, coords.latitude] };
+              setTransporterLocation(newLocation);
+              updateTransporterLocation(transporterId, { location: newLocation, address: 'Current Location' });
+            },
+            () => console.error('Failed to get initial geolocation')
+          );
+        }
+      } catch (err) {
+        console.error('Error fetching transporter location:', err);
+      }
+    };
+    fetchTransporterLocation();
+  }, [transporterId]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -375,19 +427,37 @@ const AssignedDeliveries = () => {
         setLoading(true);
         const response = await getDeliveriesByTransporter(transporterId, filterOption !== 'all' ? filterOption : '');
         const deliveriesArray = Array.isArray(response.data.data) ? response.data.data : [];
-        console.log('Deliveries response:', JSON.stringify(deliveriesArray, null, 2));
+
+        // Geocode addresses if coordinates are missing
+        const enrichedDeliveries = await Promise.all(
+          deliveriesArray.map(async delivery => {
+            let pickupCoordinates = delivery.pickupCoordinates;
+            let deliveryCoordinates = delivery.deliveryCoordinates;
+
+            if (!pickupCoordinates) {
+              pickupCoordinates = await geocodeAddress(delivery.pickupAddress);
+            }
+            if (!deliveryCoordinates) {
+              deliveryCoordinates = await geocodeAddress(delivery.deliveryAddress);
+            }
+
+            return {
+              ...delivery,
+              pickupCoordinates: pickupCoordinates || { type: 'Point', coordinates: [0, 0] },
+              deliveryCoordinates: deliveryCoordinates || { type: 'Point', coordinates: [0, 0] },
+            };
+          })
+        );
 
         // Collect unique donor and requestNeed IDs
         const userIds = new Set();
         const requestNeedIds = new Set();
-        deliveriesArray.forEach(delivery => {
+        enrichedDeliveries.forEach(delivery => {
           const donation = delivery.donationTransaction?.donation || {};
           const requestNeed = delivery.donationTransaction?.requestNeed;
           if (donation.donor) userIds.add(donation.donor);
           if (requestNeed) requestNeedIds.add(requestNeed);
         });
-        console.log('Collected userIds:', Array.from(userIds));
-        console.log('Collected requestNeedIds:', Array.from(requestNeedIds));
 
         // Fetch requestNeed details to get recipient IDs
         const requestNeedPromises = Array.from(requestNeedIds).map(id =>
@@ -397,21 +467,17 @@ const AssignedDeliveries = () => {
           })
         );
         const requestNeeds = await Promise.all(requestNeedPromises);
-        console.log('Fetched requestNeeds:', JSON.stringify(requestNeeds, null, 2));
         const requestNeedMap = requestNeeds.reduce((map, rn) => {
-          // Extract data from response
           const requestNeedData = rn.data ? rn.data : rn;
           map[requestNeedData._id] = requestNeedData;
           return map;
         }, {});
-        console.log('RequestNeed map:', JSON.stringify(requestNeedMap, null, 2));
 
         // Collect recipient IDs
         requestNeeds.forEach(rn => {
           const recipient = rn.data ? rn.data.recipient : rn.recipient;
           if (recipient && recipient._id) userIds.add(recipient._id);
         });
-        console.log('Updated userIds with recipients:', Array.from(userIds));
 
         // Fetch user details
         const userPromises = Array.from(userIds).map(id =>
@@ -420,19 +486,15 @@ const AssignedDeliveries = () => {
             return { _id: id, name: 'Unknown', phone: 'Not provided', photo: null };
           })
         );
-        console.log('User Promises created for IDs:', Array.from(userIds));
         const users = await Promise.all(userPromises);
-        console.log('Fetched users:', JSON.stringify(users, null, 2));
         const userMap = users.reduce((map, user) => {
-          // Extract data from response
           const userData = user.data ? user.data : user;
           map[userData._id] = userData;
           return map;
         }, {});
-        console.log('User map:', JSON.stringify(userMap, null, 2));
 
         // Enrich deliveries with user data
-        const enrichedDeliveries = deliveriesArray.map(delivery => {
+        const finalDeliveries = enrichedDeliveries.map(delivery => {
           const donation = delivery.donationTransaction?.donation || {};
           const requestNeedId = delivery.donationTransaction?.requestNeed;
           const requestNeed = requestNeedMap[requestNeedId] || { recipient: null };
@@ -451,10 +513,9 @@ const AssignedDeliveries = () => {
             },
           };
         });
-        console.log('Enriched deliveries:', JSON.stringify(enrichedDeliveries, null, 2));
 
-        setDeliveries(enrichedDeliveries);
-        setFilteredDeliveries(enrichedDeliveries);
+        setDeliveries(finalDeliveries);
+        setFilteredDeliveries(finalDeliveries);
       } catch (err) {
         console.error('Fetch error:', err);
         let errorMessage = 'Failed to fetch deliveries';
@@ -475,6 +536,122 @@ const AssignedDeliveries = () => {
 
     fetchData();
   }, [transporterId, navigate, showAlert, filterOption]);
+
+  // Geocode address using Nominatim
+  const geocodeAddress = async (address) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
+      const data = await res.json();
+      if (data.length > 0) {
+        return { type: 'Point', coordinates: [parseFloat(data[0].lon), parseFloat(data[0].lat)] };
+      }
+      return null;
+    } catch (err) {
+      console.error(`Failed to geocode address ${address}:`, err);
+      return null;
+    }
+  };
+
+  // Calculate route using OSRM
+  const calculateRoute = async (deliveryId, pickupCoords, deliveryCoords) => {
+    try {
+      // Skip if coordinates are invalid
+      if (
+        transporterLocation.coordinates[0] === 0 ||
+        pickupCoords.coordinates[0] === 0 ||
+        deliveryCoords.coordinates[0] === 0
+      ) {
+        return { error: 'Invalid coordinates' };
+      }
+
+      // Route from transporter to pickup
+      const toPickupUrl = `http://router.project-osrm.org/route/v1/driving/${transporterLocation.coordinates[0]},${transporterLocation.coordinates[1]};${pickupCoords.coordinates[0]},${pickupCoords.coordinates[1]}?overview=full&geometries=geojson`;
+      const toPickupRes = await axios.get(toPickupUrl);
+      const toPickupRoute = toPickupRes.data.routes[0];
+      const toPickupDuration = toPickupRoute.duration / 60; // Convert seconds to minutes
+      const toPickupDistance = toPickupRoute.distance / 1000; // Convert meters to kilometers
+
+      // Route from pickup to delivery
+      const toDeliveryUrl = `http://router.project-osrm.org/route/v1/driving/${pickupCoords.coordinates[0]},${pickupCoords.coordinates[1]};${deliveryCoords.coordinates[0]},${deliveryCoords.coordinates[1]}?overview=full&geometries=geojson`;
+      const toDeliveryRes = await axios.get(toDeliveryUrl);
+      const toDeliveryRoute = toDeliveryRes.data.routes[0];
+      const toDeliveryDuration = toDeliveryRoute.duration / 60; // Convert seconds to minutes
+      const toDeliveryDistance = toDeliveryRoute.distance / 1000; // Convert meters to kilometers
+
+      setRouteInfo(prev => ({
+        ...prev,
+        [deliveryId]: {
+          toPickup: { duration: toPickupDuration, distance: toPickupDistance, geometry: toPickupRoute.geometry },
+          toDelivery: { duration: toDeliveryDuration, distance: toDeliveryDistance, geometry: toDeliveryRoute.geometry },
+        },
+      }));
+    } catch (err) {
+      console.error(`Failed to calculate route for delivery ${deliveryId}:`, err);
+      setRouteInfo(prev => ({
+        ...prev,
+        [deliveryId]: { error: 'Failed to calculate route' },
+      }));
+    }
+  };
+
+  // Handle status update with location tracking
+  const handleUpdateStatus = async (deliveryId, newStatus) => {
+    if (!window.confirm(`Are you sure you want to update the status to ${newStatus}?`)) return;
+
+    try {
+      setProcessing(prev => ({ ...prev, [deliveryId]: true }));
+
+      // Update location if moving from pending
+      if (newStatus !== 'pending' && deliveries.find(d => d._id === deliveryId).status === 'pending') {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async ({ coords }) => {
+              const newLocation = { type: 'Point', coordinates: [coords.longitude, coords.latitude] };
+              await updateTransporterLocation(transporterId, {
+                location: newLocation,
+                address: await reverseGeocode(coords.longitude, coords.latitude),
+              });
+              setTransporterLocation(newLocation);
+            },
+            () => showAlert('error', 'Failed to get current location')
+          );
+        }
+      }
+
+      await updateDeliveryStatus(deliveryId, { status: newStatus });
+      setDeliveries(prev =>
+        prev.map(d => (d._id === deliveryId ? { ...d, status: newStatus } : d))
+      );
+      showAlert('success', 'Delivery status updated successfully!');
+    } catch (error) {
+      console.error('Error updating status:', error);
+      showAlert('error', error.message || 'Failed to update delivery status');
+    } finally {
+      setProcessing(prev => ({ ...prev, [deliveryId]: false }));
+    }
+  };
+
+  // Reverse geocode for address
+  const reverseGeocode = async (lng, lat) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lon=${lng}&lat=${lat}`);
+      const data = await res.json();
+      return data.display_name || 'Unknown Location';
+    } catch {
+      return 'Unknown Location';
+    }
+  };
+
+  // Handle map open/close
+  const handleOpenMap = (delivery) => {
+    setIsMapOpen(delivery._id);
+    calculateRoute(delivery._id, delivery.pickupCoordinates, delivery.deliveryCoordinates);
+  };
+
+  // Handle location select (not used for route display)
+  const handleLocationSelect = (deliveryId, selectedLocation, selectedAddress) => {
+    setIsMapOpen(null);
+  };
 
   useEffect(() => {
     if (!deliveries.length) return;
@@ -503,13 +680,13 @@ const AssignedDeliveries = () => {
       const donationA = a.donationTransaction?.donation || {};
       const donationB = b.donationTransaction?.donation || {};
       const recipientA = a.donationTransaction?.requestNeed?.recipient || {};
-      const recipientB = b.donationTransaction?.requestNeed?.recipient || {};
+      const recipientB = a.donationTransaction?.requestNeed?.recipient || {};
       if (sortOption === 'title') {
         return (donationA.title || '').localeCompare(donationB.title || '');
       } else if (sortOption === 'recipient') {
         return (recipientA.name || '').localeCompare(recipientB.name || '');
       } else if (sortOption === 'status') {
-        return (a.status || '').localeCompare(b.status || '');
+        return (a.status || 'no-status').localeCompare(b.status || 'no-status');
       } else {
         return new Date(a.createdAt) - new Date(b.createdAt);
       }
@@ -525,24 +702,6 @@ const AssignedDeliveries = () => {
   const totalPages = Math.ceil(filteredDeliveries.length / itemsPerPage);
 
   const paginate = pageNumber => setCurrentPage(pageNumber);
-
-  const handleUpdateStatus = async (deliveryId, newStatus) => {
-    if (!window.confirm(`Are you sure you want to update the status to ${newStatus}?`)) return;
-
-    try {
-      setProcessing(prev => ({ ...prev, [deliveryId]: true }));
-      await updateDeliveryStatus(deliveryId, { status: newStatus });
-      setDeliveries(prev =>
-        prev.map(d => (d._id === deliveryId ? { ...d, status: newStatus } : d))
-      );
-      showAlert('success', 'Delivery status updated successfully!');
-    } catch (error) {
-      console.error('Error updating status:', error);
-      showAlert('error', error.message || 'Failed to update delivery status');
-    } finally {
-      setProcessing(prev => ({ ...prev, [deliveryId]: false }));
-    }
-  };
 
   if (loading) return <LoadingMessage>Loading...</LoadingMessage>;
 
@@ -587,6 +746,7 @@ const AssignedDeliveries = () => {
             aria-label="Filter by status"
           >
             <option value="all">🟢 All Deliveries</option>
+            <option value="no-status">⚪ No Status</option>
             <option value="pending">🟠 Pending</option>
             <option value="picked_up">🔄 Picked Up</option>
             <option value="in_progress">🚚 In Progress</option>
@@ -649,8 +809,8 @@ const AssignedDeliveries = () => {
                   <DeliveryDetail><strong>Recipient Phone:</strong> {recipient.phone || 'Not provided'}</DeliveryDetail>
                   <DeliveryDetail>
                     <strong>Status:</strong>
-                    <StatusBadge className={delivery.status || 'pending'}>
-                      {delivery.status || 'pending'}
+                    <StatusBadge className={delivery.status || 'no-status'}>
+                      {delivery.status || 'No Status'}
                     </StatusBadge>
                   </DeliveryDetail>
                 </DeliveryDetails>
@@ -666,35 +826,71 @@ const AssignedDeliveries = () => {
                     </Item>
                   </ItemList>
                 </ItemSection>
-                {delivery.status !== 'delivered' && delivery.status !== 'failed' && (
-                  <ButtonContainer>
-                    <Select
-                      onChange={e => handleUpdateStatus(delivery._id, e.target.value)}
-                      value={delivery.status}
-                      disabled={processing[delivery._id]}
-                      aria-label="Update delivery status"
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="picked_up">Picked Up</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="delivered">Delivered</option>
-                      <option value="failed">Failed</option>
-                    </Select>
-                    <ActionButton
-                      className="update-btn"
-                      onClick={() => handleUpdateStatus(delivery._id, delivery.status)}
-                      disabled={processing[delivery._id]}
-                      aria-label="Update status"
-                    >
-                      {processing[delivery._id] ? (
-                        <>
-                          <Spinner size="sm" /> Updating...
-                        </>
-                      ) : (
-                        'Update Status'
-                      )}
-                    </ActionButton>
-                  </ButtonContainer>
+                {routeInfo[delivery._id] && (
+                  <RouteInfo>
+                    {routeInfo[delivery._id].error ? (
+                      <p>Error: {routeInfo[delivery._id].error}</p>
+                    ) : (
+                      <>
+                        <p><strong>To Pickup:</strong> {routeInfo[delivery._id].toPickup.distance.toFixed(2)} km, {routeInfo[delivery._id].toPickup.duration.toFixed(2)} mins</p>
+                        <p><strong>To Delivery:</strong> {routeInfo[delivery._id].toDelivery.distance.toFixed(2)} km, {routeInfo[delivery._id].toDelivery.duration.toFixed(2)} mins</p>
+                      </>
+                    )}
+                  </RouteInfo>
+                )}
+                <ButtonContainer>
+                  {delivery.status !== 'delivered' && delivery.status !== 'failed' && (
+                    <>
+                      <Select
+                        onChange={e => handleUpdateStatus(delivery._id, e.target.value)}
+                        value={delivery.status || 'no-status'}
+                        disabled={processing[delivery._id]}
+                        aria-label="Update delivery status"
+                      >
+                        <option value="no-status">No Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="picked_up">Picked Up</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="failed">Failed</option>
+                      </Select>
+                      <ActionButton
+                        className="update-btn"
+                        onClick={() => handleUpdateStatus(delivery._id, delivery.status || 'no-status')}
+                        disabled={processing[delivery._id]}
+                        aria-label="Update status"
+                      >
+                        {processing[delivery._id] ? (
+                          <>
+                            <Spinner size="sm" /> Updating...
+                          </>
+                        ) : (
+                          'Update Status'
+                        )}
+                      </ActionButton>
+                    </>
+                  )}
+                  <ActionButton
+                    className="map-btn"
+                    onClick={() => handleOpenMap(delivery)}
+                    aria-label="View map"
+                  >
+                    Get Map
+                  </ActionButton>
+                </ButtonContainer>
+                {isMapOpen === delivery._id && (
+                  <DeleveryMap
+                    isOpen={isMapOpen === delivery._id}
+                    onClose={() => setIsMapOpen(null)}
+                    onLocationChange={() => {}} // Not used for route display
+                    onAddressChange={() => {}} // Not used for route display
+                    onSelect={(loc, addr) => handleLocationSelect(delivery._id, loc, addr)}
+                    initialAddress={delivery.pickupAddress}
+                    routeInfo={routeInfo[delivery._id]}
+                    pickupCoordinates={delivery.pickupCoordinates}
+                    deliveryCoordinates={delivery.deliveryCoordinates}
+                    transporterCoordinates={transporterLocation}
+                  />
                 )}
               </DeliveryCard>
             );

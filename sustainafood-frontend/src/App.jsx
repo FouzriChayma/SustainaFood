@@ -58,6 +58,7 @@ import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import PersonalStatus from './pages/PersonalStatus';
 import MyDonationsRequest from "./pages/MyDonationsRequest.jsx";
 import MyRequestDonation from "./pages/MyRequestDonation.jsx";
+import AssignedDeliveries from "./pages/AssignedDeliveries.jsx";
 const App = () => {
   return (
     <AlertProvider>
@@ -75,6 +76,7 @@ const App = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/two-fa-verification" element={<TwoFAVerification />} />
         <Route path="/ListDonationsRequest/:id" element={<ListDonationsRequest />} />
+        <Route path="/deliveries/:transporterId" element={<AssignedDeliveries />} />
         {/* Routes privées pour les admins */}
         <Route element={<PrivateRoute roles={["admin"]} />}>
           <Route path="/dashboard" element={<Dashboard />} />

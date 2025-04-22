@@ -16,7 +16,7 @@ const deliverySchema = new mongoose.Schema({
   deliveryAddress: { type: String, required: true }, // Adresse lisible du bénéficiaire
   status: {
     type: String,
-    enum: ['pending', 'picked_up', 'in_progress', 'delivered', 'rejected'],
+    enum: ['pending', 'picked_up', 'in_progress', 'delivered', 'failed'], // Changed rejected to failed
     default: 'pending',
   },
   createdAt: {

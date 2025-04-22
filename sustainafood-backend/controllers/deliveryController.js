@@ -339,3 +339,54 @@ exports.getPendingDeliveries = async (req, res) => {
   }
 };
 
+exports.getDeliveriesByTransporter = async (req, res) => {
+  try {
+    const { transporterId } = req.params;
+    const { status } = req.query;
+
+    // Validate transporter
+    const transporter = await User.findById(transporterId).select('role');
+    if (!transporter || transporter.role !== 'transporter') {
+      return res.status(400).json({ message: 'Invalid transporter' });
+    }
+
+    // Build query
+    const query = { transporter: transporterId };
+    if (status && VALID_STATUSES.includes(status)) {
+      query.status = status;
+    }
+
+    // Fetch deliveries
+    const deliveries = await Delivery.find(query)
+      .populate({
+        path: 'donationTransaction',
+        select: 'donation requestNeed status',
+        populate: [
+          {
+            path: 'donation',
+            select: 'title donor category location',
+            populate: { path: 'donor', select: 'name email' },
+          },
+          {
+            path: 'requestNeed',
+            select: 'recipient',
+            populate: { path: 'recipient', select: 'name email' },
+          },
+        ],
+      })
+      .sort({ createdAt: -1 }); // Sort by most recent first
+
+    // Filter out invalid deliveries and log warnings
+    const validDeliveries = deliveries.filter(d => d.donationTransaction);
+    if (validDeliveries.length < deliveries.length) {
+      console.warn(
+        `Found ${deliveries.length - validDeliveries.length} deliveries with missing donationTransaction for transporter ${transporterId}`
+      );
+    }
+
+    // Return response
+    res.status(200).json({ data: validDeliveries || [] });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des livraisons', error: error.message });
+  }
+};

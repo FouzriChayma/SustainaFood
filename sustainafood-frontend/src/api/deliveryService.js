@@ -96,3 +96,19 @@ export const getPendingDeliveries = async () => {
     throw error.response?.data || { message: 'Failed to fetch pending deliveries' };
   }
 };
+
+
+export const getDeliveriesByTransporter = async (transporterId, status = '') => {
+  try {
+    const url = status
+      ? `${API_URL}/transporter/${transporterId}?status=${status}`
+      : `${API_URL}/transporter/${transporterId}`;
+    const response = await axios.get(url, {
+      headers: {
+      },
+    });
+    return response;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch deliveries by transporter' };
+  }
+};

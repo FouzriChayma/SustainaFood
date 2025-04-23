@@ -2,6 +2,41 @@ import React, { useState, useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import '../assets/styles/LocationPicker.css';
+import styled from 'styled-components';
+
+const RouteInfoPanel = styled.div`
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+  color: #333;
+  z-index: 1000;
+  max-width: 300px;
+`;
+
+const RouteLabel = styled.p`
+  margin: 5px 0;
+  display: flex;
+  align-items: center;
+`;
+
+const RouteColor = styled.span`
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  margin-right: 8px;
+`;
+
+const ErrorMessage = styled.p`
+  color: #d32f2f;
+  font-weight: bold;
+  margin: 5px 0;
+`;
 
 const DeleveryMap = ({
   isOpen,
@@ -10,16 +45,34 @@ const DeleveryMap = ({
   onAddressChange,
   onSelect,
   initialAddress,
-  routeInfo, // Added for route display
-  pickupCoordinates, // Added for pickup marker
-  deliveryCoordinates, // Added for delivery marker
-  transporterCoordinates, // Added for transporter marker
+  routeInfo,
+  pickupCoordinates,
+  deliveryCoordinates,
+  transporterCoordinates,
+  donorName,
+  recipientName,
+  transporterName,
 }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const marker = useRef(null);
-  const [location, setLocation] = useState({ type: 'Point', coordinates: [10.1658, 36.8188] });
+  const [location, setLocation] = useState({ type: 'Point', coordinates: [10.208, 36.860] });
   const [address, setAddress] = useState(initialAddress || '');
+
+  // Format duration from seconds to a readable string (e.g., "1h 23m" or "45m")
+  const formatDuration = (seconds) => {
+    if (!seconds || isNaN(seconds) || seconds < 0) {
+      console.warn('Invalid duration:', seconds);
+      return 'Unknown';
+    }
+    console.log('Raw duration (seconds):', seconds); // Debug log
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    if (minutes > 0) return `${minutes} min`;
+    return `${secs} sec`;
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -49,31 +102,38 @@ const DeleveryMap = ({
     map.current.addControl(new maplibregl.NavigationControl());
 
     map.current.on('load', () => {
+      // Log coordinates for debugging
+      console.log('Map loaded with coordinates:', {
+        transporter: transporterCoordinates?.coordinates,
+        pickup: pickupCoordinates?.coordinates,
+        delivery: deliveryCoordinates?.coordinates,
+      });
+
       // Route display mode (used in AssignedDeliveries)
       if (routeInfo && pickupCoordinates && deliveryCoordinates && transporterCoordinates) {
-        // Add markers
+        // Add markers with names
         if (transporterCoordinates.coordinates[0] !== 0) {
           new maplibregl.Marker({ color: '#0000FF' })
             .setLngLat(transporterCoordinates.coordinates)
-            .setPopup(new maplibregl.Popup().setText('Transporter Location'))
+            .setPopup(new maplibregl.Popup().setText(`Transporter: ${transporterName || 'Unknown Transporter'}`))
             .addTo(map.current);
         }
 
         if (pickupCoordinates.coordinates[0] !== 0) {
           new maplibregl.Marker({ color: '#FF0000' })
             .setLngLat(pickupCoordinates.coordinates)
-            .setPopup(new maplibregl.Popup().setText('Pickup Location'))
+            .setPopup(new maplibregl.Popup().setText(`Donor: ${donorName || 'Unknown Donor'}`))
             .addTo(map.current);
         }
 
         if (deliveryCoordinates.coordinates[0] !== 0) {
           new maplibregl.Marker({ color: '#00FF00' })
             .setLngLat(deliveryCoordinates.coordinates)
-            .setPopup(new maplibregl.Popup().setText('Delivery Location'))
+            .setPopup(new maplibregl.Popup().setText(`Recipient: ${recipientName || 'Unknown Recipient'}`))
             .addTo(map.current);
         }
 
-        // Add routes if no error
+        // Add routes with labels
         if (!routeInfo.error) {
           map.current.addSource('to-pickup-route', {
             type: 'geojson',
@@ -156,7 +216,7 @@ const DeleveryMap = ({
         if (!address && navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             ({ coords }) => updateLocation(coords.longitude, coords.latitude, true),
-            () => alert('Geolocation failed. Defaulting to Tunis.')
+            () => alert('Geolocation failed. Defaulting to Soukra, Tunis.')
           );
         }
       }
@@ -167,7 +227,7 @@ const DeleveryMap = ({
         map.current.remove();
       }
     };
-  }, [isOpen, routeInfo, pickupCoordinates, deliveryCoordinates, transporterCoordinates]);
+  }, [isOpen, routeInfo, pickupCoordinates, deliveryCoordinates, transporterCoordinates, donorName, recipientName, transporterName]);
 
   const updateLocation = async (lng, lat, move = false) => {
     const newLoc = { type: 'Point', coordinates: [lng, lat] };
@@ -183,7 +243,11 @@ const DeleveryMap = ({
 
   const geocodeAddress = async (query) => {
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`, {
+        headers: {
+          'User-Agent': 'SustainaFood/1.0 (contact@example.com)',
+        },
+      });
       const data = await res.json();
       if (data.length > 0) {
         const { lat, lon } = data[0];
@@ -202,7 +266,11 @@ const DeleveryMap = ({
 
   const reverseGeocode = async (lng, lat) => {
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lon=${lng}&lat=${lat}`);
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lon=${lng}&lat=${lat}`, {
+        headers: {
+          'User-Agent': 'SustainaFood/1.0 (contact@example.com)',
+        },
+      });
       const data = await res.json();
       return data.display_name || 'Lieu inconnu';
     } catch {
@@ -212,7 +280,26 @@ const DeleveryMap = ({
 
   return isOpen ? (
     <div className="location-picker-localisation">
-      {/* Hide address search in route display mode */}
+      {/* Route info panel for route display mode */}
+      {routeInfo && (
+        <RouteInfoPanel>
+          {routeInfo.error ? (
+            <ErrorMessage>Échec du calcul des trajets. Vérifiez les coordonnées.</ErrorMessage>
+          ) : (
+            <>
+              <RouteLabel>
+                <RouteColor style={{ backgroundColor: '#0000FF' }} />
+                Trajet 1: Transporteur vers Donateur ({formatDuration(routeInfo.toPickup?.duration)})
+              </RouteLabel>
+              <RouteLabel>
+                <RouteColor style={{ backgroundColor: '#00FF00' }} />
+                Trajet 2: Donateur vers Bénéficiaire ({formatDuration(routeInfo.toDelivery?.duration)})
+              </RouteLabel>
+            </>
+          )}
+        </RouteInfoPanel>
+      )}
+      {/* Address search in location picking mode */}
       {!routeInfo && (
         <div className="address-search-localisation">
           <input

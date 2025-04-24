@@ -39,7 +39,8 @@ const Role = Object.freeze({
   RESTAURANT: 'restaurant',
   SUPERMARKET: 'supermarket',
   STUDENT: 'student',
-  TRANSPORTER: 'transporter'
+  TRANSPORTER: 'transporter',
+  PERSONALDONOR: 'personaldonor'
 });
 
 const userSchema = new Schema({

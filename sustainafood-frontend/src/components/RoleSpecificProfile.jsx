@@ -10,6 +10,7 @@ const RoleSpecificProfile = ({ user }) => {
   switch(user.role) {
     case 'restaurant':
     case 'supermarket':
+    case 'personaldonor':
       return <DonorProfile />;
     case 'ong':
     case 'student':

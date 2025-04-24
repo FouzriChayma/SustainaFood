@@ -123,9 +123,10 @@ const Signup = () => {
   const [captchaValue, setCaptchaValue] = useState(null);
 
   const isOng = role === "ong";
-  const isStudent = role === "student";
+  const isStudent = role === "student" ;
   const isTransporter = role === "transporter";
   const isDonor = role === "supermarket" || role === "restaurant";
+  const isPersonnel = role === "personaldonor";
 
   // State for errors
   const [errors, setErrors] = useState({
@@ -198,7 +199,7 @@ const Signup = () => {
       newErrors.phone = "Invalid phone number format";
     }
 
-    if (isStudent && !num_cin.match(/^\d{8}$/)) {
+    if (isStudent || isPersonnel && !num_cin.match(/^\d{8}$/)) {
       newErrors.num_cin = "Invalid CIN format (must be 8 digits)";
     }
 
@@ -244,7 +245,7 @@ const Signup = () => {
       data.append("id_fiscale", id_fiscale);
       data.append("type", type);
     }
-    if (isStudent) {
+    if (isStudent || isPersonnel) {
       data.append("sexe", sexe);
       data.append("age", age);
       data.append("num_cin", num_cin);
@@ -320,6 +321,7 @@ const Signup = () => {
               <option value="supermarket">Supermarket</option>
               <option value="student">Student</option>
               <option value="transporter">Transporter</option>
+              <option value="personaldonor">Personnel Donor</option>
             </select>
 
             {/* Profile Photo Upload Section */}
@@ -348,7 +350,7 @@ const Signup = () => {
               </StyledWrapper>
             </All>
 
-            {isStudent && (
+            {isStudent || isPersonnel && (
               <>
                 <select
                   className="signup-input"

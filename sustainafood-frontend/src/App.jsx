@@ -59,6 +59,7 @@ import PersonalStatus from './pages/PersonalStatus';
 import MyDonationsRequest from "./pages/MyDonationsRequest.jsx";
 import MyRequestDonation from "./pages/MyRequestDonation.jsx";
 import AssignedDeliveries from "./pages/AssignedDeliveries.jsx";
+import PreductionForDonor from "./pages/PreductionForDonor.jsx";
 const App = () => {
   return (
     <AlertProvider>
@@ -108,7 +109,7 @@ const App = () => {
         </Route>
 
         {/* Routes privées pour ong, restaurant, supermarket, student, transporter */}
-        <Route element={<PrivateRoute roles={["ong", "restaurant", "supermarket", "student", "transporter"]} />}>
+        <Route element={<PrivateRoute roles={["ong", "restaurant", "supermarket", "student", "transporter", "personaldonor"]} />}>
           <Route path="/profile" element={<Profile />} />
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/account-settings" element={<AccountSettings />} />
@@ -118,12 +119,13 @@ const App = () => {
         </Route>
 
         {/* Routes privées pour ong, restaurant, supermarket, student */}
-        <Route element={<PrivateRoute roles={["ong", "restaurant", "supermarket", "student"]} />}>
+        <Route element={<PrivateRoute roles={["ong", "restaurant", "supermarket", "student","personaldonor"]} />}>
           <Route path="/ListOfDonations" element={<ListOfDonations />} />
           <Route path="/ListOfRequests" element={<ListOfRequests />} />
           <Route path="/AddDonation" element={<AddDonation />} />
           <Route path="/DetailsDonations/:id" element={<DetailsDonations />} />
           <Route path="/DetailsRequest/:id" element={<DetailsRequest />} />
+          <Route path="/Preduction" element={<PreductionForDonor />} />
         </Route>
 
         {/* Routes privées pour ong, student */}
@@ -135,7 +137,7 @@ const App = () => {
         </Route>
 
         {/* Routes privées pour supermarket, restaurant */}
-        <Route element={<PrivateRoute roles={["supermarket", "restaurant"]} />}>
+        <Route element={<PrivateRoute roles={["supermarket", "restaurant","personaldonor"]} />}>
           <Route path="/mydonations" element={<MyDonations />} />
           <Route path="/ListRequestsDonation/:donationId" element={<ListRequestsDonation />} />
           <Route path="/AiClassification" element={<AiClassification />} />

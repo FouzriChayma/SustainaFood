@@ -18,6 +18,7 @@ var notificationRoutes=require('./routes/notificationRoutes');
 var deliveryRoutes=require('./routes/deliveryRoutes');
 const cron = require('node-cron');
 const DonationRecommender = require('./aiService/mlModel');
+var preductionRoutes = require('./routes/preductions');
 // var passport = require("passport"); // ✅ Importer Passport
 app.use(cors());
 // View engine setup
@@ -37,6 +38,7 @@ app.use(cors());
 
 // Routes
 app.use('/', indexRouter);
+app.use('/api', preductionRoutes);
 app.use('/users', usersRouter);
 app.use('/deliveries', deliveryRoutes);
 app.use('/product', productRouter);

@@ -78,7 +78,7 @@ const Navbar = () => {
     localStorage.clear();
   };
 
-  const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
+  const isDonner = user?.role === "restaurant" || user?.role === "supermarket" || user?.role === "personaldonor";
   const isRecipient = user?.role === "ong" || user?.role === "student";
   const isAdmin = user?.role === "admin";
   const isTransporter = user?.role === "transporter";
@@ -163,6 +163,7 @@ const Navbar = () => {
                   {isRecipient && <Link to="/analytics">Request Statistics</Link>}
                   {isDonner && <Link to="/analytics">Donation Statistics</Link>}
                   <Link to="/PersonalStatus">Personal Stats</Link>
+                  <Link to="/Preduction">Preduction</Link>
                 </div>
               )}
             </div>

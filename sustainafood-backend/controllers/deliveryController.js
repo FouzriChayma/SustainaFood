@@ -390,3 +390,62 @@ exports.getDeliveriesByTransporter = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la récupération des livraisons', error: error.message });
   }
 };
+exports.getAllDeliveries=async(req,res)=>{
+  try {
+    const deliveries = await Delivery.find({})
+      .populate({
+        path: 'donationTransaction',
+        select: 'donation requestNeed status',
+        populate: [
+          {
+            path: 'donation',
+            select: 'title donor category location',
+            populate: { path: 'donor', select: 'name email' },
+          },
+          {
+            path: 'requestNeed',
+            select: 'recipient',
+            populate: { path: 'recipient', select: 'name email' },
+          },
+        ],
+      })
+      .sort({ createdAt: -1 }); // Sort by most recent first
+
+    // Filter out invalid deliveries and log warnings   
+
+    // Return response
+    res.status(200).json({ data: deliveries || [] });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des livraisons', error: error.message }); 
+  }
+}
+exports.getDeliveriesById = async (req, res) => {
+  try {
+    const { deliveryId } = req.params;
+    const delivery = await Delivery.findById(deliveryId)
+      .populate({
+        path: 'donationTransaction',
+        select: 'donation requestNeed status',
+        populate: [
+          {
+            path: 'donation',
+            select: 'title donor category location',
+            populate: { path: 'donor', select: 'name email' },
+          },
+          {
+            path: 'requestNeed',
+            select: 'recipient',
+            populate: { path: 'recipient', select: 'name email' },
+          },
+        ],
+      });
+
+    if (!delivery) {        
+      return res.status(404).json({ message: 'Livraison introuvable' });
+    }
+
+    res.status(200).json({ data: delivery });    
+  } catch (error) {     
+    res.status(500).json({ message: 'Erreur lors de la récupération de la livraison', error: error.message });
+  }
+};

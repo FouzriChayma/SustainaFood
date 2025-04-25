@@ -4,6 +4,8 @@ const deliveryController = require('../controllers/deliveryController');
 const feedbackController = require('../controllers/feedbackController'); // New controller
 // Create a new delivery
 router.post('/',  deliveryController.createDelivery);
+router.get('/',  deliveryController.getAllDeliveries);
+router.get('/:deliveryId',  deliveryController.getDeliveriesById);
 router.put('/:deliveryId/assign-nearest', deliveryController.assignNearestTransporter);
 // Assign a transporter to a delivery (admin only)
 router.put('/:deliveryId/assign', deliveryController.assignTransporter);

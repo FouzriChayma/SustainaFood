@@ -61,6 +61,8 @@ import MyRequestDonation from "./pages/MyRequestDonation.jsx";
 import AssignedDeliveries from "./pages/AssignedDeliveries.jsx";
 import PreductionForDonor from "./pages/PreductionForDonor.jsx";
 import PersonnelList from "./pages/backoffice/PersonnelList.jsx";
+import Delivery from "./pages/backoffice/delivery.jsx";
+import DeliveryView from "./pages/backoffice/DeliveryView.jsx";
 const App = () => {
   return (
     <AlertProvider>
@@ -106,6 +108,8 @@ const App = () => {
           <Route path="/PredictionsDashboard" element={<PredictionsDashboard />} />
           <Route path="/AnomaliesDashbord" element={<AnomaliesDashbord />} />
           <Route path="/PersonnelList" element={<PersonnelList />} />
+          <Route path="/Delivery" element={<Delivery />} />
+          <Route path="/deliveries/view/:id" element={<DeliveryView />} />
 
 
         </Route>

@@ -112,7 +112,7 @@ const Sidebar = () => {
         </div>
 
         {/* Logistics & Transport link */}
-        <Link to="/logistics">
+        <Link to="/Delivery">
           <FaTruck className="icon" /> <span>Logistics & Transport</span>
         </Link>
         {/* Settings link */}

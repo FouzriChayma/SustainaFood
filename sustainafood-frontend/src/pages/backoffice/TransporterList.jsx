@@ -180,7 +180,7 @@ const TransporterList = () => {
 
     // Filtering the transporters based on the search query
     const filteredTransporters = transporters.filter(transporter => {
-        const phoneString = transporter.phone.toString(); // Convert phone number to string for searching
+        const phoneString = transporter.phone?.toString(); // Convert phone number to string for searching
         return (
             transporter.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             transporter.email.toLowerCase().includes(searchQuery.toLowerCase()) ||

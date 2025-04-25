@@ -65,6 +65,7 @@ const Sidebar = () => {
                 <ul className="sub-dropdown-content" id="donors-dropdown" role="menu">
                   <li><Link to="/donors/supermarkets" className={location.pathname === "/donors/supermarkets" ? "active" : ""} role="menuitem">Supermarkets</Link></li>
                   <li><Link to="/donors/restaurants" className={location.pathname === "/donors/restaurants" ? "active" : ""} role="menuitem">Restaurants</Link></li>
+                  <li><Link to="/PersonnelList" className={location.pathname === "/PersonnelList" ? "active" : ""} role="menuitem">Personnel Donors </Link></li>
                 </ul>
               )}
 

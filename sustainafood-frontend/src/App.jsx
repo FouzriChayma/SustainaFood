@@ -60,6 +60,7 @@ import MyDonationsRequest from "./pages/MyDonationsRequest.jsx";
 import MyRequestDonation from "./pages/MyRequestDonation.jsx";
 import AssignedDeliveries from "./pages/AssignedDeliveries.jsx";
 import PreductionForDonor from "./pages/PreductionForDonor.jsx";
+import PersonnelList from "./pages/backoffice/PersonnelList.jsx";
 const App = () => {
   return (
     <AlertProvider>
@@ -104,6 +105,7 @@ const App = () => {
           <Route path="/RequestDonationsList/:id" element={<RequestDonationsList />} />
           <Route path="/PredictionsDashboard" element={<PredictionsDashboard />} />
           <Route path="/AnomaliesDashbord" element={<AnomaliesDashbord />} />
+          <Route path="/PersonnelList" element={<PersonnelList />} />
 
 
         </Route>

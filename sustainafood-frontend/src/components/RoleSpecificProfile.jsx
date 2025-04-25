@@ -4,21 +4,25 @@ import RecipientProfile from './RecipientProfile';
 import TransporterProfile from './TransporterProfile';
 
 const RoleSpecificProfile = ({ user }) => {
-  if (!user || !user.role) return null;
+  if (!user || !user.role) {
+    console.log("User or user.role is missing:", user); // Debug log
+    return <div>User data not available.</div>;
+  }
 
-  // En fonction de la valeur de user.role, affiche le composant adapté
+  console.log("User role in RoleSpecificProfile:", user.role); // Debug log
+
   switch(user.role) {
     case 'restaurant':
     case 'supermarket':
     case 'personaldonor':
-      return <DonorProfile />;
+      return <DonorProfile user={user} />;
     case 'ong':
     case 'student':
-      return <RecipientProfile />;
+      return <RecipientProfile user={user} />;
     case 'transporter':
-      return <TransporterProfile />;
+      return <TransporterProfile user={user} />;
     default:
-      return <div>Profile not available for this role.</div>;
+      return <div>Profile not available for this role: {user.role}</div>;
   }
 };
 

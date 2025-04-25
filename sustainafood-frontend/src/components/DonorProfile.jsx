@@ -2,23 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { getDonationByUserId } from '../api/donationService';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 
 // Styled Components
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-height: 100vh;
-`;
-
 const ProjectsContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 20px;
   width: 100%;
-  max-width: 1200px;
 `;
 
 const ProjectCard = styled.div`
@@ -171,7 +161,6 @@ const ProductItem = styled.li`
   margin-bottom: 8px;
 `;
 
-// New Styled Components for No Donations Message
 const NoDonationsContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -209,12 +198,9 @@ const AddDonationButton = styled(Link)`
   }
 `;
 
-const DonorProfile = () => {
-  // Retrieve user from localStorage and set userid synchronously
-  const user = JSON.parse(localStorage.getItem('user'));
-  const userid = user ? (user._id || user.id) : null;
+const DonorProfile = ({ user }) => {
+  const userid = user?._id || user?.id;
 
-  // State variables
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -223,7 +209,6 @@ const DonorProfile = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 3;
 
-  // Fetch donations
   useEffect(() => {
     const fetchDonations = async () => {
       if (!userid) {
@@ -233,9 +218,12 @@ const DonorProfile = () => {
       }
 
       try {
+        console.log("Fetching donations for user ID:", userid); // Debug log
         const response = await getDonationByUserId(userid);
-        setDonations(response.data);
+        console.log("Donations response:", response.data); // Debug log
+        setDonations(response.data || []);
       } catch (err) {
+        console.error("Error fetching donations:", err);
         setError(err.response?.data?.message || 'Error fetching donation data');
       } finally {
         setLoading(false);
@@ -245,7 +233,6 @@ const DonorProfile = () => {
     fetchDonations();
   }, [userid]);
 
-  // Search & Filter Logic
   const filteredDonations = donations
     .filter(
       (donation) =>
@@ -254,7 +241,6 @@ const DonorProfile = () => {
     )
     .filter((donation) => (statusFilter ? donation.status === statusFilter : true));
 
-  // Pagination Logic
   const totalPages = Math.ceil(filteredDonations.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -266,127 +252,125 @@ const DonorProfile = () => {
     }
   };
 
-  // Loading / Error Handling
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
 
   return (
-    <>
-      <Container>
-        <ProfileHeader>Your Donations</ProfileHeader>
+    <div>
+      <ProfileHeader>{user.name}'s Donations</ProfileHeader>
 
-        {/* Search & Filter */}
-        <SearchContainer>
-          <SearchInput
-            type="text"
-            placeholder="🔍 Search donations..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <FilterSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="">🟢 All Statuses</option>
-            <option value="pending">🕒 Pending</option>
-            <option value="approved">✅ Accepted</option>
-            <option value="rejected">❌ Rejected</option>
-          </FilterSelect>
-        </SearchContainer>
+      <SearchContainer>
+        <SearchInput
+          type="text"
+          placeholder="🔍 Search donations..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <FilterSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">🟢 All Statuses</option>
+          <option value="pending">🕒 Pending</option>
+          <option value="approved">✅ Accepted</option>
+          <option value="rejected">❌ Rejected</option>
+        </FilterSelect>
+      </SearchContainer>
 
-        {/* Donations List */}
-        <ProjectsContainer>
-          {currentDonations.length > 0 ? (
-            currentDonations.map((donation) => (
-              <ProjectCard key={donation._id}>
-                <Title>🛒 {donation.title || 'Untitled'}</Title>
-                <DetailText>
-                  <strong>📍 Location:</strong> {donation.address || 'Not specified'}
-                </DetailText>
-                <DetailText>
-                  <strong>📆 Expiration Date:</strong>{' '}
-                  {donation.expirationDate
-                    ? new Date(donation.expirationDate).toISOString().split('T')[0]
-                    : 'Not set'}
-                </DetailText>
-                <DetailText>
-                  <strong>🚚 Delivery:</strong>{' '}
-                  {donation.delivery ? 'Yes' : 'No'}
-                </DetailText>
-                <DetailText>
-                  <strong>🔄 Status:</strong>{' '}
-                  <StatusBadge status={donation.status}>
-                    {donation.status || 'Unknown'}
-                  </StatusBadge>
-                </DetailText>
-                <h4>📦 Available Products:</h4>
-                <ProductList>
-                  {Array.isArray(donation.products) && donation.products.length > 0 ? (
-                    donation.products.map((pro, index) => {
-                      console.log('Product Entry:', pro);
-                      return (
-                        <ProductItem key={index}>
-                          <span>
-                            <strong>Name:</strong> {pro.product?.name || 'Not specified'}
-                          </span>
-                          <span>
-                            <strong>Quantity:</strong> {pro.quantity || 0}{' '}
-                            {pro.product?.weightUnitTotale || pro.product?.weightUnit || ''}
-                          </span>
-                          <span>
-                            <strong>Status:</strong> {pro.product?.status || 'Unknown'}
-                          </span>
-                        </ProductItem>
-                      );
-                    })
-                  ) : (
-                    <ProductItem>
-                      {donation.category === 'prepared_meals'
-                        ? `🍽️ Number of meals: ${donation.numberOfMeals || 'Not specified'}`
-                        : 'No products available'}
-                    </ProductItem>
-                  )}
-                </ProductList>
-                <BtnSeeMore to={`/DetailsDonations/${donation._id}`}>See More</BtnSeeMore>
-              </ProjectCard>
-            ))
-          ) : (
-            <NoDonationsContainer>
-              <NoDonationsMessage>
-                It looks like you haven't made any donations yet! Share your generosity and join us in making an impact—your contribution could change someone's life!
-              </NoDonationsMessage>
+      <ProjectsContainer>
+        {currentDonations.length > 0 ? (
+          currentDonations.map((donation) => (
+            <ProjectCard key={donation._id}>
+              <Title>🛒 {donation.title || 'Untitled'}</Title>
+              <DetailText>
+                <strong>📍 Location:</strong> {donation.address || 'Not specified'}
+              </DetailText>
+              <DetailText>
+                <strong>📆 Expiration Date:</strong>{' '}
+                {donation.expirationDate
+                  ? new Date(donation.expirationDate).toISOString().split('T')[0]
+                  : 'Not set'}
+              </DetailText>
+              <DetailText>
+                <strong>🚚 Delivery:</strong>{' '}
+                {donation.delivery ? 'Yes' : 'No'}
+              </DetailText>
+              <DetailText>
+                <strong>🔄 Status:</strong>{' '}
+                <StatusBadge status={donation.status}>
+                  {donation.status || 'Unknown'}
+                </StatusBadge>
+              </DetailText>
+              <h4>📦 Available Products:</h4>
+              <ProductList>
+                {Array.isArray(donation.products) && donation.products.length > 0 ? (
+                  donation.products.map((pro, index) => {
+                    console.log('Product Entry:', pro);
+                    return (
+                      <ProductItem key={index}>
+                        <span>
+                          <strong>Name:</strong> {pro.product?.name || 'Not specified'}
+                        </span>
+                        <span>
+                          <strong>Quantity:</strong> {pro.quantity || 0}{' '}
+                          {pro.product?.weightUnitTotale || pro.product?.weightUnit || ''}
+                        </span>
+                        <span>
+                          <strong>Status:</strong> {pro.product?.status || 'Unknown'}
+                        </span>
+                      </ProductItem>
+                    );
+                  })
+                ) : (
+                  <ProductItem>
+                    {donation.category === 'prepared_meals'
+                      ? `🍽️ Number of meals: ${donation.numberOfMeals || 'Not specified'}`
+                      : 'No products available'}
+                  </ProductItem>
+                )}
+              </ProductList>
+              <BtnSeeMore to={`/DetailsDonations/${donation._id}`}>See More</BtnSeeMore>
+            </ProjectCard>
+          ))
+        ) : (
+          <NoDonationsContainer>
+            <NoDonationsMessage>
+              {user._id === JSON.parse(localStorage.getItem('user'))?._id
+                ? "It looks like you haven't made any donations yet! Share your generosity and join us in making an impact—your contribution could change someone's life!"
+                : `${user.name} has not made any donations yet.`}
+            </NoDonationsMessage>
+            {user._id === JSON.parse(localStorage.getItem('user'))?._id && (
               <AddDonationButton to="/addDonation">
                 Add a Donation
               </AddDonationButton>
-            </NoDonationsContainer>
-          )}
-        </ProjectsContainer>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <PaginationContainer>
-            <PageButton
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </PageButton>
-            {[...Array(totalPages)].map((_, index) => (
-              <PageButton
-                key={index}
-                active={currentPage === index + 1}
-                onClick={() => handlePageChange(index + 1)}
-              >
-                {index + 1}
-              </PageButton>
-            ))}
-            <PageButton
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </PageButton>
-          </PaginationContainer>
+            )}
+          </NoDonationsContainer>
         )}
-      </Container>
-    </>
+      </ProjectsContainer>
+
+      {totalPages > 1 && (
+        <PaginationContainer>
+          <PageButton
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </PageButton>
+          {[...Array(totalPages)].map((_, index) => (
+            <PageButton
+              key={index}
+              active={currentPage === index + 1}
+              onClick={() => handlePageChange(index + 1)}
+            >
+              {index + 1}
+            </PageButton>
+          ))}
+          <PageButton
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </PageButton>
+        </PaginationContainer>
+      )}
+    </div>
   );
 };
 

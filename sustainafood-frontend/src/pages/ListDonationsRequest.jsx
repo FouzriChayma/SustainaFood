@@ -1,16 +1,14 @@
-// src/pages/ListDonationsRequest.jsx
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getDonationTransactionsByRequestNeedId } from '../api/donationTransactionService';
 import { getRequestById } from '../api/requestNeedsService';
-import { createAndAcceptDonationTransactionBiderc , rejectDonationTransaction } from '../api/donationTransactionService';
+import { createAndAcceptDonationTransactionBiderc, rejectDonationTransaction } from '../api/donationTransactionService';
 import imgmouna from '../assets/images/imgmouna.png';
 import styled, { createGlobalStyle } from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
 import { useAlert } from '../contexts/AlertContext';
-
 
 // Global Styles
 const GlobalStyle = createGlobalStyle`
@@ -90,6 +88,12 @@ const ProfileImg = styled.img`
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #228b22;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+
+  &:hover {
+    transform: scale(1.1);
+  }
 `;
 
 const ProfileText = styled.p`
@@ -97,6 +101,12 @@ const ProfileText = styled.p`
   font-size: 16px;
   font-weight: bold;
   color: #495057;
+  cursor: pointer;
+  transition: color 0.2s ease-in-out;
+
+  &:hover {
+    color: #228b22;
+  }
 `;
 
 const DonationDetails = styled.div`
@@ -382,6 +392,7 @@ const StatusBadge = styled.span`
 const ListDonationsRequest = () => {
   const { showAlert } = useAlert();
   const { id } = useParams(); // requestNeedId
+  const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [request, setRequest] = useState(null);
@@ -583,6 +594,12 @@ const ListDonationsRequest = () => {
     setRejectionReason('');
   };
 
+  const handleProfileClick = (donorId) => {
+    if (donorId) {
+      navigate(`/ViewProfile/${donorId}`);
+    }
+  };
+
   if (loading) return <LoadingMessage>Loading...</LoadingMessage>;
 
   if (error) return (
@@ -655,8 +672,11 @@ const ListDonationsRequest = () => {
                       e.target.src = imgmouna;
                       console.error(`Failed to load image: ${userPhoto}`);
                     }}
+                    onClick={() => handleProfileClick(donation.donor?._id)}
                   />
-                  <ProfileText>{donation.donor?.name || 'Unknown'}</ProfileText>
+                  <ProfileText onClick={() => handleProfileClick(donation.donor?._id)}>
+                    {donation.donor?.name || 'Unknown'}
+                  </ProfileText>
                   <ProfileText>{donation.donor?.role || 'N/A'}</ProfileText>
                 </ProfileInfo>
                 <DonationDetails>

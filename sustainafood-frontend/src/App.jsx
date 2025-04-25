@@ -63,6 +63,7 @@ import PreductionForDonor from "./pages/PreductionForDonor.jsx";
 import PersonnelList from "./pages/backoffice/PersonnelList.jsx";
 import Delivery from "./pages/backoffice/delivery.jsx";
 import DeliveryView from "./pages/backoffice/DeliveryView.jsx";
+import ViewProfile from "./pages/ViewProfile.jsx";
 const App = () => {
   return (
     <AlertProvider>
@@ -122,6 +123,7 @@ const App = () => {
           <Route path="/DonationRecommendations" element={<DonationRecommendations />} />
           <Route path="/analytics" element={<AnalyticsDashboard />} />
           <Route path="/PersonalStatus" element={<PersonalStatus />} />
+          <Route path="/ViewProfile/:id" element={<ViewProfile />} />
         </Route>
 
         {/* Routes privées pour ong, restaurant, supermarket, student */}

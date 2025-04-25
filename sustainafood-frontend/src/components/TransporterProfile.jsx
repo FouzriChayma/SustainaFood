@@ -3,29 +3,27 @@ import { updateTransporterAvailability, updateTransporterLocation } from '../api
 import LocationPicker from '../components/LocationPicker';
 import '../assets/styles/TransporterProfile.css';
 
-const TransporterProfile = () => {
-  const user = JSON.parse(localStorage.getItem('user'));
+const TransporterProfile = ({ user }) => {
+  const loggedInUser = JSON.parse(localStorage.getItem('user'));
+  const isOwnProfile = loggedInUser && (loggedInUser._id === user?._id || loggedInUser.id === user?.id);
   const userid = user?._id || user?.id;
   const [isAvailable, setIsAvailable] = useState(user?.isAvailable !== undefined ? user.isAvailable : true);
-  const [location, setLocation] = useState({ type: 'Point', coordinates: [0, 0] });
-  const [address, setAddress] = useState('');
+  const [location, setLocation] = useState(user?.location || { type: 'Point', coordinates: [0, 0] });
+  const [address, setAddress] = useState(user?.address || '');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
 
-  // Sync isAvailable with user data
   useEffect(() => {
     if (user?.isAvailable !== undefined) {
       setIsAvailable(user.isAvailable);
     }
-    // Initialize location and address from user data if available
     if (user?.location) {
       setLocation(user.location);
       setAddress(user.address || `Lat: ${user.location.coordinates[1].toFixed(6)}, Lon: ${user.location.coordinates[0].toFixed(6)}`);
     }
   }, [user]);
 
-  // Handle location selection from LocationPicker
   const handleLocationSelect = async (selectedLocation, selectedAddress) => {
     if (!userid) {
       setError('User ID is missing');
@@ -38,7 +36,6 @@ const TransporterProfile = () => {
       setIsMapOpen(false);
       setError(null);
 
-      // Update location in backend
       await updateTransporterLocation(userid, {
         location: selectedLocation,
         address: selectedAddress,
@@ -49,7 +46,6 @@ const TransporterProfile = () => {
     }
   };
 
-  // Handle availability toggle
   const handleAvailabilityToggle = async () => {
     if (!userid) {
       setError('User ID is missing');
@@ -83,13 +79,15 @@ const TransporterProfile = () => {
       <div className="transporter-card">
         <h4>Availability Status</h4>
         <p><strong>Status:</strong> {isAvailable ? 'Available' : 'Unavailable'}</p>
-        <button
-          className={`availability-btn ${isAvailable ? 'available' : 'unavailable'}`}
-          onClick={handleAvailabilityToggle}
-          disabled={loading}
-        >
-          {isAvailable ? 'Set Unavailable' : 'Set Available'}
-        </button>
+        {isOwnProfile && (
+          <button
+            className={`availability-btn ${isAvailable ? 'available' : 'unavailable'}`}
+            onClick={handleAvailabilityToggle}
+            disabled={loading}
+          >
+            {isAvailable ? 'Set Unavailable' : 'Set Available'}
+          </button>
+        )}
       </div>
 
       <div className="transporter-card">
@@ -100,11 +98,11 @@ const TransporterProfile = () => {
             type="text"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            onClick={() => setIsMapOpen(true)}
+            onClick={() => isOwnProfile && setIsMapOpen(true)}
             placeholder="📍 Select Location"
             readOnly
           />
-          {isMapOpen && (
+          {isMapOpen && isOwnProfile && (
             <LocationPicker
               isOpen={isMapOpen}
               onClose={() => setIsMapOpen(false)}
@@ -124,7 +122,7 @@ const TransporterProfile = () => {
             </div>
           </>
         ) : (
-          <p>Select a location...</p>
+          <p>{isOwnProfile ? 'Select a location...' : 'Location not set'}</p>
         )}
       </div>
     </div>

@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getDonationById } from '../api/donationService';
-import { getDonationTransactionsByDonationId } from '../api/donationTransactionService'; // New API call
+import { getDonationTransactionsByDonationId } from '../api/donationTransactionService';
 import { createAndAcceptDonationTransaction, rejectDonationTransaction } from '../api/donationTransactionService';
 import imgmouna from '../assets/images/imgmouna.png';
 import styled, { createGlobalStyle } from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
 import { useAlert } from '../contexts/AlertContext';
-import { useParams, useNavigate } from 'react-router-dom';
- 
+import { useParams, useNavigate, Link } from 'react-router-dom'; // Added Link
+
 // Global Styles
 const GlobalStyle = createGlobalStyle`
   body {
@@ -88,6 +88,7 @@ const ProfileImg = styled.img`
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #228b22;
+  cursor: pointer; /* Add cursor pointer to indicate clickability */
 `;
 
 const ProfileText = styled.p`
@@ -95,6 +96,12 @@ const ProfileText = styled.p`
   font-size: 16px;
   font-weight: bold;
   color: #495057;
+  cursor: pointer; /* Add cursor pointer to indicate clickability */
+
+  &:hover {
+    color: #228b22; /* Add hover effect for better UX */
+    text-decoration: underline;
+  }
 `;
 
 const TransactionDetails = styled.div`
@@ -636,6 +643,7 @@ const ListRequestsDonation = () => {
           🤝 Transactions for Donation: <p>{donation.title}</p>
         </TransactionTitle>
 
+
         <Controls>
           <SearchContainer>
             <SearchIcon />
@@ -680,17 +688,21 @@ const ListRequestsDonation = () => {
             return (
               <TransactionCard key={transaction._id}>
                 <ProfileInfo>
-                  <ProfileImg
-                    src={userPhoto}
-                    alt="Profile"
-                    onError={(e) => {
-                      e.target.src = imgmouna;
-                      console.error(`Failed to load image: ${userPhoto}`);
-                    }}
-                  />
-                  <ProfileText>
-                    {request.recipient?.name || 'Unknown User'}
-                  </ProfileText>
+                  <Link to={`/ViewProfile/${request.recipient?._id}`}>
+                    <ProfileImg
+                      src={userPhoto}
+                      alt="Recipient Profile"
+                      onError={(e) => {
+                        e.target.src = imgmouna;
+                        console.error(`Failed to load recipient image: ${userPhoto}`);
+                      }}
+                    />
+                  </Link>
+                  <Link to={`/ViewProfile/${request.recipient?._id}`}>
+                    <ProfileText>
+                      Recipient: {request.recipient?.name || 'Unknown User'}
+                    </ProfileText>
+                  </Link>
                   <ProfileText>{request.recipient?.role || 'Role Not Specified'}</ProfileText>
                 </ProfileInfo>
                 <TransactionDetails>

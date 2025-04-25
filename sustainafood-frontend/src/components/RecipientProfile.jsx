@@ -2,23 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { getRequestsByRecipientId } from '../api/requestNeedsService';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 
 // Styled Components
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-height: 100vh;
-`;
-
 const ProjectsContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 20px;
   width: 100%;
-  max-width: 1200px;
 `;
 
 const ProjectCard = styled.div`
@@ -171,7 +161,6 @@ const ProductItem = styled.li`
   margin-bottom: 8px;
 `;
 
-// Styled Components for No Requests Message
 const NoRequestsContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -209,12 +198,9 @@ const AddRequestButton = styled(Link)`
   }
 `;
 
-const RecipientProfile = () => {
-  // Retrieve user ID from localStorage
-  const user = JSON.parse(localStorage.getItem('user'));
+const RecipientProfile = ({ user }) => {
   const userid = user?._id || user?.id;
 
-  // State variables
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -223,17 +209,22 @@ const RecipientProfile = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 3;
 
-  // Fetch requests
   useEffect(() => {
     const fetchRequests = async () => {
+      if (!userid) {
+        setError('User ID not found');
+        setLoading(false);
+        return;
+      }
+
       try {
+        console.log("Fetching requests for user ID:", userid); // Debug log
         const response = await getRequestsByRecipientId(userid);
-        console.log('Requests Data:', response.data);
+        console.log('Requests Data:', response.data); // Debug log
         setRequests(response.data || []);
       } catch (err) {
-        // If the error is a 404 with "No requests found for this recipient," treat it as an empty result
         if (err.response?.status === 404 && err.response?.data?.message === 'No requests found for this recipient') {
-          setRequests([]); // Set requests to empty array instead of setting an error
+          setRequests([]);
         } else {
           console.error('Fetch Error:', err);
           setError(err.response?.data?.message || 'Error fetching request data');
@@ -243,15 +234,9 @@ const RecipientProfile = () => {
       }
     };
 
-    if (userid) {
-      fetchRequests();
-    } else {
-      setError('User ID not found');
-      setLoading(false);
-    }
+    fetchRequests();
   }, [userid]);
 
-  // Search & Filter Logic
   const filteredRequests = requests
     .filter(
       (request) =>
@@ -260,7 +245,6 @@ const RecipientProfile = () => {
     )
     .filter((request) => (statusFilter ? request.status === statusFilter : true));
 
-  // Pagination Logic
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -272,126 +256,124 @@ const RecipientProfile = () => {
     }
   };
 
-  // Loading / Error Handling
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
 
   return (
-    <>
-      <Container>
-        <ProfileHeader>My Donation Requests</ProfileHeader>
+    <div>
+      <ProfileHeader>{user.name}'s Donation Requests</ProfileHeader>
 
-        {/* Search & Filter */}
-        <SearchContainer>
-          <SearchInput
-            type="text"
-            placeholder="🔍 Search requests..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <FilterSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="">🟢 All Statuses</option>
-            <option value="pending">🕒 Pending</option>
-            <option value="approved">✅ Accepted</option>
-            <option value="rejected">❌ Rejected</option>
-          </FilterSelect>
-        </SearchContainer>
+      <SearchContainer>
+        <SearchInput
+          type="text"
+          placeholder="🔍 Search requests..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <FilterSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">🟢 All Statuses</option>
+          <option value="pending">🕒 Pending</option>
+          <option value="approved">✅ Accepted</option>
+          <option value="rejected">❌ Rejected</option>
+        </FilterSelect>
+      </SearchContainer>
 
-        {/* Requests List */}
-        <ProjectsContainer>
-          {currentRequests.length > 0 ? (
-            currentRequests.map((request) => (
-              <ProjectCard key={request._id}>
-                <Title>🛒 {request.title || 'Untitled'}</Title>
-                <DetailText>
-                  <strong>📍 Location:</strong> {request.address || 'Not specified'}
-                </DetailText>
-                <DetailText>
-                  <strong>📆 Before Date:</strong>{' '}
-                  {request.expirationDate
-                    ? new Date(request.expirationDate).toISOString().split('T')[0]
-                    : 'Not set'}
-                </DetailText>
-                <DetailText>
-                  <strong>📑 Details:</strong> {request.description || 'No description'}
-                </DetailText>
-                <DetailText>
-                  <strong>🔄 Status:</strong>{' '}
-                  <StatusBadge status={request.status}>
-                    {request.status || 'Unknown'}
-                  </StatusBadge>
-                </DetailText>
-                <h4>📦 Requested Products:</h4>
-                <ProductList>
-                  {Array.isArray(request.requestedProducts) && request.requestedProducts.length > 0 ? (
-                    request.requestedProducts.map((item, index) => (
-                      <ProductItem key={index}>
-                        <span>
-                          <strong>Type:</strong> {item.product?.productType || 'Not specified'}
-                        </span>
-                        <span>
-                          <strong>Weight:</strong> {item.product?.weightPerUnit || 0}{' '}
-                          {item.product?.weightUnit || ''}
-                        </span>
-                        <span>
-                          <strong>Quantity:</strong> {item.product?.totalQuantity || 0}
-                        </span>
-                        <span>
-                          <strong>Status:</strong> {item.product?.status || 'Unknown'}
-                        </span>
-                      </ProductItem>
-                    ))
-                  ) : (
-                    <ProductItem>
-                      {request.category === 'prepared_meals'
-                        ? `🍽️ Number of meals: ${request.numberOfMeals || 'Not specified'}`
-                        : 'No requested products'}
+      <ProjectsContainer>
+        {currentRequests.length > 0 ? (
+          currentRequests.map((request) => (
+            <ProjectCard key={request._id}>
+              <Title>🛒 {request.title || 'Untitled'}</Title>
+              <DetailText>
+                <strong>📍 Location:</strong> {request.address || 'Not specified'}
+              </DetailText>
+              <DetailText>
+                <strong>📆 Before Date:</strong>{' '}
+                {request.expirationDate
+                  ? new Date(request.expirationDate).toISOString().split('T')[0]
+                  : 'Not set'}
+              </DetailText>
+              <DetailText>
+                <strong>📑 Details:</strong> {request.description || 'No description'}
+              </DetailText>
+              <DetailText>
+                <strong>🔄 Status:</strong>{' '}
+                <StatusBadge status={request.status}>
+                  {request.status || 'Unknown'}
+                </StatusBadge>
+              </DetailText>
+              <h4>📦 Requested Products:</h4>
+              <ProductList>
+                {Array.isArray(request.requestedProducts) && request.requestedProducts.length > 0 ? (
+                  request.requestedProducts.map((item, index) => (
+                    <ProductItem key={index}>
+                      <span>
+                        <strong>Type:</strong> {item.product?.productType || 'Not specified'}
+                      </span>
+                      <span>
+                        <strong>Weight:</strong> {item.product?.weightPerUnit || 0}{' '}
+                        {item.product?.weightUnit || ''}
+                      </span>
+                      <span>
+                        <strong>Quantity:</strong> {item.product?.totalQuantity || 0}
+                      </span>
+                      <span>
+                        <strong>Status:</strong> {item.product?.status || 'Unknown'}
+                      </span>
                     </ProductItem>
-                  )}
-                </ProductList>
-                <BtnSeeMore to={`/DetailsRequest/${request._id}`}>See More</BtnSeeMore>
-              </ProjectCard>
-            ))
-          ) : (
-            <NoRequestsContainer>
-              <NoRequestsMessage>
-                It looks like you haven't made any requests yet! Share your needs and join us in making a difference—your next step could help someone in need!
-              </NoRequestsMessage>
+                  ))
+                ) : (
+                  <ProductItem>
+                    {request.category === 'prepared_meals'
+                      ? `🍽️ Number of meals: ${request.numberOfMeals || 'Not specified'}`
+                      : 'No requested products'}
+                  </ProductItem>
+                )}
+              </ProductList>
+              <BtnSeeMore to={`/DetailsRequest/${request._id}`}>See More</BtnSeeMore>
+            </ProjectCard>
+          ))
+        ) : (
+          <NoRequestsContainer>
+            <NoRequestsMessage>
+              {user._id === JSON.parse(localStorage.getItem('user'))?._id
+                ? "It looks like you haven't made any requests yet! Share your needs and join us in making a difference—your next step could help someone in need!"
+                : `${user.name} has not made any requests yet.`}
+            </NoRequestsMessage>
+            {user._id === JSON.parse(localStorage.getItem('user'))?._id && (
               <AddRequestButton to="/addDonation">
                 Add a Request
               </AddRequestButton>
-            </NoRequestsContainer>
-          )}
-        </ProjectsContainer>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <PaginationContainer>
-            <PageButton
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </PageButton>
-            {[...Array(totalPages)].map((_, index) => (
-              <PageButton
-                key={index}
-                active={currentPage === index + 1}
-                onClick={() => handlePageChange(index + 1)}
-              >
-                {index + 1}
-              </PageButton>
-            ))}
-            <PageButton
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </PageButton>
-          </PaginationContainer>
+            )}
+          </NoRequestsContainer>
         )}
-      </Container>
-    </>
+      </ProjectsContainer>
+
+      {totalPages > 1 && (
+        <PaginationContainer>
+          <PageButton
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </PageButton>
+          {[...Array(totalPages)].map((_, index) => (
+            <PageButton
+              key={index}
+              active={currentPage === index + 1}
+              onClick={() => handlePageChange(index + 1)}
+            >
+              {index + 1}
+            </PageButton>
+          ))}
+          <PageButton
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </PageButton>
+        </PaginationContainer>
+      )}
+    </div>
   );
 };
 

@@ -129,6 +129,17 @@ export const AddDonation = () => {
     else if (isRecipient) setType("request");
   }, [user, isDonner, isRecipient]);
 
+  // Update numberOfMeals whenever manualMeals changes
+  useEffect(() => {
+    if (mealsEntryMode === "form" && isDonner) {
+      const total = manualMeals.reduce(
+        (sum, meal) => sum + (parseInt(meal.quantity) || 0),
+        0
+      );
+      setNumberOfMeals(total || "");
+    }
+  }, [manualMeals, mealsEntryMode, isDonner]);
+
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -513,7 +524,7 @@ export const AddDonation = () => {
     const donationData = new FormData();
     donationData.append("title", title);
     donationData.append("location", JSON.stringify(location));
-    donationData.append("address", address); // Added address field
+    donationData.append("address", address);
     donationData.append("expirationDate", expirationDate);
     donationData.append("description", description);
     donationData.append("category", category);
@@ -1014,81 +1025,96 @@ export const AddDonation = () => {
                 <div className="addDonation-manual-product-entry">
                   {manualMeals.map((meal, index) => (
                     <div key={index} className="addDonation-manual-product-row">
-                      <input
-                        type="text"
-                        placeholder="Meal Name"
-                        value={meal.mealName}
-                        onChange={(e) =>
-                          handleManualMealChange(
-                            index,
-                            "mealName",
-                            e.target.value
-                          )
-                        }
-                        className="addDonation-input"
-                      />
-                      <textarea
-                        placeholder="Meal Description"
-                        value={meal.mealDescription}
-                        onChange={(e) =>
-                          handleManualMealChange(
-                            index,
-                            "mealDescription",
-                            e.target.value
-                          )
-                        }
-                        className="addDonation-input"
-                      />
-                      <select
-                        value={meal.mealType}
-                        onChange={(e) =>
-                          handleManualMealChange(
-                            index,
-                            "mealType",
-                            e.target.value
-                          )
-                        }
-                        className="addDonation-input"
-                      >
-                        {mealTypes.map((type) => (
-                          <option key={type} value={type}>
-                            {type}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="number"
-                        placeholder="Quantity"
-                        value={meal.quantity}
-                        onChange={(e) =>
-                          handleManualMealChange(
-                            index,
-                            "quantity",
-                            e.target.value
-                          )
-                        }
-                        className="addDonation-input"
-                        min="1"
-                      />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) =>
-                          handleImageUpload(index, e.target.files[0])
-                        }
-                        className="addDonation-input"
-                      />
-                      {meal.imagePreview && (
-                        <img
-                          src={meal.imagePreview}
-                          alt="Meal Preview"
-                          style={{
-                            width: "100px",
-                            height: "100px",
-                            objectFit: "cover",
-                          }}
+                      <div className="addDonation-input-container">
+                        <input
+                          type="text"
+                          value={meal.mealName}
+                          onChange={(e) =>
+                            handleManualMealChange(
+                              index,
+                              "mealName",
+                              e.target.value
+                            )
+                          }
+                          className="addDonation-input"
+                          placeholder=" "
                         />
-                      )}
+                        <label>Meal Name</label>
+                      </div>
+                      <div className="addDonation-input-container">
+                        <textarea
+                          value={meal.mealDescription}
+                          onChange={(e) =>
+                            handleManualMealChange(
+                              index,
+                              "mealDescription",
+                              e.target.value
+                            )
+                          }
+                          className="addDonation-input"
+                          placeholder=" "
+                        />
+                        <label>Meal Description</label>
+                      </div>
+                      <div className="addDonation-input-container">
+                        <select
+                          value={meal.mealType}
+                          onChange={(e) =>
+                            handleManualMealChange(
+                              index,
+                              "mealType",
+                              e.target.value
+                            )
+                          }
+                          className="addDonation-input"
+                        >
+                          {mealTypes.map((type) => (
+                            <option key={type} value={type}>
+                              {type}
+                            </option>
+                          ))}
+                        </select>
+                        <label>Meal Type</label>
+                      </div>
+                      <div className="addDonation-input-container">
+                        <input
+                          type="number"
+                          value={meal.quantity}
+                          onChange={(e) =>
+                            handleManualMealChange(
+                              index,
+                              "quantity",
+                              e.target.value
+                            )
+                          }
+                          className="addDonation-input"
+                          placeholder=" "
+                          min="1"
+                        />
+                        <label>Quantity</label>
+                      </div>
+                      <div className="addDonation-input-container">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) =>
+                            handleImageUpload(index, e.target.files[0])
+                          }
+                          className="addDonation-input"
+                        />
+                        <label>Image</label>
+                        {meal.imagePreview && (
+                          <img
+                            src={meal.imagePreview}
+                            alt="Meal Preview"
+                            style={{
+                              width: "100px",
+                              height: "100px",
+                              objectFit: "cover",
+                            }}
+                          />
+                        )}
+                      </div>
                       {manualMeals.length > 1 && (
                         <button
                           type="button"
@@ -1187,104 +1213,125 @@ export const AddDonation = () => {
                 <div className="addDonation-manual-product-entry">
                   {manualProducts.map((product, index) => (
                     <div key={index} className="addDonation-manual-product-row">
-                      <input
-                        type="text"
-                        placeholder="Product Name"
-                        value={product.name}
-                        onChange={(e) =>
-                          handleManualProductChange(index, "name", e.target.value)
-                        }
-                        className="addDonation-input"
-                      />
-                      <select
-                        className="addDonation-input"
-                        value={product.productType}
-                        onChange={(e) =>
-                          handleManualProductChange(
-                            index,
-                            "productType",
-                            e.target.value
-                          )
-                        }
-                      >
-                        {productTypes.map((pt) => (
-                          <option key={pt} value={pt}>
-                            {pt}
-                          </option>
-                        ))}
-                      </select>
-                      <textarea
-                        className="addDonation-input"
-                        placeholder="Product Description"
-                        value={product.productDescription}
-                        onChange={(e) =>
-                          handleManualProductChange(
-                            index,
-                            "productDescription",
-                            e.target.value
-                          )
-                        }
-                      />
-                      <input
-                        type="number"
-                        placeholder="Weight Per Unit"
-                        value={product.weightPerUnit}
-                        onChange={(e) =>
-                          handleManualProductChange(
-                            index,
-                            "weightPerUnit",
-                            e.target.value
-                          )
-                        }
-                        className="addDonation-input"
-                      />
-                      <select
-                        className="addDonation-input"
-                        value={product.weightUnit}
-                        onChange={(e) =>
-                          handleManualProductChange(
-                            index,
-                            "weightUnit",
-                            e.target.value
-                          )
-                        }
-                      >
-                        {weightUnits.map((wu) => (
-                          <option key={wu} value={wu}>
-                            {wu}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        className="addDonation-input"
-                        value={product.weightUnitTotale}
-                        onChange={(e) =>
-                          handleManualProductChange(
-                            index,
-                            "weightUnitTotale",
-                            e.target.value
-                          )
-                        }
-                      >
-                        {weightUnits.map((wu) => (
-                          <option key={wu} value={wu}>
-                            {wu}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="number"
-                        placeholder="Total Quantity"
-                        value={product.totalQuantity}
-                        onChange={(e) =>
-                          handleManualProductChange(
-                            index,
-                            "totalQuantity",
-                            e.target.value
-                          )
-                        }
-                        className="addDonation-input"
-                      />
+                      <div className="addDonation-input-container">
+                        <input
+                          type="text"
+                          value={product.name}
+                          onChange={(e) =>
+                            handleManualProductChange(index, "name", e.target.value)
+                          }
+                          className="addDonation-input"
+                          placeholder=" "
+                        />
+                        <label>Product Name</label>
+                      </div>
+                      <div className="addDonation-input-container">
+                        <select
+                          className="addDonation-input"
+                          value={product.productType}
+                          onChange={(e) =>
+                            handleManualProductChange(
+                              index,
+                              "productType",
+                              e.target.value
+                            )
+                          }
+                        >
+                          {productTypes.map((pt) => (
+                            <option key={pt} value={pt}>
+                              {pt}
+                            </option>
+                          ))}
+                        </select>
+                        <label>Product Type</label>
+                      </div>
+                      <div className="addDonation-input-container">
+                        <textarea
+                          className="addDonation-input"
+                          value={product.productDescription}
+                          onChange={(e) =>
+                            handleManualProductChange(
+                              index,
+                              "productDescription",
+                              e.target.value
+                            )
+                          }
+                          placeholder=" "
+                        />
+                        <label>Product Description</label>
+                      </div>
+                      <div className="addDonation-input-container">
+                        <input
+                          type="number"
+                          value={product.weightPerUnit}
+                          onChange={(e) =>
+                            handleManualProductChange(
+                              index,
+                              "weightPerUnit",
+                              e.target.value
+                            )
+                          }
+                          className="addDonation-input"
+                          placeholder=" "
+                        />
+                        <label>Weight Per Unit</label>
+                      </div>
+                      <div className="addDonation-input-container">
+                        <select
+                          className="addDonation-input"
+                          value={product.weightUnit}
+                          onChange={(e) =>
+                            handleManualProductChange(
+                              index,
+                              "weightUnit",
+                              e.target.value
+                            )
+                          }
+                        >
+                          {weightUnits.map((wu) => (
+                            <option key={wu} value={wu}>
+                              {wu}
+                            </option>
+                          ))}
+                        </select>
+                        <label>Weight Unit</label>
+                      </div>
+                      <div className="addDonation-input-container">
+                        <select
+                          className="addDonation-input"
+                          value={product.weightUnitTotale}
+                          onChange={(e) =>
+                            handleManualProductChange(
+                              index,
+                              "weightUnitTotale",
+                              e.target.value
+                            )
+                          }
+                        >
+                          {weightUnits.map((wu) => (
+                            <option key={wu} value={wu}>
+                              {wu}
+                            </option>
+                          ))}
+                        </select>
+                        <label>Total Weight Unit</label>
+                      </div>
+                      <div className="addDonation-input-container">
+                        <input
+                          type="number"
+                          value={product.totalQuantity}
+                          onChange={(e) =>
+                            handleManualProductChange(
+                              index,
+                              "totalQuantity",
+                              e.target.value
+                            )
+                          }
+                          className="addDonation-input"
+                          placeholder=" "
+                        />
+                        <label>Total Quantity</label>
+                      </div>
                       {manualProducts.length > 1 && (
                         <button
                           type="button"

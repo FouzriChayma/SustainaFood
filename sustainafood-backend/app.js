@@ -15,6 +15,7 @@ var donationTransactionRoutes = require('./routes/donationTransactionRoutes');
 var statsRoutes = require("./routes/statsRoutes"); // Importer les routes de statistiques
 var app = express();
 var notificationRoutes=require('./routes/notificationRoutes');
+var feedbackRoutes=require('./routes/feedbackRoutes')
 var deliveryRoutes=require('./routes/deliveryRoutes');
 const cron = require('node-cron');
 const DonationRecommender = require('./aiService/mlModel');
@@ -38,6 +39,7 @@ app.use(cors());
 
 // Routes
 app.use('/', indexRouter);
+app.use('/api/feedback', feedbackRoutes);
 app.use('/api', preductionRoutes);
 app.use('/users', usersRouter);
 app.use('/deliveries', deliveryRoutes);

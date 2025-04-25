@@ -5,13 +5,12 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import edit from '../assets/images/edit.png';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { getUserById } from "../api/userService";
+import { getUserById, onUpdateDescription } from "../api/userService";
 import { useAuth } from "../contexts/AuthContext";
 import RoleSpecificProfile from '../components/RoleSpecificProfile';
-import dhiaphoto from '../assets/images/dhiaphoto.png';
-import assilphoto from '../assets/images/assilphoto.png';
-import { onUpdateDescription } from "../api/userService";
 import { FaEdit, FaPlus } from "react-icons/fa";
+import StarRating from '../components/StarRating';
+import { createFeedback, getFeedbackByUserId } from '../api/feedbackService';
 
 const ViewProfile = () => {
   const navigate = useNavigate();
@@ -23,30 +22,41 @@ const ViewProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [description, setDescription] = useState("");
   const [descriptionError, setDescriptionError] = useState("");
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [newFeedback, setNewFeedback] = useState({
+    rating: 0,
+    comment: '',
+  });
+  const [feedbackError, setFeedbackError] = useState("");
 
   const isOwnProfile = authUser && (authUser._id === id || authUser.id === id);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndFeedback = async () => {
       if (!id) {
         setError("No user ID provided");
         return;
       }
 
       try {
-        const response = await getUserById(id);
-        setUser(response.data);
-        setDescription(response.data.description || "");
-        if (isOwnProfile && response.data.welcomeMessage) {
-          setWelcomeMessage(response.data.welcomeMessage);
+        // Fetch user data
+        const userResponse = await getUserById(id);
+        setUser(userResponse.data);
+        setDescription(userResponse.data.description || "");
+        if (isOwnProfile && userResponse.data.welcomeMessage) {
+          setWelcomeMessage(userResponse.data.welcomeMessage);
         }
+
+        // Fetch feedback for the user
+        const feedbackResponse = await getFeedbackByUserId(id);
+        setFeedbacks(feedbackResponse);
       } catch (error) {
-        console.error("Error fetching user:", error);
-        setError("Failed to load user profile");
+        console.error("Error fetching user or feedback:", error);
+        setError("Failed to load user profile or feedback");
       }
     };
 
-    fetchUser();
+    fetchUserAndFeedback();
   }, [id, isOwnProfile]);
 
   useEffect(() => {
@@ -71,6 +81,29 @@ const ViewProfile = () => {
     } catch (error) {
       console.error("Error updating description:", error);
       setDescriptionError("Failed to update description. Please try again.");
+    }
+  };
+
+  const handleFeedbackSubmit = async (e) => {
+    e.preventDefault();
+    if (newFeedback.rating < 1 || newFeedback.rating > 5) {
+      setFeedbackError('Please select a rating between 1 and 5 stars');
+      return;
+    }
+    if (!newFeedback.comment.trim()) {
+      setFeedbackError('Please enter a comment');
+      return;
+    }
+
+    try {
+      const reviewerId = authUser._id || authUser.id; // Get reviewer ID from authUser
+      const feedback = await createFeedback(id, newFeedback.rating, newFeedback.comment, reviewerId, token);
+      setFeedbacks([feedback, ...feedbacks]); // Add new feedback to the top
+      setNewFeedback({ rating: 0, comment: '' }); // Reset form
+      setFeedbackError('');
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      setFeedbackError('Failed to submit feedback. Please try again.');
     }
   };
 
@@ -347,43 +380,57 @@ const ViewProfile = () => {
 
             <div className="inbox-section">
               <h3>Feedbacks</h3>
+              {!isOwnProfile && (
+                <div className="feedback-form">
+                  <h4>Add Feedback</h4>
+                  <form onSubmit={handleFeedbackSubmit}>
+                    <div className="form-group">
+                      <label>Rating:</label>
+                      <StarRating
+                        rating={newFeedback.rating}
+                        setRating={(rating) => setNewFeedback({ ...newFeedback, rating })}
+                        interactive={true}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Comment:</label>
+                      <textarea
+                        value={newFeedback.comment}
+                        onChange={(e) => setNewFeedback({ ...newFeedback, comment: e.target.value })}
+                        placeholder="Write your feedback here..."
+                        rows="3"
+                      />
+                    </div>
+                    {feedbackError && <p className="error-message">{feedbackError}</p>}
+                    <button type="submit" className="submit-feedback-btn">Submit Feedback</button>
+                  </form>
+                </div>
+              )}
               <div className="feedback-cards">
-                <div className="feedback-card">
-                  <div className="message">
-                    <div className="message-header feedback-tip">
-                      <img src={dhiaphoto} alt="Avatar" />
-                      <div>
-                        <strong>Borji Dhia</strong>
-                        <p>Thank you for your donation</p>
+                {feedbacks.length > 0 ? (
+                  feedbacks.map((feedback) => (
+                    <div className="feedback-card" key={feedback._id}>
+                      <div className="message">
+                        <div className="message-header feedback-tip">
+                          <img
+                            src={feedback.reviewer?.photo ? `http://localhost:3000/${feedback.reviewer.photo}` : pdp}
+                            alt="Avatar"
+                          />
+                          <div>
+                            <strong>{feedback.reviewer?.name || 'Anonymous'}</strong>
+                            <StarRating rating={feedback.rating} interactive={false} />
+                            <p>{feedback.comment}</p>
+                          </div>
+                        </div>
+                        <span className="time">
+                          {new Date(feedback.createdAt).toLocaleString()}
+                        </span>
                       </div>
                     </div>
-                    <span className="time">10:30 AM</span>
-                  </div>
-                </div>
-                <div className="feedback-card">
-                  <div className="message">
-                    <div className="message-header feedback-tip">
-                      <img src={dhiaphoto} alt="Avatar" />
-                      <div>
-                        <strong>BEN REBAH Ahmed</strong>
-                        <p>Thank you for your donation</p>
-                      </div>
-                    </div>
-                    <span className="time">10:30 AM</span>
-                  </div>
-                </div>
-                <div className="feedback-card">
-                  <div className="message">
-                    <div className="message-header feedback-tip">
-                      <img src={assilphoto} alt="Avatar" />
-                      <div>
-                        <strong>HAMMEMI Assil</strong>
-                        <p>Thank you for your donation</p>
-                      </div>
-                    </div>
-                    <span className="time">10:30 AM</span>
-                  </div>
-                </div>
+                  ))
+                ) : (
+                  <p>No feedback yet.</p>
+                )}
               </div>
             </div>
           </div>

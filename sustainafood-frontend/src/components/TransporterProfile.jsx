@@ -1,31 +1,65 @@
 import React, { useState, useEffect } from 'react';
-import { updateTransporterAvailability, updateTransporterLocation } from '../api/userService';
+import { useParams } from 'react-router-dom';
+import { updateTransporterAvailability, updateTransporterLocation, getUserById } from '../api/userService';
+import { getFeedbackByUserId, createFeedback } from '../api/feedbackService';
+import { useAuth } from '../contexts/AuthContext';
 import LocationPicker from '../components/LocationPicker';
+import StarRating from '../components/StarRating';
+import pdp from '../assets/images/pdp.png';
 import '../assets/styles/TransporterProfile.css';
 
-const TransporterProfile = ({ user }) => {
-  const loggedInUser = JSON.parse(localStorage.getItem('user'));
-  const isOwnProfile = loggedInUser && (loggedInUser._id === user?._id || loggedInUser.id === user?.id);
-  const userid = user?._id || user?.id;
-  const [isAvailable, setIsAvailable] = useState(user?.isAvailable !== undefined ? user.isAvailable : true);
-  const [location, setLocation] = useState(user?.location || { type: 'Point', coordinates: [0, 0] });
-  const [address, setAddress] = useState(user?.address || '');
+const TransporterProfile = () => {
+  const { id } = useParams(); // Get ID from URL
+  const { user: authUser, token } = useAuth();
+  const user = authUser; // Logged-in user from AuthContext (localStorage)
+  const [profileUser, setProfileUser] = useState(null); // User whose profile is being viewed
+  const [isAvailable, setIsAvailable] = useState(true);
+  const [location, setLocation] = useState({ type: 'Point', coordinates: [0, 0] });
+  const [address, setAddress] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [newFeedback, setNewFeedback] = useState({ rating: 0, comment: '' });
+  const [feedbackError, setFeedbackError] = useState('');
 
+  const isOwnProfile = !id || (user && (user._id === id || user.id === id)); // No ID or ID matches logged-in user
+  const userIdToFetch = id || user?._id || user?.id; // Use URL ID if present, otherwise logged-in user's ID
+
+  // Fetch user data and feedback
   useEffect(() => {
-    if (user?.isAvailable !== undefined) {
-      setIsAvailable(user.isAvailable);
-    }
-    if (user?.location) {
-      setLocation(user.location);
-      setAddress(user.address || `Lat: ${user.location.coordinates[1].toFixed(6)}, Lon: ${user.location.coordinates[0].toFixed(6)}`);
-    }
-  }, [user]);
+    const fetchData = async () => {
+      if (!userIdToFetch) {
+        setError('User ID is missing');
+        return;
+      }
 
+      try {
+        // Fetch user data
+        const userResponse = await getUserById(userIdToFetch);
+        const fetchedUser = userResponse.data;
+        setProfileUser(fetchedUser);
+        setIsAvailable(fetchedUser.isAvailable !== undefined ? fetchedUser.isAvailable : true);
+        if (fetchedUser.location) {
+          setLocation(fetchedUser.location);
+          setAddress(fetchedUser.address || `Lat: ${fetchedUser.location.coordinates[1].toFixed(6)}, Lon: ${fetchedUser.location.coordinates[0].toFixed(6)}`);
+        }
+
+        // Fetch feedback for the user
+        const feedbackResponse = await getFeedbackByUserId(userIdToFetch);
+        setFeedbacks(feedbackResponse);
+      } catch (err) {
+        setError(err.message || 'Failed to load profile or feedback');
+        console.error('Error fetching data:', err);
+      }
+    };
+
+    fetchData();
+  }, [userIdToFetch]);
+
+  // Handle location selection from LocationPicker
   const handleLocationSelect = async (selectedLocation, selectedAddress) => {
-    if (!userid) {
+    if (!userIdToFetch) {
       setError('User ID is missing');
       return;
     }
@@ -36,7 +70,8 @@ const TransporterProfile = ({ user }) => {
       setIsMapOpen(false);
       setError(null);
 
-      await updateTransporterLocation(userid, {
+      // Update location in backend
+      await updateTransporterLocation(userIdToFetch, {
         location: selectedLocation,
         address: selectedAddress,
       });
@@ -46,8 +81,9 @@ const TransporterProfile = ({ user }) => {
     }
   };
 
+  // Handle availability toggle
   const handleAvailabilityToggle = async () => {
-    if (!userid) {
+    if (!userIdToFetch) {
       setError('User ID is missing');
       return;
     }
@@ -55,7 +91,7 @@ const TransporterProfile = ({ user }) => {
     try {
       setLoading(true);
       const newAvailability = !isAvailable;
-      await updateTransporterAvailability(userid, newAvailability);
+      await updateTransporterAvailability(userIdToFetch, newAvailability);
       setIsAvailable(newAvailability);
       setError(null);
     } catch (err) {
@@ -66,13 +102,45 @@ const TransporterProfile = ({ user }) => {
     }
   };
 
-  if (!user || user.role !== 'transporter') {
+  // Handle feedback submission
+  const handleFeedbackSubmit = async (e) => {
+    e.preventDefault();
+    if (newFeedback.rating < 1 || newFeedback.rating > 5) {
+      setFeedbackError('Please select a rating between 1 and 5 stars');
+      return;
+    }
+    if (!newFeedback.comment.trim()) {
+      setFeedbackError('Please enter a comment');
+      return;
+    }
+
+    try {
+      const reviewerId = user._id || user.id;
+      const feedback = await createFeedback(userIdToFetch, newFeedback.rating, newFeedback.comment, reviewerId, token);
+      setFeedbacks([feedback, ...feedbacks]);
+      setNewFeedback({ rating: 0, comment: '' });
+      setFeedbackError('');
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      setFeedbackError('Failed to submit feedback. Please try again.');
+    }
+  };
+
+  if (!user) {
+    return <p className="error-message">Please log in to access this page.</p>;
+  }
+
+  if (!profileUser) {
+    return <p className="loading-message">Loading...</p>;
+  }
+
+  if (profileUser.role !== 'transporter') {
     return <p className="error-message">Access denied. This page is for transporters only.</p>;
   }
 
   return (
     <div className="transporter-profile">
-      <h3>Transporter Dashboard</h3>
+      <h3>{isOwnProfile ? 'Transporter Dashboard' : `${profileUser.name}'s Profile`}</h3>
       {error && <p className="error-message">{error}</p>}
       {loading && <p className="loading-message">Updating...</p>}
 
@@ -98,7 +166,7 @@ const TransporterProfile = ({ user }) => {
             type="text"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            onClick={() => isOwnProfile && setIsMapOpen(true)}
+            onClick={() => isOwnProfile && setIsMapOpen(true)} // Only clickable if it's the user's own profile
             placeholder="📍 Select Location"
             readOnly
           />
@@ -122,9 +190,11 @@ const TransporterProfile = ({ user }) => {
             </div>
           </>
         ) : (
-          <p>{isOwnProfile ? 'Select a location...' : 'Location not set'}</p>
+          <p>Select a location...</p>
         )}
       </div>
+
+      
     </div>
   );
 };

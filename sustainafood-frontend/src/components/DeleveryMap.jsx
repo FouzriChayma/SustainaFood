@@ -3,6 +3,8 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import '../assets/styles/LocationPicker.css';
 import styled from 'styled-components';
+import { IoClose } from 'react-icons/io5'; // Close icon
+import { FaArrowRight } from 'react-icons/fa'; // Arrow icon for transporter position
 
 const RouteInfoPanel = styled.div`
   position: absolute;
@@ -38,13 +40,31 @@ const ErrorMessage = styled.p`
   margin: 5px 0;
 `;
 
+const CloseButton = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #ff4d4f;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  transition: background 0.3s;
+
+  &:hover {
+    background: #d9363e;
+  }
+`;
+
 const DeleveryMap = ({
   isOpen,
   onClose,
-  onLocationChange,
-  onAddressChange,
-  onSelect,
-  initialAddress,
   pickupCoordinates,
   deliveryCoordinates,
   transporterCoordinates,
@@ -54,21 +74,19 @@ const DeleveryMap = ({
 }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
-  const marker = useRef(null);
-  const [location, setLocation] = useState({ type: 'Point', coordinates: [10.208, 36.860] });
-  const [address, setAddress] = useState(initialAddress || '');
+  const transporterMarker = useRef(null);
   const [optimizedRoute, setOptimizedRoute] = useState(null);
   const [totalOptimizedDuration, setTotalOptimizedDuration] = useState(0);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [currentTransporterLocation, setCurrentTransporterLocation] = useState(transporterCoordinates);
 
-  // Format duration from seconds to a readable string (e.g., "1h 23m" or "45m")
+  // Format duration
   const formatDuration = (seconds) => {
     if (!seconds || isNaN(seconds) || seconds < 0) {
       console.warn('Invalid duration:', seconds);
       return 'Unknown';
     }
-    console.log('Formatted duration (seconds):', seconds);
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
@@ -79,7 +97,6 @@ const DeleveryMap = ({
 
   // Fetch route data using OSRM API
   const fetchRoute = async (coordinates) => {
-    console.log('Fetching route with coordinates:', coordinates);
     if (coordinates.length < 2) {
       console.error('Not enough coordinates for route calculation:', coordinates);
       return null;
@@ -97,7 +114,6 @@ const DeleveryMap = ({
         return null;
       }
       const data = await response.json();
-      console.log('OSRM Response:', data);
       if (data.routes && data.routes.length > 0) {
         return {
           geometry: data.routes[0].geometry,
@@ -114,26 +130,18 @@ const DeleveryMap = ({
     }
   };
 
-  // Calculate the optimized route using OSRM durations
-  const calculateRoutes = async () => {
-    console.log('Input Coordinates:', {
-      transporterCoordinates,
-      pickupCoordinates,
-      deliveryCoordinates,
-    });
-
-    if (!transporterCoordinates || !pickupCoordinates || !deliveryCoordinates) {
+  // Calculate routes based on current transporter location
+  const calculateRoutes = async (transporterLoc) => {
+    if (!transporterLoc || !pickupCoordinates || !deliveryCoordinates) {
       setErrorMessage('Missing coordinates for one or more points (Transporter, Donor, Recipient).');
       return;
     }
 
     const points = [
-      { name: 'transporter', coords: transporterCoordinates.coordinates, label: transporterName || 'Transporter' },
+      { name: 'transporter', coords: transporterLoc.coordinates, label: transporterName || 'Transporter' },
       { name: 'pickup', coords: pickupCoordinates.coordinates, label: donorName || 'Donor' },
       { name: 'delivery', coords: deliveryCoordinates.coordinates, label: recipientName || 'Recipient' },
     ].filter(point => point.coords && point.coords[0] !== 0 && point.coords[1] !== 0);
-
-    console.log('Filtered Points:', points);
 
     if (points.length < 3) {
       setErrorMessage(`Insufficient valid coordinates. Found ${points.length}/3 valid points.`);
@@ -144,11 +152,9 @@ const DeleveryMap = ({
     const donor = points.find(p => p.name === 'pickup');
     const recipient = points.find(p => p.name === 'delivery');
 
-    // Route: Transporter -> Donor -> Recipient
     const routeGeometries = [];
     let totalDur = 0;
 
-    // Transporter to Donor
     let transporterToDonor = await fetchRoute([transporter.coords, donor.coords]);
     if (transporterToDonor) {
       const duration = transporterToDonor.duration;
@@ -164,7 +170,6 @@ const DeleveryMap = ({
       return;
     }
 
-    // Donor to Recipient
     let donorToRecipient = await fetchRoute([donor.coords, recipient.coords]);
     if (donorToRecipient) {
       const duration = donorToRecipient.duration;
@@ -207,7 +212,7 @@ const DeleveryMap = ({
           source: 'osm',
         }],
       },
-      center: pickupCoordinates?.coordinates || location.coordinates,
+      center: currentTransporterLocation?.coordinates || pickupCoordinates?.coordinates || [10.208, 36.860],
       zoom: 12,
     });
 
@@ -216,12 +221,24 @@ const DeleveryMap = ({
     map.current.on('load', () => {
       setMapLoaded(true);
 
-      // Route display mode
-      if (pickupCoordinates && deliveryCoordinates && transporterCoordinates) {
-        // Add markers with names
-        if (transporterCoordinates.coordinates[0] !== 0) {
-          new maplibregl.Marker({ color: '#0000FF' })
-            .setLngLat(transporterCoordinates.coordinates)
+      if (pickupCoordinates && deliveryCoordinates && currentTransporterLocation) {
+        // Transporter marker with arrow icon
+        const transporterEl = document.createElement('div');
+        transporterEl.className = 'transporter-marker';
+        transporterEl.style.width = '30px';
+        transporterEl.style.height = '30px';
+        transporterEl.style.display = 'flex';
+        transporterEl.style.alignItems = 'center';
+        transporterEl.style.justifyContent = 'center';
+        transporterEl.style.color = '#0000FF';
+        transporterEl.style.fontSize = '24px';
+        transporterEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>';
+
+        if (currentTransporterLocation.coordinates[0] !== 0) {
+          transporterMarker.current = new maplibregl.Marker({
+            element: transporterEl,
+          })
+            .setLngLat(currentTransporterLocation.coordinates)
             .setPopup(new maplibregl.Popup().setText(`Transporter: ${transporterName || 'Unknown Transporter'}`))
             .addTo(map.current);
         }
@@ -240,51 +257,46 @@ const DeleveryMap = ({
             .addTo(map.current);
         }
 
-        // Trigger route calculation
-        calculateRoutes();
-      } else {
-        // Location picking mode
-        marker.current = new maplibregl.Marker({ draggable: true, color: '#FF0000' })
-          .setLngLat(location.coordinates)
-          .addTo(map.current);
-
-        marker.current.on('dragend', () => {
-          const { lng, lat } = marker.current.getLngLat();
-          updateLocation(lng, lat);
-        });
-
-        map.current.on('click', (e) => {
-          const { lng, lat } = e.lngLat;
-          marker.current.setLngLat([lng, lat]);
-          updateLocation(lng, lat);
-        });
-
-        if (!address && navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            ({ coords }) => updateLocation(coords.longitude, coords.latitude, true),
-            () => alert('Geolocation failed. Defaulting to Soukra, Tunis.')
-          );
-        }
+        calculateRoutes(currentTransporterLocation);
       }
     });
+
+    // Track real-time movement
+    const watchId = navigator.geolocation.watchPosition(
+      ({ coords }) => {
+        const newLocation = { type: 'Point', coordinates: [coords.longitude, coords.latitude] };
+        setCurrentTransporterLocation(newLocation);
+
+        if (transporterMarker.current) {
+          transporterMarker.current.setLngLat(newLocation.coordinates);
+        }
+
+        // Recalculate routes with updated position
+        calculateRoutes(newLocation);
+
+        // Center map on transporter's position
+        map.current.flyTo({ center: newLocation.coordinates, zoom: 15 });
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        setErrorMessage('Failed to track your location.');
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+    );
 
     return () => {
       if (map.current) {
         map.current.remove();
       }
+      navigator.geolocation.clearWatch(watchId);
     };
-  }, [isOpen, pickupCoordinates, deliveryCoordinates, transporterCoordinates, donorName, recipientName, transporterName]);
+  }, [isOpen, pickupCoordinates, deliveryCoordinates, donorName, recipientName, transporterName]);
 
-  // Draw only the optimized route
+  // Draw routes
   useEffect(() => {
-    if (!mapLoaded || !map.current) {
-      console.log('Map not loaded yet, skipping route drawing.');
-      return;
-    }
+    if (!mapLoaded || !map.current) return;
 
-    console.log('Drawing optimized route:', optimizedRoute);
-
-    // Remove existing route layers to prevent duplicates
+    // Remove existing route layers
     for (let i = 0; i < 2; i++) {
       const optimizedLayerId = `optimized-route-layer-${i}`;
       const optimizedSourceId = `optimized-route-${i}`;
@@ -297,10 +309,8 @@ const DeleveryMap = ({
       }
     }
 
-    // Draw Optimized Route (Dotted Line)
     if (optimizedRoute && optimizedRoute.geometries && optimizedRoute.geometries.length > 0) {
       optimizedRoute.geometries.forEach((segment, index) => {
-        console.log(`Drawing optimized route segment ${index}:`, segment);
         const sourceId = `optimized-route-${index}`;
         if (!map.current.getSource(sourceId)) {
           map.current.addSource(sourceId, {
@@ -339,13 +349,10 @@ const DeleveryMap = ({
           });
         }
       });
-    } else {
-      console.log('No optimized route geometries to draw.');
     }
 
-    // Fit map to bounds
     const coordinates = [
-      transporterCoordinates?.coordinates,
+      currentTransporterLocation?.coordinates,
       pickupCoordinates?.coordinates,
       deliveryCoordinates?.coordinates,
     ].filter(coord => coord && coord[0] !== 0 && coord[1] !== 0);
@@ -358,61 +365,14 @@ const DeleveryMap = ({
     } else if (coordinates.length === 1) {
       map.current.flyTo({ center: coordinates[0], zoom: 15 });
     }
-  }, [mapLoaded, optimizedRoute, transporterCoordinates, pickupCoordinates, deliveryCoordinates]);
-
-  const updateLocation = async (lng, lat, move = false) => {
-    const newLoc = { type: 'Point', coordinates: [lng, lat] };
-    setLocation(newLoc);
-    onLocationChange(newLoc);
-
-    const addr = await reverseGeocode(lng, lat);
-    setAddress(addr);
-    onAddressChange(addr);
-
-    if (move) map.current?.flyTo({ center: [lng, lat], zoom: 15 });
-  };
-
-  const geocodeAddress = async (query) => {
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`, {
-        headers: {
-          'User-Agent': 'SustainaFood/1.0 (contact@example.com)',
-        },
-      });
-      const data = await res.json();
-      if (data.length > 0) {
-        const { lat, lon } = data[0];
-        const lng = parseFloat(lon);
-        const latNum = parseFloat(lat);
-        marker.current?.setLngLat([lng, latNum]);
-        map.current?.flyTo({ center: [lng, latNum], zoom: 15 });
-        updateLocation(lng, latNum);
-      } else {
-        alert('Adresse introuvable.');
-      }
-    } catch (err) {
-      alert('Échec de la géolocalisation par adresse.');
-    }
-  };
-
-  const reverseGeocode = async (lng, lat) => {
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lon=${lng}&lat=${lat}`, {
-        headers: {
-          'User-Agent': 'SustainaFood/1.0 (contact@example.com)',
-        },
-      });
-      const data = await res.json();
-      return data.display_name || 'Lieu inconnu';
-    } catch {
-      return 'Lieu inconnu';
-    }
-  };
+  }, [mapLoaded, optimizedRoute, currentTransporterLocation, pickupCoordinates, deliveryCoordinates]);
 
   return isOpen ? (
     <div className="location-picker-localisation">
-      {/* Route info panel for route display mode */}
-      {pickupCoordinates && deliveryCoordinates && transporterCoordinates && (
+      <CloseButton onClick={onClose} aria-label="Close map">
+        <IoClose size={20} />
+      </CloseButton>
+      {pickupCoordinates && deliveryCoordinates && currentTransporterLocation && (
         <RouteInfoPanel>
           {errorMessage ? (
             <ErrorMessage>{errorMessage}</ErrorMessage>
@@ -434,32 +394,7 @@ const DeleveryMap = ({
           )}
         </RouteInfoPanel>
       )}
-      {/* Address search in location picking mode */}
-      {!(pickupCoordinates && deliveryCoordinates && transporterCoordinates) && (
-        <div className="address-search-localisation">
-          <input
-            className="signup-input-localisation"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="Entrer une adresse"
-          />
-          <button className="search-button-localisation" onClick={() => geocodeAddress(address)}>Rechercher</button>
-          <button
-            className="geolocation-button-localisation"
-            onClick={() => navigator.geolocation.getCurrentPosition(
-              ({ coords }) => updateLocation(coords.longitude, coords.latitude, true),
-              () => alert('Échec de la géolocalisation.')
-            )}
-          >
-            📍
-          </button>
-        </div>
-      )}
       <div ref={mapContainer} className="map-container-localisation" />
-      <div className="location-picker-buttons-localisation">
-        <button className="confirm-button-localisation" onClick={() => onSelect(location, address)}>Accepter</button>
-        <button className="cancel-button-localisation" onClick={onClose}>Refuser</button>
-      </div>
     </div>
   ) : null;
 };

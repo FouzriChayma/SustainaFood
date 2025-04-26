@@ -22,4 +22,6 @@ router.get('/pending',  deliveryController.getPendingDeliveries);
 router.post('/:deliveryId/feedback',  feedbackController.createFeedback);
 router.get('/feedbacks/transporter/:transporterId', feedbackController.getTransporterFeedbacks);
 router.get('/transporter/:transporterId', deliveryController.getDeliveriesByTransporter);
+router.post('/:deliveryId/accept-or-refuse', deliveryController.acceptOrRefuseDelivery);
+router.post('/:deliveryId/start-journey', deliveryController.startJourney);
 module.exports = router;

@@ -10,7 +10,7 @@ const deliverySchema = new mongoose.Schema({
   transporter: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    
   },
   pickupAddress: { type: String, required: true }, // Adresse lisible du donateur
   deliveryAddress: { type: String, required: true }, // Adresse lisible du bénéficiaire
@@ -36,7 +36,7 @@ const deliverySchema = new mongoose.Schema({
       default: [0, 0],
     },
   },
-  status: { type: String, enum: ['pending', 'picked_up', 'in_progress', 'delivered', 'failed', null], default: null },
+  status: { type: String, enum: ['accepted','pending', 'picked_up', 'in_progress', 'delivered', 'failed', null], default: null },
  
   
   createdAt: {

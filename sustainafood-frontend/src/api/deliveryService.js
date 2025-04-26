@@ -112,3 +112,32 @@ export const getDeliveriesByTransporter = async (transporterId, status = '') => 
     throw error.response?.data || { message: 'Failed to fetch deliveries by transporter' };
   }
 };
+
+// New API call for accepting or refusing a delivery
+export const acceptOrRefuseDelivery = async (deliveryId, action, transporterId) => {
+  return await axios.post(`${API_URL}/${deliveryId}/accept-or-refuse`, {
+    action,
+    transporterId, // Send transporterId in the request body
+  }, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token')}`, // Ensure token is sent for authentication
+    },
+  });
+};
+// New API call for starting a delivery journey
+export const startJourney = async (deliveryId, transporterId) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/${deliveryId}/start-journey`,
+      { transporterId }, // Send transporterId in the request body
+      {
+        headers: {
+          Authorization: `Bearer ${getToken()}`, // Keep this for consistency, though not used without middleware
+        },
+      }
+    );
+    return response;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to start journey' };
+  }
+};

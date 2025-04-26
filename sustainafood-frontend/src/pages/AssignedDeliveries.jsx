@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { getDeliveriesByTransporter, updateDeliveryStatus } from '../api/deliveryService';
+import { getDeliveriesByTransporter, acceptOrRefuseDelivery, startJourney } from '../api/deliveryService';
 import { getUserById, updateTransporterLocation } from '../api/userService';
 import { getRequestById } from '../api/requestNeedsService';
 import DeleveryMap from '../components/DeleveryMap';
@@ -10,9 +10,8 @@ import styled, { createGlobalStyle } from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
 import { useAlert } from '../contexts/AlertContext';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 
-// Global Styles and Styled Components (unchanged, with additions)
+// Global Styles
 const GlobalStyle = createGlobalStyle`
   body {
     margin: 0;
@@ -178,6 +177,8 @@ const ButtonContainer = styled.div`
   display: flex;
   justify-content: space-evenly;
   margin-top: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
 `;
 
 const ActionButton = styled.button`
@@ -189,7 +190,25 @@ const ActionButton = styled.button`
   font-weight: bold;
   transition: background 0.3s ease-in-out;
 
-  &.update-btn {
+  &.accept-btn {
+    background-color: #28a745;
+    color: white;
+
+    &:hover {
+      background-color: #218838;
+    }
+  }
+
+  &.refuse-btn {
+    background-color: #dc3545;
+    color: white;
+
+    &:hover {
+      background-color: #c82333;
+    }
+  }
+
+  &.start-btn {
     background-color: #007bff;
     color: white;
 
@@ -199,11 +218,11 @@ const ActionButton = styled.button`
   }
 
   &.map-btn {
-    background-color: #28a745;
+    background-color: #6c757d;
     color: white;
 
     &:hover {
-      background-color: #218838;
+      background-color: #5a6268;
     }
   }
 
@@ -317,24 +336,19 @@ const StatusBadge = styled.span`
   font-weight: bold;
   margin-left: 5px;
   
-  &.no-status {
-    background-color: #e9ecef;
-    color: #495057;
-  }
-  
   &.pending {
     background-color: #fff3cd;
     color: #856404;
   }
   
-  &.picked_up {
-    background-color: #e2e3e5;
-    color: #383d41;
+  &.accepted {
+    background-color: #d4edda;
+    color: #155724;
   }
   
   &.in_progress {
-    background-color: #d4edda;
-    color: #155724;
+    background-color: #d1ecf1;
+    color: #0c5460;
   }
   
   &.delivered {
@@ -363,15 +377,6 @@ const Spinner = styled.div`
   }
 `;
 
-const RouteInfo = styled.div`
-  margin-top: 10px;
-  padding: 10px;
-  background: #e9ecef;
-  border-radius: 5px;
-  font-size: 14px;
-  color: #333;
-`;
-
 const AssignedDeliveries = () => {
   const { showAlert } = useAlert();
   const { transporterId } = useParams();
@@ -386,8 +391,7 @@ const AssignedDeliveries = () => {
   const [sortOption, setSortOption] = useState('date');
   const [searchQuery, setSearchQuery] = useState('');
   const [processing, setProcessing] = useState({});
-  const [isMapOpen, setIsMapOpen] = useState(null); // Track which delivery's map is open
-  const [routeInfo, setRouteInfo] = useState({});
+  const [isMapOpen, setIsMapOpen] = useState(null);
   const [transporterLocation, setTransporterLocation] = useState({ type: 'Point', coordinates: [0, 0] });
 
   // Fetch transporter's initial location
@@ -414,6 +418,7 @@ const AssignedDeliveries = () => {
     fetchTransporterLocation();
   }, [transporterId]);
 
+  // Fetch deliveries
   useEffect(() => {
     const fetchData = async () => {
       const token = localStorage.getItem('token');
@@ -552,80 +557,68 @@ const AssignedDeliveries = () => {
     }
   };
 
-  // Calculate route using OSRM
-  const calculateRoute = async (deliveryId, pickupCoords, deliveryCoords) => {
-    try {
-      // Skip if coordinates are invalid
-      if (
-        transporterLocation.coordinates[0] === 0 ||
-        pickupCoords.coordinates[0] === 0 ||
-        deliveryCoords.coordinates[0] === 0
-      ) {
-        return { error: 'Invalid coordinates' };
-      }
+  // Handle accept or refuse delivery
+// Handle accept or refuse delivery
+const handleAcceptOrRefuse = async (deliveryId, action) => {
+  if (!transporterId) {
+    showAlert('error', 'Transporter ID is missing. Please try again or log in.');
+    return;
+  }
 
-      // Route from transporter to pickup
-      const toPickupUrl = `http://router.project-osrm.org/route/v1/driving/${transporterLocation.coordinates[0]},${transporterLocation.coordinates[1]};${pickupCoords.coordinates[0]},${pickupCoords.coordinates[1]}?overview=full&geometries=geojson`;
-      const toPickupRes = await axios.get(toPickupUrl);
-      const toPickupRoute = toPickupRes.data.routes[0];
-      const toPickupDuration = toPickupRoute.duration / 60; // Convert seconds to minutes
-      const toPickupDistance = toPickupRoute.distance / 1000; // Convert meters to kilometers
+  if (!window.confirm(`Are you sure you want to ${action} this delivery?`)) return;
 
-      // Route from pickup to delivery
-      const toDeliveryUrl = `http://router.project-osrm.org/route/v1/driving/${pickupCoords.coordinates[0]},${pickupCoords.coordinates[1]};${deliveryCoords.coordinates[0]},${deliveryCoords.coordinates[1]}?overview=full&geometries=geojson`;
-      const toDeliveryRes = await axios.get(toDeliveryUrl);
-      const toDeliveryRoute = toDeliveryRes.data.routes[0];
-      const toDeliveryDuration = toDeliveryRoute.duration / 60; // Convert seconds to minutes
-      const toDeliveryDistance = toDeliveryRoute.distance / 1000; // Convert meters to kilometers
+  try {
+    setProcessing(prev => ({ ...prev, [deliveryId]: true }));
+    const response = await acceptOrRefuseDelivery(deliveryId, action, transporterId);
 
-      setRouteInfo(prev => ({
-        ...prev,
-        [deliveryId]: {
-          toPickup: { duration: toPickupDuration, distance: toPickupDistance, geometry: toPickupRoute.geometry },
-          toDelivery: { duration: toDeliveryDuration, distance: toDeliveryDistance, geometry: toDeliveryRoute.geometry },
-        },
-      }));
-    } catch (err) {
-      console.error(`Failed to calculate route for delivery ${deliveryId}:`, err);
-      setRouteInfo(prev => ({
-        ...prev,
-        [deliveryId]: { error: 'Failed to calculate route' },
-      }));
+    if (action === 'accept') {
+      setDeliveries(prev =>
+        prev.map(d => (d._id === deliveryId ? { ...d, status: 'accepted' } : d))
+      );
+      showAlert('success', 'Delivery accepted successfully!');
+    } else {
+      setDeliveries(prev => prev.filter(d => d._id !== deliveryId));
+      showAlert('success', response.data.message || 'Delivery refused and removed from your list.');
     }
-  };
+  } catch (error) {
+    console.error(`Error ${action}ing delivery:`, error);
+    const errorMessage = error.response?.data?.message || error.message || `Failed to ${action} delivery`;
+    showAlert('error', errorMessage);
+  } finally {
+    setProcessing(prev => ({ ...prev, [deliveryId]: false }));
+  }
+};
 
-  // Handle status update with location tracking
-  const handleUpdateStatus = async (deliveryId, newStatus) => {
-    if (!window.confirm(`Are you sure you want to update the status to ${newStatus}?`)) return;
+  // Handle start journey
+  const handleStartJourney = async (deliveryId) => {
+    if (!window.confirm('Are you sure you want to start the delivery journey?')) return;
 
     try {
       setProcessing(prev => ({ ...prev, [deliveryId]: true }));
 
-      // Update location if moving from pending
-      if (newStatus !== 'pending' && deliveries.find(d => d._id === deliveryId).status === 'pending') {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            async ({ coords }) => {
-              const newLocation = { type: 'Point', coordinates: [coords.longitude, coords.latitude] };
-              await updateTransporterLocation(transporterId, {
-                location: newLocation,
-                address: await reverseGeocode(coords.longitude, coords.latitude),
-              });
-              setTransporterLocation(newLocation);
-            },
-            () => showAlert('error', 'Failed to get current location')
-          );
-        }
+      // Update transporter location
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async ({ coords }) => {
+            const newLocation = { type: 'Point', coordinates: [coords.longitude, coords.latitude] };
+            await updateTransporterLocation(transporterId, {
+              location: newLocation,
+              address: await reverseGeocode(coords.longitude, coords.latitude),
+            });
+            setTransporterLocation(newLocation);
+          },
+          () => showAlert('error', 'Failed to get current location')
+        );
       }
 
-      await updateDeliveryStatus(deliveryId, { status: newStatus });
+      await startJourney(deliveryId, transporterId);
       setDeliveries(prev =>
-        prev.map(d => (d._id === deliveryId ? { ...d, status: newStatus } : d))
+        prev.map(d => (d._id === deliveryId ? { ...d, status: 'in_progress' } : d))
       );
-      showAlert('success', 'Delivery status updated successfully!');
+      showAlert('success', 'Journey started successfully!');
     } catch (error) {
-      console.error('Error updating status:', error);
-      showAlert('error', error.message || 'Failed to update delivery status');
+      console.error('Error starting journey:', error);
+      showAlert('error', error.message || 'Failed to start journey');
     } finally {
       setProcessing(prev => ({ ...prev, [deliveryId]: false }));
     }
@@ -645,14 +638,9 @@ const AssignedDeliveries = () => {
   // Handle map open/close
   const handleOpenMap = (delivery) => {
     setIsMapOpen(delivery._id);
-    calculateRoute(delivery._id, delivery.pickupCoordinates, delivery.deliveryCoordinates);
   };
 
-  // Handle location select (not used for route display)
-  const handleLocationSelect = (deliveryId, selectedLocation, selectedAddress) => {
-    setIsMapOpen(null);
-  };
-
+  // Filter and sort deliveries
   useEffect(() => {
     if (!deliveries.length) return;
 
@@ -680,13 +668,13 @@ const AssignedDeliveries = () => {
       const donationA = a.donationTransaction?.donation || {};
       const donationB = b.donationTransaction?.donation || {};
       const recipientA = a.donationTransaction?.requestNeed?.recipient || {};
-      const recipientB = a.donationTransaction?.requestNeed?.recipient || {};
+      const recipientB = b.donationTransaction?.requestNeed?.recipient || {};
       if (sortOption === 'title') {
         return (donationA.title || '').localeCompare(donationB.title || '');
       } else if (sortOption === 'recipient') {
         return (recipientA.name || '').localeCompare(recipientB.name || '');
       } else if (sortOption === 'status') {
-        return (a.status || 'no-status').localeCompare(b.status || 'no-status');
+        return (a.status || 'pending').localeCompare(b.status || 'pending');
       } else {
         return new Date(a.createdAt) - new Date(b.createdAt);
       }
@@ -746,9 +734,8 @@ const AssignedDeliveries = () => {
             aria-label="Filter by status"
           >
             <option value="all">🟢 All Deliveries</option>
-            <option value="no-status">⚪ No Status</option>
             <option value="pending">🟠 Pending</option>
-            <option value="picked_up">🔄 Picked Up</option>
+            <option value="accepted">✅ Accepted</option>
             <option value="in_progress">🚚 In Progress</option>
             <option value="delivered">✅ Delivered</option>
             <option value="failed">❌ Failed</option>
@@ -771,16 +758,6 @@ const AssignedDeliveries = () => {
             const donation = delivery.donationTransaction?.donation || {};
             const recipient = delivery.donationTransaction?.requestNeed?.recipient || {};
             const donor = donation.donor || {};
-
-            // Debug logging
-            if (!recipient.name || !donor.name || !recipient.phone || !donor.phone) {
-              console.warn('Missing fields for delivery:', {
-                deliveryId: delivery._id,
-                recipient,
-                donor,
-                donationTransaction: delivery.donationTransaction,
-              });
-            }
 
             const userPhoto = recipient.photo
               ? `http://localhost:3000/${recipient.photo}`
@@ -809,8 +786,8 @@ const AssignedDeliveries = () => {
                   <DeliveryDetail><strong>Recipient Phone:</strong> {recipient.phone || 'Not provided'}</DeliveryDetail>
                   <DeliveryDetail>
                     <strong>Status:</strong>
-                    <StatusBadge className={delivery.status || 'no-status'}>
-                      {delivery.status || 'No Status'}
+                    <StatusBadge className={delivery.status || 'pending'}>
+                      {delivery.status || 'Pending'}
                     </StatusBadge>
                   </DeliveryDetail>
                 </DeliveryDetails>
@@ -826,49 +803,54 @@ const AssignedDeliveries = () => {
                     </Item>
                   </ItemList>
                 </ItemSection>
-                {routeInfo[delivery._id] && (
-                  <RouteInfo>
-                    {routeInfo[delivery._id].error ? (
-                      <p>Error: {routeInfo[delivery._id].error}</p>
-                    ) : (
-                      <>
-                        <p><strong>To Pickup:</strong> {routeInfo[delivery._id].toPickup.distance.toFixed(2)} km, {routeInfo[delivery._id].toPickup.duration.toFixed(2)} mins</p>
-                        <p><strong>To Delivery:</strong> {routeInfo[delivery._id].toDelivery.distance.toFixed(2)} km, {routeInfo[delivery._id].toDelivery.duration.toFixed(2)} mins</p>
-                      </>
-                    )}
-                  </RouteInfo>
-                )}
                 <ButtonContainer>
-                  {delivery.status !== 'delivered' && delivery.status !== 'failed' && (
+                  {(!delivery.status || delivery.status === 'pending') && (
                     <>
-                      <Select
-                        onChange={e => handleUpdateStatus(delivery._id, e.target.value)}
-                        value={delivery.status || 'no-status'}
-                        disabled={processing[delivery._id]}
-                        aria-label="Update delivery status"
-                      >
-                        <option value="no-status">No Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="picked_up">Picked Up</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="failed">Failed</option>
-                      </Select>
                       <ActionButton
-                        className="update-btn"
-                        onClick={() => handleUpdateStatus(delivery._id, delivery.status || 'no-status')}
+                        className="accept-btn"
+                        onClick={() => handleAcceptOrRefuse(delivery._id, 'accept')}
                         disabled={processing[delivery._id]}
-                        aria-label="Update status"
+                        aria-label="Accept delivery"
                       >
                         {processing[delivery._id] ? (
                           <>
-                            <Spinner size="sm" /> Updating...
+                            <Spinner size="sm" /> Accepting...
                           </>
                         ) : (
-                          'Update Status'
+                          'Accept'
+                        )}
+                      </ActionButton>
+                      <ActionButton
+                        className="refuse-btn"
+                        onClick={() => handleAcceptOrRefuse(delivery._id, 'refuse')}
+                        disabled={processing[delivery._id]}
+                        aria-label="Refuse delivery"
+                      >
+                        {processing[delivery._id] ? (
+                          <>
+                            <Spinner size="sm" /> Refusing...
+                          </>
+                        ) : (
+                          'Refuse'
                         )}
                       </ActionButton>
                     </>
+                  )}
+                  {delivery.status === 'accepted' && (
+                    <ActionButton
+                      className="start-btn"
+                      onClick={() => handleStartJourney(delivery._id)}
+                      disabled={processing[delivery._id]}
+                      aria-label="Start journey"
+                    >
+                      {processing[delivery._id] ? (
+                        <>
+                          <Spinner size="sm" /> Starting...
+                        </>
+                      ) : (
+                        'Start Journey'
+                      )}
+                    </ActionButton>
                   )}
                   <ActionButton
                     className="map-btn"
@@ -882,14 +864,12 @@ const AssignedDeliveries = () => {
                   <DeleveryMap
                     isOpen={isMapOpen === delivery._id}
                     onClose={() => setIsMapOpen(null)}
-                    onLocationChange={() => {}} // Not used for route display
-                    onAddressChange={() => {}} // Not used for route display
-                    onSelect={(loc, addr) => handleLocationSelect(delivery._id, loc, addr)}
-                    initialAddress={delivery.pickupAddress}
-                    routeInfo={routeInfo[delivery._id]}
                     pickupCoordinates={delivery.pickupCoordinates}
                     deliveryCoordinates={delivery.deliveryCoordinates}
                     transporterCoordinates={transporterLocation}
+                    donorName={donor.name}
+                    recipientName={recipient.name}
+                    transporterName={JSON.parse(localStorage.getItem('user'))?.name || 'Transporter'}
                   />
                 )}
               </DeliveryCard>

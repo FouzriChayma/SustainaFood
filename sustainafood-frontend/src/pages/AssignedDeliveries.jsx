@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { getDeliveriesByTransporter, acceptOrRefuseDelivery, startJourney } from '../api/deliveryService';
+import { getDeliveriesByTransporter, acceptOrRefuseDelivery, startJourney, updateDeliveryStatus } from '../api/deliveryService';
 import { getUserById, updateTransporterLocation } from '../api/userService';
 import { getRequestById } from '../api/requestNeedsService';
 import DeleveryMap from '../components/DeleveryMap';
@@ -217,6 +217,24 @@ const ActionButton = styled.button`
     }
   }
 
+  &.picked-up-btn {
+    background-color: #ffc107;
+    color: white;
+
+    &:hover {
+      background-color: #e0a800;
+    }
+  }
+
+  &.delivered-btn {
+    background-color: #17a2b8;
+    color: white;
+
+    &:hover {
+      background-color: #138496;
+    }
+  }
+
   &.map-btn {
     background-color: #6c757d;
     color: white;
@@ -349,6 +367,11 @@ const StatusBadge = styled.span`
   &.in_progress {
     background-color: #d1ecf1;
     color: #0c5460;
+  }
+  
+  &.picked_up {
+    background-color: #fff3cd;
+    color: #856404;
   }
   
   &.delivered {
@@ -558,36 +581,35 @@ const AssignedDeliveries = () => {
   };
 
   // Handle accept or refuse delivery
-// Handle accept or refuse delivery
-const handleAcceptOrRefuse = async (deliveryId, action) => {
-  if (!transporterId) {
-    showAlert('error', 'Transporter ID is missing. Please try again or log in.');
-    return;
-  }
-
-  if (!window.confirm(`Are you sure you want to ${action} this delivery?`)) return;
-
-  try {
-    setProcessing(prev => ({ ...prev, [deliveryId]: true }));
-    const response = await acceptOrRefuseDelivery(deliveryId, action, transporterId);
-
-    if (action === 'accept') {
-      setDeliveries(prev =>
-        prev.map(d => (d._id === deliveryId ? { ...d, status: 'accepted' } : d))
-      );
-      showAlert('success', 'Delivery accepted successfully!');
-    } else {
-      setDeliveries(prev => prev.filter(d => d._id !== deliveryId));
-      showAlert('success', response.data.message || 'Delivery refused and removed from your list.');
+  const handleAcceptOrRefuse = async (deliveryId, action) => {
+    if (!transporterId) {
+      showAlert('error', 'Transporter ID is missing. Please try again or log in.');
+      return;
     }
-  } catch (error) {
-    console.error(`Error ${action}ing delivery:`, error);
-    const errorMessage = error.response?.data?.message || error.message || `Failed to ${action} delivery`;
-    showAlert('error', errorMessage);
-  } finally {
-    setProcessing(prev => ({ ...prev, [deliveryId]: false }));
-  }
-};
+
+    if (!window.confirm(`Are you sure you want to ${action} this delivery?`)) return;
+
+    try {
+      setProcessing(prev => ({ ...prev, [deliveryId]: true }));
+      const response = await acceptOrRefuseDelivery(deliveryId, action, transporterId);
+
+      if (action === 'accept') {
+        setDeliveries(prev =>
+          prev.map(d => (d._id === deliveryId ? { ...d, status: 'accepted' } : d))
+        );
+        showAlert('success', 'Delivery accepted successfully!');
+      } else {
+        setDeliveries(prev => prev.filter(d => d._id !== deliveryId));
+        showAlert('success', response.data.message || 'Delivery refused and removed from your list.');
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing delivery:`, error);
+      const errorMessage = error.response?.data?.message || error.message || `Failed to ${action} delivery`;
+      showAlert('error', errorMessage);
+    } finally {
+      setProcessing(prev => ({ ...prev, [deliveryId]: false }));
+    }
+  };
 
   // Handle start journey
   const handleStartJourney = async (deliveryId) => {
@@ -619,6 +641,41 @@ const handleAcceptOrRefuse = async (deliveryId, action) => {
     } catch (error) {
       console.error('Error starting journey:', error);
       showAlert('error', error.message || 'Failed to start journey');
+    } finally {
+      setProcessing(prev => ({ ...prev, [deliveryId]: false }));
+    }
+  };
+
+  // Handle update delivery status
+  const handleUpdateStatus = async (deliveryId, newStatus) => {
+    if (!window.confirm(`Are you sure you want to mark this delivery as ${newStatus}?`)) return;
+
+    try {
+      setProcessing(prev => ({ ...prev, [deliveryId]: true }));
+
+      // Update transporter location
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async ({ coords }) => {
+            const newLocation = { type: 'Point', coordinates: [coords.longitude, coords.latitude] };
+            await updateTransporterLocation(transporterId, {
+              location: newLocation,
+              address: await reverseGeocode(coords.longitude, coords.latitude),
+            });
+            setTransporterLocation(newLocation);
+          },
+          () => showAlert('error', 'Failed to get current location')
+        );
+      }
+
+      await updateDeliveryStatus(deliveryId, newStatus, transporterId);
+      setDeliveries(prev =>
+        prev.map(d => (d._id === deliveryId ? { ...d, status: newStatus } : d))
+      );
+      showAlert('success', `Delivery marked as ${newStatus} successfully!`);
+    } catch (error) {
+      console.error(`Error updating status to ${newStatus}:`, error);
+      showAlert('error', error.message || `Failed to update status to ${newStatus}`);
     } finally {
       setProcessing(prev => ({ ...prev, [deliveryId]: false }));
     }
@@ -737,6 +794,7 @@ const handleAcceptOrRefuse = async (deliveryId, action) => {
             <option value="pending">🟠 Pending</option>
             <option value="accepted">✅ Accepted</option>
             <option value="in_progress">🚚 In Progress</option>
+            <option value="picked_up">📦 Picked Up</option>
             <option value="delivered">✅ Delivered</option>
             <option value="failed">❌ Failed</option>
           </Select>
@@ -849,6 +907,38 @@ const handleAcceptOrRefuse = async (deliveryId, action) => {
                         </>
                       ) : (
                         'Start Journey'
+                      )}
+                    </ActionButton>
+                  )}
+                  {delivery.status === 'in_progress' && (
+                    <ActionButton
+                      className="picked-up-btn"
+                      onClick={() => handleUpdateStatus(delivery._id, 'picked_up')}
+                      disabled={processing[delivery._id]}
+                      aria-label="Mark as picked up"
+                    >
+                      {processing[delivery._id] ? (
+                        <>
+                          <Spinner size="sm" /> Marking...
+                        </>
+                      ) : (
+                        'Mark Picked Up'
+                      )}
+                    </ActionButton>
+                  )}
+                  {delivery.status === 'picked_up' && (
+                    <ActionButton
+                      className="delivered-btn"
+                      onClick={() => handleUpdateStatus(delivery._id, 'delivered')}
+                      disabled={processing[delivery._id]}
+                      aria-label="Mark as delivered"
+                    >
+                      {processing[delivery._id] ? (
+                        <>
+                          <Spinner size="sm" /> Marking...
+                        </>
+                      ) : (
+                        'Mark Delivered'
                       )}
                     </ActionButton>
                   )}

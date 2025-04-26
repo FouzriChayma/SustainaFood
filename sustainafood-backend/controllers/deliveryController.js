@@ -672,8 +672,8 @@ exports.acceptOrRefuseDelivery = async (req, res) => {
       }
 
       // Update transporter availability
-      console.log(`Updating availability for transporter ${closestTransporter._id}`);
-      await User.findByIdAndUpdate(closestTransporter._id, { isAvailable: false });
+      //console.log(`Updating availability for transporter ${closestTransporter._id}`);
+      //await User.findByIdAndUpdate(closestTransporter._id, { isAvailable: false });
 
       // Send success response
       return res.status(200).json({

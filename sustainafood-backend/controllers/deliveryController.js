@@ -597,13 +597,13 @@ exports.acceptOrRefuseDelivery = async (req, res) => {
 
       for (const transporter of transporters) {
         if (
-          transporter.currentLocation &&
-          transporter.currentLocation.coordinates &&
-          transporter.currentLocation.coordinates.length === 2 &&
-          transporter.currentLocation.coordinates[0] !== 0 &&
-          transporter.currentLocation.coordinates[1] !== 0
+          transporter.location && // Changé de currentLocation à location
+          transporter.location.coordinates &&
+          transporter.location.coordinates.length === 2 &&
+          transporter.location.coordinates[0] !== 0 &&
+          transporter.location.coordinates[1] !== 0
         ) {
-          const distance = calculateDistance(pickupLocation, transporter.currentLocation);
+          const distance = calculateDistance(pickupLocation, transporter.location); // Changé de currentLocation à location
           console.log(`Transporter ${transporter._id}: Distance = ${distance} meters`);
           if (distance < minDistance) {
             minDistance = distance;

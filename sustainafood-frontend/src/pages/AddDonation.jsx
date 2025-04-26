@@ -77,7 +77,7 @@ export const AddDonation = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const [userid, setUserid] = useState();
 
-  const isDonner = user?.role === "restaurant" || user?.role === "supermarket";
+  const isDonner = user?.role === "restaurant" || user?.role === "supermarket" || user?.role === "personaldonor";
   const isRecipient = user?.role === "ong" || user?.role === "student";
 
   const productTypes = [

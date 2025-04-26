@@ -465,10 +465,10 @@ exports.acceptOrRefuseDelivery = async (req, res) => {
 
     // Validate inputs
     if (!transporterId) {
-      return res.status(400).json({ message: 'Transporter ID is required' });
+      throw new Error('Transporter ID is required');
     }
     if (!['accept', 'refuse'].includes(action)) {
-      return res.status(400).json({ message: 'Invalid action. Must be "accept" or "refuse".' });
+      throw new Error('Invalid action. Must be "accept" or "refuse".');
     }
 
     // Fetch the delivery
@@ -480,49 +480,53 @@ exports.acceptOrRefuseDelivery = async (req, res) => {
       },
     });
     if (!delivery) {
-      return res.status(404).json({ message: 'Delivery not found' });
+      throw new Error('Delivery not found');
     }
 
     // Validate transporter assignment
     if (!delivery.transporter || delivery.transporter.toString() !== transporterId.toString()) {
-      return res.status(403).json({ message: 'You are not assigned to this delivery' });
+      throw new Error('You are not assigned to this delivery');
     }
 
-    if (action === 'accept') {
-      delivery.status = 'accepted';
-      await delivery.save();
+    // Handle action: accept or refuse
+    try {
+      if (action === 'accept') {
+        delivery.status = 'accepted';
+        await delivery.save();
 
-      if (!delivery.donationTransaction) {
-        return res.status(500).json({ message: 'Delivery is missing associated donation transaction' });
+        if (!delivery.donationTransaction) {
+          throw new Error('Delivery is missing associated donation transaction');
+        }
+
+        const transaction = await DonationTransaction.findById(delivery.donationTransaction._id)
+          .populate('donor')
+          .populate('recipient');
+
+        if (!transaction) {
+          throw new Error('Associated donation transaction not found');
+        }
+
+        // Notify donor and recipient
+        await createNotification({
+          body: {
+            sender: transporterId,
+            receiver: transaction.donor._id,
+            message: `Transporter has accepted the delivery from ${delivery.pickupAddress} to ${delivery.deliveryAddress}.`,
+          },
+        }, { status: () => ({ json: () => {} }) });
+
+        await createNotification({
+          body: {
+            sender: transporterId,
+            receiver: transaction.recipient._id,
+            message: `Transporter has accepted your delivery request.`,
+          },
+        }, { status: () => ({ json: () => {} }) });
+
+        return res.status(200).json({ data: delivery });
       }
 
-      const transaction = await DonationTransaction.findById(delivery.donationTransaction._id)
-        .populate('donor')
-        .populate('recipient');
-
-      if (!transaction) {
-        return res.status(404).json({ message: 'Associated donation transaction not found' });
-      }
-
-      // Notify donor and recipient
-      await createNotification({
-        body: {
-          sender: transporterId,
-          receiver: transaction.donor._id,
-          message: `Transporter has accepted the delivery from ${delivery.pickupAddress} to ${delivery.deliveryAddress}.`,
-        },
-      }, { status: () => ({ json: () => {} }) });
-
-      await createNotification({
-        body: {
-          sender: transporterId,
-          receiver: transaction.recipient._id,
-          message: `Transporter has accepted your delivery request.`,
-        },
-      }, { status: () => ({ json: () => {} }) });
-
-      res.status(200).json({ data: delivery });
-    } else if (action === 'refuse') {
+      // Handle refuse action
       // Clear current transporter and set status to pending
       delivery.transporter = null;
       delivery.status = 'pending';
@@ -531,19 +535,19 @@ exports.acceptOrRefuseDelivery = async (req, res) => {
       // Make current transporter available again
       const transporter = await User.findById(transporterId);
       if (!transporter) {
-        return res.status(404).json({ message: 'Transporter not found' });
+        throw new Error('Transporter not found');
       }
       await User.findByIdAndUpdate(transporterId, { isAvailable: true });
 
       // Validate donationTransaction
       if (!delivery.donationTransaction) {
-        return res.status(500).json({ message: 'Delivery is missing associated donation transaction' });
+        throw new Error('Delivery is missing associated donation transaction');
       }
 
       // Use pickupCoordinates from Delivery document
       const pickupLocation = delivery.pickupCoordinates || delivery.donationTransaction.donation?.location;
       if (!pickupLocation || !pickupLocation.coordinates || pickupLocation.coordinates[0] === 0) {
-        const transaction = await DonationTransaction.findById(delivery.donationTransaction._id)
+        const transaction = await DeliveryTransaction.findById(delivery.donationTransaction._id)
           .populate('donor')
           .populate('recipient');
 
@@ -597,13 +601,13 @@ exports.acceptOrRefuseDelivery = async (req, res) => {
 
       for (const transporter of transporters) {
         if (
-          transporter.location && // Changé de currentLocation à location
+          transporter.location &&
           transporter.location.coordinates &&
           transporter.location.coordinates.length === 2 &&
           transporter.location.coordinates[0] !== 0 &&
           transporter.location.coordinates[1] !== 0
         ) {
-          const distance = calculateDistance(pickupLocation, transporter.location); // Changé de currentLocation à location
+          const distance = calculateDistance(pickupLocation, transporter.location);
           console.log(`Transporter ${transporter._id}: Distance = ${distance} meters`);
           if (distance < minDistance) {
             minDistance = distance;
@@ -614,32 +618,8 @@ exports.acceptOrRefuseDelivery = async (req, res) => {
         }
       }
 
-      if (closestTransporter) {
-        // Use assignTransporter to handle reassignment
-        const assignReq = {
-          params: { deliveryId },
-          body: { transporterId: closestTransporter._id, force: true },
-        };
-        const assignRes = {
-          status: (code) => ({
-            json: (data) => ({ code, data }),
-          }),
-        };
-
-        const result = await exports.assignTransporter(assignReq, assignRes);
-
-        // Update transporter availability
-        await User.findByIdAndUpdate(closestTransporter._id, { isAvailable: false });
-
-        if (result.code === 200) {
-          res.status(200).json({
-            message: 'Delivery refused and reassigned to a new transporter',
-            data: result.data,
-          });
-        } else {
-          res.status(result.code).json(result.data);
-        }
-      } else {
+      // Handle reassignment if a closest transporter is found
+      if (!closestTransporter) {
         const transaction = await DonationTransaction.findById(delivery.donationTransaction._id)
           .populate('donor')
           .populate('recipient');
@@ -660,14 +640,122 @@ exports.acceptOrRefuseDelivery = async (req, res) => {
           },
         }, { status: () => ({ json: () => {} }) });
 
-        res.status(200).json({
+        return res.status(200).json({
           message: 'Delivery refused, no other transporters available. Awaiting reassignment.',
         });
       }
+
+      // Re-validate delivery existence before reassignment
+      const revalidatedDelivery = await Delivery.findById(deliveryId);
+      if (!revalidatedDelivery) {
+        throw new Error('Delivery no longer exists for reassignment');
+      }
+
+      // Validate closestTransporter
+      if (!closestTransporter._id) {
+        throw new Error('Closest transporter ID is undefined');
+      }
+
+      // Use assignTransporter to handle reassignment
+      const assignReq = {
+        params: { deliveryId },
+        body: { transporterId: closestTransporter._id, force: true },
+      };
+
+      console.log('Calling assignTransporter with:', assignReq);
+      const result = await exports.assignTransporterinaccept(assignReq);
+      console.log('assignTransporter result:', result);
+
+      // Validate result
+      if (!result || !result.data) {
+        throw new Error('assignTransporter failed: Invalid result');
+      }
+
+      // Update transporter availability
+      console.log(`Updating availability for transporter ${closestTransporter._id}`);
+      await User.findByIdAndUpdate(closestTransporter._id, { isAvailable: false });
+
+      // Send success response
+      return res.status(200).json({
+        message: 'Delivery refused and reassigned to a new transporter',
+        data: result.data,
+      });
+    } catch (innerError) {
+      console.error('Inner error in acceptOrRefuseDelivery:', innerError);
+      throw new Error(`Failed to process ${action} action: ${innerError.message}`);
     }
   } catch (error) {
     console.error('Error in acceptOrRefuseDelivery:', error);
-    res.status(500).json({ message: 'Error processing delivery action', error: error.message });
+    const statusCode = error.message.includes('Transporter ID is required') ? 400 :
+      error.message.includes('Invalid action') ? 400 :
+      error.message.includes('Delivery not found') ? 404 :
+      error.message.includes('You are not assigned') ? 403 :
+      error.message.includes('Transporter not found') ? 404 :
+      error.message.includes('Delivery is missing') ? 500 :
+      error.message.includes('Associated donation transaction') ? 404 :
+      error.message.includes('Delivery no longer exists') ? 404 :
+      error.message.includes('Closest transporter ID is undefined') ? 500 :
+      error.message.includes('assignTransporter failed') ? 500 :
+      error.message.includes('Failed to process') ? 500 : 500;
+
+    res.status(statusCode).json({ message: 'Error processing delivery action', error: error.message });
+  }
+};
+exports.assignTransporterinaccept = async (req) => {
+  try {
+    const { deliveryId } = req.params;
+    const { transporterId, force } = req.body;
+
+    if (!transporterId) {
+      throw new Error('Transporter ID is required');
+    }
+
+    const delivery = await Delivery.findById(deliveryId);
+    if (!delivery) {
+      throw new Error('Delivery not found');
+    }
+
+    if (delivery.transporter && !force) {
+      throw new Error('Delivery already assigned to a transporter. Use force to reassign.');
+    }
+
+    const transporter = await User.findById(transporterId);
+    if (!transporter || transporter.role !== 'transporter') {
+      throw new Error('Transporter not found or invalid role');
+    }
+
+    delivery.transporter = transporterId;
+    delivery.status = 'pending';
+    await delivery.save();
+
+    // Notify donor and recipient about the new assignment
+    if (delivery.donationTransaction) {
+      const transaction = await DonationTransaction.findById(delivery.donationTransaction._id)
+        .populate('donor')
+        .populate('recipient');
+
+      if (transaction) {
+        await createNotification({
+          body: {
+            sender: transporterId,
+            receiver: transaction.donor._id,
+            message: `A new transporter has been assigned to your donation. Status: Pending.`,
+          },
+        }, { status: () => ({ json: () => {} }) });
+
+        await createNotification({
+          body: {
+            sender: transporterId,
+            receiver: transaction.recipient._id,
+            message: `A new transporter has been assigned to your request. Status: Pending.`,
+          },
+        }, { status: () => ({ json: () => {} }) });
+      }
+    }
+
+    return { code: 200, data: delivery };
+  } catch (error) {
+    throw new Error(`assignTransporter failed: ${error.message}`);
   }
 };
 

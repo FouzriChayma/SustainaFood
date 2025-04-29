@@ -8,7 +8,7 @@ import { FaFilePdf } from "react-icons/fa";
 import styled from "styled-components";
 import imgmouna from '../../assets/images/imgmouna.png';
 import logo from '../../assets/images/logooo.png';
-import "../../assets/styles/backoffcss/anomaliesDashbord.css";
+import "../../assets/styles/backoffcss/AnomaliesDashbord.css";
 import { useAlert } from '../../contexts/AlertContext';
 
 // Styled component for profile image

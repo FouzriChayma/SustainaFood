@@ -28,5 +28,10 @@ services:
       - .:/app
       - /app/node_modules
 
+       front:
+    image:  mariemtouzri1/soustaina_front:1
+    ports:
+      - "8070:80"
+
 volumes:
   mongo-data:

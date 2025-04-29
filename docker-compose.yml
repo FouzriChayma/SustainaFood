@@ -28,7 +28,7 @@ services:
       - .:/app
       - /app/node_modules
 
-       front:
+  front:
     image:  mariemtouzri1/soustaina_front:1
     ports:
       - "8070:80"

@@ -415,7 +415,8 @@ exports.getAllDeliveries = async (req, res) => {
             select: 'recipient',
             populate: { path: 'recipient', select: 'name email' },
           },
-        
+          { path: 'allocatedProducts.product' },
+           { path: 'allocatedMeals.meal' },
         ],
       })
       .populate({
@@ -430,6 +431,7 @@ exports.getAllDeliveries = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la récupération des livraisons', error: error.message });
   }
 };
+// controllers/deliveryController.js
 exports.getDeliveriesById = async (req, res) => {
   try {
     const { deliveryId } = req.params;
@@ -448,8 +450,11 @@ exports.getDeliveriesById = async (req, res) => {
             select: 'recipient',
             populate: { path: 'recipient', select: 'name email' },
           },
-          
         ],
+      })
+      .populate({
+        path: 'transporter',
+        select: 'name email', // Select the fields you want from the User model
       });
 
     if (!delivery) {        
@@ -865,8 +870,6 @@ exports.getDeliveriesByDonorId = async (req, res) => {
             select: 'recipient',
             populate: { path: 'recipient', select: 'name email' },
           },
-          { path: 'allocatedProducts.product' },
-          { path: 'allocatedMeals.meal' },
         ],
       })
       .populate({
@@ -933,8 +936,6 @@ exports.getDeliveriesByRecipientId = async (req, res) => {
             select: 'recipient',
             populate: { path: 'recipient', select: 'name email' },
           },
-          { path: 'allocatedProducts.product' },
-          { path: 'allocatedMeals.meal' },
         ],
       })
       .populate({

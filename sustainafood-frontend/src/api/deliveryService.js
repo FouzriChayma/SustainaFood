@@ -141,3 +141,33 @@ export const startJourney = async (deliveryId, transporterId) => {
     throw error.response?.data || { message: 'Failed to start journey' };
   }
 };
+export const getDeliveriesByDonorId = async (donorId, status = '') => {
+  try {
+    const url = status
+      ? `${API_URL}/donor/${donorId}?status=${status}`
+      : `${API_URL}/donor/${donorId}`;
+    const response = await axios.get(url, {
+      headers: {
+      },
+    });
+    return response;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch deliveries by donor' };
+  }
+};
+
+// New API call for fetching deliveries by recipient ID
+export const getDeliveriesByRecipientId = async (recipientId, status = '') => {
+  try {
+    const url = status
+      ? `${API_URL}/recipient/${recipientId}?status=${status}`
+      : `${API_URL}/recipient/${recipientId}`;
+    const response = await axios.get(url, {
+      headers: {
+      },
+    });
+    return response;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch deliveries by recipient' };
+  }
+};

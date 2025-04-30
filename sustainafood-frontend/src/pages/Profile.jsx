@@ -1,107 +1,110 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import "../assets/styles/Profile.css"
-import pdp from "../assets/images/pdp.png"
-import Navbar from "../components/Navbar"
-import Footer from "../components/Footer"
-import edit from "../assets/images/edit.png"
-import { Link, useNavigate } from "react-router-dom"
-import { getUserById, onUpdateDescription, getUserGamificationData } from "../api/userService"
-import { useAuth } from "../contexts/AuthContext"
-import RoleSpecificProfile from "../components/RoleSpecificProfile"
-import { FaEdit, FaPlus } from "react-icons/fa"
-import StarRating from "../components/StarRating"
-import { getFeedbackByUserId } from "../api/feedbackService"
+import { useEffect, useState } from "react";
+import "../assets/styles/Profile.css";
+import pdp from "../assets/images/pdp.png";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import edit from "../assets/images/edit.png";
+import { Link, useNavigate } from "react-router-dom";
+import { getUserById, onUpdateDescription, getUserGamificationData } from "../api/userService";
+import { useAuth } from "../contexts/AuthContext";
+import RoleSpecificProfile from "../components/RoleSpecificProfile";
+import { FaEdit, FaPlus } from "react-icons/fa";
+import StarRating from "../components/StarRating";
+import { getFeedbackByUserId } from "../api/feedbackService";
 
 const Profile = () => {
-  const navigate = useNavigate()
-  const { user: authUser, clearWelcomeMessage } = useAuth()
-  const [user, setUser] = useState(authUser)
-  const [error, setError] = useState("")
-  const [welcomeMessage, setWelcomeMessage] = useState(authUser?.welcomeMessage || "")
-  const [isEditing, setIsEditing] = useState(false)
-  const [description, setDescription] = useState("")
-  const [descriptionError, setDescriptionError] = useState("")
-  const [feedbacks, setFeedbacks] = useState([])
-  const [gamificationData, setGamificationData] = useState({ rank: null, score: 0 })
-  const [gamificationError, setGamificationError] = useState("") // Added state for gamification error
+  const navigate = useNavigate();
+  const { user: authUser, clearWelcomeMessage } = useAuth();
+  const [user, setUser] = useState(authUser);
+  const [error, setError] = useState("");
+  const [welcomeMessage, setWelcomeMessage] = useState(authUser?.welcomeMessage || "");
+  const [isEditing, setIsEditing] = useState(false);
+  const [description, setDescription] = useState("");
+  const [descriptionError, setDescriptionError] = useState("");
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [gamificationData, setGamificationData] = useState({ rank: null, score: 0 });
+  const [gamificationError, setGamificationError] = useState("");
 
-  const profilePhotoUrl = user?.photo ? `http://localhost:3000/${user.photo}` : pdp
+  const profilePhotoUrl = user?.photo ? `http://localhost:3000/${user.photo}` : pdp;
 
   useEffect(() => {
     const fetchUserAndFeedback = async () => {
       try {
-        let userId
-        if (typeof authUser.id === "number" || typeof authUser._id === "number") {
-          userId = authUser._id
-        } else {
-          userId = authUser.id
+        const userId = authUser._id || authUser.id;
+        console.log("Fetching data for userId:", userId);
+
+        if (!authUser || !userId) {
+          setError("User not authenticated. Please log in.");
+          return;
         }
 
-        if (!authUser || !userId) return
-
         // Fetch user data
-        const userResponse = await getUserById(userId)
-        setUser(userResponse.data)
-        setDescription(userResponse.data.description || "")
+        const userResponse = await getUserById(userId);
+        setUser(userResponse.data);
+        setDescription(userResponse.data.description || "");
 
         // Fetch feedback for the user
-        const feedbackResponse = await getFeedbackByUserId(userId)
-        setFeedbacks(feedbackResponse)
+        const feedbackResponse = await getFeedbackByUserId(userId);
+        setFeedbacks(feedbackResponse);
 
         // Fetch gamification data with error handling
         try {
-          const gamificationResponse = await getUserGamificationData(userId)
+          const gamificationResponse = await getUserGamificationData(userId);
+          console.log("Gamification response:", gamificationResponse);
           setGamificationData({
             rank: gamificationResponse.rank,
             score: gamificationResponse.score,
-          })
-          setGamificationError("") // Clear any previous error
+          });
+          setGamificationError("");
         } catch (gamificationErr) {
-          console.error("Error fetching gamification data:", gamificationErr)
-          setGamificationError("Failed to load gamification data. Please try again later.")
-          setGamificationData({ rank: null, score: 0 })
+          console.error("Error fetching gamification data:", gamificationErr);
+          setGamificationError(
+            gamificationErr.response?.data?.error || "Failed to load gamification data. Please try again later."
+          );
+          setGamificationData({ rank: null, score: 0 });
         }
       } catch (error) {
-        console.error("Error fetching data:", error)
-        setError("Failed to load profile or feedback data")
+        console.error("Error fetching data:", error);
+        setError("Failed to load profile or feedback data");
       }
-    }
+    };
 
     if (authUser && (authUser._id || authUser.id)) {
-      fetchUserAndFeedback()
+      fetchUserAndFeedback();
+    } else {
+      setError("User not authenticated. Please log in.");
     }
-  }, [authUser])
+  }, [authUser]);
 
   useEffect(() => {
     if (welcomeMessage) {
       const timer = setTimeout(() => {
-        setWelcomeMessage("")
-        clearWelcomeMessage()
-      }, 5000)
+        setWelcomeMessage("");
+        clearWelcomeMessage();
+      }, 5000);
 
-      return () => clearTimeout(timer)
+      return () => clearTimeout(timer);
     }
-  }, [welcomeMessage, clearWelcomeMessage])
+  }, [welcomeMessage, clearWelcomeMessage]);
 
   const handleSave = async () => {
     try {
-      const userId = user._id || user.id
-      await onUpdateDescription(userId, description)
-      setUser((prevUser) => ({ ...prevUser, description }))
-      setIsEditing(false)
-      setDescriptionError("")
+      const userId = user._id || user.id;
+      await onUpdateDescription(userId, description);
+      setUser((prevUser) => ({ ...prevUser, description }));
+      setIsEditing(false);
+      setDescriptionError("");
     } catch (error) {
-      console.error("Error updating description:", error)
-      setDescriptionError("Failed to update description. Please try again.")
+      console.error("Error updating description:", error);
+      setDescriptionError("Failed to update description. Please try again.");
     }
-  }
+  };
 
   // Function to determine the medal SVG based on rank
   const getMedalSvg = (rank) => {
     if (rank === 1) {
-      // Gold Medal
       return (
         <svg
           className="winner-icon winner-medals winner-slide-in-top"
@@ -137,9 +140,8 @@ const Profile = () => {
             fill="#FFF2A0"
           ></path>
         </svg>
-      )
+      );
     } else if (rank === 2) {
-      // Silver Medal
       return (
         <svg
           className="winner-icon winner-medals winner-slide-in-top"
@@ -175,9 +177,8 @@ const Profile = () => {
             fill="#FFFFFF"
           ></path>
         </svg>
-      )
+      );
     } else if (rank === 3) {
-      // Bronze Medal
       return (
         <svg
           className="winner-icon winner-medals winner-slide-in-top"
@@ -213,17 +214,14 @@ const Profile = () => {
             fill="#FFF2A0"
           ></path>
         </svg>
-      )
+      );
     } else {
-      // No medal for ranks beyond 3rd
-      return null
+      return null;
     }
-  }
+  };
 
-  // Function to get the appropriate trophy SVG based on rank
   const getTrophySvg = (rank) => {
     if (rank === 1) {
-      // Gold Trophy
       return (
         <svg
           className="winner-icon winner-trophy"
@@ -254,9 +252,8 @@ const Profile = () => {
             fill="#FFF2A0"
           ></path>
         </svg>
-      )
+      );
     } else if (rank === 2) {
-      // Silver Trophy
       return (
         <svg
           className="winner-icon winner-trophy"
@@ -287,9 +284,8 @@ const Profile = () => {
             fill="#FFFFFF"
           ></path>
         </svg>
-      )
+      );
     } else if (rank === 3) {
-      // Bronze Trophy
       return (
         <svg
           className="winner-icon winner-trophy"
@@ -320,12 +316,11 @@ const Profile = () => {
             fill="#FFF2A0"
           ></path>
         </svg>
-      )
+      );
     } else {
-      // No trophy for ranks beyond 3rd
-      return null
+      return null;
     }
-  }
+  };
 
   return (
     <>
@@ -389,8 +384,8 @@ const Profile = () => {
                         <button
                           className="bottom-editdesc name"
                           onClick={() => {
-                            setIsEditing(true)
-                            setDescriptionError("")
+                            setIsEditing(true);
+                            setDescriptionError("");
                           }}
                         >
                           {description ? <FaEdit /> : <FaPlus />}
@@ -460,11 +455,13 @@ const Profile = () => {
                   <p className="winner-ranking_number">{gamificationError}</p>
                 ) : gamificationData.rank === 0 ? (
                   <p className="winner-ranking_number">
-                    {user?.role === "student" || user?.role === "ong"
-                      ? "No requests posted yet!"
-                      : user?.role === "restaurant" || user?.role === "supermarket" || user?.role === "personaldonor"
-                        ? "No donations made yet!"
-                        : "Gamification not applicable"}
+                    {user?.role === "transporter"
+                      ? "No deliveries completed yet!"
+                      : user?.role === "student" || user?.role === "ong"
+                        ? "No requests posted yet!"
+                        : user?.role === "restaurant" || user?.role === "supermarket" || user?.role === "personaldonor"
+                          ? "No donations made yet!"
+                          : "Gamification not applicable"}
                   </p>
                 ) : (
                   <p className="winner-ranking_number">
@@ -521,7 +518,11 @@ const Profile = () => {
                     ></path>
                   </svg>
                   <p className="winner-gradesBoxLabel">
-                    {user?.role === "student" || user?.role === "ong" ? "REQUEST SCORE" : "DONATION SCORE"}
+                    {user?.role === "transporter"
+                      ? "DELIVERY SCORE"
+                      : user?.role === "student" || user?.role === "ong"
+                        ? "REQUEST SCORE"
+                        : "DONATION SCORE"}
                   </p>
                   <p className="winner-gradesBoxNum">{gamificationData.score || 0}</p>
                 </div>
@@ -560,7 +561,7 @@ const Profile = () => {
       </div>
       <Footer />
     </>
-  )
-}
+  );
+};
 
-export default Profile
+export default Profile;

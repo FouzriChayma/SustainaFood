@@ -8,6 +8,7 @@ const mongoose = require("mongoose");
 const RequestNeed = require("../models/RequestNeed"); // Add this import
 const crypto = require("crypto"); // For generating random reset codes
 const { console } = require("inspector");
+const Delivery = require("../models/Delivery");
 require("dotenv").config(); // Load environment variables
 
 // Initialize Twilio client
@@ -988,9 +989,10 @@ const getTransporters = async (req, res) => {
         return res.status(404).json({ error: "User not found" });
       }
   
-      // Define roles for donors and recipients
+      // Define roles for donors, recipients, and transporters
       const donorRoles = ["restaurant", "supermarket", "personaldonor"];
       const recipientRoles = ["student", "ong"];
+      const transporterRoles = ["transporter"];
   
       let rankedUsers = [];
       let userGamification = null;
@@ -1043,7 +1045,7 @@ const getTransporters = async (req, res) => {
           // No status filter, count all requests posted by the recipient
           {
             $group: {
-              _id: "$recipient", // Ensure this matches the field name in your RequestNeed schema
+              _id: "$recipient",
               requestCount: { $sum: 1 },
             },
           },
@@ -1071,6 +1073,40 @@ const getTransporters = async (req, res) => {
         }));
   
         userGamification = rankedUsers.find(recipient => recipient.userId === userId);
+      } else if (transporterRoles.includes(user.role)) {
+        // Aggregate by transporter for users who complete deliveries
+        const transporters = await Delivery.aggregate([
+          { $match: { status: "delivered" } }, // Only count completed deliveries
+          {
+            $group: {
+              _id: "$transporter",
+              deliveryCount: { $sum: 1 },
+            },
+          },
+          { $sort: { deliveryCount: -1 } },
+          { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "transporter" } },
+          { $unwind: "$transporter" },
+          {
+            $project: {
+              _id: "$transporter._id",
+              name: "$transporter.name",
+              deliveryCount: 1,
+            },
+          },
+        ]);
+  
+        console.log(`Transporters for user ${userId} (${user.role}):`, transporters);
+  
+        // Calculate a score for each transporter based on delivery count
+        rankedUsers = transporters.map((transporter, index) => ({
+          rank: index + 1,
+          userId: transporter._id.toString(),
+          name: transporter.name,
+          deliveryCount: transporter.deliveryCount,
+          score: transporter.deliveryCount * 15, // Score = 15 points per delivery
+        }));
+  
+        userGamification = rankedUsers.find(transporter => transporter.userId === userId);
       } else {
         return res.status(200).json({
           rank: 0,
@@ -1083,7 +1119,12 @@ const getTransporters = async (req, res) => {
         return res.status(200).json({
           rank: 0,
           score: 0,
-          message: user.role === "student" || user.role === "ong" ? "User has not posted any requests yet" : "User has not made any fulfilled donations yet",
+          message:
+            user.role === "transporter"
+              ? "User has not completed any deliveries yet"
+              : user.role === "student" || user.role === "ong"
+              ? "User has not posted any requests yet"
+              : "User has not made any fulfilled donations yet",
         });
       }
   

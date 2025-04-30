@@ -147,8 +147,10 @@ const Navbar = () => {
                       Transporter Dashboard
                     </Link>
                   )}
-                  <Link to={`/deliveries/${user?._id || user?.id}`}>Assigned Deliveries</Link>
-                  {isTransporter && <Link to="#">Route Optimization</Link>}
+                {isTransporter &&  <Link to={`/deliveries/${user?._id || user?.id}`}>Assigned Deliveries</Link>}
+               {isTransporter && <Link to="#">Route Optimization</Link>}
+                   {!isTransporter &&  <Link to="/Deliveries">Deliveries</Link>} 
+
                 </div>
               )}
             </div>

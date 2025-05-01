@@ -979,15 +979,17 @@ const getTransporters = async (req, res) => {
         return res.status(400).json({ message: 'isAvailable must be a boolean' });
       }
   
-      const user = await User.findById(userId); // Use userId instead of id
-      if (!user) {
+      // Use updateOne to directly update the isAvailable field without loading the document
+      const updateResult = await User.updateOne(
+        { _id: userId }, // Match the user by ID
+        { $set: { isAvailable } } // Update only the isAvailable field
+      );
+  
+      if (updateResult.matchedCount === 0) {
         return res.status(404).json({ message: 'User not found' });
       }
   
-      user.isAvailable = isAvailable;
-      await user.save();
-  
-      res.status(200).json({ message: 'Availability updated successfully', user });
+      res.status(200).json({ message: 'Availability updated successfully' });
     } catch (error) {
       res.status(500).json({ message: 'Error updating availability', error: error.message });
     }

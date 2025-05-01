@@ -443,12 +443,12 @@ exports.getDeliveriesById = async (req, res) => {
           {
             path: 'donation',
             select: 'title donor category location',
-            populate: { path: 'donor', select: 'name email' },
+            populate: { path: 'donor', select: 'name email isAvailable isActive' },
           },
           {
             path: 'requestNeed',
             select: 'recipient',
-            populate: { path: 'recipient', select: 'name email' },
+            populate: { path: 'recipient', select: 'name email isAvailable isActive' },
           },
         ],
       })

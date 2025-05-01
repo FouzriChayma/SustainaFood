@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { getRequestsByRecipientId } from '../api/requestNeedsService';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import { updateUserAvailability } from '../api/userService';
+
 
 // Styled Components
 const ProjectsContainer = styled.div`
@@ -209,6 +211,14 @@ const RecipientProfile = ({ user }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 3;
 
+  const [isAvailable, setIsAvailable] = useState(user.isAvailable || false);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState(null);
+
+  useEffect(() => {
+    setIsAvailable(user.isAvailable || false);
+  }, [user.isAvailable]);
+
   useEffect(() => {
     const fetchRequests = async () => {
       if (!userid) {
@@ -256,12 +266,39 @@ const RecipientProfile = ({ user }) => {
     }
   };
 
+  const handleToggleAvailability = async () => {
+    setAvailabilityLoading(true);
+    setAvailabilityError(null);
+    try {
+      await updateUserAvailability(user._id, !isAvailable);
+      setIsAvailable(!isAvailable);
+    } catch (err) {
+      setAvailabilityError('Failed to update availability');
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
 
   return (
     <div>
       <ProfileHeader>{user.name}'s Donation Requests</ProfileHeader>
+
+      <div>
+        <label>
+          Availability:
+          <input
+            type="checkbox"
+            checked={isAvailable}
+            onChange={handleToggleAvailability}
+            disabled={availabilityLoading}
+          />
+        </label>
+        {availabilityLoading && <span>Updating availability...</span>}
+        {availabilityError && <span style={{ color: 'red' }}>{availabilityError}</span>}
+      </div>
 
       <SearchContainer>
         <SearchInput

@@ -970,6 +970,28 @@ const getTransporters = async (req, res) => {
     }
   };
 
+  const updateUserAvailability = async (req, res) => {
+    try {
+      const { userId } = req.params; // Change 'id' to 'userId' to match the route
+      const { isAvailable } = req.body;
+  
+      if (typeof isAvailable !== 'boolean') {
+        return res.status(400).json({ message: 'isAvailable must be a boolean' });
+      }
+  
+      const user = await User.findById(userId); // Use userId instead of id
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      user.isAvailable = isAvailable;
+      await user.save();
+  
+      res.status(200).json({ message: 'Availability updated successfully', user });
+    } catch (error) {
+      res.status(500).json({ message: 'Error updating availability', error: error.message });
+    }
+  };
 
   // Fetch gamification data (rank and score) for a specific user
   const Donation = require("../models/Donation");
@@ -1137,7 +1159,7 @@ const getTransporters = async (req, res) => {
       res.status(500).json({ error: "Failed to fetch gamification data", details: error.message });
     }
   }
-module.exports = {getUsers,
+module.exports = {updateUserAvailability,getUsers,
     updateTransporterAvailability,
     generate2FACode,
     getUserById,

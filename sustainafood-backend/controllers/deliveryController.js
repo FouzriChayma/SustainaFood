@@ -798,12 +798,21 @@ exports.startJourney = async (req, res) => {
       return res.status(400).json({ message: 'Delivery must be accepted before starting the journey' });
     }
 
-    delivery.status = 'in_progress';
-    await delivery.save();
-
+    // Check donor and recipient availability and active status
     const transaction = await DonationTransaction.findById(delivery.donationTransaction._id)
       .populate('donor')
       .populate('recipient');
+
+    if (!transaction.donor || !transaction.donor.isAvailable || !transaction.donor.isActive) {
+      return res.status(400).json({ message: 'Donor is not available or inactive. Cannot start journey.' });
+    }
+
+    if (!transaction.recipient || !transaction.recipient.isAvailable || !transaction.recipient.isActive) {
+      return res.status(400).json({ message: 'Recipient is not available or inactive. Cannot start journey.' });
+    }
+
+    delivery.status = 'in_progress';
+    await delivery.save();
 
     // Notify donor and recipient
     await createNotification({

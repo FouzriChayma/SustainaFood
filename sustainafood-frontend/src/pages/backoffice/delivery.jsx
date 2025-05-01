@@ -3,7 +3,7 @@ import axios from "axios";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
 import "/src/assets/styles/backoffcss/transporterList.css";
-import { FaEye, FaFilePdf, FaSort } from "react-icons/fa";
+import { FaEye, FaFilePdf } from "react-icons/fa";
 import ReactPaginate from "react-paginate";
 import { Link } from "react-router-dom";
 import logo from '../../assets/images/logooo.png';
@@ -36,50 +36,8 @@ const Delivery = () => {
                 });
 
                 const deliveriesArray = Array.isArray(response.data.data) ? response.data.data : [];
-
-                // Fetch additional details for each delivery (donor, recipient)
-                const enrichedDeliveries = await Promise.all(
-                    deliveriesArray.map(async (delivery) => {
-                        const donation = delivery.donationTransaction?.donation || {};
-                        const requestNeed = delivery.donationTransaction?.requestNeed || {};
-
-                        // Fetch donor
-                        let donor = { name: "Unknown Donor", phone: "Not provided", photo: null };
-                        if (donation.donor) {
-                            try {
-                                const donorRes = await axios.get(`http://localhost:3000/users/details/${donation.donor._id}`, {
-                                });
-                                donor = donorRes.data || donor;
-                            } catch (err) {
-                                console.error(`Failed to fetch donor ${donation.donor}:`, err);
-                            }
-                        }
-
-                        // Fetch recipient
-                        let recipient = { name: "Unknown Recipient", phone: "Not provided", photo: null };
-                        if (requestNeed.recipient) {
-                            try {
-                                const recipientRes = await axios.get(`http://localhost:3000/users/details/${requestNeed.recipient._id}`, {
-                                });
-                                recipient = recipientRes.data || recipient;
-                            } catch (err) {
-                                console.error(`Failed to fetch recipient ${requestNeed.recipient}:`, err);
-                            }
-                        }
-
-                        return {
-                            ...delivery,
-                            donationTransaction: {
-                                ...delivery.donationTransaction,
-                                donation: { ...donation, donor },
-                                requestNeed: { ...requestNeed, recipient },
-                            },
-                        };
-                    })
-                );
-
-                setDeliveries(enrichedDeliveries);
-                setFilteredDeliveries(enrichedDeliveries);
+                setDeliveries(deliveriesArray);
+                setFilteredDeliveries(deliveriesArray);
             } catch (err) {
                 console.error("Fetch error:", err);
                 setError(err.message || "Failed to fetch deliveries");
@@ -103,14 +61,16 @@ const Delivery = () => {
                 const donation = delivery.donationTransaction?.donation || {};
                 const recipient = delivery.donationTransaction?.requestNeed?.recipient || {};
                 const donor = donation.donor || {};
+                const transporter = delivery.transporter || {};
                 const titleMatch = donation.title?.toLowerCase().includes(searchQuery.toLowerCase());
                 const categoryMatch = donation.category?.toLowerCase().includes(searchQuery.toLowerCase());
                 const recipientMatch = recipient.name?.toLowerCase().includes(searchQuery.toLowerCase());
                 const donorMatch = donor.name?.toLowerCase().includes(searchQuery.toLowerCase());
+                const transporterMatch = transporter.name?.toLowerCase().includes(searchQuery.toLowerCase());
                 const addressMatch =
                     delivery.pickupAddress?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     delivery.deliveryAddress?.toLowerCase().includes(searchQuery.toLowerCase());
-                return titleMatch || categoryMatch || recipientMatch || donorMatch || addressMatch;
+                return titleMatch || categoryMatch || recipientMatch || donorMatch || transporterMatch || addressMatch;
             });
         }
 
@@ -127,10 +87,14 @@ const Delivery = () => {
             const donationB = b.donationTransaction?.donation || {};
             const recipientA = a.donationTransaction?.requestNeed?.recipient || {};
             const recipientB = b.donationTransaction?.requestNeed?.recipient || {};
+            const transporterA = a.transporter || {};
+            const transporterB = b.transporter || {};
             if (sortOption === "title") {
                 return (donationA.title || "").localeCompare(donationB.title || "");
             } else if (sortOption === "recipient") {
                 return (recipientA.name || "").localeCompare(recipientB.name || "");
+            } else if (sortOption === "transporter") {
+                return (transporterA.name || "").localeCompare(transporterB.name || "");
             } else if (sortOption === "status") {
                 return (a.status || "no-status").localeCompare(b.status || "no-status");
             } else {
@@ -142,7 +106,7 @@ const Delivery = () => {
         setCurrentPage(0);
     }, [deliveries, searchQuery, filterOption, sortOption]);
 
-    // Fonction pour exporter la liste en PDF
+    // Export to PDF
     const exportToPDF = () => {
         const doc = new jsPDF({
             orientation: "landscape",
@@ -178,16 +142,18 @@ const Delivery = () => {
         doc.text(`Generated: ${dateStr}`, doc.internal.pageSize.width - 50, 38);
 
         autoTable(doc, {
-            head: [["ID", "Donation Title", "Donor", "Recipient", "Pickup Address", "Delivery Address", "Status"]],
+            head: [["ID", "Donation Title", "Donor", "Recipient", "Transporter", "Pickup Address", "Delivery Address", "Status"]],
             body: filteredDeliveries.map((delivery, index) => {
                 const donation = delivery.donationTransaction?.donation || {};
                 const recipient = delivery.donationTransaction?.requestNeed?.recipient || {};
                 const donor = donation.donor || {};
+                const transporter = delivery.transporter || {};
                 return [
                     (index + 1).toString(),
                     donation.title || "Untitled",
                     donor.name || "Unknown Donor",
                     recipient.name || "Unknown Recipient",
+                    transporter.name || "No Transporter Assigned",
                     delivery.pickupAddress || "Not specified",
                     delivery.deliveryAddress || "Not specified",
                     delivery.status || "No Status",
@@ -214,7 +180,7 @@ const Delivery = () => {
                 fillColor: [250, 250, 250],
             },
             didDrawCell: (data) => {
-                if (data.section === "body" && data.column.index === 6) {
+                if (data.section === "body" && data.column.index === 7) {
                     const status = data.cell.text[0];
                     if (status === "delivered") {
                         doc.setFillColor(144, 196, 60);
@@ -311,6 +277,7 @@ const Delivery = () => {
                                 <option value="date">Sort by Date</option>
                                 <option value="title">Sort by Donation Title</option>
                                 <option value="recipient">Sort by Recipient</option>
+                                <option value="transporter">Sort by Transporter</option>
                                 <option value="status">Sort by Status</option>
                             </select>
                         </div>
@@ -322,6 +289,7 @@ const Delivery = () => {
                                 <th>Donation Title</th>
                                 <th>Donor</th>
                                 <th>Recipient</th>
+                                <th>Transporter</th>
                                 <th>Pickup Address</th>
                                 <th>Delivery Address</th>
                                 <th>Status</th>
@@ -333,6 +301,7 @@ const Delivery = () => {
                                 const donation = delivery.donationTransaction?.donation || {};
                                 const recipient = delivery.donationTransaction?.requestNeed?.recipient || {};
                                 const donor = donation.donor || {};
+                                const transporter = delivery.transporter || {};
 
                                 return (
                                     <tr key={delivery._id}>
@@ -340,6 +309,7 @@ const Delivery = () => {
                                         <td>{donation.title || "Untitled"}</td>
                                         <td>{donor.name || "Unknown Donor"}</td>
                                         <td>{recipient.name || "Unknown Recipient"}</td>
+                                        <td>{transporter.name || "No Transporter Assigned"}</td>
                                         <td>{delivery.pickupAddress || "Not specified"}</td>
                                         <td>{delivery.deliveryAddress || "Not specified"}</td>
                                         <td>{delivery.status || "No Status"}</td>

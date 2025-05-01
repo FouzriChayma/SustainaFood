@@ -114,26 +114,28 @@ const Navbar = () => {
 
         {authUser ? (
           <>
-            <div
-              className="dropdown"
-              onMouseEnter={() => setDropdownOpen("donations")}
-              onMouseLeave={() => setDropdownOpen(null)}
-            >
-              <span className="dropdown-toggle">Donations</span>
-              {dropdownOpen === "donations" && (
-                <div className="dropdown-content">
-                  <Link to="/ListOfDonations">List of Donations</Link>
-                  <Link to="/ListOfRequests">List of Requests</Link>
-                  {isRecipient && <Link to="/myrequest">My Requests</Link>}
-                  {isDonner && <Link to="/mydonations">My Donations</Link>}
-                  {isDonner && <Link to="/addDonation">Add Donation</Link>}
-                  {isRecipient && <Link to="/addDonation">Add Request</Link>}
-                  {isDonner && <Link to="/DonationRecommendations">Donation Recommendations</Link>}
-                  {isDonner && <Link to={`/donor/${user?._id || user?.id}/requests`}>My Donation Transactions</Link>}
-                  {isRecipient && <Link to={`/recipient/${user?._id || user?.id}/transactions`}>My Requests Transactions</Link>}
-                </div>
-              )}
-            </div>
+            {!isTransporter && (
+              <div
+                className="dropdown"
+                onMouseEnter={() => setDropdownOpen("donations")}
+                onMouseLeave={() => setDropdownOpen(null)}
+              >
+                <span className="dropdown-toggle">Donations</span>
+                {dropdownOpen === "donations" && (
+                  <div className="dropdown-content">
+                    <Link to="/ListOfDonations">List of Donations</Link>
+                    <Link to="/ListOfRequests">List of Requests</Link>
+                    {isRecipient && <Link to="/myrequest">My Requests</Link>}
+                    {isDonner && <Link to="/mydonations">My Donations</Link>}
+                    {isDonner && <Link to="/addDonation">Add Donation</Link>}
+                    {isRecipient && <Link to="/addDonation">Add Request</Link>}
+                    {isDonner && <Link to="/DonationRecommendations">Donation Recommendations</Link>}
+                    {isDonner && <Link to={`/donor/${user?._id || user?.id}/requests`}>My Donation Transactions</Link>}
+                    {isRecipient && <Link to={`/recipient/${user?._id || user?.id}/transactions`}>My Requests Transactions</Link>}
+                  </div>
+                )}
+              </div>
+            )}
             <div
               className="dropdown"
               onMouseEnter={() => setDropdownOpen("transporter")}
@@ -147,39 +149,30 @@ const Navbar = () => {
                       Transporter Dashboard
                     </Link>
                   )}
-                  <Link to={`/deliveries/${user?._id || user?.id}`}>Assigned Deliveries</Link>
+                  {isTransporter && <Link to={`/deliveries/${user?._id || user?.id}`}>Assigned Deliveries</Link>}
                   {isTransporter && <Link to="#">Route Optimization</Link>}
+                  {!isTransporter && <Link to="/Deliveries">Deliveries</Link>}
                 </div>
               )}
             </div>
-            <div
-              className="dropdown"
-              onMouseEnter={() => setDropdownOpen("analytics")}
-              onMouseLeave={() => setDropdownOpen(null)}
-            >
-              <span className="dropdown-toggle">Analytics & Reporting</span>
-              {dropdownOpen === "analytics" && (
-                <div className="dropdown-content">
-                  {isRecipient && <Link to="/analytics">Request Statistics</Link>}
-                  {isDonner && <Link to="/analytics">Donation Statistics</Link>}
-                  <Link to="/PersonalStatus">Personal Stats</Link>
-                  <Link to="/Preduction">Preduction</Link>
-                </div>
-              )}
-            </div>
-            <div
-              className="dropdown"
-              onMouseEnter={() => setDropdownOpen("ai")}
-              onMouseLeave={() => setDropdownOpen(null)}
-            >
-              <span className="dropdown-toggle">AI System</span>
-              {dropdownOpen === "ai" && (
-                <div className="dropdown-content">
-                  <Link to="#">Food Item Classification</Link>
-                  <Link to="#">Predictions</Link>
-                </div>
-              )}
-            </div>
+            {!isTransporter && (
+              <div
+                className="dropdown"
+                onMouseEnter={() => setDropdownOpen("analytics")}
+                onMouseLeave={() => setDropdownOpen(null)}
+              >
+                <span className="dropdown-toggle">Analytics & Reporting</span>
+                {dropdownOpen === "analytics" && (
+                  <div className="dropdown-content">
+                    {isRecipient && <Link to="/analytics">Request Statistics</Link>}
+                    {isDonner && <Link to="/analytics">Donation Statistics</Link>}
+                    <Link to="/PersonalStatus">Personal Stats</Link>
+                    <Link to="/Preduction">Preduction</Link>
+                  </div>
+                )}
+              </div>
+            )}
+           
 
             {/* Notification Bell with Dropdown */}
             <div className="social-icons">

@@ -415,7 +415,13 @@ exports.getAllDeliveries = async (req, res) => {
             select: 'recipient',
             populate: { path: 'recipient', select: 'name email' },
           },
+          { path: 'allocatedProducts.product' },
+           { path: 'allocatedMeals.meal' },
         ],
+      })
+      .populate({
+        path: 'transporter',
+        select: 'name email', // Sélectionner les champs nécessaires pour le transporteur
       })
       .sort({ createdAt: -1 });
 
@@ -425,7 +431,7 @@ exports.getAllDeliveries = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la récupération des livraisons', error: error.message });
   }
 };
-
+// controllers/deliveryController.js
 exports.getDeliveriesById = async (req, res) => {
   try {
     const { deliveryId } = req.params;
@@ -445,6 +451,10 @@ exports.getDeliveriesById = async (req, res) => {
             populate: { path: 'recipient', select: 'name email' },
           },
         ],
+      })
+      .populate({
+        path: 'transporter',
+        select: 'name email', // Select the fields you want from the User model
       });
 
     if (!delivery) {        
@@ -815,5 +825,135 @@ exports.startJourney = async (req, res) => {
     res.status(200).json({ data: delivery });
   } catch (error) {
     res.status(500).json({ message: 'Error starting journey', error: error.message });
+  }
+};
+exports.getDeliveriesByDonorId = async (req, res) => {
+  try {
+    const { donorId } = req.params;
+    const { status } = req.query;
+
+    // Validate donor
+    const donor = await User.findById(donorId);
+    if (!donor) {
+      return res.status(404).json({ message: 'Donor not found' });
+    }
+
+    // Find donation transactions associated with the donor
+    const transactions = await DonationTransaction.find({ donor: donorId })
+      .select('_id');
+
+    if (!transactions.length) {
+      return res.status(200).json({ data: [], message: 'No donation transactions found for this donor' });
+    }
+
+    const transactionIds = transactions.map(t => t._id);
+
+    // Build query for deliveries
+    const query = { donationTransaction: { $in: transactionIds } };
+    if (status && VALID_STATUSES.includes(status)) {
+      query.status = status;
+    }
+
+    // Fetch deliveries
+    const deliveries = await Delivery.find(query)
+      .populate({
+        path: 'donationTransaction',
+        select: 'donation requestNeed status',
+        populate: [
+          {
+            path: 'donation',
+            select: 'title donor category location',
+            populate: { path: 'donor', select: 'name email' },
+          },
+          {
+            path: 'requestNeed',
+            select: 'recipient',
+            populate: { path: 'recipient', select: 'name email' },
+          },
+        ],
+      })
+      .populate({
+        path: 'transporter',
+        select: 'name email photo phone',
+      })
+      .sort({ createdAt: -1 });
+
+    // Filter out invalid deliveries and log warnings
+    const validDeliveries = deliveries.filter(d => d.donationTransaction);
+    if (validDeliveries.length < deliveries.length) {
+      console.warn(
+        `Found ${deliveries.length - validDeliveries.length} deliveries with missing donationTransaction for donor ${donorId}`
+      );
+    }
+
+    res.status(200).json({ data: validDeliveries || [] });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des livraisons', error: error.message });
+  }
+};
+
+// New endpoint: Get Deliveries by Recipient ID
+exports.getDeliveriesByRecipientId = async (req, res) => {
+  try {
+    const { recipientId } = req.params;
+    const { status } = req.query;
+
+    // Validate recipient
+    const recipient = await User.findById(recipientId);
+    if (!recipient) {
+      return res.status(404).json({ message: 'Recipient not found' });
+    }
+
+    // Find donation transactions associated with the recipient
+    const transactions = await DonationTransaction.find({ recipient: recipientId })
+      .select('_id');
+
+    if (!transactions.length) {
+      return res.status(200).json({ data: [], message: 'No donation transactions found for this recipient' });
+    }
+
+    const transactionIds = transactions.map(t => t._id);
+
+    // Build query for deliveries
+    const query = { donationTransaction: { $in: transactionIds } };
+    if (status && VALID_STATUSES.includes(status)) {
+      query.status = status;
+    }
+
+    // Fetch deliveries
+    const deliveries = await Delivery.find(query)
+      .populate({
+        path: 'donationTransaction',
+        select: 'donation requestNeed status',
+        populate: [
+          {
+            path: 'donation',
+            select: 'title donor category location',
+            populate: { path: 'donor', select: 'name email' },
+          },
+          {
+            path: 'requestNeed',
+            select: 'recipient',
+            populate: { path: 'recipient', select: 'name email' },
+          },
+        ],
+      })
+      .populate({
+        path: 'transporter',
+        select: 'name email photo phone',
+      })
+      .sort({ createdAt: -1 });
+
+    // Filter out invalid deliveries and log warnings
+    const validDeliveries = deliveries.filter(d => d.donationTransaction);
+    if (validDeliveries.length < deliveries.length) {
+      console.warn(
+        `Found ${deliveries.length - validDeliveries.length} deliveries with missing donationTransaction for recipient ${recipientId}`
+      );
+    }
+
+    res.status(200).json({ data: validDeliveries || [] });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des livraisons', error: error.message });
   }
 };

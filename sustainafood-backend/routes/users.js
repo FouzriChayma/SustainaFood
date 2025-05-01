@@ -55,4 +55,5 @@ router.post("/toggle-2fa", userController.toggle2FA);
 router.post("/send2FACodeforsigninwithgoogle", userController.send2FACodeforsigninwithgoogle);
 router.put('/:transporterId/location', userController.updateTransporterLocation);
 router.put('/update-availability/:transporterId', userController.updateTransporterAvailability);
+router.get('/:id/gamification', userController.getUserGamificationData);
 module.exports = router;

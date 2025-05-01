@@ -346,6 +346,8 @@ const DeliveryView = () => {
                             <p style={Detail}><span style={Strong}>Donor Name:</span> {donor.name || "Unknown Donor"}</p>
                             <p style={Detail}><span style={Strong}>Donor Phone:</span> {donor.phone || "Not provided"}</p>
                             <p style={Detail}><span style={Strong}>Recipient Phone:</span> {recipient.phone || "Not provided"}</p>
+                            <p style={Detail}><span style={Strong}>Transporter Name:</span> {delivery.transporter?.name || "Not provided"}</p>
+
                             <p style={Detail}>
                                 <span style={Strong}>Status:</span>{" "}
                                 <span

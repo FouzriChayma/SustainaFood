@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { getDeliveriesByTransporter, acceptOrRefuseDelivery, startJourney, updateDeliveryStatus } from '../api/deliveryService';
 import { getUserById, updateTransporterLocation } from '../api/userService';
 import { getRequestById } from '../api/requestNeedsService';
+import { createFeedback } from '../api/feedbackService';
 import DeleveryMap from '../components/DeleveryMap';
+import StarRating from '../components/StarRating';
 import imgmouna from '../assets/images/imgmouna.png';
 import styled, { createGlobalStyle } from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
 import { useAlert } from '../contexts/AlertContext';
-import { useParams, useNavigate } from 'react-router-dom';
 
 // Global Styles
 const GlobalStyle = createGlobalStyle`
@@ -95,6 +97,19 @@ const ProfileText = styled.p`
   font-size: 16px;
   font-weight: bold;
   color: #495057;
+`;
+
+const ProfileLink = styled(Link)`
+  font-size: 16px;
+  font-weight: bold;
+  color: #495057;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover {
+    color: #228b22;
+    text-decoration: underline;
+  }
 `;
 
 const DeliveryDetails = styled.div`
@@ -244,10 +259,108 @@ const ActionButton = styled.button`
     }
   }
 
+  &.feedback-btn {
+    background-color: #228b22;
+    color: white;
+
+    &:hover {
+      background-color: #56ab2f;
+    }
+  }
+
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
+`;
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  position: relative;
+`;
+
+const CloseButton = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #333;
+`;
+
+const FeedbackForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+`;
+
+const FormLabel = styled.label`
+  font-size: 14px;
+  color: #333;
+  font-weight: bold;
+`;
+
+const FeedbackTextarea = styled.textarea`
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  resize: vertical;
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  min-height: 80px;
+`;
+
+const SubmitButton = styled.button`
+  padding: 8px 16px;
+  background: #228b22;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  align-self: flex-start;
+
+  &:hover:not(:disabled) {
+    background: #56ab2f;
+  }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+`;
+
+const FeedbackMessage = styled.p`
+  font-size: 14px;
+  color: ${props => (props.error ? '#721c24' : '#155724')};
+  margin: 5px 0;
 `;
 
 const PaginationControls = styled.div`
@@ -416,8 +529,108 @@ const AssignedDeliveries = () => {
   const [processing, setProcessing] = useState({});
   const [isMapOpen, setIsMapOpen] = useState(null);
   const [transporterLocation, setTransporterLocation] = useState({ type: 'Point', coordinates: [0, 0] });
+  const [feedbackModal, setFeedbackModal] = useState(null);
+  const [feedbackState, setFeedbackState] = useState({});
 
-  // Fetch transporter's initial location
+  const initializeFeedbackState = (deliveryId, targetRole) => ({
+    rating: 0,
+    comment: '',
+    submitted: false,
+    error: '',
+    success: '',
+  });
+
+  const handleFeedbackChange = (deliveryId, targetRole, field, value) => {
+    setFeedbackState(prev => ({
+      ...prev,
+      [deliveryId]: {
+        ...prev[deliveryId],
+        [targetRole]: {
+          ...prev[deliveryId][targetRole],
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  const handleFeedbackSubmit = async (deliveryId, targetRole, recipientId) => {
+    const feedback = feedbackState[deliveryId]?.[targetRole];
+    if (!feedback) return;
+
+    if (feedback.rating < 1 || feedback.rating > 5) {
+      setFeedbackState(prev => ({
+        ...prev,
+        [deliveryId]: {
+          ...prev[deliveryId],
+          [targetRole]: {
+            ...prev[deliveryId][targetRole],
+            error: 'Please select a rating between 1 and 5 stars',
+            success: '',
+          },
+        },
+      }));
+      return;
+    }
+
+    if (!feedback.comment.trim()) {
+      setFeedbackState(prev => ({
+        ...prev,
+        [deliveryId]: {
+          ...prev[deliveryId],
+          [targetRole]: {
+            ...prev[deliveryId][targetRole],
+            error: 'Please enter a comment',
+            success: '',
+          },
+        },
+      }));
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await createFeedback(
+        recipientId,
+        feedback.rating,
+        feedback.comment,
+        transporterId,
+        token
+      );
+      setFeedbackState(prev => ({
+        ...prev,
+        [deliveryId]: {
+          ...prev[deliveryId],
+          [targetRole]: {
+            ...prev[deliveryId][targetRole],
+            submitted: true,
+            error: '',
+            success: 'Feedback submitted successfully!',
+          },
+        },
+      }));
+    } catch (error) {
+      setFeedbackState(prev => ({
+        ...prev,
+        [deliveryId]: {
+          ...prev[deliveryId],
+          [targetRole]: {
+            ...prev[deliveryId][targetRole],
+            error: error.message || 'Failed to submit feedback',
+            success: '',
+          },
+        },
+      }));
+    }
+  };
+
+  const openFeedbackModal = (deliveryId, targetRole, targetId, targetName) => {
+    setFeedbackModal({ deliveryId, targetRole, targetId, targetName });
+  };
+
+  const closeFeedbackModal = () => {
+    setFeedbackModal(null);
+  };
+
   useEffect(() => {
     const fetchTransporterLocation = async () => {
       try {
@@ -441,7 +654,6 @@ const AssignedDeliveries = () => {
     fetchTransporterLocation();
   }, [transporterId]);
 
-  // Fetch deliveries
   useEffect(() => {
     const fetchData = async () => {
       const token = localStorage.getItem('token');
@@ -456,7 +668,6 @@ const AssignedDeliveries = () => {
         const response = await getDeliveriesByTransporter(transporterId, filterOption !== 'all' ? filterOption : '');
         const deliveriesArray = Array.isArray(response.data.data) ? response.data.data : [];
 
-        // Geocode addresses if coordinates are missing
         const enrichedDeliveries = await Promise.all(
           deliveriesArray.map(async delivery => {
             let pickupCoordinates = delivery.pickupCoordinates;
@@ -477,7 +688,6 @@ const AssignedDeliveries = () => {
           })
         );
 
-        // Collect unique donor and requestNeed IDs
         const userIds = new Set();
         const requestNeedIds = new Set();
         enrichedDeliveries.forEach(delivery => {
@@ -487,7 +697,6 @@ const AssignedDeliveries = () => {
           if (requestNeed) requestNeedIds.add(requestNeed);
         });
 
-        // Fetch requestNeed details to get recipient IDs
         const requestNeedPromises = Array.from(requestNeedIds).map(id =>
           getRequestById(id).catch(err => {
             console.error(`Failed to fetch requestNeed ${id}:`, err);
@@ -501,13 +710,11 @@ const AssignedDeliveries = () => {
           return map;
         }, {});
 
-        // Collect recipient IDs
         requestNeeds.forEach(rn => {
           const recipient = rn.data ? rn.data.recipient : rn.recipient;
           if (recipient && recipient._id) userIds.add(recipient._id);
         });
 
-        // Fetch user details
         const userPromises = Array.from(userIds).map(id =>
           getUserById(id).catch(err => {
             console.error(`Failed to fetch user ${id}:`, err);
@@ -521,7 +728,6 @@ const AssignedDeliveries = () => {
           return map;
         }, {});
 
-        // Enrich deliveries with user data
         const finalDeliveries = enrichedDeliveries.map(delivery => {
           const donation = delivery.donationTransaction?.donation || {};
           const requestNeedId = delivery.donationTransaction?.requestNeed;
@@ -544,6 +750,20 @@ const AssignedDeliveries = () => {
 
         setDeliveries(finalDeliveries);
         setFilteredDeliveries(finalDeliveries);
+
+        const initialFeedbackState = {};
+        finalDeliveries.forEach(delivery => {
+          if (delivery.status === 'picked_up' || delivery.status === 'delivered') {
+            initialFeedbackState[delivery._id] = {};
+            if (delivery.status === 'picked_up' || delivery.status === 'delivered') {
+              initialFeedbackState[delivery._id].donor = initializeFeedbackState(delivery._id, 'donor');
+            }
+            if (delivery.status === 'delivered') {
+              initialFeedbackState[delivery._id].recipient = initializeFeedbackState(delivery._id, 'recipient');
+            }
+          }
+        });
+        setFeedbackState(initialFeedbackState);
       } catch (err) {
         console.error('Fetch error:', err);
         let errorMessage = 'Failed to fetch deliveries';
@@ -565,7 +785,6 @@ const AssignedDeliveries = () => {
     fetchData();
   }, [transporterId, navigate, showAlert, filterOption]);
 
-  // Geocode address using Nominatim
   const geocodeAddress = async (address) => {
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
@@ -580,7 +799,6 @@ const AssignedDeliveries = () => {
     }
   };
 
-  // Handle accept or refuse delivery
   const handleAcceptOrRefuse = async (deliveryId, action) => {
     if (!transporterId) {
       showAlert('error', 'Transporter ID is missing. Please try again or log in.');
@@ -611,14 +829,12 @@ const AssignedDeliveries = () => {
     }
   };
 
-  // Handle start journey
   const handleStartJourney = async (deliveryId) => {
     if (!window.confirm('Are you sure you want to start the delivery journey?')) return;
 
     try {
       setProcessing(prev => ({ ...prev, [deliveryId]: true }));
 
-      // Update transporter location
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           async ({ coords }) => {
@@ -646,14 +862,12 @@ const AssignedDeliveries = () => {
     }
   };
 
-  // Handle update delivery status
   const handleUpdateStatus = async (deliveryId, newStatus) => {
     if (!window.confirm(`Are you sure you want to mark this delivery as ${newStatus}?`)) return;
 
     try {
       setProcessing(prev => ({ ...prev, [deliveryId]: true }));
 
-      // Update transporter location
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           async ({ coords }) => {
@@ -672,6 +886,19 @@ const AssignedDeliveries = () => {
       setDeliveries(prev =>
         prev.map(d => (d._id === deliveryId ? { ...d, status: newStatus } : d))
       );
+      setFeedbackState(prev => {
+        const updated = { ...prev };
+        if (newStatus === 'picked_up') {
+          updated[deliveryId] = { ...updated[deliveryId], donor: initializeFeedbackState(deliveryId, 'donor') };
+        } else if (newStatus === 'delivered') {
+          updated[deliveryId] = { 
+            ...updated[deliveryId], 
+            donor: initializeFeedbackState(deliveryId, 'donor'),
+            recipient: initializeFeedbackState(deliveryId, 'recipient') 
+          };
+        }
+        return updated;
+      });
       showAlert('success', `Delivery marked as ${newStatus} successfully!`);
     } catch (error) {
       console.error(`Error updating status to ${newStatus}:`, error);
@@ -681,7 +908,6 @@ const AssignedDeliveries = () => {
     }
   };
 
-  // Reverse geocode for address
   const reverseGeocode = async (lng, lat) => {
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lon=${lng}&lat=${lat}`);
@@ -692,18 +918,15 @@ const AssignedDeliveries = () => {
     }
   };
 
-  // Handle map open/close
   const handleOpenMap = (delivery) => {
     setIsMapOpen(delivery._id);
   };
 
-  // Filter and sort deliveries
   useEffect(() => {
     if (!deliveries.length) return;
 
     let updatedDeliveries = [...deliveries];
 
-    // Apply search
     if (searchQuery) {
       updatedDeliveries = updatedDeliveries.filter(delivery => {
         const donation = delivery.donationTransaction?.donation || {};
@@ -720,7 +943,6 @@ const AssignedDeliveries = () => {
       });
     }
 
-    // Apply sorting
     updatedDeliveries.sort((a, b) => {
       const donationA = a.donationTransaction?.donation || {};
       const donationB = b.donationTransaction?.donation || {};
@@ -832,14 +1054,24 @@ const AssignedDeliveries = () => {
                       console.error(`Failed to load image: ${userPhoto}`);
                     }}
                   />
-                  <ProfileText>Recipient: {recipient.name || 'Unknown Recipient'}</ProfileText>
+                  <ProfileText>
+                    Recipient:{' '}
+                    <ProfileLink to={`/ViewProfile/${recipient._id}`}>
+                      {recipient.name || 'Unknown Recipient'}
+                    </ProfileLink>
+                  </ProfileText>
                 </ProfileInfo>
                 <DeliveryDetails>
                   <DeliveryDetail><strong>Delivery ID:</strong> {delivery._id}</DeliveryDetail>
                   <DeliveryDetail><strong>Donation Title:</strong> {donation.title || 'Untitled'}</DeliveryDetail>
                   <DeliveryDetail><strong>Pickup Address:</strong> {delivery.pickupAddress || 'Not specified'}</DeliveryDetail>
                   <DeliveryDetail><strong>Delivery Address:</strong> {delivery.deliveryAddress || 'Not specified'}</DeliveryDetail>
-                  <DeliveryDetail><strong>Donor Name:</strong> {donor.name || 'Unknown Donor'}</DeliveryDetail>
+                  <DeliveryDetail>
+                    <strong>Donor Name:</strong>{' '}
+                    <ProfileLink to={`/ViewProfile/${donor._id}`}>
+                      {donor.name || 'Unknown Donor'}
+                    </ProfileLink>
+                  </DeliveryDetail>
                   <DeliveryDetail><strong>Donor Phone:</strong> {donor.phone || 'Not provided'}</DeliveryDetail>
                   <DeliveryDetail><strong>Recipient Phone:</strong> {recipient.phone || 'Not provided'}</DeliveryDetail>
                   <DeliveryDetail>
@@ -927,20 +1159,71 @@ const AssignedDeliveries = () => {
                     </ActionButton>
                   )}
                   {delivery.status === 'picked_up' && (
-                    <ActionButton
-                      className="delivered-btn"
-                      onClick={() => handleUpdateStatus(delivery._id, 'delivered')}
-                      disabled={processing[delivery._id]}
-                      aria-label="Mark as delivered"
-                    >
-                      {processing[delivery._id] ? (
-                        <>
-                          <Spinner size="sm" /> Marking...
-                        </>
-                      ) : (
-                        'Mark Delivered'
-                      )}
-                    </ActionButton>
+                    <>
+                      <ActionButton
+                        className="delivered-btn"
+                        onClick={() => handleUpdateStatus(delivery._id, 'delivered')}
+                        disabled={processing[delivery._id]}
+                        aria-label="Mark as delivered"
+                      >
+                        {processing[delivery._id] ? (
+                          <>
+                            <Spinner size="sm" /> Marking...
+                          </>
+                        ) : (
+                          'Mark Delivered'
+                        )}
+                      </ActionButton>
+                      <ActionButton
+                        className="feedback-btn"
+                        onClick={() => openFeedbackModal(
+                          delivery._id,
+                          'donor',
+                          donor._id,
+                          donor.name || 'Unknown Donor'
+                        )}
+                        disabled={feedbackState[delivery._id]?.donor?.submitted}
+                        aria-label="Add feedback for donor"
+                      >
+                        {feedbackState[delivery._id]?.donor?.submitted
+                          ? 'Feedback for Donor Submitted'
+                          : 'Add Feedback for Donor'}
+                      </ActionButton>
+                    </>
+                  )}
+                  {delivery.status === 'delivered' && (
+                    <>
+                      <ActionButton
+                        className="feedback-btn"
+                        onClick={() => openFeedbackModal(
+                          delivery._id,
+                          'donor',
+                          donor._id,
+                          donor.name || 'Unknown Donor'
+                        )}
+                        disabled={feedbackState[delivery._id]?.donor?.submitted}
+                        aria-label="Add feedback for donor"
+                      >
+                        {feedbackState[delivery._id]?.donor?.submitted
+                          ? 'Feedback for Donor Submitted'
+                          : 'Add Feedback for Donor'}
+                      </ActionButton>
+                      <ActionButton
+                        className="feedback-btn"
+                        onClick={() => openFeedbackModal(
+                          delivery._id,
+                          'recipient',
+                          recipient._id,
+                          recipient.name || 'Unknown Recipient'
+                        )}
+                        disabled={feedbackState[delivery._id]?.recipient?.submitted}
+                        aria-label="Add feedback for recipient"
+                      >
+                        {feedbackState[delivery._id]?.recipient?.submitted
+                          ? 'Feedback for Recipient Submitted'
+                          : 'Add Feedback for Recipient'}
+                      </ActionButton>
+                    </>
                   )}
                   <ActionButton
                     className="map-btn"
@@ -967,6 +1250,51 @@ const AssignedDeliveries = () => {
           })
         ) : (
           <NoDeliveries>No matching deliveries found.</NoDeliveries>
+        )}
+
+        {feedbackModal && (
+          <ModalOverlay>
+            <ModalContent>
+              <CloseButton onClick={closeFeedbackModal}>×</CloseButton>
+              <FeedbackForm onSubmit={(e) => {
+                e.preventDefault();
+                handleFeedbackSubmit(
+                  feedbackModal.deliveryId,
+                  feedbackModal.targetRole,
+                  feedbackModal.targetId
+                );
+              }}>
+                <FormGroup>
+                  <FormLabel>Feedback for {feedbackModal.targetRole.charAt(0).toUpperCase() + feedbackModal.targetRole.slice(1)} ({feedbackModal.targetName}):</FormLabel>
+                  <StarRating
+                    rating={feedbackState[feedbackModal.deliveryId]?.[feedbackModal.targetRole]?.rating || 0}
+                    setRating={(rating) => handleFeedbackChange(feedbackModal.deliveryId, feedbackModal.targetRole, 'rating', rating)}
+                    interactive={!feedbackState[feedbackModal.deliveryId]?.[feedbackModal.targetRole]?.submitted}
+                  />
+                </FormGroup>
+                <FormGroup>
+                  <FeedbackTextarea
+                    value={feedbackState[feedbackModal.deliveryId]?.[feedbackModal.targetRole]?.comment || ''}
+                    onChange={(e) => handleFeedbackChange(feedbackModal.deliveryId, feedbackModal.targetRole, 'comment', e.target.value)}
+                    placeholder={`Write your feedback for the ${feedbackModal.targetRole}...`}
+                    disabled={feedbackState[feedbackModal.deliveryId]?.[feedbackModal.targetRole]?.submitted}
+                  />
+                </FormGroup>
+                {feedbackState[feedbackModal.deliveryId]?.[feedbackModal.targetRole]?.error && (
+                  <FeedbackMessage error>{feedbackState[feedbackModal.deliveryId][feedbackModal.targetRole].error}</FeedbackMessage>
+                )}
+                {feedbackState[feedbackModal.deliveryId]?.[feedbackModal.targetRole]?.success && (
+                  <FeedbackMessage>{feedbackState[feedbackModal.deliveryId][feedbackModal.targetRole].success}</FeedbackMessage>
+                )}
+                <SubmitButton
+                  type="submit"
+                  disabled={feedbackState[feedbackModal.deliveryId]?.[feedbackModal.targetRole]?.submitted}
+                >
+                  {feedbackState[feedbackModal.deliveryId]?.[feedbackModal.targetRole]?.submitted ? 'Feedback Submitted' : 'Submit Feedback'}
+                </SubmitButton>
+              </FeedbackForm>
+            </ModalContent>
+          </ModalOverlay>
         )}
 
         {totalPages > 1 && (

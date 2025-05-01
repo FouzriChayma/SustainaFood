@@ -24,4 +24,6 @@ router.get('/feedbacks/transporter/:transporterId', feedbackController.getTransp
 router.get('/transporter/:transporterId', deliveryController.getDeliveriesByTransporter);
 router.post('/:deliveryId/accept-or-refuse', deliveryController.acceptOrRefuseDelivery);
 router.post('/:deliveryId/start-journey', deliveryController.startJourney);
+router.get('/donor/:donorId', deliveryController.getDeliveriesByDonorId); // New route
+router.get('/recipient/:recipientId', deliveryController.getDeliveriesByRecipientId); // New route
 module.exports = router;

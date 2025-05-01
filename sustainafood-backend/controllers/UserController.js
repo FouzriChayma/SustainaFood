@@ -5,9 +5,10 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const twilio = require('twilio');
 const mongoose = require("mongoose");
-
+const RequestNeed = require("../models/RequestNeed"); // Add this import
 const crypto = require("crypto"); // For generating random reset codes
 const { console } = require("inspector");
+const Delivery = require("../models/Delivery");
 require("dotenv").config(); // Load environment variables
 
 // Initialize Twilio client
@@ -968,6 +969,174 @@ const getTransporters = async (req, res) => {
       res.status(500).json({ message: 'Failed to update availability', error: error.message });
     }
   };
+
+
+  // Fetch gamification data (rank and score) for a specific user
+  const Donation = require("../models/Donation");
+
+  async function getUserGamificationData(req, res) {
+    try {
+      const userId = req.params.id;
+  
+      // Validate user ID
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+  
+      // Check if the user exists in the User collection
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+  
+      // Define roles for donors, recipients, and transporters
+      const donorRoles = ["restaurant", "supermarket", "personaldonor"];
+      const recipientRoles = ["student", "ong"];
+      const transporterRoles = ["transporter"];
+  
+      let rankedUsers = [];
+      let userGamification = null;
+  
+      // Handle based on user role
+      if (donorRoles.includes(user.role)) {
+        // Aggregate by donor for users who make donations
+        const donors = await Donation.aggregate([
+          { $match: { status: "fulfilled" } },
+          {
+            $group: {
+              _id: "$donor",
+              donationCount: { $sum: 1 },
+              totalItems: { $sum: { $add: [{ $sum: "$products.quantity" }, { $sum: "$meals.quantity" }] } },
+            },
+          },
+          { $sort: { donationCount: -1, totalItems: -1 } },
+          { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "donor" } },
+          { $unwind: "$donor" },
+          {
+            $project: {
+              _id: "$donor._id",
+              name: "$donor.name",
+              donationCount: 1,
+              totalItems: 1,
+            },
+          },
+        ]);
+  
+        console.log(`Donors for user ${userId} (${user.role}):`, donors);
+  
+        // Calculate a score for each donor
+        rankedUsers = donors.map((donor, index) => ({
+          rank: index + 1,
+          userId: donor._id.toString(),
+          name: donor.name,
+          donationCount: donor.donationCount,
+          totalItems: donor.totalItems,
+          score: donor.donationCount * 10 + donor.totalItems,
+        }));
+  
+        userGamification = rankedUsers.find(donor => donor.userId === userId);
+      } else if (recipientRoles.includes(user.role)) {
+        // Log the raw requests for debugging
+        const rawRequests = await RequestNeed.find({ recipient: userId });
+        console.log(`Raw requests for user ${userId}:`, rawRequests);
+  
+        // Aggregate by recipient for users who post requests
+        const recipients = await RequestNeed.aggregate([
+          // No status filter, count all requests posted by the recipient
+          {
+            $group: {
+              _id: "$recipient",
+              requestCount: { $sum: 1 },
+            },
+          },
+          { $sort: { requestCount: -1 } },
+          { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "recipient" } },
+          { $unwind: "$recipient" },
+          {
+            $project: {
+              _id: "$recipient._id",
+              name: "$recipient.name",
+              requestCount: 1,
+            },
+          },
+        ]);
+  
+        console.log(`Aggregated recipients for user ${userId} (${user.role}):`, recipients);
+  
+        // Calculate a score for each recipient based on request count
+        rankedUsers = recipients.map((recipient, index) => ({
+          rank: index + 1,
+          userId: recipient._id.toString(),
+          name: recipient.name,
+          requestCount: recipient.requestCount,
+          score: recipient.requestCount * 10, // Score = 10 points per request
+        }));
+  
+        userGamification = rankedUsers.find(recipient => recipient.userId === userId);
+      } else if (transporterRoles.includes(user.role)) {
+        // Aggregate by transporter for users who complete deliveries
+        const transporters = await Delivery.aggregate([
+          { $match: { status: "delivered" } }, // Only count completed deliveries
+          {
+            $group: {
+              _id: "$transporter",
+              deliveryCount: { $sum: 1 },
+            },
+          },
+          { $sort: { deliveryCount: -1 } },
+          { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "transporter" } },
+          { $unwind: "$transporter" },
+          {
+            $project: {
+              _id: "$transporter._id",
+              name: "$transporter.name",
+              deliveryCount: 1,
+            },
+          },
+        ]);
+  
+        console.log(`Transporters for user ${userId} (${user.role}):`, transporters);
+  
+        // Calculate a score for each transporter based on delivery count
+        rankedUsers = transporters.map((transporter, index) => ({
+          rank: index + 1,
+          userId: transporter._id.toString(),
+          name: transporter.name,
+          deliveryCount: transporter.deliveryCount,
+          score: transporter.deliveryCount * 15, // Score = 15 points per delivery
+        }));
+  
+        userGamification = rankedUsers.find(transporter => transporter.userId === userId);
+      } else {
+        return res.status(200).json({
+          rank: 0,
+          score: 0,
+          message: "Gamification not applicable for this role",
+        });
+      }
+  
+      if (!userGamification) {
+        return res.status(200).json({
+          rank: 0,
+          score: 0,
+          message:
+            user.role === "transporter"
+              ? "User has not completed any deliveries yet"
+              : user.role === "student" || user.role === "ong"
+              ? "User has not posted any requests yet"
+              : "User has not made any fulfilled donations yet",
+        });
+      }
+  
+      res.status(200).json({
+        rank: userGamification.rank,
+        score: userGamification.score,
+      });
+    } catch (error) {
+      console.error(`Error in getUserGamificationData for user ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch gamification data", details: error.message });
+    }
+  }
 module.exports = {getUsers,
     updateTransporterAvailability,
     generate2FACode,
@@ -997,4 +1166,5 @@ module.exports = {getUsers,
     toggle2FA,
     send2FACodeforsigninwithgoogle,
     updateTransporterLocation,
+    getUserGamificationData,
 };

@@ -10,7 +10,16 @@ export const signupUser = async (userData) => {
     },
   });
 };
-
+export const getUserGamificationData = async (userId) => {
+  console.log(`Fetching gamification data for userId: ${userId}`);
+  try {
+    const response = await axios.get(`http://localhost:3000/users/${userId}/gamification`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching gamification data:', error);
+    throw error;
+  }
+};
 export const createuser=async(userData)=>{
   return await axios.post('http://localhost:3000/users/createUser',userData)
 }

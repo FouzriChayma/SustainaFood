@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import styled, { createGlobalStyle, keyframes, css } from "styled-components"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
@@ -42,6 +42,18 @@ const float = keyframes`
 const shimmer = keyframes`
   0% { background-position: -1000px 0; }
   100% { background-position: 1000px 0; }
+`
+
+const glowPulse = keyframes`
+  0% { box-shadow: 0 0 10px rgba(34, 139, 34, 0.3), 0 0 20px rgba(34, 139, 34, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(34, 139, 34, 0.5), 0 0 30px rgba(34, 139, 34, 0.3); }
+  100% { box-shadow: 0 0 10px rgba(34, 139, 34, 0.3), 0 0 20px rgba(34, 139, 34, 0.2); }
+`
+
+const starTwinkle = keyframes`
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.8; }
 `
 
 const HomeContainer = styled.div`
@@ -106,6 +118,127 @@ const HeroSection = styled.section`
     background: rgba(34, 139, 34, 0.08);
     z-index: 1;
   }
+`
+
+const SponsorText = styled.p`
+  margin-top: 25px;
+  font-size: 18px;
+  color: #2a4a2a;
+  font-weight: 500;
+  padding: 12px 24px;
+  background: rgba(34, 139, 34, 0.05);
+  border-radius: 30px;
+  display: inline-block;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: rgba(34, 139, 34, 0.08);
+    transform: translateY(-2px);
+  }
+`
+
+const CarouselContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+  background: linear-gradient(135deg, #ffffff, #f0f8f0);
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(34, 139, 34, 0.1);
+  animation: ${float} 6s ease-in-out infinite;
+`
+
+const TopTransporterBadge = styled.div`
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  background: linear-gradient(135deg, #ffd700, #ffaa00);
+  color: #3e2723;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 24px;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  &::before {
+    content: '★';
+    font-size: 16px;
+    color: #fff;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+  }
+
+  &::after {
+    content: 'Top 1';
+  }
+
+  @media (max-width: 768px) {
+    font-size: 12px;
+    padding: 5px 12px;
+    gap: 6px;
+
+    &::before {
+      font-size: 14px;
+    }
+  }
+
+  /* Accessibility: Ensure sufficient contrast */
+  @media (prefers-contrast: high) {
+    background: #ffcc00;
+    color: #1a1a1a;
+    border: 1px solid #1a1a1a;
+  }
+`
+
+const TransporterImage = styled.img`
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 5px solid #228b22;
+  transition: transform 0.3s ease;
+  position: relative;
+  
+  &:hover {
+    transform: scale(1.08);
+  }
+`
+
+const TransporterInfo = styled.div`
+  margin-top: 20px;
+  font-size: 22px;
+  color: #1a7a1a;
+  font-weight: 700;
+`
+
+const ThankYouMessage = styled.p`
+  margin-top: 15px;
+  font-size: 16px;
+  color: #3a5a3a;
+  line-height: 1.6;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 15px;
+  border-radius: 10px;
 `
 
 const HeroText = styled.div`
@@ -182,7 +315,6 @@ const SliderContainer = styled.div`
   z-index: 2;
   transform-style: preserve-3d;
   perspective: 1000px;
-  animation: ${float} 6s ease-in-out infinite;
   
   &::before {
     content: '';
@@ -413,15 +545,26 @@ const SummaryText = styled.p`
   z-index: 1;
 `
 
-const AdvertisementSection = styled.section`
+const TwoColumnSection = styled.section`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
   padding: 60px 80px;
+  justify-content: center;
+  background: linear-gradient(to bottom, #fff, #f9fdf9);
+  margin: 0 20px;
+`
+
+const ColumnSection = styled.div`
+  flex: 1 1 500px;
   background: linear-gradient(to bottom, #fff, #f9fdf9);
   text-align: center;
   position: relative;
   z-index: 1;
   border-radius: 20px;
-  margin: 0 20px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
+  padding: 40px;
+  min-width: 0;
   
   &::before {
     content: '';
@@ -429,7 +572,7 @@ const AdvertisementSection = styled.section`
     top: 20px;
     right: 20px;
     width: 80px;
-    height: 80px;
+    height: 100px;
     border-radius: 50%;
     background: rgba(34, 139, 34, 0.05);
     z-index: 0;
@@ -448,129 +591,228 @@ const AdvertisementSection = styled.section`
   }
 `
 
-const TopTransporterSection = styled.section`
-  padding: 60px 80px;
-  background: linear-gradient(to bottom, #fff, #f9fdf9);
-  text-align: center;
+// Clean title styling to match the reference image
+const DonorSectionTitle = styled.h2`
+  font-size: 40px;
+  font-weight: 700;
+  color: #228b22;
+  margin-bottom: 30px;
   position: relative;
-  z-index: 1;
-  border-radius: 20px;
-  margin: 0 20px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: rgba(34, 139, 34, 0.05);
-    z-index: 0;
-  }
-  
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: rgba(34, 139, 34, 0.05);
-    z-index: 0;
-  }
-`
-
-const AdImage = styled.img`
-  width: 100%;
-  max-width: 600px;
-  height: 300px;
-  border-radius: 16px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
-  object-fit: cover;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-5px) scale(1.01);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  }
-`
-
-const TransporterImage = styled.img`
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 4px solid #228b22;
-  box-shadow: 0 8px 20px rgba(34, 139, 34, 0.2);
-  transition: transform 0.3s ease;
-  
-  &:hover {
-    transform: scale(1.05);
-  }
-`
-
-const SponsorText = styled.p`
-  margin-top: 25px;
-  font-size: 18px;
-  color: #2a4a2a;
-  font-weight: 500;
-  padding: 12px 24px;
-  background: rgba(34, 139, 34, 0.05);
-  border-radius: 30px;
   display: inline-block;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.03);
-  transition: all 0.3s ease;
+  z-index: 1;
   
-  &:hover {
-    background: rgba(34, 139, 34, 0.08);
-    transform: translateY(-2px);
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 4px;
+    background: #228b22;
+    border-radius: 2px;
   }
 `
 
-const TransporterInfo = styled.div`
-  margin-top: 20px;
-  font-size: 20px;
-  color: #1a7a1a;
-  font-weight: 600;
+// Update the AdCarouselContainer for a cleaner look with cream background
+const AdCarouselContainer = styled.div`
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 16px;
+  background-color: #fff8e1;
+    animation: ${float} 6s ease-in-out infinite;
+
 `
 
-const ThankYouMessage = styled.p`
-  margin-top: 15px;
-  font-size: 16px;
-  color: #3a5a3a;
-  line-height: 1.6;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
+// Make the AdCarouselTrack taller to accommodate larger images
+const AdCarouselTrack = styled.div`
+  display: flex;
+  transition: transform 0.5s ease-in-out;
+  height: 450px;
 `
 
-const CarouselContainer = styled.div`
+// Update the AdSlide for a cleaner background
+const AdSlide = styled.div`
+  min-width: 100%;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  position: relative;
+  justify-content: center;
+  padding: 20px;
+  background: ${(props) => {
+    if (props.rank === 0) return "#fff8e1" // Gold background for 1st
+    if (props.rank === 1) return "#f5f5f5" // Silver background for 2nd
+    if (props.rank === 2) return "#fff0e6" // Bronze background for 3rd
+    return "transparent"
+  }};
+  border-radius: 16px;
 `
 
-const ChevronButton = styled.button`
-  padding: 10px;
-  background: linear-gradient(135deg, #228b22, #56ab2f);
-  border: none;
+// Make the AdImageEnhanced bigger
+const AdImageEnhanced = styled.img`
+  width: 100%;
+  height: 280px;
+  object-fit: contain;
+  border-radius: 12px;
+`
+
+// Update the DonorInfo for a cleaner look
+const DonorInfo = styled.div`
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  border-radius: 12px;
+`
+
+// Update the DonorName for a cleaner look
+const DonorName = styled.h3`
+  font-size: 24px;
+  font-weight: 600;
+  color: ${(props) => {
+    if (props.rank === 0) return "#d4af37" // Gold
+    if (props.rank === 1) return "#717171" // Silver
+    if (props.rank === 2) return "#a05a2c" // Bronze
+    return "#333333"
+  }};
+  margin-bottom: 10px;
+`
+
+// Update the DonorRank for a cleaner look
+const DonorRank = styled.span`
+  display: inline-block;
+  padding: 6px 6px;
+  background: ${(props) => {
+    if (props.rank === 0) return "#ffd800" // Gold
+    if (props.rank === 1) return "#c0c0c0" // Silver
+    if (props.rank === 2) return "#cd7f32" // Bronze
+    return "#4caf50"
+  }};
+  color: ${(props) => (props.rank === 1 ? "#333" : "white")};
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+`
+
+// Update the TopDonorBadge to match the reference image
+const TopDonorBadge = styled.div`
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: ${(props) => {
+    if (props.rank === 0) return "#ffd700" // Gold
+    if (props.rank === 1) return "#c0c0c0" // Silver
+    if (props.rank === 2) return "#cd7f32" // Bronze
+    return "#ff9800"
+  }};
+  color: ${(props) => (props.rank === 1 ? "#333" : "white")};
+  font-weight: bold;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 10px rgba(34, 139, 34, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   
+  &::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 24px;
+    background-image: ${(props) => {
+      if (props.rank === 0)
+        return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 8.5L9.75 13.5L4.5 14.25L8.25 18L7.25 23.25L12 20.75L16.75 23.25L15.75 18L19.5 14.25L14.25 13.5L12 8.5Z'/%3E%3Cpath d='M12 1.5C12.5 1.5 13 1.75 13.25 2.25L14.5 4.75C14.75 5.25 15.25 5.5 15.75 5.5H18.5C19 5.5 19.5 5.75 19.75 6.25C20 6.75 20 7.25 19.75 7.75L17.75 10.5C17.5 11 17.5 11.5 17.75 12L19.75 14.75C20 15.25 20 15.75 19.75 16.25C19.5 16.75 19 17 18.5 17H15.75C15.25 17 14.75 17.25 14.5 17.75L13.25 20.25C13 20.75 12.5 21 12 21C11.5 21 11 20.75 10.75 20.25L9.5 17.75C9.25 17.25 8.75 17 8.25 17H5.5C5 17 4.5 16.75 4.25 16.25C4 15.75 4 15.25 4.25 14.75L6.25 12C6.5 11.5 6.5 11 6.25 10.5L4.25 7.75C4 7.25 4 6.75 4.25 6.25C4.5 5.75 5 5.5 5.5 5.5H8.25C8.75 5.5 9.25 5.25 9.5 4.75L10.75 2.25C11 1.75 11.5 1.5 12 1.5Z'/%3E%3C/svg%3E\")"
+      if (props.rank === 1)
+        return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23333333'%3E%3Cpath d='M12 15L7.5 18L9 12.75L5 9L10.25 8.5L12 3.5L13.75 8.5L19 9L15 12.75L16.5 18L12 15Z'/%3E%3Cpath d='M20 2H4V4L10 6L12 12L14 6L20 4V2Z'/%3E%3C/svg%3E\")"
+      return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 17L6 21L8 14L2 10L9.5 9.5L12 3L14.5 9.5L22 10L16 14L18 21L12 17Z'/%3E%3C/svg%3E\")"
+    }};
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+  }
+`
+
+// Update the CarouselControls to position arrows on the sides
+const CarouselControls = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 15px;
+  pointer-events: none;
+  z-index: 5;
+`
+
+// Update the CarouselButton for side positioning
+const CarouselButton = styled.button`
+  background: rgba(255, 255, 255, 0.8);
+  color: #228b22;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  pointer-events: auto;
+
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(34, 139, 34, 0.3);
-    background: linear-gradient(135deg, #1a7a1a, #4a9a27);
+    background: white;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+  }
+`
+
+// Update the CarouselDots to be at the bottom
+const CarouselDots = styled.div`
+  position: absolute;
+  bottom: 15px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  z-index: 5;
+  pointer-events: auto;
+`
+
+// Update the CarouselDot for a cleaner look
+const CarouselDot = styled.button`
+  width: ${(props) => (props.isActive ? "10px" : "8px")};
+  height: ${(props) => (props.isActive ? "10px" : "8px")};
+  border-radius: 50%;
+  background: ${(props) => (props.isActive ? "#228b22" : "#cccccc")};
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+
+  &:hover {
+    background: ${(props) => (props.isActive ? "#228b22" : "#999999")};
   }
 `
 
@@ -583,6 +825,65 @@ const ErrorMessage = styled.p`
   border-radius: 8px;
 `
 
+// Add a new styled component for the thank you/promotional message
+const DonorPromoMessage = styled.div`
+  margin-top: 10px;
+  padding: 12px 15px;
+  background: ${(props) => {
+    if (props.rank === 0) return "rgba(255, 215, 0, 0.1)" // Gold
+    if (props.rank === 1) return "rgba(192, 192, 192, 0.1)" // Silver
+    if (props.rank === 2) return "rgba(205, 127, 50, 0.1)" // Bronze
+    return "rgba(76, 175, 80, 0.1)"
+  }};
+  border: 1px solid ${(props) => {
+    if (props.rank === 0) return "rgba(255, 215, 0, 0.3)" // Gold
+    if (props.rank === 1) return "rgba(192, 192, 192, 0.3)" // Silver
+    if (props.rank === 2) return "rgba(205, 127, 50, 0.3)" // Bronze
+    return "rgba(76, 175, 80, 0.3)"
+  }};
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  text-align: center;
+  max-width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+`
+
+const DonorPromoTitle = styled.p`
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: ${(props) => {
+    if (props.rank === 0) return "#d4af37" // Gold
+    if (props.rank === 1) return "#717171" // Silver
+    if (props.rank === 2) return "#a05a2c" // Bronze
+    return "#1a7a1a"
+  }};
+`
+
+const DonorPromoButton = styled.a`
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: ${(props) => {
+    if (props.rank === 0) return "#ffd700" // Gold
+    if (props.rank === 1) return "#c0c0c0" // Silver
+    if (props.rank === 2) return "#cd7f32" // Bronze
+    return "#4caf50"
+  }};
+  color: ${(props) => (props.rank === 1 ? "#333" : "white")};
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  }
+`
+
 const Home = () => {
   const { user: authUser, token } = useAuth()
   const [advertisements, setAdvertisements] = useState([])
@@ -590,6 +891,9 @@ const Home = () => {
   const [currentAdIndex, setCurrentAdIndex] = useState(0)
   const [adError, setAdError] = useState("")
   const [transporterError, setTransporterError] = useState("")
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true)
+  const [touchStart, setTouchStart] = useState(null)
+  const [touchEnd, setTouchEnd] = useState(null)
 
   useEffect(() => {
     const fetchAdvertisements = async () => {
@@ -661,32 +965,54 @@ const Home = () => {
   }, [])
 
   useEffect(() => {
-    if (advertisements.length > 1) {
+    if (advertisements.length > 1 && isAutoPlaying) {
       const interval = setInterval(() => {
-        setCurrentAdIndex((prevIndex) =>
-          prevIndex === advertisements.length - 1 ? 0 : prevIndex + 1
-        )
+        setCurrentAdIndex((prevIndex) => (prevIndex === advertisements.length - 1 ? 0 : prevIndex + 1))
       }, 5000)
       return () => clearInterval(interval)
     }
+  }, [advertisements, isAutoPlaying])
+
+  const handlePrevAd = useCallback(() => {
+    setCurrentAdIndex((prevIndex) => (prevIndex === 0 ? advertisements.length - 1 : prevIndex - 1))
   }, [advertisements])
 
-  const handleNextAd = () => {
-    setCurrentAdIndex((prevIndex) =>
-      prevIndex === advertisements.length - 1 ? 0 : prevIndex + 1
-    )
+  const handleNextAd = useCallback(() => {
+    setCurrentAdIndex((prevIndex) => (prevIndex === advertisements.length - 1 ? 0 : prevIndex + 1))
+  }, [advertisements])
+
+  const goToAd = (index) => {
+    setCurrentAdIndex(index)
+  }
+
+  const handleTouchStart = (e) => {
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    const difference = touchStart - touchEnd
+    if (difference > 50) {
+      handleNextAd()
+    } else if (difference < -50) {
+      handlePrevAd()
+    }
   }
 
   const getRankText = (index) => {
     switch (index) {
       case 0:
-        return "1st Donor"
+        return "Top 1 Donor"
       case 1:
-        return "2nd Donor"
+        return "Top 2 Donor"
       case 2:
-        return "3rd Donor"
+        return "Top 3 Donor"
       default:
-        return "Donor"
+        return `${index + 1}th Donor`
     }
   }
 
@@ -717,65 +1043,105 @@ const Home = () => {
             />
           </Wave>
         </HeroSection>
-        <AdvertisementSection>
-          <SectionTitle>Top Donors' Advertisements</SectionTitle>
-          {adError ? (
-            <ErrorMessage>{adError}</ErrorMessage>
-          ) : advertisements.length > 0 ? (
-            <CarouselContainer>
-              <AdImage
-                src={`http://localhost:3000/${advertisements[currentAdIndex].advertisementImage}`}
-                alt={`Advertisement by ${advertisements[currentAdIndex].name}`}
-              />
-              <SponsorText>
-                Sponsored by {advertisements[currentAdIndex].name}, our {getRankText(currentAdIndex)}!
-              </SponsorText>
-              {advertisements.length > 1 && (
-                <ChevronButton onClick={handleNextAd}>
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M9 18L15 12L9 6"
-                      stroke="white"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </ChevronButton>
-              )}
-            </CarouselContainer>
-          ) : (
-            <SponsorText>No advertisements available</SponsorText>
-          )}
-        </AdvertisementSection>
-        <TopTransporterSection>
-          <SectionTitle>Our Top Transporter</SectionTitle>
-          {transporterError ? (
-            <ErrorMessage>{transporterError}</ErrorMessage>
-          ) : topTransporter ? (
-            <CarouselContainer>
-              <TransporterImage
-                src={`http://localhost:3000/${topTransporter.photo}`} // Changed from profilePicture to photo
-                alt={`Profile picture of ${topTransporter.name}`}
-              />
-              <TransporterInfo>
-                {topTransporter.name} - {topTransporter.deliveryCount} Deliveries
-              </TransporterInfo>
-              <ThankYouMessage>
-                Thank you, {topTransporter.name}, for your dedication in delivering food to those in need. Your efforts
-                help reduce waste and strengthen our community!
-              </ThankYouMessage>
-            </CarouselContainer>
-          ) : (
-            <SponsorText>No top transporter data available</SponsorText>
-          )}
-        </TopTransporterSection>
+        <TwoColumnSection>
+          <ColumnSection>
+            <DonorSectionTitle>Our Heartfelt Heroes</DonorSectionTitle>
+            {adError ? (
+              <ErrorMessage>{adError}</ErrorMessage>
+            ) : advertisements.length > 0 ? (
+              <div
+                onMouseEnter={() => setIsAutoPlaying(false)}
+                onMouseLeave={() => setIsAutoPlaying(true)}
+                style={{ position: "relative" }}
+              >
+                <AdCarouselContainer
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                >
+                  <AdCarouselTrack style={{ transform: `translateX(-${currentAdIndex * 100}%)` }}>
+                    {advertisements.map((ad, index) => (
+                      <AdSlide key={ad._id} rank={index} isActive={currentAdIndex === index}>
+                        <TopDonorBadge rank={index} />
+                        <AdImageEnhanced
+                          src={`http://localhost:3000/${ad.advertisementImage}`}
+                          alt={`Advertisement by ${ad.name}`}
+                        />
+                        <DonorInfo>
+                          <DonorName rank={index}>{ad.name}</DonorName>
+                        </DonorInfo>
+
+                        <DonorPromoMessage rank={index}>
+                          <DonorPromoTitle rank={index}>
+                            {index === 0
+                              ? "🏆 Gold Donor Spotlight"
+                              : index === 1
+                                ? "🥈 Silver Donor Highlight"
+                                : index === 2
+                                  ? "🥉 Bronze Donor Feature"
+                                  : "✨ Featured Donor"}
+                          </DonorPromoTitle>
+                          <p>
+                            {index === 0
+                              ? "Support this top donor's business! Their generous contributions make a significant impact on our mission to reduce food waste."
+                              : index === 1
+                                ? "This silver-tier donor helps us connect surplus food with those who need it most. Consider supporting their business!"
+                                : index === 2
+                                  ? "Our bronze donor plays a vital role in our community. Visit their business to show your appreciation!"
+                                  : "Thank you to this valued donor for supporting our cause. Your patronage of their business helps our community!"}
+                          </p>
+                        </DonorPromoMessage>
+                      </AdSlide>
+                    ))}
+                  </AdCarouselTrack>
+
+                  {advertisements.length > 1 && (
+                    <>
+                      <CarouselControls>
+                        <CarouselButton onClick={handlePrevAd} aria-label="Previous advertisement">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" />
+                          </svg>
+                        </CarouselButton>
+                        <CarouselButton onClick={handleNextAd} aria-label="Next advertisement">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" />
+                          </svg>
+                        </CarouselButton>
+                      </CarouselControls>
+                      
+                    </>
+                  )}
+                </AdCarouselContainer>
+              </div>
+            ) : (
+              <SponsorText>No advertisements available</SponsorText>
+            )}
+          </ColumnSection>
+          <ColumnSection>
+            <SectionTitle>Our Compassionate Courier</SectionTitle>
+            {transporterError ? (
+              <ErrorMessage>{transporterError}</ErrorMessage>
+            ) : topTransporter ? (
+              <CarouselContainer>
+                <TopTransporterBadge />
+                <TransporterImage
+                  src={`http://localhost:3000/${topTransporter.photo}`}
+                  alt={`Profile picture of ${topTransporter.name}`}
+                />
+                <TransporterInfo>
+                  {topTransporter.name} - {topTransporter.deliveryCount} Deliveries
+                </TransporterInfo>
+                <ThankYouMessage>
+                  Thank you, {topTransporter.name}, for your dedication in delivering food to those in need. Your
+                  efforts help reduce waste and strengthen our community!
+                </ThankYouMessage>
+              </CarouselContainer>
+            ) : (
+              <SponsorText>No top transporter data available</SponsorText>
+            )}
+          </ColumnSection>
+        </TwoColumnSection>
         <SectionWrapper>
           <SectionTitle>Our Key Features</SectionTitle>
           <FeaturesGrid>
@@ -823,7 +1189,7 @@ const Home = () => {
           </ProposedSolutionList>
           <SummaryText>
             In summary, SustainaFood offers a flexible, intelligent, and scalable solution to effectively combat food
-            waste in Tunisia while building a stronger, more connected community.
+            waste in Tunisia/Setif while building a stronger, more connected community.
           </SummaryText>
         </SectionWrapper>
       </HomeContainer>

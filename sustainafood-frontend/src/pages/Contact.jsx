@@ -2,7 +2,8 @@ import { useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import '../assets/styles/Contact.css';
-import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaClock } from 'react-icons/fa';  // Importation des icônes
+import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaClock } from 'react-icons/fa';
+import { submitContactForm } from '../api/contactService';
 
 const Contact = () => {
   const [feedback, setFeedback] = useState({
@@ -12,19 +13,28 @@ const Contact = () => {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFeedback({ ...feedback, [name]: value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!feedback.name || !feedback.email || !feedback.comment) {
-      alert('Please fill in all fields before submitting!');
+      setError('Please fill in all fields before submitting!');
       return;
     }
-    setSubmitted(true);
+
+    try {
+      await submitContactForm(feedback);
+      setSubmitted(true);
+      setError(null);
+      setFeedback({ name: '', email: '', comment: '' }); // Reset form
+    } catch (err) {
+      setError(err.message || 'Failed to submit the form. Please try again.');
+    }
   };
 
   return (
@@ -35,33 +45,30 @@ const Contact = () => {
         <a className='contact-message'> Have a question, a suggestion, or need assistance? We’re here to help! Whether you're looking for support,
           partnership opportunities, or more information about our services, feel free to reach out. Our team will respond as soon as possible.</a>
         <div className="contact-container">
-
           <div className="contact-info">
             <div className="contact-box">
-              <FaMapMarkerAlt size={30} color="#8dc73f" />  {/* Icône localisation */}
-
+              <FaMapMarkerAlt size={30} color="#8dc73f" />
               <div className="content">
                 <h4>Address</h4>
                 <p>Pôle Technologique El Ghazela , Ariana Tunis</p>
               </div>
             </div>
             <div className="contact-box">
-              <FaPhone size={30} color="#8dc73f" />  {/* Icône téléphone */}
-
+              <FaPhone size={30} color="#8dc73f" />
               <div className="content">
                 <h4>Phone</h4>
                 <p>+216 123 456 789</p>
               </div>
             </div>
             <div className="contact-box">
-              <FaEnvelope size={30} color="#8dc73f" />  {/* Icône e-mail */}
+              <FaEnvelope size={30} color="#8dc73f" />
               <div className="content">
                 <h4>Email</h4>
                 <p>info@sustainafood.com</p>
               </div>
             </div>
             <div className="contact-box">
-              <FaClock size={30} color="#8dc73f" />  {/* Icône heure */}
+              <FaClock size={30} color="#8dc73f" />
               <div className="content">
                 <h4>Working Hours</h4>
                 <p>Mon - Fri: 9 AM - 6 PM</p>
@@ -73,14 +80,14 @@ const Contact = () => {
             <form onSubmit={handleSubmit} className="feedback-form">
               <input type="text" name="name" placeholder="Your Name" value={feedback.name} onChange={handleChange} required />
               <input type="email" name="email" placeholder="Your Email" value={feedback.email} onChange={handleChange} required />
-
               <textarea name="comment" placeholder="Your Message" value={feedback.comment} onChange={handleChange} required />
               <button className="feedback-success" type="submit">Send</button>
             </form>
+            {error && <p className="error-message">{error}</p>}
             {submitted && (
               <div className="feedback-success">
-                <p>Thank you for your feedback, {feedback.name}!</p>
-                <button onClick={() => setSubmitted(false)}>Edit Feedback</button>
+                <p>Thank you for your feedback, {feedback.name || 'Visitor'}!</p>
+                <button onClick={() => setSubmitted(false)}>Send Another Message</button>
               </div>
             )}
           </div>
@@ -95,7 +102,6 @@ const Contact = () => {
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
           />
-
         </div>
       </div>
       <Footer />

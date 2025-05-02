@@ -57,5 +57,6 @@ router.put('/:transporterId/location', userController.updateTransporterLocation)
 router.put('/update-availability/:transporterId', userController.updateTransporterAvailability);
 router.put('/updateuseravailability/:userId', userController.updateUserAvailability);
 router.get('/:id/gamification', userController.getUserGamificationData);
-
+router.get('/top-donor-ad', userController.getTopDonorAdvertisement);
+router.post('/:id/upload-ad', upload.single('advertisementImage'), userController.uploadAdvertisement);
 module.exports = router;

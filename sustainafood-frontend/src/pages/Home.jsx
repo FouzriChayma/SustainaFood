@@ -1,7 +1,6 @@
 "use client"
 
-// Home.jsx
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import styled, { createGlobalStyle, keyframes, css } from "styled-components"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
@@ -9,8 +8,6 @@ import donation1 from "../assets/images/home1.png"
 import donation2 from "../assets/images/home2.png"
 import donation3 from "../assets/images/home3.png"
 import { useAuth } from "../contexts/AuthContext"
-
-// Replace this with the actual path to your background pattern image:
 import patternBg from "../assets/images/bg.png"
 
 const GlobalStyle = createGlobalStyle`
@@ -64,9 +61,11 @@ const HomeContainer = styled.div`
   & > section:nth-child(3) {
     animation-delay: 0.4s;
   }
+  & > section:nth-child(4) {
+    animation-delay: 0.6s;
+  }
 `
 
-/* ===== HERO SECTION ===== */
 const HeroSection = styled.section`
   position: relative;
   display: flex;
@@ -75,8 +74,6 @@ const HeroSection = styled.section`
   justify-content: space-between;
   padding: 80px 80px 120px;
   gap: 40px;
-  
-  /* Enhanced gradient background with pattern */
   background: 
     linear-gradient(135deg, rgba(230, 242, 230, 0.9), rgba(220, 240, 220, 0.85)),
     url(${patternBg}) repeat center center;
@@ -178,7 +175,6 @@ const SliderContainer = styled.div`
   flex: 1 1 500px;
   width: 100%;
   height: 420px;
-  
   overflow: hidden;
   z-index: 2;
   transform-style: preserve-3d;
@@ -189,9 +185,7 @@ const SliderContainer = styled.div`
     content: '';
     position: absolute;
     inset: 0;
-    
     padding: 3px;
-    
     mask-composite: exclude;
     z-index: 3;
     pointer-events: none;
@@ -222,7 +216,6 @@ const Slide3 = styled(SlideImage)`
   animation-delay: 8s;
 `
 
-/* ===== WAVE SHAPE ===== */
 const Wave = styled.svg`
   position: absolute;
   bottom: 0;
@@ -233,7 +226,6 @@ const Wave = styled.svg`
   filter: drop-shadow(0 -5px 5px rgba(0, 0, 0, 0.03));
 `
 
-/* ===== FEATURES SECTION ===== */
 const SectionWrapper = styled.section`
   padding: 80px;
   background: ${(props) => props.bgColor || "#fff"};
@@ -357,7 +349,6 @@ const FeatureCard = styled.div`
   }
 `
 
-/* ===== PROPOSED SOLUTION SECTION ===== */
 const ProposedSolutionList = styled.ul`
   list-style: none;
   margin-left: 10px;
@@ -419,13 +410,99 @@ const SummaryText = styled.p`
   z-index: 1;
 `
 
+const AdvertisementSection = styled.section`
+  padding: 60px 80px;
+  background: linear-gradient(to bottom, #fff, #f9fdf9);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  border-radius: 20px;
+  margin: 0 20px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(34, 139, 34, 0.05);
+    z-index: 0;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(34, 139, 34, 0.05);
+    z-index: 0;
+  }
+`
+
+const AdImage = styled.img`
+  max-width: full;
+  max-height: full;
+  border-radius: 16px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+  object-fit: cover;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-5px) scale(1.01);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  }
+`
+
+const SponsorText = styled.p`
+  margin-top: 25px;
+  font-size: 18px;
+  color: #2a4a2a;
+  font-weight: 500;
+  padding: 12px 24px;
+  background: rgba(34, 139, 34, 0.05);
+  border-radius: 30px;
+  display: inline-block;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: rgba(34, 139, 34, 0.08);
+    transform: translateY(-2px);
+  }
+`
+
 const Home = () => {
   const { user: authUser, token, logout } = useAuth()
+  const [topDonorAd, setTopDonorAd] = useState(null)
 
   useEffect(() => {
-    // Add scroll reveal animation
-    const sections = document.querySelectorAll("section")
+    // Fetch top donor advertisement
+    const fetchTopDonorAd = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/users/top-donor-ad", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        const data = await response.json()
+        if (response.ok && data.advertisementImage) {
+          setTopDonorAd(data)
+        }
+      } catch (error) {
+        console.error("Error fetching top donor advertisement:", error)
+      }
+    }
+    fetchTopDonorAd()
+  }, [token])
 
+  useEffect(() => {
+    const sections = document.querySelectorAll("section")
     const revealSection = (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
@@ -433,16 +510,13 @@ const Home = () => {
         }
       })
     }
-
     const sectionObserver = new IntersectionObserver(revealSection, {
       root: null,
       threshold: 0.15,
     })
-
     sections.forEach((section) => {
       sectionObserver.observe(section)
     })
-
     return () => {
       sections.forEach((section) => {
         sectionObserver.unobserve(section)
@@ -455,7 +529,6 @@ const Home = () => {
       <GlobalStyle />
       <Navbar />
       <HomeContainer>
-        {/* Hero Section */}
         <HeroSection>
           <HeroText>
             <h1>Welcome to SustainaFood</h1>
@@ -470,8 +543,6 @@ const Home = () => {
             <Slide2 src={donation3} alt="Donation 2" />
             <Slide3 src={donation1} alt="Donation 3" />
           </SliderContainer>
-
-          {/* Decorative Wave at the bottom of Hero */}
           <Wave viewBox="0 0 1440 320">
             <path
               fill="#ffffff"
@@ -480,8 +551,19 @@ const Home = () => {
             />
           </Wave>
         </HeroSection>
+        {topDonorAd && topDonorAd.advertisementImage && (
+          <AdvertisementSection>
+            <SectionTitle>Top Donor Advertisement</SectionTitle>
+            <br />
+            <AdImage
+              src={`http://localhost:3000/${topDonorAd.advertisementImage}`}
+              alt={`Advertisement by ${topDonorAd.name}`}
+            />
+            <br />
 
-        {/* Features Section */}
+            <SponsorText>Sponsored by {topDonorAd.name}, our top donor!</SponsorText>
+          </AdvertisementSection>
+        )}
         <SectionWrapper>
           <SectionTitle>Our Key Features</SectionTitle>
           <FeaturesGrid>
@@ -504,7 +586,6 @@ const Home = () => {
           </FeaturesGrid>
         </SectionWrapper>
 
-        {/* Proposed Solution Section */}
         <SectionWrapper bgColor="#e8f5e9" align="left">
           <SectionTitle align="left">Our Proposed Solution</SectionTitle>
           <ProposedSolutionList>

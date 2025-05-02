@@ -9,6 +9,8 @@ const RequestNeed = require("../models/RequestNeed"); // Add this import
 const crypto = require("crypto"); // For generating random reset codes
 const { console } = require("inspector");
 const Delivery = require("../models/Delivery");
+const multer = require('multer');
+const path = require('path');
 require("dotenv").config(); // Load environment variables
 
 // Initialize Twilio client
@@ -1161,6 +1163,109 @@ const getTransporters = async (req, res) => {
       res.status(500).json({ error: "Failed to fetch gamification data", details: error.message });
     }
   }
+// New endpoint to handle advertisement image upload
+// Configure Multer storage
+const storage = multer.diskStorage({
+  destination: './uploads/advertisements/', // Relative to the backend root
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+
+// File filter to accept only images
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed!'), false);
+  }
+};
+
+// Initialize Multer upload
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // Limit to 5MB
+});
+// Updated endpoint to handle advertisement image upload
+const uploadAdvertisement = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided. Please upload a valid image file.' });
+    }
+    // Update user with the advertisement image path
+    user.advertisementImage = req.file.path;
+    await user.save();
+    res.status(200).json({
+      message: 'Advertisement uploaded successfully',
+      advertisementImage: user.advertisementImage,
+    });
+  } catch (error) {
+    console.error('Error uploading advertisement:', error);
+    res.status(500).json({ error: 'Server error while uploading advertisement' });
+  }
+};
+
+  // New endpoint to get top donor's advertisement
+  const getTopDonorAdvertisement = async (req, res) => {
+    try {
+      // Aggregate donations to find the user with the highest number of donations or total items
+      const topDonor = await Donation.aggregate([
+        {
+          $match: { status: "fulfilled" }, // Only count fulfilled donations
+        },
+        {
+          $group: {
+            _id: "$donor", // Group by donor (not 'user' as in your original code)
+            donationCount: { $sum: 1 },
+            totalItems: { $sum: { $add: [{ $sum: "$products.quantity" }, { $sum: "$meals.quantity" }] } },
+          },
+        },
+        {
+          $sort: { donationCount: -1, totalItems: -1 }, // Sort by donation count and total items
+        },
+        {
+          $limit: 1, // Get the top donor
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        {
+          $unwind: '$user',
+        },
+        {
+          $match: {
+            'user.role': { $in: ['restaurant', 'supermarket', 'personaldonor'] },
+            'user.advertisementImage': { $exists: true, $ne: null },
+          },
+        },
+        {
+          $project: {
+            name: '$user.name',
+            advertisementImage: '$user.advertisementImage',
+          },
+        },
+      ]);
+  
+      if (!topDonor || topDonor.length === 0) {
+        return res.status(404).json({ error: 'No top donor with advertisement found' });
+      }
+  
+      res.status(200).json(topDonor[0]);
+    } catch (error) {
+      console.error('Error fetching top donor advertisement:', error);
+      res.status(500).json({ error: 'Server error while fetching top donor advertisement' });
+    }
+  };
 module.exports = {updateUserAvailability,getUsers,
     updateTransporterAvailability,
     generate2FACode,
@@ -1191,4 +1296,7 @@ module.exports = {updateUserAvailability,getUsers,
     send2FACodeforsigninwithgoogle,
     updateTransporterLocation,
     getUserGamificationData,
+    getTopDonorAdvertisement,
+    upload,
+    uploadAdvertisement,
 };

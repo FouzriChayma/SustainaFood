@@ -30,14 +30,16 @@ except FileNotFoundError as e:
     model_donations = None
     model_requests = None
 
-# Load traffic prediction model and weather encoder
+# Load traffic prediction model, weather encoder, and vehicle encoder
 try:
     traffic_model = joblib.load('traffic_model.pkl')
     weather_encoder = joblib.load('weather_encoder.pkl')
+    vehicle_encoder = joblib.load('vehicle_encoder.pkl')
 except FileNotFoundError as e:
-    logger.error(f"Failed to load traffic model or weather encoder: {e}")
+    logger.error(f"Failed to load traffic model or encoders: {e}")
     traffic_model = None
     weather_encoder = None
+    vehicle_encoder = None
 
 # Route for image analysis
 @app.route('/analyze', methods=['POST'])
@@ -106,8 +108,8 @@ def forecast_requests():
 # Route for predicting route duration
 @app.route('/predict_duration', methods=['POST'])
 def predict_duration():
-    if not traffic_model or not weather_encoder:
-        return jsonify({'error': 'Traffic prediction model or weather encoder not loaded'}), 500
+    if not traffic_model or not weather_encoder or not vehicle_encoder:
+        return jsonify({'error': 'Traffic prediction model or encoders not loaded'}), 500
 
     try:
         data = request.get_json()
@@ -122,8 +124,8 @@ def predict_duration():
         distance = float(data['distance'])  # in km
         osrm_duration = float(data['osrmDuration'])  # in seconds
         hour = int(data['hour'])
-        weather = data['weather'].title()  # Convert to title case to match 'Clear', 'Clouds', etc.
-        vehicle_type = data['vehicleType'].title()  # Convert to title case to match 'Car', 'Motorcycle', etc.
+        weather = data['weather'].title()  # e.g., 'Clear', 'Clouds'
+        vehicle_type = data['vehicleType'].title()  # e.g., 'Car', 'Motorcycle'
 
         # Validate input ranges
         if distance <= 0:
@@ -135,55 +137,44 @@ def predict_duration():
 
         # Validate weather category
         known_weather_categories = weather_encoder.classes_
-        logger.info(f"Known weather categories: {known_weather_categories}")
         if weather not in known_weather_categories:
             return jsonify({
                 'error': f'Invalid weather value: "{weather}". Expected one of: {", ".join(known_weather_categories)}'
             }), 400
 
         # Validate vehicle type
-        known_vehicle_types = ['Car', 'Motorcycle', 'Truck']
+        known_vehicle_types = vehicle_encoder.classes_
         if vehicle_type not in known_vehicle_types:
             return jsonify({
                 'error': f'Invalid vehicle type: "{vehicle_type}". Expected one of: {", ".join(known_vehicle_types)}'
             }), 400
 
-        # Encode weather
+        # Encode features
         weather_encoded = weather_encoder.transform([weather])[0]
-        logger.info(f"Encoded weather value: {weather_encoded}")
+        vehicle_encoded = vehicle_encoder.transform([vehicle_type])[0]
+        logger.info(f"Encoded values: weather={weather_encoded}, vehicle_type={vehicle_encoded}")
 
-        # Normalize features (assumption based on typical ML training practices)
+        # Normalize features
         distance_meters = distance * 1000  # Convert km to meters
         osrm_duration_minutes = osrm_duration / 60  # Convert seconds to minutes
         hour_normalized = hour / 23.0  # Normalize hour to [0, 1]
-        weather_encoded = float(weather_encoded)  # Ensure float for consistency
 
         # Prepare features for prediction
-        features = np.array([[distance_meters, osrm_duration_minutes, hour_normalized, weather_encoded]])
+        features = np.array([[distance_meters, osrm_duration_minutes, hour_normalized, weather_encoded, vehicle_encoded]])
         logger.info(f"Normalized features for prediction: {features}")
 
-        # Make prediction (since the model doesn't handle vehicle type, use fallback logic)
-        raw_prediction = traffic_model.predict(features)[0]
-        logger.info(f"Raw predicted duration (unknown unit): {raw_prediction}")
+        # Make prediction using the traffic model
+        try:
+            predicted_duration = traffic_model.predict(features)[0]
+            logger.info(f"Model predicted duration (minutes): {predicted_duration}")
+            predicted_duration = predicted_duration * 60  # Convert minutes to seconds
+        except Exception as e:
+            logger.error(f"Model prediction failed: {e}")
+            return jsonify({'error': f'Failed to predict duration: {str(e)}'}), 500
 
-        # Adjust OSRM duration with factors based on hour, weather, and vehicle type
-        traffic_factor = 1.2 if 17 <= hour <= 20 else 1.1  # 20% increase during rush hour (17:00-20:00), 10% otherwise
-        weather_factor = 1.0 if weather == 'Clear' else 1.3  # 30% increase for non-clear weather
-
-        # Adjust based on vehicle type
-        vehicle_factor = 1.0  # Default for Car
-        if vehicle_type == 'Motorcycle':
-            vehicle_factor = 0.9  # Motorcycles are generally faster (10% decrease)
-        elif vehicle_type == 'Truck':
-            vehicle_factor = 1.3  # Trucks are slower (30% increase)
-
-        predicted_duration = osrm_duration * traffic_factor * weather_factor * vehicle_factor
-        logger.info(f"Fallback predicted duration (seconds): {predicted_duration}")
-
-        # Cap the prediction to a reasonable maximum (e.g., 10 minutes for short routes)
-        max_duration = 600  # 10 minutes in seconds
-        predicted_duration = min(predicted_duration, max_duration)
-        logger.info(f"Capped predicted duration (seconds): {predicted_duration}")
+        # Ensure positive duration
+        predicted_duration = max(predicted_duration, 60)  # Minimum 1 minute
+        logger.info(f"Final predicted duration (seconds): {predicted_duration}")
 
         return jsonify({'predictedDuration': float(predicted_duration)})
     except ValueError as ve:

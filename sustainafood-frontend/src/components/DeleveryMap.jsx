@@ -4,7 +4,8 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import '../assets/styles/LocationPicker.css';
 import styled from 'styled-components';
 import { IoClose } from 'react-icons/io5';
-import { FaArrowRight } from 'react-icons/fa';
+import { getUserById } from '../api/userService';
+import { useAuth } from '../contexts/AuthContext';
 
 const RouteInfoPanel = styled.div`
   position: absolute;
@@ -71,7 +72,7 @@ const DeliveryMap = ({
   donorName,
   recipientName,
   transporterName,
-  vehicleType = 'Car', // Default to 'Car' if not provided
+  vehicleType: propVehicleType = 'Car',
 }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
@@ -84,6 +85,92 @@ const DeliveryMap = ({
   const [mapLoaded, setMapLoaded] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [currentTransporterLocation, setCurrentTransporterLocation] = useState(transporterCoordinates);
+  const [vehicleType, setVehicleType] = useState(propVehicleType);
+  const [weather, setWeather] = useState('Clear'); // Default weather
+  const { user: authUser } = useAuth();
+
+  // Fetch vehicleType from user and normalize it
+  useEffect(() => {
+    const fetchUserVehicleType = async () => {
+      if (!authUser || (!authUser._id && !authUser.id)) {
+        console.warn('No authenticated user found');
+        return;
+      }
+      try {
+        const userId = authUser._id || authUser.id;
+        const response = await getUserById(userId);
+        let fetchedVehicleType = response.data.vehiculeType || 'Car';
+        // Normalize vehicleType to match backend expectations
+        const vehicleTypeMap = {
+          'motorbike': 'Motorcycle',
+          'bicycle': 'Bicycle',
+          'car': 'Car',
+          'van': 'Van',
+          'truck': 'Truck',
+          'scooter': 'Scooter'
+        };
+        fetchedVehicleType = vehicleTypeMap[fetchedVehicleType.toLowerCase()] || 'Car';
+        console.log("Fetched vehicleType:", fetchedVehicleType);
+        setVehicleType(fetchedVehicleType);
+      } catch (err) {
+        console.error("Error fetching user vehicle type:", err);
+        setVehicleType('Car'); // Fallback to default
+      }
+    };
+
+    fetchUserVehicleType();
+  }, [authUser]);
+
+  // Fetch weather data (simulated or via API)
+// Inside DeliveryMap component
+useEffect(() => {
+  const fetchWeather = async () => {
+    if (!currentTransporterLocation?.coordinates) {
+      console.warn('No transporter coordinates available for weather fetch');
+      setWeather('Clear'); // Fallback
+      return;
+    }
+
+    const [lon, lat] = currentTransporterLocation.coordinates;
+    const apiKey = 'ffea9f06eda3a4829ea41d94ef65d594'; // Your API key
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Weather API error:', errorData);
+        setWeather('Clear'); // Fallback
+        return;
+      }
+
+      const data = await response.json();
+      const weatherCondition = data.weather[0].main; // e.g., "Clear", "Clouds", "Rain"
+      console.log('Weather data:', data);
+
+      // Normalize weather condition to match your application's expectations
+      const weatherMap = {
+        'Clear': 'Clear',
+        'Clouds': 'Clouds',
+        'Rain': 'Rain',
+        'Drizzle': 'Rain',
+        'Thunderstorm': 'Rain',
+        'Snow': 'Rain',
+        'Mist': 'Clouds',
+        'Fog': 'Clouds',
+        // Add more mappings as needed
+      };
+
+      const normalizedWeather = weatherMap[weatherCondition] || 'Clear';
+      setWeather(normalizedWeather);
+    } catch (err) {
+      console.error('Error fetching weather:', err);
+      setWeather('Clear'); // Fallback
+    }
+  };
+
+  fetchWeather();
+}, [currentTransporterLocation]);
 
   // Format duration in seconds to a readable string
   const formatDuration = (seconds) => {
@@ -108,57 +195,49 @@ const DeliveryMap = ({
     return `${km.toFixed(2)} km`;
   };
 
-  // Calculate distance between two coordinates (Haversine formula)
-  const calculateDistance = (coord1, coord2) => {
-    const [lon1, lat1] = coord1;
-    const [lon2, lat2] = coord2;
-    const R = 6371e3; // Earth's radius in meters
-    const φ1 = (lat1 * Math.PI) / 180;
-    const φ2 = (lat2 * Math.PI) / 180;
-    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
-
-    const a =
-      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c; // Distance in meters
-    return distance / 1000; // Convert to kilometers
-  };
-
-  // Fetch AI-predicted duration from Flask backend
-  const fetchAIPredictedDuration = async (distance, osrmDuration, hour, weather = 'Clear', vehicleType) => {
+  // Fetch AI-predicted duration from Flask backend with retry logic
+  const fetchAIPredictedDuration = async (distance, osrmDuration, hour, weather, vehicleType, retries = 2) => {
     console.log('Fetching AI-predicted duration with:', { distance, osrmDuration, hour, weather, vehicleType });
-    try {
-      const response = await fetch('http://localhost:5000/predict_duration', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          distance,
-          osrmDuration,
-          hour,
-          weather,
-          vehicleType,
-        }),
-      });
+    for (let attempt = 1; attempt <= retries + 1; attempt++) {
+      try {
+        const response = await fetch('http://localhost:5000/predict_duration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            distance,
+            osrmDuration,
+            hour,
+            weather,
+            vehicleType,
+          }),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('AI prediction request failed:', errorData);
-        return null;
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error(`AI prediction attempt ${attempt} failed:`, errorData);
+          if (attempt === retries + 1) {
+            setErrorMessage(`Failed to fetch AI prediction: ${errorData.error || 'Unknown error'}`);
+            return null;
+          }
+          continue;
+        }
+
+        const data = await response.json();
+        console.log('AI Prediction Response:', data);
+        return data.predictedDuration;
+      } catch (error) {
+        console.error(`Error fetching AI-predicted duration (attempt ${attempt}):`, error);
+        if (attempt === retries + 1) {
+          setErrorMessage('Failed to fetch AI-predicted duration from server.');
+          return null;
+        }
       }
-
-      const data = await response.json();
-      console.log('AI Prediction Response:', data);
-      return data.predictedDuration;
-    } catch (error) {
-      console.error('Error fetching AI-predicted duration:', error);
-      return null;
     }
+    return null;
   };
 
-  // Fetch route data using OSRM API
-  const fetchRoute = async (coordinates) => {
+  // Fetch route data using OSRM API with vehicle-specific profile
+  const fetchRoute = async (coordinates, vehicleType) => {
     if (coordinates.length < 2) {
       console.error('Not enough coordinates for route calculation:', coordinates);
       return null;
@@ -167,9 +246,31 @@ const DeliveryMap = ({
       console.error('Invalid coordinates for route calculation:', coordinates);
       return null;
     }
+
+    // Map vehicleType to OSRM profile
+    const profileMap = {
+      'Car': 'driving',
+      'Van': 'driving',
+      'Truck': 'driving',
+      'Motorcycle': 'moped', // OSRM moped profile as a close approximation
+      'Scooter': 'moped',
+      'Bicycle': 'cycling',
+    };
+    const profile = profileMap[vehicleType] || 'driving'; // Default to driving if unmapped
+
+    // Vehicle-specific adjustment factors (to refine OSRM's generic profile durations)
+    const adjustmentFactors = {
+      'Car': 1.0,
+      'Van': 1.1, // Slightly slower due to size
+      'Truck': 1.3, // Slower due to weight and restrictions
+      'Motorcycle': 0.9, // Faster, less traffic impact
+      'Scooter': 0.95, // Slightly faster than driving
+      'Bicycle': 2.0, // Slower, depends on terrain and traffic
+    };
+
     try {
       const coordsString = coordinates.map(coord => `${coord[0]},${coord[1]}`).join(';');
-      const url = `http://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`;
+      const url = `http://router.project-osrm.org/route/v1/${profile}/${coordsString}?overview=full&geometries=geojson`;
       const response = await fetch(url);
       if (!response.ok) {
         console.error('OSRM API request failed:', response.status, response.statusText);
@@ -177,9 +278,11 @@ const DeliveryMap = ({
       }
       const data = await response.json();
       if (data.routes && data.routes.length > 0) {
+        const baseDuration = data.routes[0].duration;
+        const adjustedDuration = baseDuration * adjustmentFactors[vehicleType]; // Apply vehicle-specific factor
         return {
           geometry: data.routes[0].geometry,
-          duration: data.routes[0].duration,
+          duration: adjustedDuration,
           distance: data.routes[0].distance / 1000, // Convert meters to kilometers
         };
       } else {
@@ -220,13 +323,13 @@ const DeliveryMap = ({
     let totalDist = 0;
 
     // Transporter to Donor
-    let transporterToDonor = await fetchRoute([transporter.coords, donor.coords]);
+    let transporterToDonor = await fetchRoute([transporter.coords, donor.coords], vehicleType);
     if (transporterToDonor) {
       const osrmDuration = transporterToDonor.duration;
       const distance = transporterToDonor.distance;
       const hour = new Date().getHours();
-      const aiDuration = await fetchAIPredictedDuration(distance, osrmDuration, hour, 'Clear', vehicleType);
-      console.log('Transporter to Donor - AI Duration:', aiDuration);
+      const aiDuration = await fetchAIPredictedDuration(distance, osrmDuration, hour, weather, vehicleType);
+      console.log('Transporter to Donor - OSRM Duration:', osrmDuration, 'AI Duration:', aiDuration);
 
       routeGeometries.push({
         from: transporter.label,
@@ -245,13 +348,13 @@ const DeliveryMap = ({
     }
 
     // Donor to Recipient
-    let donorToRecipient = await fetchRoute([donor.coords, recipient.coords]);
+    let donorToRecipient = await fetchRoute([donor.coords, recipient.coords], vehicleType);
     if (donorToRecipient) {
       const osrmDuration = donorToRecipient.duration;
       const distance = donorToRecipient.distance;
       const hour = new Date().getHours();
-      const aiDuration = await fetchAIPredictedDuration(distance, osrmDuration, hour, 'Clear', vehicleType);
-      console.log('Donor to Recipient - AI Duration:', aiDuration);
+      const aiDuration = await fetchAIPredictedDuration(distance, osrmDuration, hour, weather, vehicleType);
+      console.log('Donor to Recipient - OSRM Duration:', osrmDuration, 'AI Duration:', aiDuration);
 
       routeGeometries.push({
         from: donor.label,
@@ -269,8 +372,6 @@ const DeliveryMap = ({
       return;
     }
 
-    console.log('Total AI Predicted Duration before setting:', totalAIPredictedDuration);
-    console.log('Total Distance before setting:', totalDist);
     setOptimizedRoute({ geometries: routeGeometries });
     setTotalOptimizedDuration(totalOsrmDuration);
     setTotalAIPredictedDuration(totalAIPredictedDuration);
@@ -331,7 +432,7 @@ const DeliveryMap = ({
             .addTo(map.current);
         }
 
-        // Transporter pin marker (blue pin like Donor's red pin)
+        // Transporter pin marker
         if (currentTransporterLocation.coordinates[0] !== 0) {
           transporterPinMarker.current = new maplibregl.Marker({ color: '#0000FF' })
             .setLngLat(currentTransporterLocation.coordinates)
@@ -357,9 +458,13 @@ const DeliveryMap = ({
       }
     });
 
-    // Track real-time movement
+    // Track real-time movement with debouncing
+    let lastUpdate = 0;
     const watchId = navigator.geolocation.watchPosition(
-      ({ coords }) => {
+      ({ coords, timestamp }) => {
+        if (timestamp - lastUpdate < 5000) return; // Debounce updates to every 5 seconds
+        lastUpdate = timestamp;
+
         const newLocation = { type: 'Point', coordinates: [coords.longitude, coords.latitude] };
         setCurrentTransporterLocation(newLocation);
 
@@ -387,7 +492,7 @@ const DeliveryMap = ({
       }
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [isOpen, pickupCoordinates, deliveryCoordinates, donorName, recipientName, transporterName, vehicleType]);
+  }, [isOpen, pickupCoordinates, deliveryCoordinates, donorName, recipientName, transporterName, vehicleType, weather]);
 
   // Draw routes
   useEffect(() => {
@@ -476,15 +581,19 @@ const DeliveryMap = ({
           ) : optimizedRoute && optimizedRoute.geometries.length > 0 ? (
             <>
               <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Optimized Route (Dashed)</p>
+              <p style={{ marginBottom: '5px' }}>
+                <strong>Vehicle Type:</strong> {vehicleType}
+              </p>
+              <p style={{ marginBottom: '5px' }}>
+                <strong>Weather:</strong> {weather}
+              </p>
               {optimizedRoute.geometries.map((segment, index) => (
                 <div key={`optimized-${index}`}>
                   <RouteLabel>
                     <RouteColor style={{ backgroundColor: index === 0 ? '#0000FF' : '#00FF00' }} />
                     {segment.from} to {segment.to}
                   </RouteLabel>
-                  <RouteLabel style={{ marginLeft: '20px' }}>
-                    OSRM: {formatDuration(segment.osrmDuration)}
-                  </RouteLabel>
+                
                   <RouteLabel style={{ marginLeft: '20px' }}>
                     AI: {segment.aiDuration !== null ? formatDuration(segment.aiDuration) : 'N/A'}
                   </RouteLabel>
@@ -493,9 +602,7 @@ const DeliveryMap = ({
                   </RouteLabel>
                 </div>
               ))}
-              <p style={{ fontWeight: 'bold', marginTop: '10px' }}>
-                Total OSRM Duration: {formatDuration(totalOptimizedDuration)}
-              </p>
+            
               <p style={{ fontWeight: 'bold', marginTop: '5px' }}>
                 Total AI-Predicted Duration: {totalAIPredictedDuration > 0 ? formatDuration(totalAIPredictedDuration) : 'N/A'}
               </p>

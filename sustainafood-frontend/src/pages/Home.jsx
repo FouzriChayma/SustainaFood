@@ -446,8 +446,9 @@ const AdvertisementSection = styled.section`
 `
 
 const AdImage = styled.img`
-  max-width: full;
-  max-height: full;
+  width: 100%;
+  max-width: 600px;
+  height: 300px;
   border-radius: 16px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
   object-fit: cover;
@@ -477,13 +478,50 @@ const SponsorText = styled.p`
   }
 `
 
+const CarouselContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+`
+
+const CarouselButton = styled.button`
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #228b22, #56ab2f);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(34, 139, 34, 0.2);
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(34, 139, 34, 0.3);
+    background: linear-gradient(135deg, #1a7a1a, #4a9a27);
+  }
+`
+
+const ErrorMessage = styled.p`
+  font-size: 18px;
+  color: #d32f2f;
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: rgba(211, 47, 47, 0.05);
+  border-radius: 8px;
+`
+
 const Home = () => {
-  const { user: authUser, token, logout } = useAuth()
-  const [topDonorAd, setTopDonorAd] = useState(null)
+  const { user: authUser, token } = useAuth()
+  const [advertisements, setAdvertisements] = useState([])
+  const [currentAdIndex, setCurrentAdIndex] = useState(0)
+  const [error, setError] = useState("")
 
   useEffect(() => {
-    // Fetch top donor advertisement
-    const fetchTopDonorAd = async () => {
+    const fetchAdvertisements = async () => {
       try {
         const response = await fetch("http://localhost:3000/users/top-donor-ad", {
           headers: {
@@ -491,14 +529,18 @@ const Home = () => {
           },
         })
         const data = await response.json()
-        if (response.ok && data.advertisementImage) {
-          setTopDonorAd(data)
+        if (response.ok) {
+          setAdvertisements(data)
+          setError("")
+        } else {
+          setError(data.error || "Failed to fetch advertisements")
         }
       } catch (error) {
-        console.error("Error fetching top donor advertisement:", error)
+        console.error("Error fetching advertisements:", error)
+        setError("Failed to fetch advertisements")
       }
     }
-    fetchTopDonorAd()
+    fetchAdvertisements()
   }, [token])
 
   useEffect(() => {
@@ -523,6 +565,12 @@ const Home = () => {
       })
     }
   }, [])
+
+  const handleNextAd = () => {
+    setCurrentAdIndex((prevIndex) =>
+      prevIndex === advertisements.length - 1 ? 0 : prevIndex + 1
+    )
+  }
 
   return (
     <>
@@ -551,19 +599,25 @@ const Home = () => {
             />
           </Wave>
         </HeroSection>
-        {topDonorAd && topDonorAd.advertisementImage && (
-          <AdvertisementSection>
-            <SectionTitle>Top Donor Advertisement</SectionTitle>
-            <br />
-            <AdImage
-              src={`http://localhost:3000/${topDonorAd.advertisementImage}`}
-              alt={`Advertisement by ${topDonorAd.name}`}
-            />
-            <br />
-
-            <SponsorText>Sponsored by {topDonorAd.name}, our top donor!</SponsorText>
-          </AdvertisementSection>
-        )}
+        <AdvertisementSection>
+          <SectionTitle>Top Donors' Advertisements</SectionTitle>
+          {error ? (
+            <ErrorMessage>{error}</ErrorMessage>
+          ) : advertisements.length > 0 ? (
+            <CarouselContainer>
+              <AdImage
+                src={`http://localhost:3000/${advertisements[currentAdIndex].advertisementImage}`}
+                alt={`Advertisement by ${advertisements[currentAdIndex].name}`}
+              />
+              <SponsorText>Sponsored by {advertisements[currentAdIndex].name}</SponsorText>
+              {advertisements.length > 1 && (
+                <CarouselButton onClick={handleNextAd}>Next</CarouselButton>
+              )}
+            </CarouselContainer>
+          ) : (
+            <SponsorText>No advertisements available</SponsorText>
+          )}
+        </AdvertisementSection>
         <SectionWrapper>
           <SectionTitle>Our Key Features</SectionTitle>
           <FeaturesGrid>
@@ -585,7 +639,6 @@ const Home = () => {
             </FeatureCard>
           </FeaturesGrid>
         </SectionWrapper>
-
         <SectionWrapper bgColor="#e8f5e9" align="left">
           <SectionTitle align="left">Our Proposed Solution</SectionTitle>
           <ProposedSolutionList>

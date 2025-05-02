@@ -1210,62 +1210,44 @@ const uploadAdvertisement = async (req, res) => {
   }
 };
 
-  // New endpoint to get top donor's advertisement
-  const getTopDonorAdvertisement = async (req, res) => {
-    try {
-      // Aggregate donations to find the user with the highest number of donations or total items
-      const topDonor = await Donation.aggregate([
-        {
-          $match: { status: "fulfilled" }, // Only count fulfilled donations
+  // Get top donors' advertisements
+const getTopDonorAdvertisement = async (req, res) => {
+  try {
+    const topDonors = await Donation.aggregate([
+      { $match: { status: "fulfilled" } },
+      {
+        $group: {
+          _id: "$donor",
+          donationCount: { $sum: 1 },
+          totalItems: { $sum: { $add: [{ $sum: "$products.quantity" }, { $sum: "$meals.quantity" }] } },
         },
-        {
-          $group: {
-            _id: "$donor", // Group by donor (not 'user' as in your original code)
-            donationCount: { $sum: 1 },
-            totalItems: { $sum: { $add: [{ $sum: "$products.quantity" }, { $sum: "$meals.quantity" }] } },
-          },
+      },
+      { $sort: { donationCount: -1, totalItems: -1 } },
+      { $limit: 3 },
+      { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'user' } },
+      { $unwind: '$user' },
+      {
+        $match: {
+          'user.role': { $in: ['restaurant', 'supermarket', 'personaldonor'] },
+          'user.advertisementImage': { $exists: true, $ne: null },
         },
-        {
-          $sort: { donationCount: -1, totalItems: -1 }, // Sort by donation count and total items
+      },
+      {
+        $project: {
+          name: '$user.name',
+          advertisementImage: '$user.advertisementImage',
         },
-        {
-          $limit: 1, // Get the top donor
-        },
-        {
-          $lookup: {
-            from: 'users',
-            localField: '_id',
-            foreignField: '_id',
-            as: 'user',
-          },
-        },
-        {
-          $unwind: '$user',
-        },
-        {
-          $match: {
-            'user.role': { $in: ['restaurant', 'supermarket', 'personaldonor'] },
-            'user.advertisementImage': { $exists: true, $ne: null },
-          },
-        },
-        {
-          $project: {
-            name: '$user.name',
-            advertisementImage: '$user.advertisementImage',
-          },
-        },
-      ]);
-  
-      if (!topDonor || topDonor.length === 0) {
-        return res.status(404).json({ error: 'No top donor with advertisement found' });
-      }
-  
-      res.status(200).json(topDonor[0]);
-    } catch (error) {
-      console.error('Error fetching top donor advertisement:', error);
-      res.status(500).json({ error: 'Server error while fetching top donor advertisement' });
+      },
+    ]);
+    if (!topDonors || topDonors.length === 0) {
+      return res.status(404).json({ error: 'No top donors with advertisements found' });
     }
-  };
+    res.status(200).json(topDonors);
+  } catch (error) {
+    console.error('Error fetching top donors advertisements:', error);
+    res.status(500).json({ error: 'Server error while fetching top donors advertisements' });
+  }
+};
 module.exports = {updateUserAvailability,getUsers,
     updateTransporterAvailability,
     generate2FACode,

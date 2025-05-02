@@ -440,10 +440,10 @@ const Profile = () => {
               </div>
               
             </div>
-            {gamificationData.rank === 1 && ['restaurant', 'supermarket', 'personaldonor'].includes(user?.role) && (
+            {(gamificationData.rank === 1 || gamificationData.rank === 2 || gamificationData.rank === 3)  && ['restaurant', 'supermarket', 'personaldonor'].includes(user?.role) && (
   <div className="ad-upload-section" style={{ marginTop: '20px', textAlign: 'center' }}>
     <p style={{ color: '#1a7a1a', fontWeight: '600', marginBottom: '10px' }}>
-      Congratulations! As the top donor, you can add your advertisement.
+    🎉 Congratulations! As a top {gamificationData.rank} donor, you can upload your advertisement!
     </p>
     <form onSubmit={handleAdUpload} encType="multipart/form-data">
       <input

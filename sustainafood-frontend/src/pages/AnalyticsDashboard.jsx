@@ -16,7 +16,7 @@ const AnalyticsDashboard = () => {
   const { authUser } = useAuth();
   const user = JSON.parse(localStorage.getItem("user"));
   const [userId, setuserId] = useState("");
-  const isDonor = user?.role === "restaurant" || user?.role === "supermarket";
+  const isDonor = user?.role === "restaurant" || user?.role === "supermarket" || user?.role === "personaldonor";
   const isRecipient = user?.role === "ong" || user?.role === "student";
 
   const [analyticsData, setAnalyticsData] = useState(null);

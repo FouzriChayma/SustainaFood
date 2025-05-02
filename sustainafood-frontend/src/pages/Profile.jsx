@@ -384,16 +384,20 @@ const Profile = () => {
                 {gamificationError ? (
                   <p className="winner-ranking_number">{gamificationError}</p>
                 ) : gamificationData.rank === 0 ? (
-                  <p className="winner-ranking_number">
-                    {user?.role === "transporter"
-                      ? "No deliveries completed yet!"
-                      : user?.role === "student" || user?.role === "ong"
-                      ? "No requests posted yet!"
-                      : user?.role === "restaurant" || user?.role === "supermarket" || user?.role === "personaldonor"
-                      ? "No donations made yet!"
-                      : "Gamification not applicable"}
-                  </p>
-                ) : (
+                  <p
+                    className="no-activity-message"
+                    dangerouslySetInnerHTML={{
+                      __html:
+                        user?.role === "transporter"
+                          ? "Join the challenge to see your score!<br />No deliveries completed yet!"
+                          : user?.role === "student" || user?.role === "ong"
+                          ? "Join the challenge to see your score!<br />No requests posted yet!"
+                          : user?.role === "restaurant" || user?.role === "supermarket" || user?.role === "personaldonor"
+                          ? "Join the challenge to see your score!<br />No donations made yet!"
+                          : "Gamification not applicable",
+                    }}
+                  />
+                ) : (                
                   <p className="winner-ranking_number">
                     {gamificationData.rank !== null ? gamificationData.rank : "N/A"}
                     <span className="winner-ranking_word">

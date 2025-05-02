@@ -322,6 +322,22 @@ const Profile = () => {
     }
   };
 
+  // Add this function to the Profile component, right after the getTrophySvg function
+  const renderParticles = () => {
+    return Array.from({ length: 15 }).map((_, i) => (
+      <div
+        key={i}
+        className="winner-particle"
+        style={{
+          left: `${Math.random() * 100}%`,
+          backgroundColor: i % 5 === 0 ? '#ffd700' : i % 5 === 1 ? '#c0c0c0' : i % 5 === 2 ? '#cd7f32' : i % 5 === 3 ? '#ff6b6b' : '#1dd1a1',
+          animationDelay: `${Math.random() * 3}s`,
+          animationDuration: `${2 + Math.random() * 3}s`
+        }}
+      ></div>
+    ));
+  };
+
   return (
     <>
       <Navbar />
@@ -450,6 +466,9 @@ const Profile = () => {
                         : "winner-outlinePage-none"
                 }`}
               >
+                <div className="winner-particles">
+                  {renderParticles()}
+                </div>
                 {gamificationData.rank <= 3 && gamificationData.rank > 0 ? getTrophySvg(gamificationData.rank) : null}
                 {gamificationError ? (
                   <p className="winner-ranking_number">{gamificationError}</p>

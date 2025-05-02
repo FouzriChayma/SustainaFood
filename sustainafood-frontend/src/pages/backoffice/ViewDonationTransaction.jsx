@@ -6,6 +6,7 @@ import styled from "styled-components"
 import { getDonationTransactionById } from "../../api/donationTransactionService"
 import Sidebar from "../../components/backoffcom/Sidebar"
 import Navbar from "../../components/backoffcom/Navbar"
+import imgmouna from "../../assets/images/imgmouna.png"
 
 // Main layout components
 const DashboardContainer = styled.div`
@@ -16,7 +17,7 @@ const DashboardContainer = styled.div`
 
 const DashboardContent = styled.div`
   flex: 1;
-  padding: 70px 20px 20px 20px; /* Added top padding to make room for the navbar */
+  padding: 70px 20px 20px 20px;
 `
 
 const PageHeader = styled.div`
@@ -285,10 +286,12 @@ const ViewDonationTransaction = () => {
     const fetchTransaction = async () => {
       try {
         setLoading(true)
-        const data = await getDonationTransactionById(transactionId)
-        setTransaction(data)
+        const response = await getDonationTransactionById(transactionId)
+        // Handle nested data structure if the API returns { data: transaction }
+        const transactionData = response.data || response
+        setTransaction(transactionData)
       } catch (err) {
-        setError("Failed to fetch transaction details")
+        setError("Failed to fetch transaction details: " + (err.message || "Unknown error"))
       } finally {
         setLoading(false)
       }
@@ -330,7 +333,7 @@ const ViewDonationTransaction = () => {
       </DashboardContainer>
     )
 
-  const defaultImage = "/path/to/default-image.png"
+  const defaultImage = imgmouna
   const donorPhoto = transaction.donor?.photo ? `http://localhost:3000/${transaction.donor.photo}` : defaultImage
   const recipientPhoto = transaction.recipient?.photo
     ? `http://localhost:3000/${transaction.recipient.photo}`
@@ -435,7 +438,7 @@ const ViewDonationTransaction = () => {
                   {transaction.allocatedProducts.map((product, index) => (
                     <ItemRow key={index}>
                       <ItemName>{product.product?.name || "N/A"}</ItemName>
-                      <ItemQuantity>Qty: {product.quantity}</ItemQuantity>
+                      <ItemQuantity>Qty: {product.quantity || 0}</ItemQuantity>
                     </ItemRow>
                   ))}
                 </ItemsList>
@@ -452,7 +455,7 @@ const ViewDonationTransaction = () => {
                   {transaction.allocatedMeals.map((meal, index) => (
                     <ItemRow key={index}>
                       <ItemName>{meal.meal?.mealName || "N/A"}</ItemName>
-                      <ItemQuantity>Qty: {meal.quantity}</ItemQuantity>
+                      <ItemQuantity>Qty: {meal.quantity || 0}</ItemQuantity>
                     </ItemRow>
                   ))}
                 </ItemsList>

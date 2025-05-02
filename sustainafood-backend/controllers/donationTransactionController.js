@@ -62,7 +62,9 @@ async function getDonationTransactionById(req, res) {
       .populate('requestNeed')
       .populate('donation')
       .populate('allocatedProducts.product')
-      .populate('allocatedMeals.meal');
+      .populate('allocatedMeals.meal')
+      .populate('donor')
+      .populate('recipient');
 
     if (!transaction) {
       return res.status(404).json({ message: 'Donation transaction not found' });

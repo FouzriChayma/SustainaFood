@@ -65,6 +65,8 @@ import Delivery from "./pages/backoffice/delivery.jsx";
 import DeliveryView from "./pages/backoffice/DeliveryView.jsx";
 import ViewProfile from "./pages/ViewProfile.jsx";
 import Deliveries from "./pages/Deliveries.jsx";
+import ContactSubmissionList from "./pages/backoffice/ContactSubmissionList.jsx";
+import SubmissionDetails from "./pages/backoffice/SubmissionDetails.jsx";
 const App = () => {
   return (
     <AlertProvider>
@@ -85,6 +87,8 @@ const App = () => {
         <Route path="/deliveries/:transporterId" element={<AssignedDeliveries />} />
         {/* Routes privées pour les admins */}
         <Route element={<PrivateRoute roles={["admin"]} />}>
+        <Route path="/contact/submissions" element={<ContactSubmissionList />} />
+        <Route path="/contact/submissions/view/:id" element={<SubmissionDetails />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/recipients/ngos" element={<NGOList />} />
           <Route path="/donors/supermarkets" element={<SupermarketList />} />

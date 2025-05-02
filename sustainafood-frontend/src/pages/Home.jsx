@@ -64,6 +64,9 @@ const HomeContainer = styled.div`
   & > section:nth-child(4) {
     animation-delay: 0.6s;
   }
+  & > section:nth-child(5) {
+    animation-delay: 0.8s;
+  }
 `
 
 const HeroSection = styled.section`
@@ -445,6 +448,41 @@ const AdvertisementSection = styled.section`
   }
 `
 
+const TopTransporterSection = styled.section`
+  padding: 60px 80px;
+  background: linear-gradient(to bottom, #fff, #f9fdf9);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  border-radius: 20px;
+  margin: 0 20px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(34, 139, 34, 0.05);
+    z-index: 0;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(34, 139, 34, 0.05);
+    z-index: 0;
+  }
+`
+
 const AdImage = styled.img`
   width: 100%;
   max-width: 600px;
@@ -457,6 +495,20 @@ const AdImage = styled.img`
   &:hover {
     transform: translateY(-5px) scale(1.01);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  }
+`
+
+const TransporterImage = styled.img`
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #228b22;
+  box-shadow: 0 8px 20px rgba(34, 139, 34, 0.2);
+  transition: transform 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.05);
   }
 `
 
@@ -478,6 +530,23 @@ const SponsorText = styled.p`
   }
 `
 
+const TransporterInfo = styled.div`
+  margin-top: 20px;
+  font-size: 20px;
+  color: #1a7a1a;
+  font-weight: 600;
+`
+
+const ThankYouMessage = styled.p`
+  margin-top: 15px;
+  font-size: 16px;
+  color: #3a5a3a;
+  line-height: 1.6;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+`
+
 const CarouselContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -486,17 +555,17 @@ const CarouselContainer = styled.div`
   position: relative;
 `
 
-const CarouselButton = styled.button`
-  padding: 12px 24px;
-  font-size: 16px;
-  font-weight: 600;
+const ChevronButton = styled.button`
+  padding: 10px;
   background: linear-gradient(135deg, #228b22, #56ab2f);
-  color: white;
   border: none;
-  border-radius: 30px;
+  border-radius: 50%;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 10px rgba(34, 139, 34, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   
   &:hover {
     transform: translateY(-2px);
@@ -517,8 +586,10 @@ const ErrorMessage = styled.p`
 const Home = () => {
   const { user: authUser, token } = useAuth()
   const [advertisements, setAdvertisements] = useState([])
+  const [topTransporter, setTopTransporter] = useState(null)
   const [currentAdIndex, setCurrentAdIndex] = useState(0)
-  const [error, setError] = useState("")
+  const [adError, setAdError] = useState("")
+  const [transporterError, setTransporterError] = useState("")
 
   useEffect(() => {
     const fetchAdvertisements = async () => {
@@ -531,16 +602,39 @@ const Home = () => {
         const data = await response.json()
         if (response.ok) {
           setAdvertisements(data)
-          setError("")
+          setAdError("")
         } else {
-          setError(data.error || "Failed to fetch advertisements")
+          setAdError(data.error || "Failed to fetch advertisements")
         }
       } catch (error) {
         console.error("Error fetching advertisements:", error)
-        setError("Failed to fetch advertisements")
+        setAdError("Failed to fetch advertisements")
       }
     }
     fetchAdvertisements()
+  }, [token])
+
+  useEffect(() => {
+    const fetchTopTransporter = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/users/top-transporter", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        const data = await response.json()
+        if (response.ok) {
+          setTopTransporter(data)
+          setTransporterError("")
+        } else {
+          setTransporterError(data.error || "Failed to fetch top transporter")
+        }
+      } catch (error) {
+        console.error("Error fetching top transporter:", error)
+        setTransporterError("Failed to fetch top transporter")
+      }
+    }
+    fetchTopTransporter()
   }, [token])
 
   useEffect(() => {
@@ -566,10 +660,34 @@ const Home = () => {
     }
   }, [])
 
+  useEffect(() => {
+    if (advertisements.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentAdIndex((prevIndex) =>
+          prevIndex === advertisements.length - 1 ? 0 : prevIndex + 1
+        )
+      }, 5000)
+      return () => clearInterval(interval)
+    }
+  }, [advertisements])
+
   const handleNextAd = () => {
     setCurrentAdIndex((prevIndex) =>
       prevIndex === advertisements.length - 1 ? 0 : prevIndex + 1
     )
+  }
+
+  const getRankText = (index) => {
+    switch (index) {
+      case 0:
+        return "1st Donor"
+      case 1:
+        return "2nd Donor"
+      case 2:
+        return "3rd Donor"
+      default:
+        return "Donor"
+    }
   }
 
   return (
@@ -601,23 +719,63 @@ const Home = () => {
         </HeroSection>
         <AdvertisementSection>
           <SectionTitle>Top Donors' Advertisements</SectionTitle>
-          {error ? (
-            <ErrorMessage>{error}</ErrorMessage>
+          {adError ? (
+            <ErrorMessage>{adError}</ErrorMessage>
           ) : advertisements.length > 0 ? (
             <CarouselContainer>
               <AdImage
                 src={`http://localhost:3000/${advertisements[currentAdIndex].advertisementImage}`}
                 alt={`Advertisement by ${advertisements[currentAdIndex].name}`}
               />
-              <SponsorText>Sponsored by {advertisements[currentAdIndex].name}</SponsorText>
+              <SponsorText>
+                Sponsored by {advertisements[currentAdIndex].name}, our {getRankText(currentAdIndex)}!
+              </SponsorText>
               {advertisements.length > 1 && (
-                <CarouselButton onClick={handleNextAd}>Next</CarouselButton>
+                <ChevronButton onClick={handleNextAd}>
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M9 18L15 12L9 6"
+                      stroke="white"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </ChevronButton>
               )}
             </CarouselContainer>
           ) : (
             <SponsorText>No advertisements available</SponsorText>
           )}
         </AdvertisementSection>
+        <TopTransporterSection>
+          <SectionTitle>Our Top Transporter</SectionTitle>
+          {transporterError ? (
+            <ErrorMessage>{transporterError}</ErrorMessage>
+          ) : topTransporter ? (
+            <CarouselContainer>
+              <TransporterImage
+                src={`http://localhost:3000/${topTransporter.photo}`} // Changed from profilePicture to photo
+                alt={`Profile picture of ${topTransporter.name}`}
+              />
+              <TransporterInfo>
+                {topTransporter.name} - {topTransporter.deliveryCount} Deliveries
+              </TransporterInfo>
+              <ThankYouMessage>
+                Thank you, {topTransporter.name}, for your dedication in delivering food to those in need. Your efforts
+                help reduce waste and strengthen our community!
+              </ThankYouMessage>
+            </CarouselContainer>
+          ) : (
+            <SponsorText>No top transporter data available</SponsorText>
+          )}
+        </TopTransporterSection>
         <SectionWrapper>
           <SectionTitle>Our Key Features</SectionTitle>
           <FeaturesGrid>

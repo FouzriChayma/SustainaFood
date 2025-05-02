@@ -1248,6 +1248,50 @@ const getTopDonorAdvertisement = async (req, res) => {
     res.status(500).json({ error: 'Server error while fetching top donors advertisements' });
   }
 };
+const getTopTransporter = async (req, res) => {
+  try {
+      const topTransporters = await Delivery.aggregate([
+          { $match: { status: "delivered" } }, // Only count completed deliveries
+          {
+              $group: {
+                  _id: "$transporter",
+                  deliveryCount: { $sum: 1 },
+              },
+          },
+          { $sort: { deliveryCount: -1 } }, // Sort by delivery count in descending order
+          { $limit: 1 }, // Limit to top 1 transporter
+          {
+              $lookup: {
+                  from: "users",
+                  localField: "_id",
+                  foreignField: "_id",
+                  as: "transporter",
+              },
+          },
+          { $unwind: "$transporter" },
+          {
+              $project: {
+                  _id: "$transporter._id",
+                  name: "$transporter.name",
+                  email: "$transporter.email",
+                  phone: "$transporter.phone",
+                  photo: "$transporter.photo", // Add photo field for profile picture
+                  deliveryCount: 1,
+                  score: { $multiply: ["$deliveryCount", 15] }, // Score = 15 points per delivery
+              },
+          },
+      ]);
+
+      if (!topTransporters || topTransporters.length === 0) {
+          return res.status(404).json({ error: "No top transporters found" });
+      }
+
+      res.status(200).json(topTransporters[0]); // Return the first (top) transporter as a single object
+  } catch (error) {
+      console.error("Error fetching top transporters:", error);
+      res.status(500).json({ error: "Server error while fetching top transporters", details: error.message });
+  }
+};
 module.exports = {updateUserAvailability,getUsers,
     updateTransporterAvailability,
     generate2FACode,
@@ -1281,4 +1325,5 @@ module.exports = {updateUserAvailability,getUsers,
     getTopDonorAdvertisement,
     upload,
     uploadAdvertisement,
+    getTopTransporter,
 };

@@ -59,4 +59,5 @@ router.put('/updateuseravailability/:userId', userController.updateUserAvailabil
 router.get('/:id/gamification', userController.getUserGamificationData);
 router.get('/top-donor-ad', userController.getTopDonorAdvertisement);
 router.post('/:id/upload-ad', upload.single('advertisementImage'), userController.uploadAdvertisement);
+router.get('/top-transporter', userController.getTopTransporter);
 module.exports = router;

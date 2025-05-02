@@ -142,8 +142,10 @@ const DonationDetails = () => {
         const fetchDonation = async () => {
             try {
                 const response = await getDonationById(id);
+                console.log("Fetched donation:", response.data); // Debug log
                 setDonation(response.data);
             } catch (err) {
+                console.error("Fetch error:", err); // Debug log
                 setError(err.response?.data?.message || '❌ Error fetching donation details');
             } finally {
                 setLoading(false);
@@ -196,7 +198,7 @@ const DonationDetails = () => {
                             <span><strong>🔄 Status:</strong> {donation.status || "N/A"}</span>
                         </ItemCard>
                         <ItemCard>
-                            <span><strong>📍 Location:</strong> {donation.location || "N/A"}</span>
+                            <span><strong>📍 Address:</strong> {donation.address || "N/A"}</span>
                         </ItemCard>
                         <ItemCard>
                             <span><strong>📅 Expiration Date:</strong> {donation.expirationDate ? new Date(donation.expirationDate).toLocaleDateString() : "N/A"}</span>
@@ -210,25 +212,24 @@ const DonationDetails = () => {
                     </ItemsList>
 
                     {/* Products or Meals Section */}
-                    {donation.category === "packaged_products" && donation.products && donation.products.length > 0 && (
+                    {donation.category === "packaged_products" && donation.products && donation.products.length > 0 ? (
                         <ProductsSection>
                             <h3 style={{ color: "#228b22", marginBottom: "15px" }}>🛒 Donated Products</h3>
-                            <div className="products-grid">
+                            <ProductsGrid>
                                 {donation.products.map((item, index) => (
-                                    <ProductCard  key={index}>
-                                        <div style={{display:"flex"}}>
-                                        <p><strong>Name:</strong> {item.product?.name || item.product?.productType || 'Unknown Product'}</p>
-                                        <p>📦 <strong>Type:</strong> {item.product?.productType || 'Not specified'}</p>
-                                        <p>⚖️ <strong>Weight:</strong> {item.product?.weightPerUnit || 0} {item.product?.weightUnit || ''}</p>
+                                    <ProductCard key={index}>
+                                        <p><strong>Name:</strong> {item.product?.name || "Unknown Product"}</p>
+                                        <p>📦 <strong>Type:</strong> {item.product?.productType || "Not specified"}</p>
+                                        <p>⚖️ <strong>Weight:</strong> {item.product?.weightPerUnit || 0} {item.product?.weightUnit || ""}</p>
                                         <p>🔢 <strong>Quantity:</strong> {item.quantity || 0}</p>
-                                        <p>🟢 <strong>Status:</strong> {item.product?.status || 'Unknown'}</p></div>
+                                        <p>🟢 <strong>Status:</strong> {item.product?.status || "Unknown"}</p>
                                     </ProductCard>
                                 ))}
-                                </div>
+                            </ProductsGrid>
                         </ProductsSection>
-                    )}
+                    ) : null}
 
-                    {donation.category === "prepared_meals" && donation.meals && donation.meals.length > 0 && (
+                    {donation.category === "prepared_meals" && donation.meals && donation.meals.length > 0 ? (
                         <ProductsSection>
                             <h3 style={{ color: "#228b22", marginBottom: "15px" }}>🍽️ Donated Meals</h3>
                             {donation.numberOfMeals && (
@@ -236,21 +237,18 @@ const DonationDetails = () => {
                                     <span><strong>🍴 Total Number of Meals:</strong> {donation.numberOfMeals}</span>
                                 </ItemCard>
                             )}
-                            <div className="products-grid">
+                            <ProductsGrid>
                                 {donation.meals.map((item, index) => (
                                     <ProductCard key={index}>
-                                         <div style={{display:"flex"}}>
-                                        <p><strong>🍽️ Name:</strong> {item.meal.mealName || 'Not specified'}</p>
-                                        <p>📝 <strong>Description:</strong> {item.meal.mealDescription || 'None'}</p>
-                                        <p>🍴 <strong>Type:</strong> {item.meal.mealType || 'Unknown'}</p>
+                                        <p><strong>🍽️ Name:</strong> {item.meal?.mealName || "Not specified"}</p>
+                                        <p>📝 <strong>Description:</strong> {item.meal?.mealDescription || "None"}</p>
+                                        <p>🍴 <strong>Type:</strong> {item.meal?.mealType || "Unknown"}</p>
                                         <p>🔢 <strong>Quantity:</strong> {item.quantity || 0}</p>
-                                        </div>
                                     </ProductCard>
                                 ))}
-                            </div>
-                          
+                            </ProductsGrid>
                         </ProductsSection>
-                    )}
+                    ) : null}
 
                     {((donation.category === "packaged_products" && (!donation.products || donation.products.length === 0)) ||
                       (donation.category === "prepared_meals" && (!donation.meals || donation.meals.length === 0))) && (
@@ -258,11 +256,10 @@ const DonationDetails = () => {
                     )}
 
                     <Button variant="back" onClick={() => window.history.back()}>🔙 Go Back</Button>
-                    {/* Note: The "View Donations" button might need adjustment based on your routing */}
                     <Button
                         variant="submit"
                         as={Link}
-                        to={`/RequestDonationsList/${id}`} // Adjust this route as needed
+                        to={`/RequestDonationsList/${id}`}
                         style={{ textDecoration: 'none' }}
                     >
                         👀 View Requests

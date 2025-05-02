@@ -11,12 +11,11 @@ import donation5 from '../assets/images/fooddonation.png';
 import donation from '../assets/images/fooddonation1.png';
 import patternBg from '../assets/images/bg.png';
 import { FaSearch, FaFilter } from "react-icons/fa";
-import { useAuth } from "../contexts/AuthContext";
 import { getUserById } from "../api/userService";
 import { getDeliveriesByDonorId, getDeliveriesByRecipientId, getDeliveriesByTransporter } from "../api/deliveryService";
-import { createFeedback } from '../api/feedbackService'; // Import the feedback service
+import { createFeedback } from '../api/feedbackService';
 import imgmouna from '../assets/images/imgmouna.png';
-import StarRating from '../components/StarRating'; // Import StarRating component
+import StarRating from '../components/StarRating';
 
 // Global styles
 const GlobalStyle = createGlobalStyle`
@@ -551,7 +550,6 @@ const FeedbackMessage = styled.p`
 `;
 
 const Deliveries = () => {
-  const { user: authUser, token } = useAuth();
   const [user, setUser] = useState(null);
   const [deliveries, setDeliveries] = useState([]);
   const [filteredDeliveries, setFilteredDeliveries] = useState([]);
@@ -620,11 +618,12 @@ const Deliveries = () => {
     }
 
     try {
+      const token = localStorage.getItem('token');
       await createFeedback(
         recipientId,
         feedback.rating,
         feedback.comment,
-        authUser._id,
+        user._id,
         token
       );
       setFeedbackState(prev => ({
@@ -666,20 +665,21 @@ const Deliveries = () => {
     const fetchUserAndDeliveries = async () => {
       try {
         setLoading(true);
-        if (!authUser?._id) {
-          throw new Error('User not authenticated');
-        }
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        const token = localStorage.getItem('token');
 
-        const userResponse = await getUserById(authUser._id);
+       
+
+        const userResponse = await getUserById(storedUser._id || storedUser.id, token);
         setUser(userResponse.data);
 
         let deliveryResponse;
         if (userResponse.data.role === 'transporter') {
-          deliveryResponse = await getDeliveriesByTransporter(userResponse.data._id);
+          deliveryResponse = await getDeliveriesByTransporter(userResponse.data._id|| userResponse.data.id, token);
         } else if (['restaurant', 'supermarket', 'personaldonor'].includes(userResponse.data.role)) {
-          deliveryResponse = await getDeliveriesByDonorId(userResponse.data._id);
+          deliveryResponse = await getDeliveriesByDonorId(userResponse.data._id|| userResponse.data.id, token);
         } else if (['student', 'ong'].includes(userResponse.data.role)) {
-          deliveryResponse = await getDeliveriesByRecipientId(userResponse.data._id);
+          deliveryResponse = await getDeliveriesByRecipientId(userResponse.data._id, token);
         } else {
           throw new Error('Role not supported for viewing deliveries');
         }
@@ -714,7 +714,7 @@ const Deliveries = () => {
     };
 
     fetchUserAndDeliveries();
-  }, [authUser]);
+  }, []);
 
   useEffect(() => {
     let updatedDeliveries = [...deliveries];
@@ -911,54 +911,51 @@ const Deliveries = () => {
                         </DeliveryDetail>
                       </DeliveryDetails>
 
-                      {allocatedMeals.length === 0 && (
+                      {allocatedProducts.length > 0 && (
                         <ItemSection>
                           <ItemsTitle>Allocated Products:</ItemsTitle>
                           <ItemList>
-                            {allocatedProducts.length > 0 ? (
-                              allocatedProducts.map((item, index) => (
-                                <Item key={index}>
-                                  <ItemDetails>
-                                    <span><strong>Name:</strong> {item.product?.name || 'Unnamed Product'}</span>
-                                  </ItemDetails>
-                                  <ItemQuantity>
-                                    {item.product?.totalQuantity || 0} item{(item.quantity || 0) !== 1 ? 's' : ''}
-                                  </ItemQuantity>
-                                </Item>
-                              ))
-                            ) : (
-                              <Item>
+                            {allocatedProducts.map((item, index) => (
+                              <Item key={index}>
                                 <ItemDetails>
-                                  <span>No allocated products</span>
+                                  <span><strong>Name:</strong> {item.product?.name || 'Unnamed Product'}</span>
                                 </ItemDetails>
+                                <ItemQuantity>
+                                  {item.quantity || 0} item{item.quantity !== 1 ? 's' : ''}
+                                </ItemQuantity>
                               </Item>
-                            )}
+                            ))}
                           </ItemList>
                         </ItemSection>
                       )}
 
-                      {allocatedProducts.length === 0 && (
+                      {allocatedMeals.length > 0 && (
                         <ItemSection>
                           <ItemsTitle>Allocated Meals:</ItemsTitle>
                           <ItemList>
-                            {allocatedMeals.length > 0 ? (
-                              allocatedMeals.map((item, index) => (
-                                <Item key={index}>
-                                  <ItemDetails>
-                                    <span><strong>Name:</strong> {item.meal?.mealName || 'Unnamed Meal'}</span>
-                                  </ItemDetails>
-                                  <ItemQuantity>
-                                    {item.meal?.quantity || 0} meal{(item.quantity || 0) !== 1 ? 's' : ''}
-                                  </ItemQuantity>
-                                </Item>
-                              ))
-                            ) : (
-                              <Item>
+                            {allocatedMeals.map((item, index) => (
+                              <Item key={index}>
                                 <ItemDetails>
-                                  <span>No allocated meals</span>
+                                  <span><strong>Name:</strong> {item.meal?.mealName || 'Unnamed Meal'}</span>
                                 </ItemDetails>
+                                <ItemQuantity>
+                                  {item.quantity || 0} meal{item.quantity !== 1 ? 's' : ''}
+                                </ItemQuantity>
                               </Item>
-                            )}
+                            ))}
+                          </ItemList>
+                        </ItemSection>
+                      )}
+
+                      {allocatedProducts.length === 0 && allocatedMeals.length === 0 && (
+                        <ItemSection>
+                          <ItemsTitle>Items:</ItemsTitle>
+                          <ItemList>
+                            <Item>
+                              <ItemDetails>
+                                <span>No allocated products or meals</span>
+                              </ItemDetails>
+                            </Item>
                           </ItemList>
                         </ItemSection>
                       )}

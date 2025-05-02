@@ -90,7 +90,7 @@ const DonationList = () => {
     title: donation.title ? donation.title.trim() : "",
     category: donation.category ? donation.category.trim() : "",
     status: donation.status ? donation.status.trim() : "",
-    location: donation.location ? donation.location.trim() : "",
+   
   });
 
   useEffect(() => {
@@ -118,7 +118,6 @@ const DonationList = () => {
       (donation.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (donation.category || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (donation.status || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (donation.location || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (donation.expirationDate ? new Date(donation.expirationDate).toLocaleDateString() : "").includes(searchQuery)
     );
     return categoryMatch && statusMatch && searchMatch;
@@ -136,9 +135,7 @@ const DonationList = () => {
       case "status":
         comparison = (a.status || "").localeCompare(b.status || "");
         break;
-      case "location":
-        comparison = (a.location || "").localeCompare(b.location || "");
-        break;
+      
       case "expirationDate":
         comparison = (new Date(a.expirationDate) || 0) - (new Date(b.expirationDate) || 0);
         break;
@@ -205,7 +202,7 @@ const DonationList = () => {
       "Title",
       "Category",
       "Status",
-      "Location",
+      
       "Expiration Date",
       "Created At",
       "Updated At",
@@ -340,7 +337,7 @@ const DonationList = () => {
                 <th>Title</th>
                 <th>Category</th>
                 <th>Status</th>
-                <th>Location</th>
+              
                 <th>Expiration Date</th>
                 <th>Created At</th>
                 <th>Updated At</th>
@@ -364,7 +361,7 @@ const DonationList = () => {
                   <td>{donation.title || "N/A"}</td>
                   <td>{donation.category || "N/A"}</td>
                   <td>{donation.status || "N/A"}</td>
-                  <td>{donation.location || "N/A"}</td>
+                 
                   <td>{donation.expirationDate ? new Date(donation.expirationDate).toLocaleDateString() : "N/A"}</td>
                   <td>{donation.createdAt ? new Date(donation.createdAt).toLocaleDateString() : "N/A"}</td>
                   <td>{donation.updatedAt ? new Date(donation.updatedAt).toLocaleDateString() : "N/A"}</td>

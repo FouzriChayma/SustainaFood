@@ -270,7 +270,7 @@ const SectionTitle = styled.h2`
   position: relative;
   display: inline-block;
   z-index: 1;
-  
+   
   &::after {
     content: '';
     position: absolute;

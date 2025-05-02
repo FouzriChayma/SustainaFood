@@ -3,21 +3,21 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import '../assets/styles/LocationPicker.css';
 import styled from 'styled-components';
-import { IoClose } from 'react-icons/io5'; // Close icon
-import { FaArrowRight } from 'react-icons/fa'; // Arrow icon for transporter position
+import { IoClose } from 'react-icons/io5';
+import { FaArrowRight } from 'react-icons/fa';
 
 const RouteInfoPanel = styled.div`
   position: absolute;
   top: 10px;
   left: 10px;
   background: rgba(255, 255, 255, 0.9);
-  padding: 10px;
-  border-radius: 5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   font-size: 14px;
   color: #333;
   z-index: 1000;
-  max-width: 300px;
+  max-width: 320px;
 `;
 
 const RouteLabel = styled.p`
@@ -62,7 +62,7 @@ const CloseButton = styled.button`
   }
 `;
 
-const DeleveryMap = ({
+const DeliveryMap = ({
   isOpen,
   onClose,
   pickupCoordinates,
@@ -71,17 +71,21 @@ const DeleveryMap = ({
   donorName,
   recipientName,
   transporterName,
+  vehicleType = 'Car', // Default to 'Car' if not provided
 }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const transporterMarker = useRef(null);
+  const transporterPinMarker = useRef(null);
   const [optimizedRoute, setOptimizedRoute] = useState(null);
   const [totalOptimizedDuration, setTotalOptimizedDuration] = useState(0);
+  const [totalAIPredictedDuration, setTotalAIPredictedDuration] = useState(0);
+  const [totalDistance, setTotalDistance] = useState(0);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [currentTransporterLocation, setCurrentTransporterLocation] = useState(transporterCoordinates);
 
-  // Format duration
+  // Format duration in seconds to a readable string
   const formatDuration = (seconds) => {
     if (!seconds || isNaN(seconds) || seconds < 0) {
       console.warn('Invalid duration:', seconds);
@@ -93,6 +97,64 @@ const DeleveryMap = ({
     if (hours > 0) return `${hours}h ${minutes}m`;
     if (minutes > 0) return `${minutes} min`;
     return `${secs} sec`;
+  };
+
+  // Format distance in kilometers to a readable string
+  const formatDistance = (km) => {
+    if (!km || isNaN(km) || km < 0) {
+      console.warn('Invalid distance:', km);
+      return 'Unknown';
+    }
+    return `${km.toFixed(2)} km`;
+  };
+
+  // Calculate distance between two coordinates (Haversine formula)
+  const calculateDistance = (coord1, coord2) => {
+    const [lon1, lat1] = coord1;
+    const [lon2, lat2] = coord2;
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // Distance in meters
+    return distance / 1000; // Convert to kilometers
+  };
+
+  // Fetch AI-predicted duration from Flask backend
+  const fetchAIPredictedDuration = async (distance, osrmDuration, hour, weather = 'Clear', vehicleType) => {
+    console.log('Fetching AI-predicted duration with:', { distance, osrmDuration, hour, weather, vehicleType });
+    try {
+      const response = await fetch('http://localhost:5000/predict_duration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          distance,
+          osrmDuration,
+          hour,
+          weather,
+          vehicleType,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('AI prediction request failed:', errorData);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log('AI Prediction Response:', data);
+      return data.predictedDuration;
+    } catch (error) {
+      console.error('Error fetching AI-predicted duration:', error);
+      return null;
+    }
   };
 
   // Fetch route data using OSRM API
@@ -118,7 +180,7 @@ const DeleveryMap = ({
         return {
           geometry: data.routes[0].geometry,
           duration: data.routes[0].duration,
-          distance: data.routes[0].distance,
+          distance: data.routes[0].distance / 1000, // Convert meters to kilometers
         };
       } else {
         console.error('No routes found in OSRM response:', data);
@@ -130,7 +192,7 @@ const DeleveryMap = ({
     }
   };
 
-  // Calculate routes based on current transporter location
+  // Calculate routes and AI predictions
   const calculateRoutes = async (transporterLoc) => {
     if (!transporterLoc || !pickupCoordinates || !deliveryCoordinates) {
       setErrorMessage('Missing coordinates for one or more points (Transporter, Donor, Recipient).');
@@ -153,40 +215,66 @@ const DeleveryMap = ({
     const recipient = points.find(p => p.name === 'delivery');
 
     const routeGeometries = [];
-    let totalDur = 0;
+    let totalOsrmDuration = 0;
+    let totalAIPredictedDuration = 0;
+    let totalDist = 0;
 
+    // Transporter to Donor
     let transporterToDonor = await fetchRoute([transporter.coords, donor.coords]);
     if (transporterToDonor) {
-      const duration = transporterToDonor.duration;
+      const osrmDuration = transporterToDonor.duration;
+      const distance = transporterToDonor.distance;
+      const hour = new Date().getHours();
+      const aiDuration = await fetchAIPredictedDuration(distance, osrmDuration, hour, 'Clear', vehicleType);
+      console.log('Transporter to Donor - AI Duration:', aiDuration);
+
       routeGeometries.push({
         from: transporter.label,
         to: donor.label,
         geometry: transporterToDonor.geometry,
-        duration: duration,
+        osrmDuration,
+        aiDuration: aiDuration !== null ? aiDuration : null,
+        distance,
       });
-      totalDur += duration;
+      totalOsrmDuration += osrmDuration;
+      if (aiDuration !== null) totalAIPredictedDuration += aiDuration;
+      totalDist += distance;
     } else {
       setErrorMessage('Failed to fetch route from Transporter to Donor.');
       return;
     }
 
+    // Donor to Recipient
     let donorToRecipient = await fetchRoute([donor.coords, recipient.coords]);
     if (donorToRecipient) {
-      const duration = donorToRecipient.duration;
+      const osrmDuration = donorToRecipient.duration;
+      const distance = donorToRecipient.distance;
+      const hour = new Date().getHours();
+      const aiDuration = await fetchAIPredictedDuration(distance, osrmDuration, hour, 'Clear', vehicleType);
+      console.log('Donor to Recipient - AI Duration:', aiDuration);
+
       routeGeometries.push({
         from: donor.label,
         to: recipient.label,
         geometry: donorToRecipient.geometry,
-        duration: duration,
+        osrmDuration,
+        aiDuration: aiDuration !== null ? aiDuration : null,
+        distance,
       });
-      totalDur += duration;
+      totalOsrmDuration += osrmDuration;
+      if (aiDuration !== null) totalAIPredictedDuration += aiDuration;
+      totalDist += distance;
     } else {
       setErrorMessage('Failed to fetch route from Donor to Recipient.');
       return;
     }
 
+    console.log('Total AI Predicted Duration before setting:', totalAIPredictedDuration);
+    console.log('Total Distance before setting:', totalDist);
     setOptimizedRoute({ geometries: routeGeometries });
-    setTotalOptimizedDuration(totalDur);
+    setTotalOptimizedDuration(totalOsrmDuration);
+    setTotalAIPredictedDuration(totalAIPredictedDuration);
+    setTotalDistance(totalDist);
     setErrorMessage('');
   };
 
@@ -222,7 +310,7 @@ const DeleveryMap = ({
       setMapLoaded(true);
 
       if (pickupCoordinates && deliveryCoordinates && currentTransporterLocation) {
-        // Transporter marker with arrow icon
+        // Transporter marker (arrow)
         const transporterEl = document.createElement('div');
         transporterEl.className = 'transporter-marker';
         transporterEl.style.width = '30px';
@@ -240,6 +328,14 @@ const DeleveryMap = ({
           })
             .setLngLat(currentTransporterLocation.coordinates)
             .setPopup(new maplibregl.Popup().setText(`Transporter: ${transporterName || 'Unknown Transporter'}`))
+            .addTo(map.current);
+        }
+
+        // Transporter pin marker (blue pin like Donor's red pin)
+        if (currentTransporterLocation.coordinates[0] !== 0) {
+          transporterPinMarker.current = new maplibregl.Marker({ color: '#0000FF' })
+            .setLngLat(currentTransporterLocation.coordinates)
+            .setPopup(new maplibregl.Popup().setText(`Transporter Position: ${transporterName || 'Unknown Transporter'}`))
             .addTo(map.current);
         }
 
@@ -270,11 +366,12 @@ const DeleveryMap = ({
         if (transporterMarker.current) {
           transporterMarker.current.setLngLat(newLocation.coordinates);
         }
+        if (transporterPinMarker.current) {
+          transporterPinMarker.current.setLngLat(newLocation.coordinates);
+        }
 
-        // Recalculate routes with updated position
         calculateRoutes(newLocation);
 
-        // Center map on transporter's position
         map.current.flyTo({ center: newLocation.coordinates, zoom: 15 });
       },
       (error) => {
@@ -290,7 +387,7 @@ const DeleveryMap = ({
       }
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [isOpen, pickupCoordinates, deliveryCoordinates, donorName, recipientName, transporterName]);
+  }, [isOpen, pickupCoordinates, deliveryCoordinates, donorName, recipientName, transporterName, vehicleType]);
 
   // Draw routes
   useEffect(() => {
@@ -378,19 +475,36 @@ const DeleveryMap = ({
             <ErrorMessage>{errorMessage}</ErrorMessage>
           ) : optimizedRoute && optimizedRoute.geometries.length > 0 ? (
             <>
-              <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Trajet optimisé (Pointillé)</p>
+              <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Optimized Route (Dashed)</p>
               {optimizedRoute.geometries.map((segment, index) => (
-                <RouteLabel key={`optimized-${index}`}>
-                  <RouteColor style={{ backgroundColor: index === 0 ? '#0000FF' : '#00FF00' }} />
-                  {segment.from} vers {segment.to} ({formatDuration(segment.duration)})
-                </RouteLabel>
+                <div key={`optimized-${index}`}>
+                  <RouteLabel>
+                    <RouteColor style={{ backgroundColor: index === 0 ? '#0000FF' : '#00FF00' }} />
+                    {segment.from} to {segment.to}
+                  </RouteLabel>
+                  <RouteLabel style={{ marginLeft: '20px' }}>
+                    OSRM: {formatDuration(segment.osrmDuration)}
+                  </RouteLabel>
+                  <RouteLabel style={{ marginLeft: '20px' }}>
+                    AI: {segment.aiDuration !== null ? formatDuration(segment.aiDuration) : 'N/A'}
+                  </RouteLabel>
+                  <RouteLabel style={{ marginLeft: '20px' }}>
+                    Distance: {formatDistance(segment.distance)}
+                  </RouteLabel>
+                </div>
               ))}
+              <p style={{ fontWeight: 'bold', marginTop: '10px' }}>
+                Total OSRM Duration: {formatDuration(totalOptimizedDuration)}
+              </p>
               <p style={{ fontWeight: 'bold', marginTop: '5px' }}>
-                Durée totale (optimisé): {formatDuration(totalOptimizedDuration)}
+                Total AI-Predicted Duration: {totalAIPredictedDuration > 0 ? formatDuration(totalAIPredictedDuration) : 'N/A'}
+              </p>
+              <p style={{ fontWeight: 'bold', marginTop: '5px' }}>
+                Total Distance: {formatDistance(totalDistance)}
               </p>
             </>
           ) : (
-            <ErrorMessage>Échec du calcul des trajets. Vérifiez les coordonnées.</ErrorMessage>
+            <ErrorMessage>Failed to calculate routes. Please check coordinates.</ErrorMessage>
           )}
         </RouteInfoPanel>
       )}
@@ -399,4 +513,4 @@ const DeleveryMap = ({
   ) : null;
 };
 
-export default DeleveryMap;
+export default DeliveryMap;

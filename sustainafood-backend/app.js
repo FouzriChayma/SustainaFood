@@ -17,6 +17,7 @@ var app = express();
 var notificationRoutes=require('./routes/notificationRoutes');
 var feedbackRoutes=require('./routes/feedbackRoutes')
 var deliveryRoutes=require('./routes/deliveryRoutes');
+var contactRoutes=require('./routes/ContactSubmission');
 const cron = require('node-cron');
 const DonationRecommender = require('./aiService/mlModel');
 var preductionRoutes = require('./routes/preductions');
@@ -45,6 +46,7 @@ app.use('/users', usersRouter);
 app.use('/deliveries', deliveryRoutes);
 app.use('/product', productRouter);
 app.use('/donation',donationRouter);
+app.use('/contact', contactRoutes); // Route pour le formulaire de contact
 app.use('/auth', authRouter); // 🔹 Ajouter la route d'authentification
 app.use('/notification', notificationRoutes);
 app.use('/donationTransaction', donationTransactionRoutes);

@@ -622,9 +622,9 @@ const DetailsDonations = () => {
   return (
     <>
       <Navbar />
-      <div className="donation-cardlist">
+      <div className="donation-details">
         {(isMapOpen || isRequestMapOpen) && <div className="donation-map-backdrop" onClick={() => { setIsMapOpen(false); setIsRequestMapOpen(false); }} />}
-        <div className="donation-card-content">
+        <div className="donation-card-content-details">
           <img src={logo} alt="Logo" className="addDonation-logo" style={{ marginLeft: "47%" }} />
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -654,7 +654,7 @@ const DetailsDonations = () => {
             )}
           </div>
 
-          <p>
+          <p style={{ color:"black"}}> 
             <strong>📍 Address:</strong>{" "}
             {isEditing ? (
               <>
@@ -682,7 +682,7 @@ const DetailsDonations = () => {
               address || "Unknown address"
             )}
           </p>
-          <p>
+          <p style={{ color:"black"}}> 
             <strong>📆 Expiration Date:</strong>{" "}
             {isEditing ? (
               <input
@@ -696,7 +696,7 @@ const DetailsDonations = () => {
           </p>
 
           {editedDonation.donationType === 'meals' && isEditing && editedDonation.category === 'prepared_meals' && (
-            <p>
+            <p style={{ color:"black"}}>
               <strong>🔢 Total Number of Meals:</strong>
               <span>{editedDonation.meals.reduce((sum, meal) => sum + (Number(meal.quantity) || 0), 0)}</span>
             </p>

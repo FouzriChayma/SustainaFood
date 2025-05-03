@@ -1,21 +1,36 @@
-.donation-cardlist {
-    background: white;
-    padding: 20px 20px 60px 20px; /* Extra padding at bottom for button area */
-    border-radius: 10px;
-    border-left: 3px solid #228b22;
 
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    position: relative;
-    text-align: left;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+.donation-details {
+  font-family: "Poppins", sans-serif;
+  background: #f0f8f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  min-height: 100vh;
   }
   
-  .donation-card-content {
-    flex: 1;
-    border-left: 3px solid #228b22;
+  .donation-card-content-details {
+    width: 100%;
+    max-width: 900px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    padding: 40px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+
+  }
+  .donation-card-content-details::before {
+    content: "";
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: rgba(34, 139, 34, 0.1);
+    z-index: 0;
 
   }
   
@@ -190,9 +205,7 @@
     font-size: 20px;
   }
   
-  .fa-edit:hover {
-    color: #007bff;
-  }
+ 
   
   .fa-save {
     color: green;
@@ -404,11 +417,7 @@
     transform: scale(1.2);
   }
   
-  .fa-edit:hover {
-    color: #007bff;
-    transform: scale(1.2);
-  }
-  
+
   .fa-save:hover {
     color: green;
     transform: scale(1.2);
@@ -470,7 +479,7 @@
 
 /* ✏️ Edit Icon */
 .fa-edit {
-  color: #007bff;
+  color: #218838;
 
 }
 

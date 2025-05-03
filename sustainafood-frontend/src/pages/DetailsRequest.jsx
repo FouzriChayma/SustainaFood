@@ -669,9 +669,9 @@ const DetailsRequest = () => {
   return (
     <>
       <Navbar />
-      <div className="donation-cardlist">
+      <div className="donation-details">
         {(isMapOpen || isDonationMapOpen) && <div className="donation-map-backdrop" onClick={() => { setIsMapOpen(false); setIsDonationMapOpen(false); }} />}
-        <div className="donation-card-content">
+        <div className="donation-card-content-details">
           <img src={logo} alt="Logo" className="addDonation-logo" style={{ marginLeft: "47%" }} />
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -712,7 +712,7 @@ const DetailsRequest = () => {
             )}
           </div>
 
-          <p>
+          <p style={{ color:"black"}}>
             <strong>📍 Address:</strong>{" "}
             {isEditing ? (
               <>
@@ -740,16 +740,16 @@ const DetailsRequest = () => {
               address || "Unknown address"
             )}
           </p>
-          <p><strong>📆 Expiration Date:</strong> {isEditing ? <input type="date" value={editedRequest.expirationDate ? new Date(editedRequest.expirationDate).toISOString().split('T')[0] : ''} onChange={(e) => setEditedRequest({ ...editedRequest, expirationDate: e.target.value })} /> : expirationDate ? new Date(expirationDate).toLocaleDateString() : "Not set"}</p>
-          <p><strong>📝 Description:</strong> {isEditing ? <textarea value={editedRequest.description} onChange={(e) => setEditedRequest({ ...editedRequest, description: e.target.value })} placeholder="📝 Description" /> : description || "No description"}</p>
-          <p><strong>📂 Category:</strong> {isEditing ? (
+          <p style={{ color:"black"}}> <strong>📆 Expiration Date:</strong> {isEditing ? <input type="date" value={editedRequest.expirationDate ? new Date(editedRequest.expirationDate).toISOString().split('T')[0] : ''} onChange={(e) => setEditedRequest({ ...editedRequest, expirationDate: e.target.value })} /> : expirationDate ? new Date(expirationDate).toLocaleDateString() : "Not set"}</p>
+          <p style={{ color:"black"}}><strong>📝 Description:</strong> {isEditing ? <textarea value={editedRequest.description} onChange={(e) => setEditedRequest({ ...editedRequest, description: e.target.value })} placeholder="📝 Description" /> : description || "No description"}</p>
+          <p style={{ color:"black"}}><strong>📂 Category:</strong> {isEditing ? (
             <select value={editedRequest.category} onChange={(e) => setEditedRequest({ ...editedRequest, category: e.target.value })}>
               <option value="">Select Category</option>
               <option value="packaged_products">Packaged Products</option>
               <option value="prepared_meals">Prepared Meals</option>
             </select>
           ) : category || "Not specified"}</p>
-          <p><strong>🔄 Status:</strong> {isEditing ? (
+          <p style={{ color:"black"}}><strong>🔄 Status:</strong> {isEditing ? (
             <select value={editedRequest.status} onChange={(e) => setEditedRequest({ ...editedRequest, status: e.target.value })}>
               <option value="">Select Status</option>
               {statuses.map(status => <option key={status} value={status}>{status}</option>)}
@@ -757,7 +757,7 @@ const DetailsRequest = () => {
           ) : status || "Unknown"}</p>
           {category === 'prepared_meals' && (
             <>
-              <p><strong>🍽️ Number of Meals:</strong> {isEditing ? <input type="number" value={editedRequest.numberOfMeals} onChange={(e) => setEditedRequest({ ...editedRequest, numberOfMeals: Number(e.target.value) })} placeholder="🍽️ Number of Meals" /> : numberOfMeals || "No more meals needed"}</p>
+              <p style={{ color:"black"}}><strong>🍽️ Number of Meals:</strong> {isEditing ? <input type="number" value={editedRequest.numberOfMeals} onChange={(e) => setEditedRequest({ ...editedRequest, numberOfMeals: Number(e.target.value) })} placeholder="🍽️ Number of Meals" /> : numberOfMeals || "No more meals needed"}</p>
               {mealName || mealDescription || mealType ? (
                 <>
                   <p><strong>🍽️ Meal Name:</strong> {isEditing ? <input type="text" value={editedRequest.mealName} onChange={(e) => setEditedRequest({ ...editedRequest, mealName: e.target.value })} placeholder="🍽️ Meal Name" /> : mealName || "Not specified"}</p>

@@ -1018,7 +1018,7 @@ const Ad = () => {
         .approve-button {
           background-color: #228b22 !important;
           color: white;
-        }
+        } 
 
         
         .reject-button {

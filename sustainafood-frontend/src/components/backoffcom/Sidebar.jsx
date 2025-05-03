@@ -78,6 +78,7 @@ const Sidebar = () => {
               )}
 
               <Link to="/transporters" className={location.pathname === "/transporters" ? "active" : ""} role="menuitem">Transporters</Link>
+              <Link to="/advertisements" className={location.pathname === "/advertisements" ? "active" : ""} role="menuitem">Advertisements</Link>
             </div>
           )}
         </div>

@@ -9,6 +9,10 @@ const RequestNeed = require("../models/RequestNeed"); // Add this import
 const crypto = require("crypto"); // For generating random reset codes
 const { console } = require("inspector");
 const Delivery = require("../models/Delivery");
+const multer = require('multer');
+const path = require('path');
+const Advertisement = require("../models/Advertisement"); // Add missing import
+
 require("dotenv").config(); // Load environment variables
 
 // Initialize Twilio client
@@ -1161,6 +1165,323 @@ const getTransporters = async (req, res) => {
       res.status(500).json({ error: "Failed to fetch gamification data", details: error.message });
     }
   }
+// New endpoint to handle advertisement image upload
+// Configure Multer storage
+const storage = multer.diskStorage({
+  destination: './uploads/advertisements/', // Relative to the backend root
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+
+// ads
+// File filter to accept only images
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed!'), false);
+  }
+};
+
+// Initialize Multer upload
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // Limit to 5MB
+});
+
+
+
+
+const getTopDonorAdvertisement = async (req, res) => {
+  try {
+    const topDonors = await Donation.aggregate([
+      { $match: { status: "fulfilled" } },
+      {
+        $group: {
+          _id: "$donor",
+          donationCount: { $sum: 1 },
+          totalItems: {
+            $sum: {
+              $ifNull: [{ $add: [{ $sum: "$products.quantity" }, { $sum: "$meals.quantity" }] }, 0],
+            },
+          },
+        },
+      },
+      { $sort: { donationCount: -1, totalItems: -1 } },
+      { $limit: 3 },
+    ]).allowDiskUse(true);
+
+    if (!topDonors || topDonors.length === 0) {
+      return res.status(404).json({ error: "No fulfilled donations found to determine top donors" });
+    }
+
+    const donorIds = topDonors.map((donor) => donor._id);
+    const donorRankMap = {};
+    topDonors.forEach((donor, index) => {
+      donorRankMap[donor._id.toString()] = index;
+    });
+
+    const advertisements = await Advertisement.aggregate([
+      {
+        $match: {
+          user: { $in: donorIds.map((id) => mongoose.Types.ObjectId.createFromHexString(id.toString())) },
+          status: "approved",
+        },
+      },
+      { $lookup: { from: "users", localField: "user", foreignField: "_id", as: "user" } },
+      { $unwind: "$user" },
+      {
+        $project: {
+          userId: "$user._id",
+          name: "$user.name",
+          advertisementImage: "$imagePath",
+        },
+      },
+    ]).allowDiskUse(true);
+
+    if (!advertisements || advertisements.length === 0) {
+      return res.status(404).json({ error: "No approved advertisements found for top donors" });
+    }
+
+    const advertisementsWithRank = advertisements
+      .map((ad) => ({
+        _id: ad._id,
+        userId: ad.userId.toString(),
+        name: ad.name,
+        advertisementImage: ad.advertisementImage,
+        rank: donorRankMap[ad.userId.toString()] !== undefined ? donorRankMap[ad.userId.toString()] : -1,
+      }))
+      .filter((ad) => ad.rank !== -1)
+      .sort((a, b) => a.rank - b.rank);
+
+    res.status(200).json(advertisementsWithRank);
+  } catch (error) {
+    console.error("Error fetching top donors advertisements:", error);
+    res.status(500).json({ error: "Server error while fetching top donors advertisements" });
+  }
+};
+
+
+
+// Get all advertisements for admin (back-office)
+const getAllAdvertisements = async (req, res) => {
+  try {
+    const advertisements = await Advertisement.find()
+      .populate('user', 'name email role')
+      .sort({ createdAt: -1 })
+      .lean(); // Convert to plain JavaScript object
+    console.log("Fetched advertisements:", advertisements); // Debug log
+    const formattedAds = advertisements.map(ad => ({
+      ...ad,
+      _id: ad._id.toString()
+    }));
+    res.status(200).json(formattedAds);
+  } catch (error) {
+    console.error('Error fetching advertisements:', error);
+    res.status(500).json({ error: 'Server error while fetching advertisements' });
+  }
+};
+
+// Approve or reject an advertisement
+const uploadAdvertisement = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided. Please upload a valid image file.' });
+    }
+
+    const topDonors = await Donation.aggregate([
+      { $match: { status: "fulfilled" } },
+      {
+        $group: {
+          _id: "$donor",
+          donationCount: { $sum: 1 },
+          totalItems: { $sum: { $add: [{ $sum: "$products.quantity" }, { $sum: "$meals.quantity" }] } },
+        },
+      },
+      { $sort: { donationCount: -1, totalItems: -1 } },
+      { $limit: 3 },
+    ]);
+
+    const isTopDonor = topDonors.some(donor => donor._id.toString() === req.params.id);
+    if (!isTopDonor) {
+      return res.status(403).json({ error: 'Only top 3 donors can upload advertisements' });
+    }
+
+    const existingAd = await Advertisement.findOne({
+      user: req.params.id,
+      status: { $in: ['pending', 'approved'] },
+    });
+    if (existingAd) {
+      return res.status(400).json({ error: 'You already have a pending or approved advertisement' });
+    }
+
+    const advertisement = new Advertisement({
+      user: req.params.id,
+      imagePath: req.file.path,
+      status: 'pending',
+    });
+    await advertisement.save();
+
+    res.status(200).json({
+      message: 'Advertisement uploaded successfully and is pending approval',
+      advertisementId: advertisement._id,
+    });
+  } catch (error) {
+    console.error('Error uploading advertisement:', error);
+    res.status(500).json({ error: 'Server error while uploading advertisement', details: error.message });
+  }
+};
+
+// Update advertisement status
+const updateAdvertisementStatus = async (req, res) => {
+  try {
+    const adId = req.params.id;
+    
+    if (!adId) {
+      return res.status(400).json({ 
+        error: "Advertisement ID is required",
+        receivedId: adId
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(adId)) {
+      return res.status(400).json({ 
+        error: "Invalid advertisement ID format",
+        receivedId: adId
+      });
+    }
+
+    const { status } = req.body;
+    
+    if (!status) {
+      return res.status(400).json({ 
+        error: "Status is required",
+        receivedBody: req.body
+      });
+    }
+
+    if (!["approved", "rejected"].includes(status)) {
+      return res.status(400).json({ 
+        error: "Invalid status value",
+        receivedStatus: status,
+        allowedValues: ["approved", "rejected"]
+      });
+    }
+
+    const advertisement = await Advertisement.findById(adId);
+    if (!advertisement) {
+      return res.status(404).json({ 
+        error: "Advertisement not found",
+        searchedId: adId
+      });
+    }
+
+    advertisement.status = status;
+    await advertisement.save();
+
+    res.status(200).json({
+      message: `Advertisement status updated to ${status}`,
+      advertisementId: adId,
+      status: advertisement.status,
+    });
+  } catch (error) {
+    console.error("Error updating advertisement status:", error);
+    res.status(500).json({ 
+      error: "Server error while updating status",
+      details: error.message 
+    });
+  }
+};
+
+async function getUserAdvertisements(req, res) {
+  try {
+    const userId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: "Invalid user ID" });
+    }
+
+    const advertisements = await Advertisement.find({ user: userId })
+      .select('imagePath status createdAt updatedAt')
+      .sort({ createdAt: -1 });
+
+    if (!advertisements || advertisements.length === 0) {
+      return res.status(404).json({ error: "No advertisements found for this user" });
+    }
+
+    res.status(200).json(advertisements);
+  } catch (error) {
+    console.error("Error fetching user advertisements:", error);
+    res.status(500).json({ error: "Server error while fetching advertisements" });
+  }
+}
+
+
+
+
+
+
+
+
+////////////////////
+
+
+
+
+
+
+
+
+const getTopTransporter = async (req, res) => {
+  try {
+      const topTransporters = await Delivery.aggregate([
+          { $match: { status: "delivered" } }, // Only count completed deliveries
+          {
+              $group: {
+                  _id: "$transporter",
+                  deliveryCount: { $sum: 1 },
+              },
+          },
+          { $sort: { deliveryCount: -1 } }, // Sort by delivery count in descending order
+          { $limit: 1 }, // Limit to top 1 transporter
+          {
+              $lookup: {
+                  from: "users",
+                  localField: "_id",
+                  foreignField: "_id",
+                  as: "transporter",
+              },
+          },
+          { $unwind: "$transporter" },
+          {
+              $project: {
+                  _id: "$transporter._id",
+                  name: "$transporter.name",
+                  email: "$transporter.email",
+                  phone: "$transporter.phone",
+                  photo: "$transporter.photo", // Add photo field for profile picture
+                  deliveryCount: 1,
+                  score: { $multiply: ["$deliveryCount", 15] }, // Score = 15 points per delivery
+              },
+          },
+      ]);
+
+      if (!topTransporters || topTransporters.length === 0) {
+          return res.status(404).json({ error: "No top transporters found" });
+      }
+
+      res.status(200).json(topTransporters[0]); // Return the first (top) transporter as a single object
+  } catch (error) {
+      console.error("Error fetching top transporters:", error);
+      res.status(500).json({ error: "Server error while fetching top transporters", details: error.message });
+  }
+};
 module.exports = {updateUserAvailability,getUsers,
     updateTransporterAvailability,
     generate2FACode,
@@ -1191,4 +1512,12 @@ module.exports = {updateUserAvailability,getUsers,
     send2FACodeforsigninwithgoogle,
     updateTransporterLocation,
     getUserGamificationData,
+    getTopDonorAdvertisement,
+    upload,
+    uploadAdvertisement,
+    updateAdvertisementStatus,
+    getAllAdvertisements,
+    getTopTransporter,
+    getUserAdvertisements
+
 };

@@ -53,6 +53,7 @@ import ListRequestsDonation from './pages/ListRequestsDonation';
 import AiClassification from './pages/AiClassification';
 import DonationRecommendations from './pages/DonationRecommendations';
 import ViewDonationTransaction from "./pages/backoffice/ViewDonationTransaction.jsx";
+import Ad from "./pages/backoffice/Ad.jsx"; 
 
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import PersonalStatus from './pages/PersonalStatus';
@@ -95,6 +96,7 @@ const App = () => {
           <Route path="/donors/restaurants" element={<RestaurantList />} />
           <Route path="/recipients/students" element={<StudentList />} />
           <Route path="/transporters" element={<TransporterList />} />
+          <Route path="/advertisements" element={<Ad />} />
           <Route path="/students/view/:id" element={<ViewStudent />} />
           <Route path="/restaurants/view/:id" element={<ViewRestaurant />} />
           <Route path="/supermarkets/view/:id" element={<ViewSupermarket />} />

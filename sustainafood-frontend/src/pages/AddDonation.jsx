@@ -685,8 +685,8 @@ export const AddDonation = () => {
             {errors.title && <p className="addDonation-error-message">{errors.title}</p>}
           </div>
 
-          <div className="addDonation-input-container">
-            <input
+          <div className="addDonation-input-Location">
+            <input 
               className="addDonation-input"
               type="text"
               value={address}
@@ -695,7 +695,7 @@ export const AddDonation = () => {
               placeholder=" "
               readOnly
             />
-            <label>Location</label>
+            <label style={{  position: "relative"}}>Location</label>
             {isMapOpen && (
               <LocationPicker
                 isOpen={isMapOpen}

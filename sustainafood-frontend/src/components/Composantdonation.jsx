@@ -1,52 +1,77 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 
-// Container for each card, ensuring same size across all cards
+const float = keyframes`
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
+`;
+
+const shimmer = keyframes`
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+`;
+
 const Card = styled.div`
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  padding: 30px;
+  flex: 1 1 250px;
+  max-width: 300px;
+  min-height: 400px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  width: 100%;
-  max-width: 400px;
-  min-height: 350px;
-  border-left: 6px solid #228b22;
+  animation: ${float} 6s ease-in-out infinite;
 
   &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0px 15px 30px rgba(0, 0, 0, 0.15);
+    transform: translateY(-10px);
+    box-shadow: 0 15px 35px rgba(34, 139, 34, 0.1);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 5px;
+    height: 0;
+    background: linear-gradient(to bottom, #228b22, #56ab2f);
+    transition: height 0.3s ease;
+  }
+
+  &:hover::before {
+    height: 100%;
   }
 `;
 
-// Title with icon
 const Title = styled.h3`
-  color: #228b22;
-  font-size: 22px;
-  margin-bottom: 10px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a7a1a;
+  margin-bottom: 15px;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: bold;
+  transition: color 0.3s ease;
 `;
 
-// Details section
 const Details = styled.p`
   font-size: 16px;
-  color: #555;
+  color: #3a5a3a;
   margin: 5px 0;
-  line-height: 1.4;
+  line-height: 1.6;
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
 `;
 
-// Status Badge with dynamic colors
 const StatusBadge = styled.span`
   display: inline-block;
   padding: 5px 12px;
@@ -57,22 +82,21 @@ const StatusBadge = styled.span`
   background: ${({ status }) => {
     switch (status) {
       case 'pending':
-        return '#f0ad4e'; // Orange for pending (🕒)
+        return '#f0ad4e';
       case 'fulfilled':
-        return '#28a745'; // Green for fulfilled (✅)
+        return '#28a745';
       case 'partially_fulfilled':
-        return '#6c757d'; // Grey for partially fulfilled (❌)
+        return '#6c757d';
       case 'approved':
-        return '#228b22'; // Green for approved (if still used elsewhere)
+        return '#228b22';
       case 'rejected':
-        return '#dc3545'; // Red for rejected
+        return '#dc3545';
       default:
-        return '#888'; // Default grey for unknown statuses
+        return '#888';
     }
   }};
 `;
 
-// Product/Meal list
 const ItemList = styled.ul`
   list-style: none;
   padding: 0;
@@ -85,28 +109,43 @@ const Item = styled.li`
   border-radius: 8px;
   margin-bottom: 6px;
   font-size: 14px;
-  color: #333;
+  color: #3a5a3a;
   display: flex;
   flex-direction: column;
   gap: 4px;
 `;
 
-// Button to view more details
 const SeeMoreButton = styled(Link)`
   display: inline-block;
-  padding: 10px 16px;
+  padding: 12px 24px;
   font-size: 16px;
-  font-weight: bold;
-  text-align: center;
-  border-radius: 30px;
-  background: #228b22;
+  font-weight: 600;
+  background: linear-gradient(135deg, #228b22, #56ab2f);
   color: white;
+  border-radius: 30px;
   text-decoration: none;
-  margin-top: 15px;
-  transition: background 0.3s;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 15px rgba(34, 139, 34, 0.2);
+  position: relative;
+  overflow: hidden;
+  text-align: center;
 
   &:hover {
-    background: #1e7a1e;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(34, 139, 34, 0.3);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 100%);
+    transform: rotate(30deg);
+    animation: ${shimmer} 3s infinite;
+    pointer-events: none;
   }
 `;
 
@@ -126,10 +165,6 @@ export const Composantdonation = ({ donation }) => {
     status,
   } = donation;
 
-  // Log for debugging
- // console.log("Products:", products);
-  ///console.log("Meals:", meals);
-
   return (
     <Card>
       <div>
@@ -144,7 +179,6 @@ export const Composantdonation = ({ donation }) => {
           <StatusBadge status={status}>{status || 'Unknown'}</StatusBadge>
         </Details>
 
-        {/* Conditional display of products or meals */}
         {Array.isArray(products) && products.length > 0 ? (
           <>
             <h4>📦 Available Products:</h4>

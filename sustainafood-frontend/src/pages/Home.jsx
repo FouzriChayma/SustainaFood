@@ -896,27 +896,27 @@ const Home = () => {
   const [touchEnd, setTouchEnd] = useState(null)
 
   useEffect(() => {
-    const fetchAdvertisements = async () => {
-      try {
-        const response = await fetch("http://localhost:3000/users/top-donor-ad", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        const data = await response.json()
-        if (response.ok) {
-          setAdvertisements(data)
-          setAdError("")
-        } else {
-          setAdError(data.error || "Failed to fetch advertisements")
+      const fetchAdvertisements = async () => {
+        try {
+          const response = await fetch("http://localhost:3000/users/top-donor-ad", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await response.json();
+          if (response.ok) {
+            console.log("Fetched advertisements:", data); // Debug log
+            setAdvertisements(data);
+            setAdError("");
+          } else {
+            console.log("Fetch error response:", data); // Debug error details
+            setAdError(data.error || "Failed to fetch advertisements");
+          }
+        } catch (error) {
+          console.error("Error fetching advertisements:", error);
+          setAdError("Failed to fetch advertisements");
         }
-      } catch (error) {
-        console.error("Error fetching advertisements:", error)
-        setAdError("Failed to fetch advertisements")
-      }
-    }
-    fetchAdvertisements()
-  }, [token])
+      };
+      fetchAdvertisements();
+    }, [token]);
 
   useEffect(() => {
     const fetchTopTransporter = async () => {
@@ -1060,40 +1060,40 @@ const Home = () => {
                   onTouchEnd={handleTouchEnd}
                 >
                   <AdCarouselTrack style={{ transform: `translateX(-${currentAdIndex * 100}%)` }}>
-                    {advertisements.map((ad, index) => (
-                      <AdSlide key={ad._id} rank={index} isActive={currentAdIndex === index}>
-                        <TopDonorBadge rank={index} />
-                        <AdImageEnhanced
-                          src={`http://localhost:3000/${ad.advertisementImage}`}
-                          alt={`Advertisement by ${ad.name}`}
-                        />
-                        <DonorInfo>
-                          <DonorName rank={index}>{ad.name}</DonorName>
-                        </DonorInfo>
-
-                        <DonorPromoMessage rank={index}>
-                          <DonorPromoTitle rank={index}>
-                            {index === 0
-                              ? "🏆 Gold Donor Spotlight"
-                              : index === 1
-                                ? "🥈 Silver Donor Highlight"
-                                : index === 2
-                                  ? "🥉 Bronze Donor Feature"
-                                  : "✨ Featured Donor"}
-                          </DonorPromoTitle>
-                          <p>
-                            {index === 0
-                              ? "Support this top donor's business! Their generous contributions make a significant impact on our mission to reduce food waste."
-                              : index === 1
-                                ? "This silver-tier donor helps us connect surplus food with those who need it most. Consider supporting their business!"
-                                : index === 2
-                                  ? "Our bronze donor plays a vital role in our community. Visit their business to show your appreciation!"
-                                  : "Thank you to this valued donor for supporting our cause. Your patronage of their business helps our community!"}
-                          </p>
-                        </DonorPromoMessage>
-                      </AdSlide>
-                    ))}
-                  </AdCarouselTrack>
+  {advertisements.map((ad) => (
+    <AdSlide key={ad._id} rank={ad.rank}>
+      <TopDonorBadge rank={ad.rank} />
+      <AdImageEnhanced
+        src={`http://localhost:3000/${ad.advertisementImage}`}
+        alt={`Advertisement by ${ad.name}`}
+      />
+      <DonorInfo>
+        <DonorName rank={ad.rank}>{ad.name}</DonorName>
+        <DonorRank rank={ad.rank}>{getRankText(ad.rank)}</DonorRank>
+      </DonorInfo>
+      <DonorPromoMessage rank={ad.rank}>
+        <DonorPromoTitle rank={ad.rank}>
+          {ad.rank === 0
+            ? "🏆 Gold Donor Spotlight"
+            : ad.rank === 1
+            ? "🥈 Silver Donor Highlight"
+            : ad.rank === 2
+            ? "🥉 Bronze Donor Feature"
+            : "✨ Featured Donor"}
+        </DonorPromoTitle>
+        <p>
+          {ad.rank === 0
+            ? "Support this top donor's business! Their generous contributions make a significant impact on our mission to reduce food waste."
+            : ad.rank === 1
+            ? "This silver-tier donor helps us connect surplus food with those who need it most. Consider supporting their business!"
+            : ad.rank === 2
+            ? "Our bronze donor plays a vital role in our community. Visit their business to show your appreciation!"
+            : "Thank you to this valued donor for supporting our cause. Your patronage of their business helps our community!"}
+        </p>
+      </DonorPromoMessage>
+    </AdSlide>
+  ))}
+</AdCarouselTrack>
 
                   {advertisements.length > 1 && (
                     <>

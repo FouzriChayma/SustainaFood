@@ -63,7 +63,7 @@ router.get('/top-donor-ad', userController.getTopDonorAdvertisement);
 router.post('/:id/upload-ad', upload.single('advertisementImage'), userController.uploadAdvertisement);
 
 router.get('/advertisements', userController.getAllAdvertisements);
-router.put('/advertisements/:adId/status', userController.updateAdvertisementStatus);
+router.put('/advertisements/:id/status', userController.updateAdvertisementStatus);
 //
 router.get('/top-transporter', userController.getTopTransporter);
 module.exports = router;

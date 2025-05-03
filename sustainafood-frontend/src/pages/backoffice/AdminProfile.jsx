@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Sidebar from "../../components/backoffcom/Sidebar"
 import Navbar from "../../components/backoffcom/Navbar"
-import "/src/assets/styles/backoffcss/adminProfile.css"
+import "../../assets/styles/backoffcss/adminProfile.css" // Import the new CSS file
 import { FaCamera, FaEdit, FaTimes, FaSave } from "react-icons/fa"
 import { useAuth } from "../../contexts/AuthContext"
 import { getUserById, updateUser } from "../../api/userService"
@@ -114,7 +114,6 @@ const AdminProfile = () => {
     return phoneRegex.test(phone)
   }
 
-  // New validation function
   const validateFields = (data) => {
     const newErrors = {}
 
@@ -186,25 +185,25 @@ const AdminProfile = () => {
   }
 
   return (
-    <div className="admin-dashboard">
+    <div className="profAttachment-admin-dashboard">
       <Sidebar />
-      <div className="profile-container">
+      <div className="profAttachment-profile-container">
         <Navbar />
-        <div className="profile-header">
+        <div className="profAttachment-profile-header">
           <h2>My Profile</h2>
-          <div className="profile-line"></div>
+          <div className="profAttachment-profile-line"></div>
         </div>
-        <div className="profile-card">
-          <form onSubmit={handleSaveImage} className="profile-pic-container">
-            <div className="profile-pic">
+        <div className="profAttachment-profile-card">
+          <form onSubmit={handleSaveImage} className="profAttachment-profile-pic-container">
+            <div className="profAttachment-profile-pic">
               <img src={admin.photo || "/placeholder.svg"} alt="Profile" />
-              <label className="upload-icon">
+              <label className="profAttachment-upload-icon">
                 <FaCamera />
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="file-input" />
               </label>
             </div>
-            <button type="submit" className="save-image-btn">
-              <FaSave className="save-icon" /> Save Image
+            <button type="submit" className="profAttachment-save-image-btn">
+              <FaSave className="profAttachment-save-icon" /> Save Image
             </button>
           </form>
           <div>
@@ -214,74 +213,74 @@ const AdminProfile = () => {
             <p>Phone Number: {admin.phone}</p>
           </div>
         </div>
-        <div className="info-section">
-          <div className="section-header">
+        <div className="profAttachment-info-section">
+          <div className="profAttachment-section-header">
             <h3>Personal Information</h3>
-            <button className="edit-btn" onClick={openEditModal}>
+            <button className="profAttachment-edit-btn" onClick={openEditModal}>
               <FaEdit /> Edit
             </button>
           </div>
-          <div className="profile-line"></div>
-          <div className="info-grid">
+          <div className="profAttachment-profile-line"></div>
+          <div className="profAttachment-info-grid">
             <div>
-              <p className="label">Name</p>
+              <p className="profAttachment-label">Name</p>
               <p>{admin.name}</p>
             </div>
             <div>
-              <p className="label">Email Address</p>
+              <p className="profAttachment-label">Email Address</p>
               <p>{admin.email}</p>
             </div>
             <div>
-              <p className="label">Address</p>
+              <p className="profAttachment-label">Address</p>
               <p>{admin.address}</p>
             </div>
             <div>
-              <p className="label">Phone Number</p>
+              <p className="profAttachment-label">Phone Number</p>
               <p>{admin.phone}</p>
             </div>
           </div>
         </div>
         {isEditModalOpen && (
-          <div className="modal-overlay">
-            <div className="modal-content">
-              <div className="modal-header">
+          <div className="profAttachment-modal-overlay">
+            <div className="profAttachment-modal-content">
+              <div className="profAttachment-modal-header">
                 <h3>Edit Personal Information</h3>
-                <button className="close-btn" onClick={closeModal}>
+                <button className="profAttachment-close-btn" onClick={closeModal}>
                   <FaTimes />
                 </button>
               </div>
-              <div className="modal-body">
+              <div className="profAttachment-modal-body">
                 <label>Name</label>
                 <input
                   type="text"
                   value={editedData.name}
                   onChange={(e) => setEditedData({ ...editedData, name: e.target.value })}
                 />
-                {errors.name && <p className="error">{errors.name}</p>}
+                {errors.name && <p className="profAttachment-error">{errors.name}</p>}
                 <label>Email Address</label>
                 <input
                   type="email"
                   value={editedData.email}
                   onChange={(e) => setEditedData({ ...editedData, email: e.target.value })}
                 />
-                {errors.email && <p className="error">{errors.email}</p>}
+                {errors.email && <p className="profAttachment-error">{errors.email}</p>}
                 <label>Address</label>
                 <input
                   type="text"
                   value={editedData.address}
                   onChange={(e) => setEditedData({ ...editedData, address: e.target.value })}
                 />
-                {errors.address && <p className="error">{errors.address}</p>}
+                {errors.address && <p className="profAttachment-error">{errors.address}</p>}
                 <label>Phone Number</label>
                 <input
                   type="text"
                   value={editedData.phone}
                   onChange={(e) => setEditedData({ ...editedData, phone: e.target.value })}
                 />
-                {errors.phone && <p className="error">{errors.phone}</p>}
+                {errors.phone && <p className="profAttachment-error">{errors.phone}</p>}
               </div>
-              <div className="modal-footer">
-                <button className="save-btn" onClick={handleSaveChanges}>
+              <div className="profAttachment-modal-footer">
+                <button className="profAttachment-save-btn" onClick={handleSaveChanges}>
                   Save Changes
                 </button>
               </div>

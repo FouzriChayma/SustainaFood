@@ -1,10 +1,11 @@
 body{
   background: rgba(220, 238, 221, 0.781);
+  margin-top: 100px;
 
 }
 
 
-.all{
+.pff-all{
   
   background: #ffffffaa;
   border-radius: 12px;
@@ -14,7 +15,7 @@ body{
   position: relative;
   box-shadow: #604b4a53 0px 20px 20px 10px;
 }
-.card-white {
+.pff-card-white {
   margin-left: 30px;
   margin-top: 13px;
   margin-bottom: 13px;
@@ -26,10 +27,12 @@ body{
   padding: 3px;
   position: relative;
   transition: all 0.5s ease-in-out;
+  display: flex; /* Added to improve content alignment */
+  flex-direction: column; /* Added to improve content alignment */
 }
 
 
-.card-white .mail {
+.pff-card-white .pff-mail {
   position: absolute;
   right: 2rem;
   top: 1.4rem;
@@ -37,16 +40,16 @@ body{
   border: none;
 }
 
-.card-white .mail svg {
+.pff-card-white .pff-mail svg {
   stroke: #8dc73f;
   stroke-width: 3px;
 }
 
-.card-white .mail svg:hover {
+.pff-card-white .pff-mail svg:hover {
   stroke: #8dc73f;
 }
 
-.card-white .profile-pic {
+.pff-card-white .pff-profile-pic {
   position: absolute;
   width: calc(100% - 6px);
   height: calc(100% - 6px);
@@ -58,7 +61,7 @@ body{
   transition: all 0.5s ease-in-out 0.2s, z-index 0.5s ease-in-out 0.2s;
 }
 
-.card-white  .profile-pic img {
+.pff-card-white  .pff-profile-pic img {
   -o-object-fit: cover;
   object-fit: cover;
   width: 100%;
@@ -68,7 +71,7 @@ body{
   transition: all 0.5s ease-in-out 0s;
 }
 
-.card-white  .profile-pic svg {
+.pff-card-white  .pff-profile-pic svg {
   width: 100%;
   height: 100%;
   -o-object-fit: cover;
@@ -79,7 +82,7 @@ body{
   transition: all 0.5s ease-in-out 0s;
 }
 
-.card-white  .bottom {
+.pff-card-white  .pff-bottom {
   position: absolute;
   bottom: 3px;
   left: 3px;
@@ -93,7 +96,7 @@ body{
   transition: all 0.5s cubic-bezier(0.645, 0.045, 0.355, 1) 0s;
 }
 
-.card-white .bottom .content {
+.pff-card-white .pff-bottom .pff-content {
   position: absolute;
   bottom: 0;
   left: 1.5rem;
@@ -101,23 +104,22 @@ body{
   height: 160px;
 }
 
-.card-white .bottom .content .name {
+.pff-card-white .pff-bottom .pff-content .pff-name {
   display: block;
   font-size: 1.2rem;
   color: white;
-  margin-top:-65px;
-
+  margin-top: -45px; /* Changed from -65px to fix alignment */
   font-weight: bold;
 }
 
-.card-white .bottom .content .about-me {
+.pff-card-white .pff-bottom .pff-content .pff-about-me {
   display: block;
   font-size: 0.9rem;
   color: white;
   margin-top: 5px;
 }
 
-.card-white .bottom .bottom-bottom {
+.pff-card-white .pff-bottom .pff-bottom-bottom {
   position: absolute;
   bottom: 1rem;
   left: 1.5rem;
@@ -127,28 +129,28 @@ body{
   justify-content: space-between;
 }
 
-.card-white .bottom .bottom-bottom .social-links-container {
+.pff-card-white .pff-bottom .pff-bottom-bottom .pff-social-links-container {
   display: flex;
   gap: 1rem;
 }
 
-.card-white .bottom .bottom-bottom .social-links-container svg {
+.pff-card-white .pff-bottom .pff-bottom-bottom .pff-social-links-container svg {
   height: 20px;
   fill: white;
   filter: drop-shadow(0 5px 5px rgba(165, 132, 130, 0.1333333333));
 }
 
-.card-white .bottom .bottom-bottom .social-links-container svg:hover {
+.pff-card-white .pff-bottom .pff-bottom-bottom .pff-social-links-container svg:hover {
   fill: #f55d56;
   transform: scale(1.2);
 }
-.bottom-editdesc{
+.pff-bottom-editdesc{
 margin-left: 90px;
 margin-top: -26px;
 background-color:#8dc73f ;
 color: white;
 }
-.card-white  .bottom .bottom-bottom .button {
+.pff-card-white  .pff-bottom .pff-bottom-bottom .pff-button {
   background: white;
   color: #8dc73f;
   border: none;
@@ -158,22 +160,22 @@ color: white;
   box-shadow: rgba(165, 132, 130, 0.1333333333) 0px 5px 5px 0px;
 }
 
-.card-white  .bottom .bottom-bottom .button:hover {
+.pff-card-white  .pff-bottom .pff-bottom-bottom .pff-button:hover {
   background: #f55d56;
   color: white;
 }
 
-.card-white :hover {
+.pff-card-white :hover {
   border-top-left-radius: 55px;
 }
 
-.card-white:hover .bottom {
+.pff-card-white:hover .pff-bottom {
   top: 20%;
   border-radius: 80px 29px 29px 29px;
   transition: all 0.5s cubic-bezier(0.645, 0.045, 0.355, 1) 0.2s;
 }
 
-.card-white:hover .profile-pic {
+.pff-card-white:hover .pff-profile-pic {
   width: 100px;
   height: 100px;
   aspect-ratio: 1;
@@ -186,12 +188,12 @@ color: white;
   transition: all 0.5s ease-in-out, z-index 0.5s ease-in-out 0.1s;
 }
 
-.card-white:hover .profile-pic:hover {
+.pff-card-white:hover .pff-profile-pic:hover {
   transform: scale(1.3);
   border-radius: 0px;
 }
 
-.card-white:hover .profile-pic img {
+.pff-card-white:hover .pff-profile-pic img {
   transform: scale(1);
 
   -o-object-position: 0px 25px;
@@ -199,13 +201,13 @@ color: white;
   transition: all 0.5s ease-in-out 0.5s;
 }
 
-.card-white:hover .profile-pic svg {
+.pff-card-white:hover .pff-profile-pic svg {
   transform: scale(2.5);
   transition: all 0.5s ease-in-out 0.5s;
 }
 
 /* From Uiverse.io by Admin12121 */ 
-.menu {
+.pff-menu {
   padding: 0.5rem;
   background-color: #fff;
   position: relative;
@@ -215,7 +217,7 @@ color: white;
   box-shadow: 0 10px 25px 0 rgba(#000, 0.075);
 }
 
-.link {
+.pff-link {
   display: inline-flex;
   justify-content: center;
   align-items: center;
@@ -250,14 +252,14 @@ color: white;
     width: 130px;
 
     &:before,
-    .link-title {
+    .pff-link-title {
       transform: translateY(0);
       opacity: 1;
     }
   }
 }
 
-.link-icon {
+.pff-link-icon {
   width: 28px;
   height: 28px;
   display: block;
@@ -270,7 +272,7 @@ color: white;
   }
 }
 
-.link-title {
+.pff-link-title {
   transform: translateX(100%);
   transition: transform 0.2s ease-in;
   transform-origin: center right;
@@ -298,17 +300,16 @@ body {
 }
 
 /* Conteneur principal */
-.container-profile {
+.pff-container-profile {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
-  margin-top: -70px;
-
+  margin-top: 20px; /* Changed from -50px to fix top positioning */
 }
 
 /* En-tête */
-.profile-header {
+.pff-profile-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -317,11 +318,11 @@ body {
 
 }
 
-.profile-header h1 {
+.pff-profile-header h1 {
   font-size: 24px;
 }
 
-.date-switcher button {
+.pff-date-switcher button {
   background-color: #fff;
   border: 1px solid #ddd;
   padding: 8px 16px;
@@ -330,34 +331,28 @@ body {
 }
 
 /* Mise en page principale en grille : 3 colonnes */
-.main {
+.pff-main {
   display: grid;
-  grid-template-columns: 1fr 1.2fr 1fr; /* Ajuster les proportions si besoin */
-  gap: 20px;
-  margin-top: -70px;
-
-}
-.main {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 20px; /* Ajoute un espace entre les éléments */
+  grid-template-columns: 1fr 1.5fr 1fr; /* Create a proper three-column layout */
+  gap: 10px;
+  margin-top: 20px; /* Changed from -40px to fix spacing */
 }
 
-.left-column, .right-column { 
-  flex: 1; /* 1 part d'espace */
-  min-width: 300px;
+/* Fix column widths and positioning */
+.pff-left-column, .pff-right-column { 
+  width: 100%;
+  min-width: 250px;
 }
 
-.center-column { 
-  flex: 1.5; /* 1.5 fois la taille des autres colonnes */
-  min-width: 450px; /* Facultatif : ajuster en fonction de la proportion */
+.pff-center-column { 
+  width: 100%;
+  min-width: 400px;
 }
 
 
 
 /* Colonne de gauche */
-.left-column {
+.pff-left-column {
   
   display: flex;
   flex-direction: column;
@@ -365,45 +360,43 @@ body {
 }
 
 /* Carte Profil */
-.profile-cardfront {
+.pff-profile-cardfront {
   background-color: #fff;
   border-radius: 12px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-
+  padding: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.profile-pic {
+.pff-profile-pic {
   width: 180px;
   height: 180px;
   border-radius: 50%;
   object-fit: cover;
 }
 
-.profile-info h2 {
+.pff-profile-info h2 {
   margin-bottom: 5px;
   font-size: 18px;
 }
 
-.profile-info .profile-p {
+.pff-profile-info .pff-profile-p {
   margin-bottom: 10px;
   font-size: 14px;
   color: #777;
 }
 
-.profile-actions {
+.pff-profile-actions {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.profile-actions p {
+.pff-profile-actions p {
   margin: 0;
   font-size: 14px;
 }
 
-.profile-actions button {
+.pff-profile-actions button {
   background-color: #50C9A7; /* Couleur de bouton (vert) */
   color: #fff;
   border: none;
@@ -413,22 +406,22 @@ body {
 }
 
 /* Informations détaillées */
-.detailed-info {
+.pff-detailed-info {
   background-color: #fff;
   border-radius: 12px;
   padding: 20px;
 }
 
-.detailed-info h3 {
+.pff-detailed-info h3 {
   margin-bottom: 10px;
   font-size: 16px;
 }
 
-.detailed-info ul {
+.pff-detailed-info ul {
   list-style-type: none;
 }
 
-.detailed-info li {
+.pff-detailed-info li {
   margin-bottom: 8px;
   font-size: 14px;
 }
@@ -436,101 +429,101 @@ body {
 /* Colonne centrale */
 
 
-.center-column h3 {
+.pff-center-column h3 {
   margin-bottom: 20px;
   font-size: 30px;
 }
 
-.center-column h5 {
+.pff-center-column h5 {
   margin-bottom: 20px;
   font-size: 20px;
 }
-.projects {
+.pff-projects {
   display: flex;
   flex-direction: column;
   gap: 15px;
-      width: 500px;
-
+  width: 100%; /* Changed from fixed 500px to be responsive */
 }
 
 /* Cartes projets */
-.project-card {
+.pff-project-card {
   background-color: #F9FAFB;
   border-radius: 10px;
   padding: 15px;
-  width: 553px;
+  width: 100%; /* Make it fully responsive */
+  margin: 0 0 15px 0; /* Adjust margins */
 
 }
 
-.project-header {
+.pff-project-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 5px;
 }
 
-.project-header h4 {
+.pff-project-header h4 {
   margin: 0;
   font-size: 16px;
 }
 
-.project-header span {
+.pff-project-header span {
   font-size: 12px;
   color: #999;
 }
 
-.project-card p {
+.pff-project-card p {
   font-size: 14px;
   margin-bottom: 10px;
 }
 
-.project-avatars {
+.pff-project-avatars {
   display: flex;
   gap: 5px;
 }
 
-.project-avatars img {
+.pff-project-avatars img {
   width: 24px;
   height: 24px;
   border-radius: 50%;
 }
 
 /* Colonne de droite */
-.right-column {
+.pff-right-column {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
 /* Section Calendrier */
-.calendar-section {
+.pff-calendar-section {
   background-color: #fff;
   border-radius: 12px;
   padding: 20px;
 }
 
-.calendar-section h3 {
+.pff-calendar-section h3 {
   margin-bottom: 10px;
 }
 
-.calendar {
+.pff-calendar {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
-.weekdays, .days {
+.pff-weekdays, .pff-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
 }
 
-.weekdays div {
+.pff-weekdays div {
   font-weight: bold;
   color: #666;
 }
 
-.days div {
+.pff-days div {
   padding: 8px 0;
   border-radius: 6px;
   cursor: pointer;
@@ -538,85 +531,85 @@ body {
 }
 
 /* Section Inbox */
-.inbox-section {
+.pff-inbox-section {
   background-color: #fff;
   border-radius: 12px;
   padding: 20px;
 }
 
-.inbox-section h3 {
+.pff-inbox-section h3 {
   margin-bottom: 10px;
   font-size: 16px;
 }
 
-.message {
+.pff-message {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 10px 0;
   border-bottom: 1px solid #f0f0f0;
-  margin-left: 50px;
-  width: 300px;
+  margin-left: 0; /* Changed from 50px to align properly */
+  width: 100%; /* Changed from 300px to be responsive */
 }
 
-.message:last-child {
+.pff-message:last-child {
   border-bottom: none;
 }
 
-.message-header {
+.pff-message-header {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.message-header img {
+.pff-message-header img {
   width: 40px;
   height: 40px;
   border-radius: 50%;
 }
 
-.message-header strong {
+.pff-message-header strong {
   display: block;
   font-size: 14px;
   color: #000;
 }
 
-.message-header p {
+.pff-message-header p {
   font-size: 12px;
   color: #777;
 }
 
-.time {
+.pff-time {
   font-size: 12px;
   color: #999;
 }
-.btnProfile{
+.pff-btnProfile{
   color: #8dc73f;
   font-weight: bold;
 }
 
 
 /* From Uiverse.io by kamehame-ha */  
-.feedback-cards {
+.pff-feedback-cards {
   display: flex;
   
   flex-direction: column;
   gap: 15px;
 }
 
-.feedback-cards .feedback-red {
+.pff-feedback-cards .pff-feedback-red {
   background-color: #f43f5e;
 }
 
-.feedback-cards .feedback-blue {
+.pff-feedback-cards .pff-feedback-blue {
   background-color: #3b82f6;
 }
 
-.feedback-cards .feedback-green {
+.pff-feedback-cards .pff-feedback-green {
   background-color: #22c55e;
 }
 
-.feedback-cards .feedback-card {
+.pff-feedback-cards .pff-feedback-card {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -630,51 +623,52 @@ body {
   transition: 400ms;
 }
 
-.feedback-cards .feedback-card p.feedback-tip {
+.pff-feedback-cards .pff-feedback-card p.pff-feedback-tip {
   font-size: 1em;
   font-weight: 700;
 }
 
-.feedback-cards .feedback-card p.feedback-second-text {
+.pff-feedback-cards .pff-feedback-card p.pff-feedback-second-text {
   font-size: .7em;
 }
 
-.feedback-cards .feedback-card:hover {
+.pff-feedback-cards .pff-feedback-card:hover {
   transform: scale(1.1, 1.1);
 }
 
-.feedback-cards:hover > .feedback-card:not(:hover) {
+.pff-feedback-cards:hover > .pff-feedback-card:not(:hover) {
   filter: blur(10px);
   transform: scale(0.9, 0.9);
 }
-.donation-card {
+.pff-donation-card {
   background: white;
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-  width: 521px;
-  text-align: center; /* Centre le contenu */
+  width: 100%; /* Make it fully responsive */
+  margin: 0 0 15px 0; /* Adjust margins */
+  text-align: center;
 }
 
-.donation-title {
+.pff-donation-title {
   text-align: center;
   font-size: 22px;
   color: #2c3e50;
 }
 
-.donation-p {
+.pff-donation-p {
   text-align: left; /* Alignement du texte */
   margin: 5px 0;
   color: #555;
 }
 
-.donation-ul {
+.pff-donation-ul {
   list-style-type: none;
   padding: 0;
   text-align: left; /* Alignement du texte */
 }
 
-.donation-li {
+.pff-donation-li {
   background: #ecf0f1;
   padding: 8px;
   border-radius: 5px;
@@ -684,26 +678,26 @@ body {
   align-items: center;
 }
 
-.status {
+.pff-status {
   padding: 3px 8px;
   border-radius: 5px;
   font-size: 12px;
   color: white;
 }
 
-.available {
+.pff-available {
   background-color: #27ae60;
 }
 
-.pending {
+.pff-pending {
   background-color: #f39c12;
 }
 
-.donation-card-content {
+.pff-donation-card-content {
   margin-left: 0px;
   text-align: left; /* Alignement du texte */
 }
-.btnseemore{
+.pff-btnseemore{
   margin-left: 406px;
   margin-top: 10px;
   font-size: 12px;
@@ -713,42 +707,44 @@ body {
   border-radius: 5px;
   border: none;
 }
-.userrole{ 
+.pff-userrole{ 
   color:white;
   font-size : 40px;
   font-style:oblique }
 @media (max-width: 1024px) {
-  .main {
-    flex-direction: column; /* Les colonnes passent en mode vertical */
-    align-items: center; /* Centre le contenu */
+  .pff-main {
+    grid-template-columns: 1fr; /* Stack columns on smaller screens */
   }
-
-  .left-column, .center-column, .right-column {
-    width: 90%; /* Chaque colonne prendra presque toute la largeur */
-    text-align: center;
+  
+  .pff-left-column, .pff-center-column, .pff-right-column {
+    width: 100%;
+  }
+  
+  .pff-project-card, .pff-donation-card {
+    max-width: 100%;
   }
 }
 
 @media (max-width: 700px) {
-  .userrole{
+  .pff-userrole{
      color:white;
     size : 20px;
     font-style:oblique }
-  .profile-header  {
+  .pff-profile-header  {
     font-size: 20px;
   }
 
-  .btnProfile {
+  .pff-btnProfile {
     font-size: 12px;
     padding: 6px 10px;
   }
 
-  .profile-pic img {
+  .pff-profile-pic img {
     width: 30px;
     height: 40px;
   }
 
-  .card-white {
+  .pff-card-white {
     margin-bottom: 5px;
     height: auto;
     
@@ -759,7 +755,7 @@ body {
     transition: all 0.4s ease-in-out;
   }
 
-  .card-white .mail {
+  .pff-card-white .pff-mail {
     position: absolute;
     right: 1rem;
     top: 1rem;
@@ -767,12 +763,12 @@ body {
     border: none;
   }
 
-  .card-white .mail svg {
+  .pff-card-white .pff-mail svg {
     stroke: #8dc73f;
     stroke-width: 2px;
   }
 
-  .card-white .profile-pic {
+  .pff-card-white .pff-profile-pic {
     position: center;
     width: 20px;
     height: 20px;
@@ -791,7 +787,7 @@ body {
 
 /* Add these styles to your CSS file for the enhanced welcome message */
 
-.welcome-message {
+.pff-welcome-message {
 position: fixed;
 top: 80px;
 left: 50%;
@@ -808,7 +804,7 @@ min-width: 300px;
 text-align: center;
 }
 
-.welcome-message-content {
+.pff-welcome-message-content {
 display: flex;
 align-items: center;
 justify-content: center;
@@ -817,12 +813,12 @@ position: relative;
 z-index: 2;
 }
 
-.welcome-icon {
+.pff-welcome-icon {
 font-size: 24px;
 animation: bounce 1s ease infinite;
 }
 
-.confetti-container {
+.pff-confetti-container {
 position: absolute;
 top: 0;
 left: 0;
@@ -832,7 +828,7 @@ overflow: hidden;
 pointer-events: none;
 }
 
-.confetti {
+.pff-confetti {
 position: absolute;
 width: 10px;
 height: 10px;
@@ -840,27 +836,27 @@ top: -10px;
 animation: confettiFall linear forwards;
 }
 
-.confetti-0 {
+.pff-confetti-0 {
 background-color: #f55d56;
 transform: rotate(0deg);
 }
 
-.confetti-1 {
+.pff-confetti-1 {
 background-color: #f7b733;
 transform: rotate(45deg);
 }
 
-.confetti-2 {
+.pff-confetti-2 {
 background-color: #50C9A7;
 transform: rotate(90deg);
 }
 
-.confetti-3 {
+.pff-confetti-3 {
 background-color: #6cabf6;
 transform: rotate(135deg);
 }
 
-.confetti-4 {
+.pff-confetti-4 {
 background-color: #ffffff;
 transform: rotate(180deg);
 }
@@ -893,13 +889,13 @@ transform: rotate(180deg);
 }
 
 /* Enhance the existing feedback cards with animations */
-.feedback-cards .feedback-card {
+.pff-feedback-cards .pff-feedback-card {
 transition: transform 0.4s ease, filter 0.4s ease;
 position: relative;
 overflow: hidden;
 }
 
-.feedback-cards .feedback-card::before {
+.pff-feedback-cards .pff-feedback-card::before {
 content: '';
 position: absolute;
 top: 0;
@@ -910,14 +906,14 @@ background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transpare
 transition: left 0.7s ease;
 }
 
-.feedback-cards .feedback-card:hover::before {
+.pff-feedback-cards .pff-feedback-card:hover::before {
 left: 100%;
 }
 /* Enhanced Gamification Cards with Subtle Animations */
 /* Enhanced Gamification Cards with Dynamic Sparkle Effects */
 
 /* Winner Card Container with Particle Effects */
-.winner-cards {
+.pff-winner-cards {
   position: relative;
   height: 150px;
   transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -925,10 +921,12 @@ left: 100%;
   overflow: visible;
   margin-bottom: 20px;
   perspective: 1000px;
+  width: 100%;
+  margin-bottom: 20px;
 }
 
 /* Winner Card Particles */
-.winner-particles {
+.pff-winner-particles {
   position: absolute;
   top: 0;
   left: 0;
@@ -940,7 +938,7 @@ left: 100%;
   z-index: 2;
 }
 
-.winner-particle {
+.pff-winner-particle {
   position: absolute;
   width: 6px;
   height: 6px;
@@ -980,18 +978,18 @@ left: 100%;
   }
 }
 
-.winner-cards:hover {
+.pff-winner-cards:hover {
   height: 270px;
   transform: translateY(-5px);
 }
 
-.winner-cards:hover .winner-detailPage {
+.pff-winner-cards:hover .pff-winner-detailPage {
   display: flex;
   animation: fadeIn 0.6s cubic-bezier(0.26, 0.53, 0.74, 1.48) forwards;
 }
 
 /* Auto-generated Sparkles */
-.winner-cards::after {
+.pff-winner-cards::after {
   content: '';
   position: absolute;
   top: 0;
@@ -1001,7 +999,7 @@ left: 100%;
   pointer-events: none;
 }
 
-.winner-cards:hover::after {
+.pff-winner-cards:hover::after {
   animation: generateSparkles 3s linear infinite;
 }
 
@@ -1011,7 +1009,7 @@ left: 100%;
 }
 
 /* Sparkle Effect - Enhanced with multiple stars */
-.sparkle {
+.pff-sparkle {
   position: absolute;
   width: 6px;
   height: 6px;
@@ -1025,7 +1023,7 @@ left: 100%;
 }
 
 /* Create multiple stars with different animations */
-.winner-cards:hover .winner-outlinePage::before {
+.pff-winner-cards:hover .pff-winner-outlinePage::before {
   content: "★";
   font-size: 5px;
   color: #fff;
@@ -1041,7 +1039,7 @@ left: 100%;
   z-index: 3;
 }
 
-.winner-cards:hover .winner-outlinePage::after {
+.pff-winner-cards:hover .pff-winner-outlinePage::after {
   content: "★";
   font-size: 4px;
   color: #fff;
@@ -1057,7 +1055,7 @@ left: 100%;
   z-index: 3;
 }
 
-.winner-cards:hover .winner-ranking_number::before {
+.pff-winner-cards:hover .pff-winner-ranking_number::before {
   content: "★";
   font-size: 6px;
   color: #fff;
@@ -1073,7 +1071,7 @@ left: 100%;
   z-index: 3;
 }
 
-.winner-cards:hover .winner-ranking_number::after {
+.pff-winner-cards:hover .pff-winner-ranking_number::after {
   content: "★";
   font-size: 3px;
   color: #fff;
@@ -1110,8 +1108,8 @@ left: 100%;
 }
 
 /* Floating Particles */
-.winner-cards:hover .winner-detailPage::before,
-.winner-cards:hover .winner-detailPage::after {
+.pff-winner-cards:hover .pff-winner-detailPage::before,
+.pff-winner-cards:hover .pff-winner-detailPage::after {
   content: '';
   position: absolute;
   width: 8px;
@@ -1123,13 +1121,13 @@ left: 100%;
   animation: floatingParticle 4s ease-in-out infinite;
 }
 
-.winner-cards:hover .winner-detailPage::before {
+.pff-winner-cards:hover .pff-winner-detailPage::before {
   top: 20%;
   left: 30%;
   animation-delay: 0.5s;
 }
 
-.winner-cards:hover .winner-detailPage::after {
+.pff-winner-cards:hover .pff-winner-detailPage::after {
   bottom: 30%;
   right: 20%;
   animation-delay: 1.5s;
@@ -1141,7 +1139,7 @@ left: 100%;
 }
 
 /* Main Card Design with Enhanced Shadows and Transitions */
-.winner-outlinePage {
+.pff-winner-outlinePage {
   position: relative;
   width: 350px;
   height: 150px;
@@ -1151,10 +1149,13 @@ left: 100%;
   overflow: visible;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(5px);
+  width: 100%;
+  max-width: 350px;
+  margin: 0 auto;
 }
 
 /* Card Background Patterns with Subtle Movement */
-.winner-outlinePage > .bg-pattern {
+.pff-winner-outlinePage > .bg-pattern {
   content: "";
   position: absolute;
   top: 0;
@@ -1180,7 +1181,7 @@ left: 100%;
 }
 
 /* Gold Card with Subtle Gradient */
-.winner-outlinePage-gold {
+.pff-winner-outlinePage-gold {
   background: linear-gradient(135deg, #f7f2e2, #fee29a, #f7d06a);
   background-size: 200% 200%;
   position: relative;
@@ -1197,7 +1198,7 @@ left: 100%;
   }
 }
 
-.winner-outlinePage-gold > .medal-pattern {
+.pff-winner-outlinePage-gold > .medal-pattern {
   content: "";
   position: absolute;
   top: 0;
@@ -1210,7 +1211,7 @@ left: 100%;
 }
 
 /* Silver Card with Subtle Gradient */
-.winner-outlinePage-silver {
+.pff-winner-outlinePage-silver {
   background: linear-gradient(135deg, #f5f5f5, #e0e0e0, #d0d0d0);
   background-size: 200% 200%;
   position: relative;
@@ -1227,7 +1228,7 @@ left: 100%;
   }
 }
 
-.winner-outlinePage-silver > .medal-pattern {
+.pff-winner-outlinePage-silver > .medal-pattern {
   content: "";
   position: absolute;
   top: 0;
@@ -1240,7 +1241,7 @@ left: 100%;
 }
 
 /* Bronze Card with Subtle Gradient */
-.winner-outlinePage-bronze {
+.pff-winner-outlinePage-bronze {
   background: linear-gradient(135deg, #f5e0cb, #e4a362, #cd7f32);
   background-size: 200% 200%;
   position: relative;
@@ -1257,7 +1258,7 @@ left: 100%;
   }
 }
 
-.winner-outlinePage-bronze > .medal-pattern {
+.pff-winner-outlinePage-bronze > .medal-pattern {
   content: "";
   position: absolute;
   top: 0;
@@ -1270,7 +1271,7 @@ left: 100%;
 }
 
 /* Default Card with Subtle Gradient */
-.winner-outlinePage-none {
+.pff-winner-outlinePage-none {
   background: linear-gradient(135deg, #f0f0f0, #e0e0e0, #d8d8d8);
   background-size: 200% 200%;
   animation: subtleDefaultShimmer 15s ease-in-out infinite;
@@ -1287,7 +1288,7 @@ left: 100%;
 }
 
 /* Card Details Section with Improved Animation */
-.winner-detailPage {
+.pff-winner-detailPage {
   position: relative;
   display: none;
   width: 350px;
@@ -1301,10 +1302,13 @@ left: 100%;
   align-items: center;
   justify-content: flex-start;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 350px;
+  margin: 0 auto;
 }
 
 /* Divider Line with Pulse Animation */
-.winner-splitLine {
+.pff-winner-splitLine {
   position: absolute;
   width: 200px;
   height: 4px;
@@ -1325,7 +1329,7 @@ left: 100%;
 }
 
 /* Trophy Icon with Enhanced Animation */
-.winner-icon.winner-trophy {
+.pff-winner-icon.pff-winner-trophy {
   position: absolute;
   right: 15px;
   top: 10px;
@@ -1346,14 +1350,14 @@ left: 100%;
 }
 
 /* Trophy Hover Animation */
-.winner-cards:hover .winner-icon.winner-trophy {
+.pff-winner-cards:hover .pff-winner-icon.pff-winner-trophy {
   transform: translateY(-8px) rotate(-5deg);
   filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
 }
 
 /* Enhance Sparkle Effects for Winner Cards */
-.winner-outlinePage::before,
-.winner-outlinePage::after {
+.pff-winner-outlinePage::before,
+.pff-winner-outlinePage::after {
   content: "★";
   position: absolute;
   font-size: 4px;
@@ -1364,30 +1368,30 @@ left: 100%;
   pointer-events: none;
 }
 
-.winner-outlinePage::before {
+.pff-winner-outlinePage::before {
   top: 25%;
   left: 15%;
   animation: sparkleFloat 4s ease-in-out infinite;
 }
 
-.winner-outlinePage::after {
+.pff-winner-outlinePage::after {
   top: 65%;
   right: 25%;
   animation: sparkleFloat 4s ease-in-out infinite 1s;
 }
 
-.winner-outlinePage-gold::before,
-.winner-outlinePage-gold::after {
+.pff-winner-outlinePage-gold::before,
+.pff-winner-outlinePage-gold::after {
   text-shadow: 0 0 8px 2px rgba(255, 215, 0, 0.7);
 }
 
-.winner-outlinePage-silver::before,
-.winner-outlinePage-silver::after {
+.pff-winner-outlinePage-silver::before,
+.pff-winner-outlinePage-silver::after {
   text-shadow: 0 0 8px 2px rgba(192, 192, 192, 0.7);
 }
 
-.winner-outlinePage-bronze::before,
-.winner-outlinePage-bronze::after {
+.pff-winner-outlinePage-bronze::before,
+.pff-winner-outlinePage-bronze::after {
   text-shadow: 0 0 8px 2px rgba(205, 127, 50, 0.7);
 }
 
@@ -1403,7 +1407,7 @@ left: 100%;
 }
 
 /* Subtle Shimmer Effect */
-.winner-outlinePage::after {
+.pff-winner-outlinePage::after {
   content: '';
   position: absolute;
   top: -100%;
@@ -1432,8 +1436,8 @@ left: 100%;
 }
 
 /* Enhance Trophy and Medal Sparkles */
-.winner-icon.winner-trophy::before,
-.winner-icon.winner-medals::before {
+.pff-winner-icon.pff-winner-trophy::before,
+.pff-winner-icon.pff-winner-medals::before {
   content: '';
   position: absolute;
   width: 100%;
@@ -1458,8 +1462,8 @@ left: 100%;
 }
 
 /* Trophy Sparkle Effect */
-.winner-icon.winner-trophy::before,
-.winner-icon.winner-trophy::after {
+.pff-winner-icon.pff-winner-trophy::before,
+.pff-winner-icon.pff-winner-trophy::after {
   content: "★";
   position: absolute;
   font-size: 12px;
@@ -1468,13 +1472,13 @@ left: 100%;
   animation: trophySparkle 3s ease-in-out infinite;
 }
 
-.winner-icon.winner-trophy::before {
+.pff-winner-icon.pff-winner-trophy::before {
   top: 10px;
   right: 10px;
   animation-delay: 0.5s;
 }
 
-.winner-icon.winner-trophy::after {
+.pff-winner-icon.pff-winner-trophy::after {
   top: 30px;
   left: 10px;
   animation-delay: 1.5s;
@@ -1493,7 +1497,7 @@ left: 100%;
 }
 
 /* Rank Number with Text Shadow and Glow */
-.winner-ranking_number {
+.pff-winner-ranking_number {
   position: relative;
   color: #8dc73f;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -1507,12 +1511,12 @@ left: 100%;
   transition: all 0.3s ease;
 }
 
-.winner-cards:hover .winner-ranking_number {
+.pff-winner-cards:hover .pff-winner-ranking_number {
   text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1), 0 0 20px rgba(141, 199, 63, 0.5);
 }
 
 /* Rank Suffix with Enhanced Styling */
-.winner-ranking_word {
+.pff-winner-ranking_word {
   position: relative;
   font-size: 40px;
   color: #424c50;
@@ -1520,12 +1524,12 @@ left: 100%;
   transition: all 0.3s ease;
 }
 
-.winner-cards:hover .winner-ranking_word {
+.pff-winner-cards:hover .pff-winner-ranking_word {
   color: #333;
 }
 
 /* User Avatar with Subtle Pulse */
-.winner-userAvatar {
+.pff-winner-userAvatar {
   position: absolute;
   bottom: 15px;
   left: 20px;
@@ -1545,7 +1549,7 @@ left: 100%;
 }
 
 /* Username with Hover Effect */
-.winner-userName {
+.pff-winner-userName {
   position: absolute;
   bottom: 15px; /* Align with the avatar */
   left: 55px; /* Same left position as before */
@@ -1555,13 +1559,13 @@ left: 100%;
   transition: all 0.3s ease;
 }
 
-.winner-cards:hover .winner-userName {
+.pff-winner-cards:hover .pff-winner-userName {
   color: #424c50;
   transform: translateX(3px);
 }
 
 /* Medal Icon with Shine Effect */
-.winner-medals {
+.pff-winner-medals {
   position: absolute;
   top: 15px;
   right: 15px;
@@ -1569,7 +1573,7 @@ left: 100%;
   transition: all 0.3s ease;
 }
 
-.winner-medals::after {
+.pff-winner-medals::after {
   content: "";
   position: absolute;
   top: -50%;
@@ -1587,7 +1591,7 @@ left: 100%;
   opacity: 0;
 }
 
-.winner-cards:hover .winner-medals::after {
+.pff-winner-cards:hover .pff-winner-medals::after {
   opacity: 1;
 }
 
@@ -1602,7 +1606,7 @@ left: 100%;
 }
 
 /* Score Box with Enhanced Styling */
-.winner-gradesBox {
+.pff-winner-gradesBox {
   position: relative;
   height: 75px;
   top: 10px;
@@ -1611,12 +1615,12 @@ left: 100%;
   transition: all 0.3s ease;
 }
 
-.winner-cards:hover .winner-gradesBox {
+.pff-winner-cards:hover .pff-winner-gradesBox {
   transform: translateY(-3px);
 }
 
 /* Score Icon with Subtle Rotation */
-.winner-gradesIcon {
+.pff-winner-gradesIcon {
   position: absolute;
   top: 10px;
   left: 10px;
@@ -1641,7 +1645,7 @@ left: 100%;
 }
 
 /* Score Label with Letter Spacing Animation */
-.winner-gradesBoxLabel {
+.pff-winner-gradesBoxLabel {
   position: relative;
   display: block;
   color: #424c50;
@@ -1655,13 +1659,13 @@ left: 100%;
   transition: all 0.3s ease;
 }
 
-.winner-cards:hover .winner-gradesBoxLabel {
+.pff-winner-cards:hover .pff-winner-gradesBoxLabel {
   letter-spacing: 3.5px;
   color: #333;
 }
 
 /* Score Number with Glow Effect */
-.winner-gradesBoxNum {
+.pff-winner-gradesBoxNum {
   position: relative;
   font-family: Arial, Helvetica, sans-serif;
   display: block;
@@ -1674,30 +1678,30 @@ left: 100%;
   transition: all 0.3s ease;
 }
 
-.winner-cards:hover .winner-gradesBoxNum {
+.pff-winner-cards:hover .pff-winner-gradesBoxNum {
   color: #7ab62f;
   text-shadow: 0 0 10px rgba(141, 199, 63, 0.3);
 }
 
 /* Hover Effect - Enhanced Glow */
-.winner-cards:hover .winner-outlinePage {
+.pff-winner-cards:hover .pff-winner-outlinePage {
   box-shadow: 0 15px 30px rgba(141, 199, 63, 0.2);
 }
 
-.winner-outlinePage-gold:hover {
+.pff-winner-outlinePage-gold:hover {
   box-shadow: 0 15px 30px rgba(247, 208, 106, 0.4);
 }
 
-.winner-outlinePage-silver:hover {
+.pff-winner-outlinePage-silver:hover {
   box-shadow: 0 15px 30px rgba(192, 192, 192, 0.4);
 }
 
-.winner-outlinePage-bronze:hover {
+.pff-winner-outlinePage-bronze:hover {
   box-shadow: 0 15px 30px rgba(205, 127, 50, 0.4);
 }
 
 /* Sustainability Badge with Enhanced Animation */
-.sustainability-badge {
+.pff-sustainability-badge {
   position: absolute;
   top: 10px;
   left: 10px;
@@ -1713,7 +1717,7 @@ left: 100%;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.winner-cards:hover .sustainability-badge {
+.pff-winner-cards:hover .pff-sustainability-badge {
   opacity: 1;
   transform: translateY(0);
 }
@@ -1741,7 +1745,7 @@ left: 100%;
 }
 
 /* Slide-in Animation for Medals */
-.winner-slide-in-top {
+.pff-winner-slide-in-top {
   animation: slideInTop 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
@@ -1757,7 +1761,7 @@ left: 100%;
 }
 
 /* Dynamic Sparkle Generator - No JavaScript needed */
-.winner-cards:hover::before {
+.pff-winner-cards:hover::before {
   content: '';
   position: absolute;
   width: 100%;
@@ -1779,33 +1783,33 @@ left: 100%;
 }
 
 /* Sparkle Trail on Hover */
-.winner-cards:hover {
+.pff-winner-cards:hover {
   --x: 0%;
   --y: 0%;
 }
 
-.winner-cards:hover:active {
+.pff-winner-cards:hover:active {
   --x: calc(var(--mouse-x, 0) * 100%);
   --y: calc(var(--mouse-y, 0) * 100%);
 }
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
-  .winner-outlinePage {
+  .pff-winner-outlinePage {
     width: 100%;
     max-width: 350px;
   }
 
-  .winner-detailPage {
+  .pff-winner-detailPage {
     width: 100%;
     max-width: 350px;
   }
 
-  .winner-ranking_number {
+  .pff-winner-ranking_number {
     font-size: 60px;
   }
 
-  .winner-ranking_word {
+  .pff-winner-ranking_word {
     font-size: 30px;
   }
 }
@@ -1877,13 +1881,13 @@ left: 100%;
   }
 }
 
-.winner-cards:hover .winner-outlinePage {
+.pff-winner-cards:hover .pff-winner-outlinePage {
   position: relative;
   animation: autoSparkle 5s infinite;
 }
 
 /* Auto-generated food-themed sparkles */
-.winner-outlinePage-gold:hover::before {
+.pff-winner-outlinePage-gold:hover::before {
   content: '🌱';
   position: absolute;
   font-size: 12px;
@@ -1894,7 +1898,7 @@ left: 100%;
   animation: foodSparkle 4s ease-in-out infinite 1s;
 }
 
-.winner-outlinePage-gold:hover::after {
+.pff-winner-outlinePage-gold:hover::after {
   content: '🌿';
   position: absolute;
   font-size: 14px;
@@ -1917,11 +1921,11 @@ left: 100%;
 }
 
 /* Sparkle cursor effect */
-.winner-cards {
+.pff-winner-cards {
   cursor: pointer;
 }
 
-.winner-cards:active::after {
+.pff-winner-cards:active::after {
   content: '★';
   position: absolute;
   font-size: 16px;
@@ -1944,7 +1948,7 @@ left: 100%;
   }
 }
 /* Styling for "No activity" message */
-.no-activity-message {
+.pff-no-activity-message {
   position: relative;
   padding: 16px;
   margin: 20px 0;
@@ -1953,28 +1957,28 @@ left: 100%;
   border-radius: 8px;
 }
 
-.no-activity-message::before {
+.pff-no-activity-message::before {
   content: "⚠️";
   display: block;
   font-size: 24px;
   margin-bottom: 8px;
 }
 
-.no-activity-message p {
+.pff-no-activity-message p {
   margin: 8px 0;
   color: #5a6266;
   font-size: 15px;
   line-height: 1.4;
 }
 
-.no-activity-message .score-label {
+.pff-no-activity-message .pff-score-label {
   display: block;
   margin-top: 12px;
   font-weight: 600;
   color: #424c50;
 }
 
-.no-activity-message .score-value {
+.pff-no-activity-message .pff-score-value {
   font-size: 28px;
   color: #8dc73f;
   font-weight: 700;
@@ -1988,20 +1992,22 @@ left: 100%;
   100% { opacity: 0.8; }
 }
 
-.no-activity-message {
+.pff-no-activity-message {
   animation: pulse 3s infinite;
 }
 /* add upload css */
-.ad-upload-section {
+.pff-ad-upload-section {
   margin-top: 20px;
   text-align: center;
   background-color: #e6f4e6; /* Light green background */
   padding: 15px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  margin: 20px 0;
 }
 
-.ad-upload-section p {
+.pff-ad-upload-section p {
   color: #1a7a1a; /* Dark green text color */
   font-weight: 600;
   font-size: 16px;
@@ -2026,14 +2032,14 @@ left: 100%;
   }
 }
 
-.ad-upload-section form {
+.pff-ad-upload-section form {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
 }
 
-.ad-upload-section input[type="file"] {
+.pff-ad-upload-section input[type="file"] {
   padding: 5px;
   font-size: 14px;
   border: 1px solid #ccc;
@@ -2043,7 +2049,7 @@ left: 100%;
   background-color: #fff;
 }
 
-.ad-upload-section input[type="file"]::file-selector-button {
+.pff-ad-upload-section input[type="file"]::file-selector-button {
   padding: 5px 10px;
   background-color: #f0f0f0;
   border: 1px solid #ccc;
@@ -2053,7 +2059,7 @@ left: 100%;
 }
 
 /* Button with hover animation */
-.ad-upload-section button {
+.pff-ad-upload-section button {
   padding: 8px 20px;
   background-color: #228b22; /* Forest green button color */
   color: white;
@@ -2067,13 +2073,13 @@ left: 100%;
   transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-.ad-upload-section button:hover {
+.pff-ad-upload-section button:hover {
   background-color: #1a7a1a; /* Slightly darker green on hover */
   transform: scale(1.05); /* Slight scale-up on hover */
 }
 
 /* Ripple effect on button click */
-.ad-upload-section button::after {
+.pff-ad-upload-section button::after {
   content: '';
   position: absolute;
   width: 100%;
@@ -2087,24 +2093,24 @@ left: 100%;
   transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
-.ad-upload-section button:active::after {
+.pff-ad-upload-section button:active::after {
   opacity: 1;
   transform: scale(2);
   transition: 0s;
 }
 
-.ad-upload-section button:focus {
+.pff-ad-upload-section button:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(34, 139, 34, 0.3);
 }
 
-.ad-upload-section p[style*="color: red"] {
+.pff-ad-upload-section p[style*="color: red"] {
   color: #d32f2f;
   font-size: 14px;
   margin-top: 10px;
 }
 
-.ad-upload-section p[style*="color: #1a7a1a"] {
+.pff-ad-upload-section p[style*="color: #1a7a1a"] {
   color: #1a7a1a;
   font-size: 14px;
   margin-top: 10px;

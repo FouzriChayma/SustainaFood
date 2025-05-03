@@ -151,7 +151,7 @@ const Profile = () => {
   const getMedalSvg = (rank) => {
     if (rank === 1) {
       return (
-        <svg className="winner-icon winner-medals winner-slide-in-top" viewBox="0 0 1024 1024" width="80" height="80">
+        <svg className="pff-winner-icon pff-winner-medals pff-winner-slide-in-top" viewBox="0 0 1024 1024" width="80" height="80">
           <path d="M896 42.666667h-128l-170.666667 213.333333h128z" fill="#FF4C4C"></path>
           <path d="M768 42.666667h-128l-170.666667 213.333333h128z" fill="#3B8CFF"></path>
           <path d="M640 42.666667h-128L341.333333 256h128z" fill="#F1F1F1"></path>
@@ -163,13 +163,13 @@ const Profile = () => {
           <path d="M512 661.333333m-256 0a256 0 1 0 512 0 256 256 0 1 0-512 0Z" fill="#E3A815"></path>
           <path d="M512 661.333333m-213.333333 0a213.333333 213.333333 0 1 0 426.666666 0 213.333333 213.333333 0 1 0-426.666666 0Z" fill="#F5CF41"></path>
           <path d="M277.333333 256h469.333334a21.333333 21.333333 0 0 1 0 42.666667h-469.333334a21.333333 0 0 1 0-42.666667z" fill="#D19A0E"></path>
-          <path d="M277.333333 264.533333a12.8 12.8 0 1 0 0 25.6h469.333334a12.8 12.8 0 1 0 0-25.6h-469.333334z m0-17.066666h469.333334a29.866667 29.866667 0 1 1 0 59.733333h-469.333334a29.866667 0 1 1 0-59.733333z" fill="#F9D525"></path>
+          <path d="M277.333333 264.533333a12.8 12.8 0 1 0 0 25.6h469.333334a12.8 12.8 0 1 0 0-25.6h-469.333334z m0-17.066666h469.333334a29.866667 29.866667 0 1 1 0 59.733333h-469.333334a29.866667 29.866667 0 1 1 0-59.733333z" fill="#F9D525"></path>
           <path d="M512 746.666667l-100.309333 52.736 19.157333-111.701334-81.152-79.104 112.128-16.298666L512 490.666667l50.176 101.632 112.128 16.298666-81.152 79.104 19.157333 111.701334z" fill="#FFF2A0"></path>
         </svg>
       );
     } else if (rank === 2) {
       return (
-        <svg className="winner-icon winner-medals winner-slide-in-top" viewBox="0 0 1024 1024" width="80" height="80">
+        <svg className="pff-winner-icon pff-winner-medals pff-winner-slide-in-top" viewBox="0 0 1024 1024" width="80" height="80">
           <path d="M896 42.666667h-128l-170.666667 213.333333h128z" fill="#FF4C4C"></path>
           <path d="M768 42.666667h-128l-170.666667 213.333333h128z" fill="#3B8CFF"></path>
           <path d="M640 42.666667h-128L341.333333 256h128z" fill="#F1F1F1"></path>
@@ -181,13 +181,13 @@ const Profile = () => {
           <path d="M512 661.333333m-256 0a256 0 1 0 512 0 256 256 0 1 0-512 0Z" fill="#C0C0C0"></path>
           <path d="M512 661.333333m-213.333333 0a213.333333 213.333333 0 1 0 426.666666 0 213.333333 213.333333 0 1 0-426.666666 0Z" fill="#D3D3D3"></path>
           <path d="M277.333333 256h469.333334a21.333333 21.333333 0 0 1 0 42.666667h-469.333334a21.333333 0 0 1 0-42.666667z" fill="#A9A9A9"></path>
-          <path d="M277.333333 264.533333a12.8 12.8 0 1 0 0 25.6h469.333334a12.8 12.8 0 1 0 0-25.6h-469.333334z m0-17.066666h469.333334a29.866667 29.866667 0 1 1 0 59.733333h-469.333334a29.866667 0 1 1 0-59.733333z" fill="#B0B0B0"></path>
+          <path d="M277.333333 264.533333a12.8 12.8 0 1 0 0 25.6h469.333334a12.8 12.8 0 1 0 0-25.6h-469.333334z m0-17.066666h469.333334a29.866667 29.866667 0 1 1 0 59.733333h-469.333334a29.866667 29.866667 0 1 1 0-59.733333z" fill="#B0B0B0"></path>
           <path d="M512 746.666667l-100.309333 52.736 19.157333-111.701334-81.152-79.104 112.128-16.298666L512 490.666667l50.176 101.632 112.128 16.298666-81.152 79.104 19.157333 111.701334z" fill="#FFFFFF"></path>
         </svg>
       );
     } else if (rank === 3) {
       return (
-        <svg className="winner-icon winner-medals winner-slide-in-top" viewBox="0 0 1024 1024" width="80" height="80">
+        <svg className="pff-winner-icon pff-winner-medals pff-winner-slide-in-top" viewBox="0 0 1024 1024" width="80" height="80">
           <path d="M896 42.666667h-128l-170.666667 213.333333h128z" fill="#FF4C4C"></path>
           <path d="M768 42.666667h-128l-170.666667 213.333333h128z" fill="#3B8CFF"></path>
           <path d="M640 42.666667h-128L341.333333 256h128z" fill="#F1F1F1"></path>
@@ -199,7 +199,7 @@ const Profile = () => {
           <path d="M512 661.333333m-256 0a256 0 1 0 512 0 256 256 0 1 0-512 0Z" fill="#CD7F32"></path>
           <path d="M512 661.333333m-213.333333 0a213.333333 213.333333 0 1 0 426.666666 0 213.333333 213.333333 0 1 0-426.666666 0Z" fill="#E4A362"></path>
           <path d="M277.333333 256h469.333334a21.333333 21.333333 0 0 1 0 42.666667h-469.333334a21.333333 0 0 1 0-42.666667z" fill="#B87333"></path>
-          <path d="M277.333333 264.533333a12.8 12.8 0 1 0 0 25.6h469.333334a12.8 12.8 0 1 0 0-25.6h-469.333334z m0-17.066666h469.333334a29.866667 29.866667 0 1 1 0 59.733333h-469.333334a29.866667 0 1 1 0-59.733333z" fill="#C68E55"></path>
+          <path d="M277.333333 264.533333a12.8 12.8 0 1 0 0 25.6h469.333334a12.8 12.8 0 1 0 0-25.6h-469.333334z m0-17.066666h469.333334a29.866667 29.866667 0 1 1 0 59.733333h-469.333334a29.866667 29.866667 0 1 1 0-59.733333z" fill="#C68E55"></path>
           <path d="M512 746.666667l-100.309333 52.736 19.157333-111.701334-81.152-79.104 112.128-16.298666L512 490.666667l50.176 101.632 112.128 16.298666-81.152 79.104 19.157333 111.701334z" fill="#FFF2A0"></path>
         </svg>
       );
@@ -211,7 +211,7 @@ const Profile = () => {
   const getTrophySvg = (rank) => {
     if (rank === 1) {
       return (
-        <svg className="winner-icon winner-trophy" viewBox="0 0 1024 1024" width="160" height="160">
+        <svg className="pff-winner-icon pff-winner-trophy" viewBox="0 0 1024 1024" width="160" height="160">
           <path d="M469.333333 682.666667h85.333334v128h-85.333334zM435.2 810.666667h153.6c4.693333 0 8.533333 3.84 8.533333 8.533333v34.133333h-170.666666v-34.133333c0-4.693333 3.84-8.533333 8.533333-8.533333z" fill="#ea9518"></path>
           <path d="M384 853.333333h256a42.666667 42.666667 0 0 1 42.666667 42.666667v42.666667H341.333333v-42.666667a42.666667 42.666667 0 0 1 42.666667-42.666667z" fill="#6e4a32"></path>
           <path d="M213.333333 256v85.333333a42.666667 42.666667 0 0 0 85.333334 CARDINAL 0V256H213.333333zM170.666667 213.333333h170.666666v128a85.333333 85.333333 0 1 1-170.666666 0V213.333333zM725.333333 256v85.333333a42.666667 42.666667 0 0 0 85.333334 0V256h-85.333334z m-42.666666-42.666667h170.666666v128a85.333333 85.333333 0 1 1-170.666666 0V213.333333z" fill="#f4ea2a"></path>
@@ -221,7 +221,7 @@ const Profile = () => {
       );
     } else if (rank === 2) {
       return (
-        <svg className="winner-icon winner-trophy" viewBox="0 0 1024 1024" width="160" height="160">
+        <svg className="pff-winner-icon pff-winner-trophy" viewBox="0 0 1024 1024" width="160" height="160">
           <path d="M469.333333 682.666667h85.333334v128h-85.333334zM435.2 810.666667h153.6c4.693333 0 8.533333 3.84 8.533333 8.533333v34.133333h-170.666666v-34.133333c0-4.693333 3.84-8.533333 8.533333-8.533333z" fill="#A9A9A9"></path>
           <path d="M384 853.333333h256a42.666667 42.666667 0 0 1 42.666667 42.666667v42.666667H341.333333v-42.666667a42.666667 42.666667 0 0 1 42.666667-42.666667z" fill="#6e4a32"></path>
           <path d="M213.333333 256v85.333333a42.666667 42.666667 0 0 0 85.333334 0V256H213.333333zM170.666667 213.333333h170.666666v128a85.333333 85.333333 0 1 1-170.666666 0V213.333333zM725.333333 256v85.333333a42.666667 42.666667 0 0 0 85.333334 0V256h-85.333334z m-42.666666-42.666667h170.666666v128a85.333333 85.333333 0 1 1-170.666666 0V213.333333z" fill="#D3D3D3"></path>
@@ -231,7 +231,7 @@ const Profile = () => {
       );
     } else if (rank === 3) {
       return (
-        <svg className="winner-icon winner-trophy" viewBox="0 0 1024 1024" width="160" height="160">
+        <svg className="pff-winner-icon pff-winner-trophy" viewBox="0 0 1024 1024" width="160" height="160">
           <path d="M469.333333 682.666667h85.333334v128h-85.333334zM435.2 810.666667h153.6c4.693333 0 8.533333 3.84 8.533333 8.533333v34.133333h-170.666666v-34.133333c0-4.693333 3.84-8.533333 8.533333-8.533333z" fill="#B87333"></path>
           <path d="M384 853.333333h256a42.666667 42.666667 0 0 1 42.666667 42.666667v42.666667H341.333333v-42.666667a42.666667 42.666667 0 0 1 42.666667-42.666667z" fill="#6e4a32"></path>
           <path d="M213.333333 256v85.333333a42.666667 42.666667 0 0 0 85.333334 0V256H213.333333zM170.666667 213.333333h170.666666v128a85.333333 85.333333 0 1 1-170.666666 0V213.333333zM725.333333 256v85.333333a42.666667 42.666667 0 0 0 85.333334 0V256h-85.333334z m-42.666666-42.666667h170.666666v128a85.333333 85.333333 0 1 1-170.666666 0V213.333333z" fill="#E4A362"></path>
@@ -248,7 +248,7 @@ const Profile = () => {
     return Array.from({ length: 15 }).map((_, i) => (
       <div
         key={i}
-        className="winner-particle"
+        className="pff-winner-particle"
         style={{
           left: `${Math.random() * 100}%`,
           backgroundColor: i % 5 === 0 ? '#ffd700' : i % 5 === 1 ? '#c0c0c0' : i % 5 === 2 ? '#cd7f32' : i % 5 === 3 ? '#ff6b6b' : '#1dd1a1',
@@ -262,18 +262,18 @@ const Profile = () => {
   return (
     <>
       <Navbar />
-      <div className="container-profile">
+      <div className="pff-container-profile">
         {welcomeMessage && (
-          <div className="welcome-message">
-            <div className="welcome-message-content">
-              <div className="welcome-icon">🎉</div>
+          <div className="pff-welcome-message">
+            <div className="pff-welcome-message-content">
+              <div className="pff-welcome-icon">🎉</div>
               <span>{welcomeMessage}</span>
             </div>
-            <div className="confetti-container">
+            <div className="pff-confetti-container">
               {Array.from({ length: 20 }).map((_, i) => (
                 <div
                   key={i}
-                  className={`confetti confetti-${i % 5}`}
+                  className={`pff-confetti pff-confetti-${i % 5}`}
                   style={{
                     left: `${Math.random() * 100}%`,
                     animationDelay: `${Math.random() * 3}s`,
@@ -285,10 +285,10 @@ const Profile = () => {
           </div>
         )}
         <header>
-          <div className="profile-header">
+          <div className="pff-profile-header">
             <h1>My Profile</h1>
-            <div className="date-switcher">
-              <button className="btnProfile">
+            <div className="pff-date-switcher">
+              <button className="pff-btnProfile">
                 <Link to="/edit-profile">
                   <img
                     style={{ marginRight: "8px", marginTop: "6px" }}
@@ -303,23 +303,23 @@ const Profile = () => {
           </div>
         </header>
 
-        <div className="main">
-          <div className="left-column">
-            <div className="profile-card">
-              <div className="card-white">
-                <button className="mail"></button>
-                <div className="profile-pic">
+        <div className="pff-main">
+          <div className="pff-left-column">
+            <div className="pff-profile-card">
+              <div className="pff-card-white">
+                <button className="pff-mail"></button>
+                <div className="pff-profile-pic">
                   <img src={profilePhotoUrl || "/placeholder.svg"} alt="Profile" />
                 </div>
-                <div className="bottom">
-                  <div className="content">
+                <div className="pff-bottom">
+                  <div className="pff-content">
                     <div style={{ display: "flex" }}>
                       <div>
-                        <span className="name">Description</span>
+                        <span className="pff-name">Description</span>
                       </div>
                       <div>
                         <button
-                          className="bottom-editdesc name"
+                          className="pff-bottom-editdesc pff-name"
                           onClick={() => {
                             setIsEditing(true);
                             setDescriptionError("");
@@ -332,7 +332,7 @@ const Profile = () => {
                     {isEditing ? (
                       <input
                         type="text"
-                        className="description-input"
+                        className="pff-description-input"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         onBlur={handleSave}
@@ -340,18 +340,18 @@ const Profile = () => {
                         autoFocus
                       />
                     ) : (
-                      <span className="about-me">{description || "No description yet..."}</span>
+                      <span className="pff-about-me">{description || "No description yet..."}</span>
                     )}
-                    {descriptionError && <p className="error-message">{descriptionError}</p>}
+                    {descriptionError && <p className="pff-error-message">{descriptionError}</p>}
                   </div>
-                  <div className="bottom-bottom">
-                    <h1 className="userrole">{user?.role || "Loading..."}</h1>
+                  <div className="pff-bottom-bottom">
+                    <h1 className="pff-userrole">{user?.role || "Loading..."}</h1>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="detailed-info">
+            <div className="pff-detailed-info">
               <h3>Detailed Information</h3>
               <ul>
                 <li><strong>Name:</strong> {user?.name || "Loading..."}</li>
@@ -362,30 +362,30 @@ const Profile = () => {
             </div>
           </div>
 
-          <div className="center-column">
+          <div className="pff-center-column">
             <RoleSpecificProfile user={user} />
           </div>
 
-          <div className="right-column">
-            <div className="winner-cards">
+          <div className="pff-right-column">
+            <div className="pff-winner-cards">
               <div
-                className={`winner-outlinePage ${
+                className={`pff-winner-outlinePage ${
                   gamificationData.rank === 1
-                    ? "winner-outlinePage-gold"
+                    ? "pff-winner-outlinePage-gold"
                     : gamificationData.rank === 2
-                    ? "winner-outlinePage-silver"
+                    ? "pff-winner-outlinePage-silver"
                     : gamificationData.rank === 3
-                    ? "winner-outlinePage-bronze"
-                    : "winner-outlinePage-none"
+                    ? "pff-winner-outlinePage-bronze"
+                    : "pff-winner-outlinePage-none"
                 }`}
               >
-                <div className="winner-particles">{renderParticles()}</div>
+                <div className="pff-winner-particles">{renderParticles()}</div>
                 {gamificationData.rank <= 3 && gamificationData.rank > 0 ? getTrophySvg(gamificationData.rank) : null}
                 {gamificationError ? (
-                  <p className="winner-ranking_number">{gamificationError}</p>
+                  <p className="pff-winner-ranking_number">{gamificationError}</p>
                 ) : gamificationData.rank === 0 ? (
                   <p
-                    className="no-activity-message"
+                    className="pff-no-activity-message"
                     dangerouslySetInnerHTML={{
                       __html:
                         user?.role === "transporter"
@@ -398,9 +398,9 @@ const Profile = () => {
                     }}
                   />
                 ) : (                
-                  <p className="winner-ranking_number">
+                  <p className="pff-winner-ranking_number">
                     {gamificationData.rank !== null ? gamificationData.rank : "N/A"}
-                    <span className="winner-ranking_word">
+                    <span className="pff-winner-ranking_word">
                       {gamificationData.rank === 1
                         ? "st"
                         : gamificationData.rank === 2
@@ -411,37 +411,37 @@ const Profile = () => {
                     </span>
                   </p>
                 )}
-                <div className="winner-splitLine"></div>
-                <svg className="winner-icon winner-userAvatar" viewBox="0 0 1024 1024" width="25" height="25">
+                <div className="pff-winner-splitLine"></div>
+                <svg className="pff-winner-icon pff-winner-userAvatar" viewBox="0 0 1024 1024" width="25" height="25">
                   <path
                     d="M512 0C228.693 0 0 228.693 0 512s228.693 512 512 512 512-228.693 512-512S795.307 0 512 0z m0 69.973c244.053 0 442.027 197.973 442.027 442.027 0 87.04-25.6 168.96-69.973 237.227-73.387-78.507-170.667-133.12-281.6-151.893 69.973-34.133 119.467-105.813 119.467-187.733 0-116.053-93.867-209.92-209.92-209.92s-209.92 93.867-209.92 209.92c0 83.627 47.787 155.307 119.467 187.733-110.933 20.48-208.213 75.093-281.6 153.6-44.373-68.267-69.973-150.187-69.973-238.933 0-244.053 197.973-442.027-442.027 442.027-442.027z"
                     fill="#8a8a8a"
                   ></path>
                 </svg>
-                <p className="winner-userName">{user?.name || "Loading..."}</p>
+                <p className="pff-winner-userName">{user?.name || "Loading..."}</p>
               </div>
-              <div className="winner-detailPage">
+              <div className="pff-winner-detailPage">
                 {getMedalSvg(gamificationData.rank)}
-                <div className="winner-gradesBox">
-                  <svg className="winner-icon winner-gradesIcon" viewBox="0 0 1024 1024" width="60" height="60">
+                <div className="pff-winner-gradesBox">
+                  <svg className="pff-winner-icon pff-winner-gradesIcon" viewBox="0 0 1024 1024" width="60" height="60">
                     <path d="M382.6 805H242.2c-6.7 0-12.2-5.5-12.2-12.2V434.3c0-6.7 5.5-12.2 12.2-12.2h140.4c6.7 0 12.2 5.5 12.2 12.2v358.6c0 6.6-5.4 12.1-12.2 12.1z" fill="#ea9518"></path>
                     <path d="M591.1 805H450.7c-6.7 0-12.2-5.5-12.2-12.2V254.9c0-6.7 5.5-12.2 12.2-12.2h140.4c6.7 0 12.2 5.5 12.2 12.2v537.9c0 6.7-5.5 12.2-12.2 12.2z" fill="#f2be45"></path>
                     <path d="M804.4 805H663.9c-6.7 0-12.2-5.5-12.2-12.2v-281c0-6.7 5.5-12.2 12.2-12.2h140.4c6.7 0 12.2 5.5 12.2 12.2v281c0.1 6.7-5.4 12.2-12.1 12.2z" fill="#ea9518"></path>
                   </svg>
-                  <p className="winner-gradesBoxLabel">
+                  <p className="pff-winner-gradesBoxLabel">
                     {user?.role === "transporter"
                       ? "DELIVERY SCORE"
                       : user?.role === "student" || user?.role === "ong"
                       ? "REQUEST SCORE"
                       : "DONATION SCORE"}
                   </p>
-                  <p className="winner-gradesBoxNum">{gamificationData.score || 0}</p>
+                  <p className="pff-winner-gradesBoxNum">{gamificationData.score || 0}</p>
                 </div>
               </div>
               
             </div>
             {(gamificationData.rank === 1 || gamificationData.rank === 2 || gamificationData.rank === 3)  && ['restaurant', 'supermarket', 'personaldonor'].includes(user?.role) && (
-  <div className="ad-upload-section" style={{ marginTop: '20px', textAlign: 'center' }}>
+  <div className="pff-ad-upload-section" style={{ marginTop: '20px', textAlign: 'center' }}>
     <p style={{ color: '#1a7a1a', fontWeight: '600', marginBottom: '10px' }}>
     🎉 Congratulations! As a top {gamificationData.rank} donor, you can upload your advertisement!
     </p>
@@ -470,14 +470,14 @@ const Profile = () => {
     {adUploadSuccess && <p style={{ color: '#1a7a1a', marginTop: '10px' }}>{adUploadSuccess}</p>}
   </div>
 )}
-            <div className="inbox-section">
+            <div className="pff-inbox-section">
               <h3>Feedbacks</h3>
-              <div className="feedback-cards">
+              <div className="pff-feedback-cards">
                 {feedbacks.length > 0 ? (
                   feedbacks.map((feedback) => (
-                    <div className="feedback-card" key={feedback._id}>
-                      <div className="message">
-                        <div className="message-header feedback-tip">
+                    <div className="pff-feedback-card" key={feedback._id}>
+                      <div className="pff-message">
+                        <div className="pff-message-header pff-feedback-tip">
                           <img
                             src={feedback.reviewer?.photo ? `http://localhost:3000/${feedback.reviewer.photo}` : pdp}
                             alt="Avatar"
@@ -488,7 +488,7 @@ const Profile = () => {
                             <p>{feedback.comment}</p>
                           </div>
                         </div>
-                        <span className="time">{new Date(feedback.createdAt).toLocaleString()}</span>
+                        <span className="pff-time">{new Date(feedback.createdAt).toLocaleString()}</span>
                       </div>
                     </div>
                   ))

@@ -180,3 +180,20 @@ export const updateUserAvailability = async (userId, isAvailable) => {
     throw error.response?.data || { message: 'Failed to update user availability' };
   }
 };
+export const getAllAdvertisements = () =>
+  axios.get('http://localhost:3000/users/advertisements', {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token')}`,
+    },
+  });
+
+export const updateAdvertisementStatus = (adId, status) =>
+  axios.put(
+    `http://localhost:3000/users/advertisements/${adId}/status`,
+    { status },
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    }
+  );

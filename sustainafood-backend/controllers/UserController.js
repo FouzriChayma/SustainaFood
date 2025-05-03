@@ -1172,6 +1172,7 @@ const storage = multer.diskStorage({
   },
 });
 
+// ads
 // File filter to accept only images
 const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith('image/')) {
@@ -1187,22 +1188,58 @@ const upload = multer({
   fileFilter: fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 }, // Limit to 5MB
 });
-// Updated endpoint to handle advertisement image upload
+
+// Upload advertisement
 const uploadAdvertisement = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
+
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided. Please upload a valid image file.' });
     }
-    // Update user with the advertisement image path
-    user.advertisementImage = req.file.path;
-    await user.save();
+
+    // Check if user is among top 3 donors
+    const topDonors = await Donation.aggregate([
+      { $match: { status: "fulfilled" } },
+      {
+        $group: {
+          _id: "$donor",
+          donationCount: { $sum: 1 },
+          totalItems: { $sum: { $add: [{ $sum: "$products.quantity" }, { $sum: "$meals.quantity" }] } },
+        },
+      },
+      { $sort: { donationCount: -1, totalItems: -1 } },
+      { $limit: 3 },
+    ]);
+
+    const isTopDonor = topDonors.some(donor => donor._id.toString() === req.params.id);
+    if (!isTopDonor) {
+      return res.status(403).json({ error: 'Only top 3 donors can upload advertisements' });
+    }
+
+    // Check if user already has a pending or approved advertisement
+    const existingAd = await Advertisement.findOne({
+      user: req.params.id,
+      status: { $in: ['pending', 'approved'] },
+    });
+    if (existingAd) {
+      return res.status(400).json({ error: 'You already have a pending or approved advertisement' });
+    }
+
+    // Create new advertisement
+    const advertisement = new Advertisement({
+      user: req.params.id,
+      imagePath: req.file.path,
+      status: 'pending',
+    });
+    await advertisement.save();
+
     res.status(200).json({
-      message: 'Advertisement uploaded successfully',
-      advertisementImage: user.advertisementImage,
+      message: 'Advertisement uploaded successfully and is pending approval',
+      advertisementId: advertisement._id,
     });
   } catch (error) {
     console.error('Error uploading advertisement:', error);
@@ -1210,7 +1247,7 @@ const uploadAdvertisement = async (req, res) => {
   }
 };
 
-  // Get top donors' advertisements
+// Get top donors' approved advertisements
 const getTopDonorAdvertisement = async (req, res) => {
   try {
     const topDonors = await Donation.aggregate([
@@ -1224,28 +1261,78 @@ const getTopDonorAdvertisement = async (req, res) => {
       },
       { $sort: { donationCount: -1, totalItems: -1 } },
       { $limit: 3 },
-      { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'user' } },
+    ]);
+
+    const donorIds = topDonors.map(donor => donor._id);
+
+    const advertisements = await Advertisement.aggregate([
+      { $match: { user: { $in: donorIds }, status: 'approved' } },
+      { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
       { $unwind: '$user' },
-      {
-        $match: {
-          'user.role': { $in: ['restaurant', 'supermarket', 'personaldonor'] },
-          'user.advertisementImage': { $exists: true, $ne: null },
-        },
-      },
       {
         $project: {
           name: '$user.name',
-          advertisementImage: '$user.advertisementImage',
+          advertisementImage: '$imagePath',
         },
       },
     ]);
-    if (!topDonors || topDonors.length === 0) {
-      return res.status(404).json({ error: 'No top donors with advertisements found' });
+
+    if (!advertisements || advertisements.length === 0) {
+      return res.status(404).json({ error: 'No approved advertisements found for top donors' });
     }
-    res.status(200).json(topDonors);
+
+    res.status(200).json(advertisements);
   } catch (error) {
     console.error('Error fetching top donors advertisements:', error);
     res.status(500).json({ error: 'Server error while fetching top donors advertisements' });
+  }
+};
+
+// Get all advertisements for admin (back-office)
+const getAllAdvertisements = async (req, res) => {
+  try {
+    const advertisements = await Advertisement.find()
+      .populate('user', 'name email role')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(advertisements);
+  } catch (error) {
+    console.error('Error fetching advertisements:', error);
+    res.status(500).json({ error: 'Server error while fetching advertisements' });
+  }
+};
+
+// Approve or reject an advertisement
+const updateAdvertisementStatus = async (req, res) => {
+  try {
+    const { adId } = req.params;
+    const { status } = req.body;
+
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status. Must be "approved" or "rejected"' });
+    }
+
+    const advertisement = await Advertisement.findById(adId);
+    if (!advertisement) {
+      return res.status(404).json({ error: 'Advertisement not found' });
+    }
+
+    // Check if user is admin
+    const user = await User.findById(req.user.id); // Assumes req.user is set by auth middleware
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Unauthorized: Only admins can update advertisement status' });
+    }
+
+    advertisement.status = status;
+    await advertisement.save();
+
+    res.status(200).json({
+      message: `Advertisement ${status} successfully`,
+      advertisement,
+    });
+  } catch (error) {
+    console.error('Error updating advertisement Stuart: Error updating advertisement status:', error);
+    res.status(500).json({ error: 'Server error while updating advertisement status' });
   }
 };
 const getTopTransporter = async (req, res) => {
@@ -1325,5 +1412,8 @@ module.exports = {updateUserAvailability,getUsers,
     getTopDonorAdvertisement,
     upload,
     uploadAdvertisement,
+    updateAdvertisementStatus,
+    getAllAdvertisements,
     getTopTransporter,
+
 };

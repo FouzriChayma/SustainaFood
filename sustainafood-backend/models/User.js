@@ -83,7 +83,6 @@ const userSchema = new Schema({
       default: [0, 0],
     },
   },
-  advertisementImage: { type: String } // New field for advertisement image
 });
 
 // Index géospatial pour les recherches de localisation

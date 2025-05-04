@@ -580,33 +580,33 @@ useEffect(() => {
             <ErrorMessage>{errorMessage}</ErrorMessage>
           ) : optimizedRoute && optimizedRoute.geometries.length > 0 ? (
             <>
-              <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Optimized Route (Dashed)</p>
-              <p style={{ marginBottom: '5px' }}>
+              <p style={{ fontWeight: 'bold', marginBottom: '5px', color:'black',fontSize:'13px' }}>Optimized Route (Dashed)</p>
+              <p style={{ marginBottom: '5px',color:'black' ,fontSize:'13px'}}>
                 <strong>Vehicle Type:</strong> {vehicleType}
               </p>
-              <p style={{ marginBottom: '5px' }}>
+              <p style={{ marginBottom: '5px' ,color:'black',fontSize:'13px'}}>
                 <strong>Weather:</strong> {weather}
               </p>
               {optimizedRoute.geometries.map((segment, index) => (
                 <div key={`optimized-${index}`}>
                   <RouteLabel>
-                    <RouteColor style={{ backgroundColor: index === 0 ? '#0000FF' : '#00FF00' }} />
+                    <RouteColor style={{ backgroundColor: index === 0 ? '#0000FF' : '#00FF00' ,fontSize:'13px',color:'black'}} />
                     {segment.from} to {segment.to}
                   </RouteLabel>
                 
-                  <RouteLabel style={{ marginLeft: '20px' }}>
+                  <RouteLabel style={{ marginLeft: '20px', color:'black' ,fontSize:'13px' }}>
                     AI: {segment.aiDuration !== null ? formatDuration(segment.aiDuration) : 'N/A'}
                   </RouteLabel>
-                  <RouteLabel style={{ marginLeft: '20px' }}>
+                  <RouteLabel style={{ marginLeft: '20px', color:'black' }}>
                     Distance: {formatDistance(segment.distance)}
                   </RouteLabel>
                 </div>
               ))}
             
-              <p style={{ fontWeight: 'bold', marginTop: '5px' }}>
+              <p style={{ fontWeight: 'bold', marginTop: '5px', color:'black' ,fontSize:'13px'}}>
                 Total AI-Predicted Duration: {totalAIPredictedDuration > 0 ? formatDuration(totalAIPredictedDuration) : 'N/A'}
               </p>
-              <p style={{ fontWeight: 'bold', marginTop: '5px' }}>
+              <p style={{ fontWeight: 'bold', marginTop: '5px', color:'black',fontSize:'13px' }}>
                 Total Distance: {formatDistance(totalDistance)}
               </p>
             </>

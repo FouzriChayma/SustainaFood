@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import donation1 from "../assets/images/home1.png"
-import donation2 from "../assets/images/home2.png"
-import donation3 from "../assets/images/home3.png"
+import donation1 from "../assets/images/home1.png";
+import donation2 from "../assets/images/home2.png";
+import donation3 from "../assets/images/home3.png";
 import patternBg from '../assets/images/bg.png';
 import { FaSearch, FaFilter } from "react-icons/fa";
 import { getUserById } from "../api/userService";
@@ -141,17 +141,17 @@ const SlideImage = styled.img`
   animation: ${fadeSlide} 12s infinite;
   animation-fill-mode: forwards;
   filter: brightness(1.05) contrast(1.05);
-`
+`;
 
 const Slide1 = styled(SlideImage)`
   animation-delay: 0s;
-`
+`;
 const Slide2 = styled(SlideImage)`
   animation-delay: 4s;
-`
+`;
 const Slide3 = styled(SlideImage)`
   animation-delay: 8s;
-`
+`;
 
 const Wave = styled.svg`
   position: absolute;
@@ -165,8 +165,35 @@ const Wave = styled.svg`
 
 const SectionWrapper = styled.section`
   padding: 60px 80px;
-  background: #fff;
   text-align: left;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: -60px;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: #ffffff;
+    z-index: 0;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 30px;
+    right: -50px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: #ffffff;
+    z-index: 0;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  }
 `;
 
 const Container = styled.div`
@@ -174,6 +201,8 @@ const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   text-align: left;
+  position: relative;
+  z-index: 1;
 `;
 
 const Title = styled.h1`
@@ -246,27 +275,6 @@ const Select = styled.select`
   }
 `;
 
-const ContentList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  text-align: left;
-`;
-
-const LoadingMessage = styled.div`
-  font-size: 18px;
-  color: #555;
-  text-align: left;
-  padding: 40px;
-`;
-
-const NoDeliveries = styled.p`
-  font-size: 18px;
-  color: #888;
-  text-align: left;
-  padding: 20px;
-`;
-
 const PaginationControls = styled.div`
   display: flex;
   justify-content: center;
@@ -300,211 +308,417 @@ const PaginationControls = styled.div`
   }
 `;
 
-// Delivery Card
-const DeliveryCard = styled.div`
-  background: #f8f9fa;
-  border-left: 4px solid #228b22;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease-in-out;
-  text-align: left;
+// Animation keyframes
+const slideIn = keyframes`
+  0% { opacity: 0; transform: translateY(30px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+`;
+const glow = keyframes`
+  0% { box-shadow: 0 0 5px rgba(34, 139, 34, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(34, 139, 34, 0.4); }
+  100% { box-shadow: 0 0 5px rgba(34, 139, 34, 0.2); }
+`;
+const shimmer = keyframes`
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+`;
 
-  &:hover {
-    transform: scale(1.02);
-  }
-
+// Content list (container for cards)
+const ContentList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  padding: 30px;
+  background: linear-gradient(145deg, #f0f8f0, #e6f2e6);
+  border-radius: 20px;
+  margin: 20px 0;
+  justify-content: center;
   @media (max-width: 768px) {
+    flex-direction: column;
     padding: 15px;
   }
 `;
 
+// Loading message
+const LoadingMessage = styled.div`
+  text-align: center;
+  font-size: 20px;
+  color: #228b22;
+  padding: 50px;
+  background: #ffffff;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+`;
+
+// No deliveries message (empty state)
+const NoDeliveries = styled.div`
+  text-align: center;
+  padding: 80px 30px;
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  margin: 40px auto;
+  max-width: 700px;
+  font-size: 20px;
+  color: #3a5a3a;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+  &::before {
+    content: '🌱';
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    font-size: 100px;
+    opacity: 0.1;
+    transform: rotate(20deg);
+  }
+`;
+
+// Delivery card
+const DeliveryCard = styled.div`
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 30px;
+  position: relative;
+  overflow: hidden;
+  animation: ${slideIn} 0.6s ease-out forwards;
+  border: 1px solid rgba(34, 139, 34, 0.1);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  width: 100%;
+  max-width: 1158px;
+  flex-direction: row;
+  gap: 30px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(90deg, #228b22, #56ab2f);
+    border-radius: 20px 20px 0 0;
+  }
+  &:hover {
+    transform: translateY(-8px);
+    animation: ${glow} 2s infinite;
+  }
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding: 20px;
+    max-width: 100%;
+  }
+`;
+
+// Profile info section (donor, transporter, recipient)
 const ProfileInfo = styled.div`
+  flex: 1;
+  min-width: 200px;
   display: flex;
   align-items: center;
   gap: 15px;
-  margin-bottom: 15px;
-  text-align: left;
-
+  padding: 10px 15px;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #e6f2e6, #f0f8f0);
+  border-radius: 10px;
+  border-left: 4px solid #56ab2f;
+  transition: transform 0.3s ease, background 0.3s ease;
+  &:hover {
+    transform: translateX(5px);
+    background: linear-gradient(135deg, #f0f8f0, #e6f2e6);
+  }
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: flex-start;
+    gap: 10px;
+    min-width: 100%;
   }
 `;
 
+// Profile image
 const ProfileImg = styled.img`
-  width: 50px;
-  height: 50px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #228b22;
-  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(34, 139, 34, 0.3);
+  }
 `;
 
+// Profile text
 const ProfileText = styled.p`
   margin: 0;
-  font-size: 16px;
-  font-weight: bold;
-  color: #495057;
-  cursor: pointer;
-  text-align: left;
-
+  font-size: 15px;
+  color: #2e4a2e;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: color 0.3s ease;
   &:hover {
     color: #228b22;
-    text-decoration: underline;
+  }
+  &::before {
+    font-size: 14px;
+  }
+  @media (max-width: 768px) {
+    font-size: 14px;
   }
 `;
 
+// Delivery details section
 const DeliveryDetails = styled.div`
-  margin-bottom: 15px;
-  text-align: left;
+  flex: 2;
+  min-width: 300px;
+  padding: 15px;
+  background: linear-gradient(145deg, #fafafa, #f5f5f5);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 15px;
+  @media (max-width: 768px) {
+    flex-direction: column;
+    min-width: 100%;
+  }
 `;
 
+// Delivery detail
 const DeliveryDetail = styled.p`
   font-size: 14px;
-  color: #495057;
-  margin: 5px 0;
-  text-align: left;
-
+  color: #3a5a3a;
+  margin: 8px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, background 0.3s ease;
+  flex: 1;
+  min-width: 200px;
+  &:hover {
+    transform: scale(1.02);
+    background: #f0f8f0;
+  }
   strong {
-    color: #222;
+    color: #1a7a1a;
     font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    &::before {
+      content: '📌';
+      font-size: 14px;
+    }
+  }
+  @media (max-width: 768px) {
+    min-width: 100%;
   }
 `;
 
+// Delivery status badge
+const DeliveryStatus = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 600;
+  &.pending {
+    background: linear-gradient(90deg, #fff3cd, #ffeeba);
+    color: #856404;
+  }
+  &.in_transit {
+    background: linear-gradient(90deg, #cce5ff, #b8daff);
+    color: #004085;
+  }
+  &.delivered {
+    background: linear-gradient(90deg, #d4edda, #c3e6cb);
+    color: #155724;
+  }
+  &.cancelled {
+    background: linear-gradient(90deg, #f8d7da, #f5c6cb);
+    color: #721c24;
+  }
+  &::before {
+    content: '🚛';
+    margin-right: 5px;
+    font-size: 14px;
+  }
+`;
+
+// Item section
 const ItemSection = styled.div`
-  margin-bottom: 15px;
-  text-align: left;
+  flex: 1;
+  min-width: 250px;
+  padding: 15px;
+  background: #f0f8f0;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  @media (max-width: 768px) {
+    min-width: 100%;
+  }
+  &::before {
+    content: '🍴';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 30px;
+    opacity: 0.1;
+  }
 `;
 
+// Items title
 const ItemsTitle = styled.h4`
-  font-size: 16px;
-  color: #222;
-  margin: 0 0 10px;
-  text-align: left;
+  font-size: 17px;
+  color: #228b22;
+  margin: 0 0 15px;
+  font-weight: 600;
+  position: relative;
+  display: inline-block;
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 50%;
+    height: 2px;
+    background: linear-gradient(90deg, #228b22, #56ab2f);
+    border-radius: 2px;
+  }
 `;
 
+// Item list
 const ItemList = styled.ul`
   list-style: none;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 10px;
-  text-align: left;
+  gap: 12px;
 `;
 
+// Item
 const Item = styled.li`
   background: #ffffff;
-  padding: 10px;
-  border-left: 3px solid #228b22;
-  border-radius: 5px;
+  padding: 15px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  font-size: 14px;
-  text-align: left;
-
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, background 0.3s ease;
+  border-left: 3px solid #56ab2f;
+  &:hover {
+    transform: translateX(5px);
+    background: #e6f2e6;
+  }
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: flex-start;
+    gap: 10px;
   }
 `;
 
+// Item details
 const ItemDetails = styled.div`
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  text-align: left;
-
   span {
-    display: block;
-    font-size: 13px;
-    color: #333;
-    text-align: left;
+    font-size: 15px;
+    color: #3a5a3a;
+    strong {
+      color: #228b22;
+      font-weight: 600;
+    }
   }
 `;
 
+// Item quantity
 const ItemQuantity = styled.span`
-  font-size: 14px;
-  font-weight: bold;
+  font-size: 15px;
+  font-weight: 600;
   color: #d9534f;
-  padding: 4px 8px;
-  border-radius: 4px;
-  text-align: left;
-
+  padding: 5px 10px;
+  border-radius: 15px;
+  background: rgba(217, 83, 79, 0.1);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  &::before {
+    content: '📦';
+    font-size: 14px;
+  }
   @media (max-width: 768px) {
-    font-size: 13px;
-    padding: 6px;
+    font-size: 14px;
   }
 `;
 
-const DeliveryStatus = styled.span`
-  display: inline-block;
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: bold;
-  margin-left: 5px;
-  text-align: left;
-  
-  &.pending {
-    background-color: #fff3cd;
-    color: #856404;
-  }
-  
-  &.accepted {
-    background-color: #d4edda;
-    color: #155724;
-  }
-  
-  &.in_progress {
-    background-color: #cce5ff;
-    color: #004085;
-  }
-  
-  &.delivered {
-    background-color: #d4edda;
-    color: #155724;
-  }
-  
-  &.failed {
-    background-color: #f8d7da;
-    color: #721c24;
-  }
-
-  &.picked_up {
-    background-color: #e6f3ff;
-    color: #003087;
-  }
-`;
-
-// Feedback Buttons and Modal
+// Feedback buttons container
 const FeedbackButtons = styled.div`
   display: flex;
-  gap: 10px;
-  margin-top: 15px;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 25px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  width: 100%;
 `;
 
+// Feedback button
 const FeedbackButton = styled.button`
-  padding: 8px 16px;
-  background: #228b22;
-  color: white;
+  padding: 12px 25px;
   border: none;
-  border-radius: 5px;
+  border-radius: 25px;
+  background: linear-gradient(135deg, #228b22, #56ab2f);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s;
-
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(34, 139, 34, 0.2);
   &:hover:not(:disabled) {
-    background: #56ab2f;
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(34, 139, 34, 0.3);
+    background: linear-gradient(135deg, #56ab2f, #228b22);
   }
-
   &:disabled {
-    background: #ccc;
+    background: #cccccc;
     cursor: not-allowed;
+    box-shadow: none;
+  }
+  &::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0) 100%);
+    transform: rotate(30deg);
+    animation: ${shimmer} 3s infinite;
+    pointer-events: none;
+  }
+  @media (max-width: 768px) {
+    font-size: 14px;
+    padding: 10px 20px;
   }
 `;
 
@@ -866,6 +1080,7 @@ const Deliveries = () => {
                 <option value="failed">❌ Failed</option>
               </Select>
             </Controls>
+            
             <ContentList>
               {loading ? (
                 <LoadingMessage>Loading...</LoadingMessage>
@@ -874,6 +1089,7 @@ const Deliveries = () => {
                   const transporterPhoto = delivery.transporter?.photo
                     ? `http://localhost:3000/${delivery.transporter.photo}`
                     : imgmouna;
+                    
                   const isDonor = ['restaurant', 'supermarket', 'personaldonor'].includes(user?.role);
                   const isRecipient = ['student', 'ong'].includes(user?.role);
                   const recipient = delivery.donationTransaction?.requestNeed?.recipient;

@@ -111,8 +111,8 @@ const ViewProfile = () => {
     return (
       <>
         <Navbar />
-        <div className="container-profile">
-          <p className="error-message">{error}</p>
+        <div className="pff-container-profile">
+          <p className="pff-error-message">{error}</p>
         </div>
         <Footer />
       </>
@@ -123,7 +123,7 @@ const ViewProfile = () => {
     return (
       <>
         <Navbar />
-        <div className="container-profile">
+        <div className="pff-container-profile">
           <p>Loading...</p>
         </div>
         <Footer />
@@ -136,18 +136,18 @@ const ViewProfile = () => {
   return (
     <>
       <Navbar />
-      <div className="container-profile">
+      <div className="pff-container-profile">
         {welcomeMessage && isOwnProfile && (
-          <div className="welcome-message">
-            <div className="welcome-message-content">
-              <div className="welcome-icon">🎉</div>
+          <div className="pff-welcome-message">
+            <div className="pff-welcome-message-content">
+              <div className="pff-welcome-icon">🎉</div>
               <span>{welcomeMessage}</span>
             </div>
-            <div className="confetti-container">
+            <div className="pff-confetti-container">
               {Array.from({ length: 20 }).map((_, i) => (
                 <div
                   key={i}
-                  className={`confetti confetti-${i % 5}`}
+                  className={`pff-confetti pff-confetti-${i % 5}`}
                   style={{
                     left: `${Math.random() * 100}%`,
                     animationDelay: `${Math.random() * 3}s`,
@@ -159,11 +159,11 @@ const ViewProfile = () => {
           </div>
         )}
         <header>
-          <div className="profile-header">
+          <div className="pff-profile-header">
             <h1>{isOwnProfile ? "My Profile" : `${user.name}'s Profile`}</h1>
             {isOwnProfile && (
-              <div className="date-switcher">
-                <button className='btnProfile'>
+              <div className="pff-date-switcher">
+                <button className='pff-btnProfile'>
                   <Link to="/edit-profile">
                     <img style={{ marginRight: '8px', marginTop: '6px' }} width="18px" src={edit} alt="Edit Profile" />
                   </Link>
@@ -174,21 +174,21 @@ const ViewProfile = () => {
           </div>
         </header>
 
-        <div className="main">
-          <div className="left-column">
-            <div className="profile-card">
-              <div className="card-white">
-                <div className="profile-pic">
+        <div className="pff-main">
+          <div className="pff-left-column">
+            <div className="pff-profile-card">
+              <div className="pff-card-white">
+                <div className="pff-profile-pic">
                   <img src={profilePhotoUrl} alt="Profile" />
                 </div>
-                <div className="bottom">
-                  <div className="content">
+                <div className="pff-bottom">
+                  <div className="pff-content">
                     <div style={{ display: "flex" }}>
-                      <div><span className="name">Description</span></div>
+                      <div><span className="pff-name">Description</span></div>
                       {isOwnProfile && (
                         <div>
                           <button
-                            className='bottom-editdesc name'
+                            className='pff-bottom-editdesc pff-name'
                             onClick={() => {
                               setIsEditing(true);
                               setDescriptionError("");
@@ -202,7 +202,7 @@ const ViewProfile = () => {
                     {isOwnProfile && isEditing ? (
                       <input
                         type="text"
-                        className="description-input"
+                        className="pff-description-input"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         onBlur={handleSave}
@@ -210,14 +210,14 @@ const ViewProfile = () => {
                         autoFocus
                       />
                     ) : (
-                      <span className="about-me">{description || "No description yet..."}</span>
+                      <span className="pff-about-me">{description || "No description yet..."}</span>
                     )}
                     {descriptionError && isOwnProfile && (
-                      <p className="error-message">{descriptionError}</p>
+                      <p className="pff-error-message">{descriptionError}</p>
                     )}
                   </div>
-                  <div className="bottom-bottom">
-                    <h1 className='userrole'>
+                  <div className="pff-bottom-bottom">
+                    <h1 className='pff-userrole'>
                       {user?.role || 'Loading...'}
                     </h1>
                   </div>
@@ -225,7 +225,7 @@ const ViewProfile = () => {
               </div>
             </div>
 
-            <div className="detailed-info">
+            <div className="pff-detailed-info">
               <h3>Detailed Information</h3>
               <ul>
                 <li><strong>Name:</strong> {user?.name || 'Loading...'}</li>
@@ -236,16 +236,16 @@ const ViewProfile = () => {
             </div>
           </div>
 
-          <div className="center-column">
+          <div className="pff-center-column">
             <RoleSpecificProfile user={user} />
           </div>
 
-          <div className="right-column">
+          <div className="pff-right-column">
             <div>
-              <div className="winner-cards">
-                <div className="winner-outlinePage">
+              <div className="pff-winner-cards">
+                <div className="pff-winner-outlinePage">
                   <svg
-                    className="winner-icon winner-trophy"
+                    className="pff-winner-icon pff-winner-trophy"
                     viewBox="0 0 1024 1024"
                     version="1.1"
                     xmlns="http://www.w3.org/2000/svg"
@@ -273,10 +273,10 @@ const ViewProfile = () => {
                       fill="#FFF2A0"
                     ></path>
                   </svg>
-                  <p className="winner-ranking_number">1<span className="winner-ranking_word">st</span></p>
-                  <div className="winner-splitLine"></div>
+                  <p className="pff-winner-ranking_number">1<span className="pff-winner-ranking_word">st</span></p>
+                  <div className="pff-winner-splitLine"></div>
                   <svg
-                    className="winner-icon winner-userAvatar"
+                    className="pff-winner-icon pff-winner-userAvatar"
                     viewBox="0 0 1024 1024"
                     version="1.1"
                     xmlns="http://www.w3.org/2000/svg"
@@ -288,11 +288,11 @@ const ViewProfile = () => {
                       fill="#8a8a8a"
                     ></path>
                   </svg>
-                  <p className="winner-userName">{user?.name || 'Loading...'}</p>
+                  <p className="pff-winner-userName">{user?.name || 'Loading...'}</p>
                 </div>
-                <div className="winner-detailPage">
+                <div className="pff-winner-detailPage">
                   <svg
-                    className="winner-icon winner-medals winner-slide-in-top"
+                    className="pff-winner-icon pff-winner-medals pff-winner-slide-in-top"
                     viewBox="0 0 1024 1024"
                     version="1.1"
                     xmlns="http://www.w3.org/2000/svg"
@@ -337,7 +337,7 @@ const ViewProfile = () => {
                       fill="#F5CF41"
                     ></path>
                     <path
-                      d="M277.333333 256h469.333334a21.333333 21.333333 0 0 1 0 42.666667h-469.333334a21.333333 21.333333 0 0 1 0-42.666667z"
+                      d="M277.333333 256h469.333334a21.333333 21.333333 0 0 1 0 42.666667h-469.333334a21.333333 0 0 1 0-42.666667z"
                       fill="#D19A0E"
                     ></path>
                     <path
@@ -349,9 +349,9 @@ const ViewProfile = () => {
                       fill="#FFF2A0"
                     ></path>
                   </svg>
-                  <div className="winner-gradesBox">
+                  <div className="pff-winner-gradesBox">
                     <svg
-                      className="winner-icon winner-gradesIcon"
+                      className="pff-winner-icon pff-winner-gradesIcon"
                       viewBox="0 0 1024 1024"
                       version="1.1"
                       xmlns="http://www.w3.org/2000/svg"
@@ -371,20 +371,20 @@ const ViewProfile = () => {
                         fill="#ea9518"
                       ></path>
                     </svg>
-                    <p className="winner-gradesBoxLabel">SCORE</p>
-                    <p className="winner-gradesBoxNum">1105</p>
+                    <p className="pff-winner-gradesBoxLabel">SCORE</p>
+                    <p className="pff-winner-gradesBoxNum">1105</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="inbox-section">
+            <div className="pff-inbox-section">
               <h3>Feedbacks</h3>
               {!isOwnProfile && (
-                <div className="feedback-form">
+                <div className="pff-feedback-form">
                   <h4>Add Feedback</h4>
                   <form onSubmit={handleFeedbackSubmit}>
-                    <div className="form-group">
+                    <div className="pff-form-group">
                       <label>Rating:</label>
                       <StarRating
                         rating={newFeedback.rating}
@@ -392,7 +392,7 @@ const ViewProfile = () => {
                         interactive={true}
                       />
                     </div>
-                    <div className="form-group">
+                    <div className="pff-form-group">
                       <label>Comment:</label>
                       <textarea
                         value={newFeedback.comment}
@@ -401,17 +401,17 @@ const ViewProfile = () => {
                         rows="3"
                       />
                     </div>
-                    {feedbackError && <p className="error-message">{feedbackError}</p>}
-                    <button type="submit" className="submit-feedback-btn">Submit Feedback</button>
+                    {feedbackError && <p className="pff-error-message">{feedbackError}</p>}
+                    <button type="submit" className="pff-submit-feedback-btn">Submit Feedback</button>
                   </form>
                 </div>
               )}
-              <div className="feedback-cards">
+              <div className="pff-feedback-cards">
                 {feedbacks.length > 0 ? (
                   feedbacks.map((feedback) => (
-                    <div className="feedback-card" key={feedback._id}>
-                      <div className="message">
-                        <div className="message-header feedback-tip">
+                    <div className="pff-feedback-card" key={feedback._id}>
+                      <div className="pff-message">
+                        <div className="pff-message-header pff-feedback-tip">
                           <img
                             src={feedback.reviewer?.photo ? `http://localhost:3000/${feedback.reviewer.photo}` : pdp}
                             alt="Avatar"
@@ -422,7 +422,7 @@ const ViewProfile = () => {
                             <p>{feedback.comment}</p>
                           </div>
                         </div>
-                        <span className="time">
+                        <span className="pff-time">
                           {new Date(feedback.createdAt).toLocaleString()}
                         </span>
                       </div>

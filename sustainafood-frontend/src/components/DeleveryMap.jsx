@@ -597,7 +597,7 @@ useEffect(() => {
                   <RouteLabel style={{ marginLeft: '20px', color:'black' ,fontSize:'13px' }}>
                     AI: {segment.aiDuration !== null ? formatDuration(segment.aiDuration) : 'N/A'}
                   </RouteLabel>
-                  <RouteLabel style={{ marginLeft: '20px', color:'black' }}>
+                  <RouteLabel style={{ marginLeft: '20px', color:'black' ,fontSize:'13px'}}>
                     Distance: {formatDistance(segment.distance)}
                   </RouteLabel>
                 </div>

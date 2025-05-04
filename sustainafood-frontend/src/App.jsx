@@ -53,6 +53,7 @@ import ListRequestsDonation from './pages/ListRequestsDonation';
 import AiClassification from './pages/AiClassification';
 import DonationRecommendations from './pages/DonationRecommendations';
 import ViewDonationTransaction from "./pages/backoffice/ViewDonationTransaction.jsx";
+import Ad from "./pages/backoffice/Ad.jsx"; 
 
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import PersonalStatus from './pages/PersonalStatus';
@@ -65,6 +66,8 @@ import Delivery from "./pages/backoffice/delivery.jsx";
 import DeliveryView from "./pages/backoffice/DeliveryView.jsx";
 import ViewProfile from "./pages/ViewProfile.jsx";
 import Deliveries from "./pages/Deliveries.jsx";
+import ContactSubmissionList from "./pages/backoffice/ContactSubmissionList.jsx";
+import SubmissionDetails from "./pages/backoffice/SubmissionDetails.jsx";
 const App = () => {
   return (
     <AlertProvider>
@@ -85,12 +88,15 @@ const App = () => {
         <Route path="/deliveries/:transporterId" element={<AssignedDeliveries />} />
         {/* Routes privées pour les admins */}
         <Route element={<PrivateRoute roles={["admin"]} />}>
+        <Route path="/contact/submissions" element={<ContactSubmissionList />} />
+        <Route path="/contact/submissions/view/:id" element={<SubmissionDetails />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/recipients/ngos" element={<NGOList />} />
           <Route path="/donors/supermarkets" element={<SupermarketList />} />
           <Route path="/donors/restaurants" element={<RestaurantList />} />
           <Route path="/recipients/students" element={<StudentList />} />
           <Route path="/transporters" element={<TransporterList />} />
+          <Route path="/advertisements" element={<Ad />} />
           <Route path="/students/view/:id" element={<ViewStudent />} />
           <Route path="/restaurants/view/:id" element={<ViewRestaurant />} />
           <Route path="/supermarkets/view/:id" element={<ViewSupermarket />} />

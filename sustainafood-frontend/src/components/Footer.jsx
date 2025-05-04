@@ -1,122 +1,188 @@
-import React from 'react';
-import styled from 'styled-components';
 import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn } from 'react-icons/fa';
+import React from 'react';
+import styled, { createGlobalStyle, keyframes } from 'styled-components';
 
-const FooterContainer = styled.footer`
-  background: #56ab2a;
-  color: white;
-  padding: 40px 20px;
-  font-family: 'Poppins', sans-serif;
+// Global Styles
+const GlobalStyle = createGlobalStyle`
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: #f0f8f0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
 `;
 
+// Animation keyframes
+const fadeIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`;
+
+// Footer container
+const FooterContainer = styled.footer`
+  background: linear-gradient(135deg, #56ab2f, #228b22);
+  color: white;
+  padding: 50px 30px 30px;
+  font-family: 'Poppins', sans-serif;
+  animation: ${fadeIn} 0.8s ease-in-out;
+  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
+`;
+
+// Footer content
 const FooterContent = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 40px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 50px;
   justify-content: center;
   text-align: left;
+  max-width: 1200px;
+  margin: 0 auto;
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
+// Column
 const Column = styled.div`
   flex: 1 1 250px;
   min-width: 250px;
 `;
 
+// Column title
 const ColumnTitle = styled.h3`
-  font-size: 20px;
-  margin-bottom: 15px;
-  color: #d4edda;
+  font-size: 22px;
+  margin-bottom: 20px;
+  color: #e6ffe6;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 `;
 
+// About text
 const AboutText = styled.p`
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #e6ffe6;
+  opacity: 0.9;
 `;
 
+// Footer links
 const FooterLinks = styled.ul`
   list-style: none;
   padding: 0;
   li {
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
   a {
-    color: white;
+    color: #e6ffe6;
     text-decoration: none;
-    font-size: 14px;
-    transition: color 0.3s;
+    font-size: 15px;
+    transition: color 0.3s ease, text-decoration 0.3s ease;
     &:hover {
+      color: #ffffff;
       text-decoration: underline;
-      color: #d4edda;
     }
   }
 `;
 
+// Contact info
 const ContactInfo = styled.div`
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #e6ffe6;
+  opacity: 0.9;
   a {
-    color: white;
+    color: #e6ffe6;
     text-decoration: none;
-    transition: color 0.3s;
+    transition: color 0.3s ease;
     &:hover {
-      color: #d4edda;
+      color: #ffffff;
     }
   }
 `;
 
+// Social icons
 const SocialIcons = styled.div`
-  margin-top: 15px;
+  margin-top: 20px;
   display: flex;
-  gap: 15px;
+  gap: 20px;
   svg {
-    color: white;
-    font-size: 20px;
+    color: #e6ffe6;
+    font-size: 22px;
     cursor: pointer;
-    transition: transform 0.3s, color 0.3s;
+    transition: transform 0.3s ease, color 0.3s ease;
     &:hover {
-      transform: scale(1.2);
-      color: #d4edda;
+      transform: scale(1.3);
+      color: #ffffff;
     }
   }
 `;
 
+// Newsletter form
 const NewsletterForm = styled.form`
-  margin-top: 15px;
+  margin-top: 20px;
   display: flex;
-  gap: 10px;
-            border-radius: 14px;
-
+  gap: 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 5px;
 
   input {
-    padding: 8px;
+    padding: 10px 15px;
     border: none;
-    border-radius: 14px;
+    border-radius: 15px;
     flex: 1;
-     background: white;
-     color:black
-
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    font-size: 14px;
+    outline: none;
+    transition: background 0.3s ease;
+    &::placeholder {
+      color: #d4edda;
+      opacity: 0.8;
+    }
+    &:focus {
+      background: rgba(255, 255, 255, 0.3);
+    }
   }
   button {
-    padding: 8px 16px;
+    padding: 10px 20px;
     border: none;
-    border-radius: 4px;
+    border-radius: 15px;
     background: #d4edda;
-    color: #56ab2f;
-    font-weight: bold;
+    color: #228b22;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.3s;
+    transition: background 0.3s ease, transform 0.3s ease;
     &:hover {
       background: #c1eac1;
+      transform: translateY(-2px);
+    }
+    &:active {
+      transform: translateY(0);
     }
   }
 `;
 
+// Footer bottom
 const FooterBottom = styled.div`
   text-align: center;
-  margin-top: 30px;
-  font-size: 13px;
-  border-top: 1px solid rgba(255, 255, 255, 0.3);
-  padding-top: 15px;
+  margin-top: 40px;
+  font-size: 14px;
+  color: #e6ffe6;
+  opacity: 0.7;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 20px;
+  a {
+    color: #e6ffe6;
+    text-decoration: none;
+    transition: color 0.3s ease;
+    &:hover {
+      color: #ffffff;
+      text-decoration: underline;
+    }
+  }
 `;
 
 const Footer = () => {

@@ -163,3 +163,37 @@ export const updateTransporterAvailability = async (transporterId, isAvailable) 
     throw error.response?.data || { message: 'Failed to update availability' };
   }
 };
+export const updateUserAvailability = async (userId, isAvailable) => {
+  try {
+    const response = await axios.put(
+      `http://localhost:3000/users/updateuseravailability/${userId}`,
+      { isAvailable },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    return response;
+  } catch (error) {
+    console.error('Error updating user availability:', error);
+    throw error.response?.data || { message: 'Failed to update user availability' };
+  }
+};
+export const getAllAdvertisements = () =>
+  axios.get('http://localhost:3000/users/advertisements', {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token')}`,
+    },
+  });
+
+export const updateAdvertisementStatus = (adId, status) =>
+  axios.put(
+    `http://localhost:3000/users/advertisements/${adId}/status`,
+    { status },
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    }
+  );

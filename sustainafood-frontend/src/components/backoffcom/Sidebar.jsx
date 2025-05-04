@@ -1,9 +1,10 @@
+// src/components/backoffcom/Sidebar.jsx
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { 
-    FaUsers, FaChartBar, FaCogs, FaTruck, FaUserCog, 
-    FaAppleAlt, FaChevronDown, FaChevronUp, FaUniversity, 
-    FaHandsHelping, FaFileAlt, FaLock, FaQuestionCircle 
+import {
+  FaUsers, FaChartBar, FaCogs, FaTruck, FaUserCog,
+  FaAppleAlt, FaChevronDown, FaChevronUp, FaUniversity,
+  FaHandsHelping, FaFileAlt, FaLock, FaQuestionCircle
 } from "react-icons/fa";
 import logo from '../../assets/images/logooo.png';
 import "/src/assets/styles/backoffcss/sidebar.css";
@@ -18,6 +19,9 @@ const Sidebar = () => {
   const [showFoodDonation, setShowFoodDonation] = useState(false);
 
   const location = useLocation(); // Get current location
+
+  // Check if the current path is related to contact submissions
+  const isContactSubmissionsActive = location.pathname.startsWith("/contact/submissions");
 
   return (
     <div className="sidebar">
@@ -35,18 +39,22 @@ const Sidebar = () => {
         <Link to="/reports">
           <FaFileAlt className="icon" /> <span>Reports</span>
         </Link>
+        {/* Contact Submissions link */}
+        <Link to="/contact/submissions" className={isContactSubmissionsActive ? "active" : ""}>
+          <FaFileAlt className="icon" /> <span>Contact Submissions</span>
+        </Link>
 
         {/* User Management dropdown */}
         <div className="dropdown">
           <button onClick={() => setShowUserManagement(!showUserManagement)}>
-            <FaUsers className="icon" /> <span>User Management</span> 
+            <FaUsers className="icon" /> <span>User Management</span>
             {showUserManagement ? <FaChevronUp /> : <FaChevronDown />}
           </button>
           {showUserManagement && (
             <div className="dropdown-content-dashboard">
               {/* Recipients submenu */}
               <button className="sub-dropdown" onClick={() => setShowRecipients(!showRecipients)}>
-                <FaHandsHelping className="icon" /> <span>Recipients</span> 
+                <FaHandsHelping className="icon" /> <span>Recipients</span>
                 {showRecipients ? <FaChevronUp /> : <FaChevronDown />}
               </button>
               {showRecipients && (
@@ -58,43 +66,27 @@ const Sidebar = () => {
 
               {/* Donors submenu */}
               <button className="sub-dropdown" onClick={() => setShowDonors(!showDonors)}>
-                <FaUniversity className="icon" /> <span>Donors</span> 
+                <FaUniversity className="icon" /> <span>Donors</span>
                 {showDonors ? <FaChevronUp /> : <FaChevronDown />}
               </button>
               {showDonors && (
                 <ul className="sub-dropdown-content" id="donors-dropdown" role="menu">
                   <li><Link to="/donors/supermarkets" className={location.pathname === "/donors/supermarkets" ? "active" : ""} role="menuitem">Supermarkets</Link></li>
                   <li><Link to="/donors/restaurants" className={location.pathname === "/donors/restaurants" ? "active" : ""} role="menuitem">Restaurants</Link></li>
-                  <li><Link to="/PersonnelList" className={location.pathname === "/PersonnelList" ? "active" : ""} role="menuitem">Personnel Donors </Link></li>
+                  <li><Link to="/PersonnelList" className={location.pathname === "/PersonnelList" ? "active" : ""} role="menuitem">Personnel Donors</Link></li>
                 </ul>
               )}
 
               <Link to="/transporters" className={location.pathname === "/transporters" ? "active" : ""} role="menuitem">Transporters</Link>
+              <Link to="/advertisements" className={location.pathname === "/advertisements" ? "active" : ""} role="menuitem">Advertisements</Link>
             </div>
           )}
         </div>
 
-        {/* Food Donation Management avec sous-menu ✅
-        <div className="dropdown">
-          <button
-            onClick={() => setShowFoodDonation(!showFoodDonation)}
-            aria-expanded={showFoodDonation}
-            aria-controls="food-donation-dropdown"
-          >
-            <FaAppleAlt className="icon" /> <span>Food Donation Management</span> {showFoodDonation ? <FaChevronUp /> : <FaChevronDown />}
-          </button>
-          {showFoodDonation && (
-            <nav className="dropdown-content-dashboard" id="food-donation-dropdown" role="menu">
-              <Link to="/food-donation/requests" className={location.pathname === "/food-donation/requests" ? "active" : ""} role="menuitem">Request list</Link>
-              <Link to="/food-donation/product" className={location.pathname === "/food-donation/product" ? "active" : ""} role="menuitem">Product list</Link>
-            </nav>
-          )}
-        </div> 
-
         {/* Food Donation Management dropdown */}
         <div className="dropdown">
           <button onClick={() => setShowFoodDonationManagement(!showFoodDonationManagement)}>
-            <FaAppleAlt className="icon" /> <span>Food Donation Management</span> 
+            <FaAppleAlt className="icon" /> <span>Food Donation Management</span>
             {showFoodDonationManagement ? <FaChevronUp /> : <FaChevronDown />}
           </button>
           {showFoodDonationManagement && (
@@ -102,11 +94,8 @@ const Sidebar = () => {
               <Link to="/Donations">Donation Management</Link>
               <Link to="/food-donation/requests" className={location.pathname === "/food-donation/requests" ? "active" : ""} role="menuitem">Request Management</Link>
               <Link to="/DonationTransList">Donation Transaction Management</Link>
-               <Link to="/PredictionsDashboard">Donation Predictions Dashboard</Link>
-
-               <Link to="/AnomaliesDashbord">Anomaly Management Dashboard</Link>
-
-             {/* <Link to="/food-donation/product" className={location.pathname === "/food-donation/product" ? "active" : ""} role="menuitem">Product list</Link>*/}
+              <Link to="/PredictionsDashboard">Donation Predictions Dashboard</Link>
+              <Link to="/AnomaliesDashbord">Anomaly Management Dashboard</Link>
             </div>
           )}
         </div>

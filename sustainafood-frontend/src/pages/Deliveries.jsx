@@ -3,20 +3,16 @@ import { Link } from 'react-router-dom';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import donation1 from '../assets/images/donation1.jpg';
-import donation2 from '../assets/images/donation2.jpg';
-import donation3 from '../assets/images/donation3.jpg';
-import donation4 from '../assets/images/donation4.png';
-import donation5 from '../assets/images/fooddonation.png';
-import donation from '../assets/images/fooddonation1.png';
+import donation1 from "../assets/images/home1.png"
+import donation2 from "../assets/images/home2.png"
+import donation3 from "../assets/images/home3.png"
 import patternBg from '../assets/images/bg.png';
 import { FaSearch, FaFilter } from "react-icons/fa";
-import { useAuth } from "../contexts/AuthContext";
 import { getUserById } from "../api/userService";
 import { getDeliveriesByDonorId, getDeliveriesByRecipientId, getDeliveriesByTransporter } from "../api/deliveryService";
-import { createFeedback } from '../api/feedbackService'; // Import the feedback service
+import { createFeedback } from '../api/feedbackService';
 import imgmouna from '../assets/images/imgmouna.png';
-import StarRating from '../components/StarRating'; // Import StarRating component
+import StarRating from '../components/StarRating';
 
 // Global styles
 const GlobalStyle = createGlobalStyle`
@@ -28,13 +24,19 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
-// Animation for slider
-const fade = keyframes`
-  0% { opacity: 0; }
-  8% { opacity: 1; }
-  33% { opacity: 1; }
-  41% { opacity: 0; }
-  100% { opacity: 0; }
+// Animations
+const fadeSlide = keyframes`
+  0% { opacity: 0; transform: scale(1.05); }
+  8% { opacity: 1; transform: scale(1); }
+  33% { opacity: 1; transform: scale(1); }
+  41% { opacity: 0; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(1.05); }
+`;
+
+const float = keyframes`
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
 `;
 
 // Layout components
@@ -50,40 +52,81 @@ const HeroSection = styled.section`
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  padding: 60px 80px;
-  gap: 30px;
+  padding: 80px 80px 120px;
+  gap: 40px;
   background: 
-    linear-gradient(rgba(230, 242, 230, 0.85), rgba(230, 242, 230, 0.85)),
+    linear-gradient(135deg, rgba(230, 242, 230, 0.9), rgba(220, 240, 220, 0.85)),
     url(${patternBg}) repeat center center;
   background-size: 200px 200px;
   overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: rgba(34, 139, 34, 0.1);
+    z-index: 1;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -30px;
+    left: 15%;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(34, 139, 34, 0.08);
+    z-index: 1;
+  }
 `;
 
 const HeroText = styled.div`
   flex: 1 1 500px;
   z-index: 2;
-  text-align: left;
+
   h1 {
-    font-size: 48px;
-    color: #228b22;
+    font-size: 52px;
+    font-weight: 800;
+    color: #1a7a1a;
     margin-bottom: 20px;
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 0;
+      width: 80px;
+      height: 4px;
+      background: linear-gradient(90deg, #228b22, #56ab2f);
+      border-radius: 2px;
+    }
   }
+
   p {
     font-size: 20px;
-    color: #555;
-    margin-bottom: 30px;
-    line-height: 1.5;
+    color: #3a5a3a;
+    margin-bottom: 35px;
+    line-height: 1.6;
+    max-width: 90%;
   }
 `;
 
 const SliderContainer = styled.div`
   position: relative;
-  flex: 1 1 300px;
-  width: 400px;
-  height: 300px;
-  border-radius: 20px;
+  flex: 1 1 500px;
+  width: 100%;
+  height: 420px;
   overflow: hidden;
   z-index: 2;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  animation: ${float} 6s ease-in-out infinite;
 `;
 
 const SlideImage = styled.img`
@@ -94,18 +137,21 @@ const SlideImage = styled.img`
   height: 100%;
   object-fit: cover;
   border-radius: 20px;
-  box-shadow: rgba(133, 189, 150, 0.3) 0px 15px 25px -5px;
   opacity: 0;
-  animation: ${fade} 12s infinite;
+  animation: ${fadeSlide} 12s infinite;
   animation-fill-mode: forwards;
-`;
+  filter: brightness(1.05) contrast(1.05);
+`
 
-const Slide1 = styled(SlideImage)`animation-delay: 0s;`;
-const Slide2 = styled(SlideImage)`animation-delay: 2.4s;`;
-const Slide3 = styled(SlideImage)`animation-delay: 4.8s;`;
-const Slide4 = styled(SlideImage)`animation-delay: 7.2s;`;
-const Slide5 = styled(SlideImage)`animation-delay: 9.6s;`;
-const Slide = styled(SlideImage)`animation-delay: 12s;`;
+const Slide1 = styled(SlideImage)`
+  animation-delay: 0s;
+`
+const Slide2 = styled(SlideImage)`
+  animation-delay: 4s;
+`
+const Slide3 = styled(SlideImage)`
+  animation-delay: 8s;
+`
 
 const Wave = styled.svg`
   position: absolute;
@@ -114,6 +160,7 @@ const Wave = styled.svg`
   width: 100%;
   height: auto;
   z-index: 1;
+  filter: drop-shadow(0 -5px 5px rgba(0, 0, 0, 0.03));
 `;
 
 const SectionWrapper = styled.section`
@@ -551,7 +598,6 @@ const FeedbackMessage = styled.p`
 `;
 
 const Deliveries = () => {
-  const { user: authUser, token } = useAuth();
   const [user, setUser] = useState(null);
   const [deliveries, setDeliveries] = useState([]);
   const [filteredDeliveries, setFilteredDeliveries] = useState([]);
@@ -620,11 +666,12 @@ const Deliveries = () => {
     }
 
     try {
+      const token = localStorage.getItem('token');
       await createFeedback(
         recipientId,
         feedback.rating,
         feedback.comment,
-        authUser._id,
+        user._id,
         token
       );
       setFeedbackState(prev => ({
@@ -666,20 +713,19 @@ const Deliveries = () => {
     const fetchUserAndDeliveries = async () => {
       try {
         setLoading(true);
-        if (!authUser?._id) {
-          throw new Error('User not authenticated');
-        }
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        const token = localStorage.getItem('token');
 
-        const userResponse = await getUserById(authUser._id);
+        const userResponse = await getUserById(storedUser._id || storedUser.id, token);
         setUser(userResponse.data);
 
         let deliveryResponse;
         if (userResponse.data.role === 'transporter') {
-          deliveryResponse = await getDeliveriesByTransporter(userResponse.data._id);
+          deliveryResponse = await getDeliveriesByTransporter(userResponse.data._id || userResponse.data.id, token);
         } else if (['restaurant', 'supermarket', 'personaldonor'].includes(userResponse.data.role)) {
-          deliveryResponse = await getDeliveriesByDonorId(userResponse.data._id);
+          deliveryResponse = await getDeliveriesByDonorId(userResponse.data._id || userResponse.data.id, token);
         } else if (['student', 'ong'].includes(userResponse.data.role)) {
-          deliveryResponse = await getDeliveriesByRecipientId(userResponse.data._id);
+          deliveryResponse = await getDeliveriesByRecipientId(userResponse.data._id, token);
         } else {
           throw new Error('Role not supported for viewing deliveries');
         }
@@ -714,7 +760,7 @@ const Deliveries = () => {
     };
 
     fetchUserAndDeliveries();
-  }, [authUser]);
+  }, []);
 
   useEffect(() => {
     let updatedDeliveries = [...deliveries];
@@ -773,22 +819,19 @@ const Deliveries = () => {
       <HomeContainer>
         <HeroSection>
           <HeroText>
-            <h1>List of Deliveries in SustainaFood</h1>
+            <h1>Empowering Communities with Every Meal</h1>
             <p>
-              Track your deliveries and ensure food reaches those in need—together, we reduce waste and spread hope!
+              Join SustainaFood to donate, deliver, or receive surplus food—together, we reduce waste and spread hope!
             </p>
           </HeroText>
           <SliderContainer>
-            <Slide1 src={donation1} alt="Delivery 1" />
-            <Slide2 src={donation2} alt="Delivery 2" />
-            <Slide3 src={donation3} alt="Delivery 3" />
-            <Slide4 src={donation4} alt="Delivery 4" />
-            <Slide5 src={donation5} alt="Delivery 5" />
-            <Slide src={donation} alt="Delivery 6" />
+            <Slide1 src={donation2} alt="Donation 1" />
+            <Slide2 src={donation3} alt="Donation 2" />
+            <Slide3 src={donation1} alt="Donation 3" />
           </SliderContainer>
           <Wave viewBox="0 0 1440 320">
             <path
-              fill="#f0f8f0"
+              fill="#ffffff"
               fillOpacity="1"
               d="M0,96L30,90C60,85,120,75,180,64C240,53,300,43,360,64C420,85,480,139,540,170.7C600,203,660,213,720,224C780,235,840,245,900,240C960,235,1020,213,1080,181.3C1140,149,1200,107,1260,112C1320,117,1380,171,1410,197.3L1440,224L1440,320L1410,320C1380,320,1320,320,1260,320C1200,320,1140,320,1080,320C1020,320,960,320,900,320C840,320,780,320,720,320C660,320,600,320,540,320C480,320,420,320,360,320C300,320,240,320,180,320C120,320,60,320,30,320L0,320Z"
             />
@@ -911,54 +954,51 @@ const Deliveries = () => {
                         </DeliveryDetail>
                       </DeliveryDetails>
 
-                      {allocatedMeals.length === 0 && (
+                      {allocatedProducts.length > 0 && (
                         <ItemSection>
                           <ItemsTitle>Allocated Products:</ItemsTitle>
                           <ItemList>
-                            {allocatedProducts.length > 0 ? (
-                              allocatedProducts.map((item, index) => (
-                                <Item key={index}>
-                                  <ItemDetails>
-                                    <span><strong>Name:</strong> {item.product?.name || 'Unnamed Product'}</span>
-                                  </ItemDetails>
-                                  <ItemQuantity>
-                                    {item.product?.totalQuantity || 0} item{(item.quantity || 0) !== 1 ? 's' : ''}
-                                  </ItemQuantity>
-                                </Item>
-                              ))
-                            ) : (
-                              <Item>
+                            {allocatedProducts.map((item, index) => (
+                              <Item key={index}>
                                 <ItemDetails>
-                                  <span>No allocated products</span>
+                                  <span><strong>Name:</strong> {item.product?.name || 'Unnamed Product'}</span>
                                 </ItemDetails>
+                                <ItemQuantity>
+                                  {item.quantity || 0} item{item.quantity !== 1 ? 's' : ''}
+                                </ItemQuantity>
                               </Item>
-                            )}
+                            ))}
                           </ItemList>
                         </ItemSection>
                       )}
 
-                      {allocatedProducts.length === 0 && (
+                      {allocatedMeals.length > 0 && (
                         <ItemSection>
                           <ItemsTitle>Allocated Meals:</ItemsTitle>
                           <ItemList>
-                            {allocatedMeals.length > 0 ? (
-                              allocatedMeals.map((item, index) => (
-                                <Item key={index}>
-                                  <ItemDetails>
-                                    <span><strong>Name:</strong> {item.meal?.mealName || 'Unnamed Meal'}</span>
-                                  </ItemDetails>
-                                  <ItemQuantity>
-                                    {item.meal?.quantity || 0} meal{(item.quantity || 0) !== 1 ? 's' : ''}
-                                  </ItemQuantity>
-                                </Item>
-                              ))
-                            ) : (
-                              <Item>
+                            {allocatedMeals.map((item, index) => (
+                              <Item key={index}>
                                 <ItemDetails>
-                                  <span>No allocated meals</span>
+                                  <span><strong>Name:</strong> {item.meal?.mealName || 'Unnamed Meal'}</span>
                                 </ItemDetails>
+                                <ItemQuantity>
+                                  {item.quantity || 0} meal{item.quantity !== 1 ? 's' : ''}
+                                </ItemQuantity>
                               </Item>
-                            )}
+                            ))}
+                          </ItemList>
+                        </ItemSection>
+                      )}
+
+                      {allocatedProducts.length == 0 && allocatedMeals.length == 0 && (
+                        <ItemSection>
+                          <ItemsTitle>Items:</ItemsTitle>
+                          <ItemList>
+                            <Item>
+                              <ItemDetails>
+                                <span>No allocated products or meals</span>
+                              </ItemDetails>
+                            </Item>
                           </ItemList>
                         </ItemSection>
                       )}

@@ -1,117 +1,226 @@
-.location-picker-localisation {
+/* LocationPicker.css - Styles pour la popup de carte */
+
+/* Fond semi-transparent qui couvre tout l'écran */
+.location-picker-modal-backdrop {
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    margin: auto;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+  
+  /* Conteneur de la popup */
+  .location-picker-modal-container {
     width: 90%;
     max-width: 800px;
-    height: fit-content;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    z-index: 1000;
-    padding: 20px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-}
-
-.map-container-localisation {
-    width: 100%;
-    height: 450px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    position: relative;
-    z-index: 1;
-}
-
-.address-search-localisation {
+    animation: locationPickerFadeIn 0.3s ease-out;
+  }
+  
+  /* En-tête avec la barre de recherche */
+  .location-picker-modal-header {
     display: flex;
-    gap: 15px;
     align-items: center;
-    margin-top: 10px;
-}
-
-.signup-input-localisation {
+    padding: 15px;
+    background: linear-gradient(135deg, #228b22, #56ab2f);
+  }
+  
+  /* Champ de recherche */
+  .location-picker-search-input {
     flex: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 16px;
-    white-space: normal;
-    overflow-wrap: break-word;
-    min-height: 40px;
-}
-
-.location-picker-buttons-localisation {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-top: 20px;
-}
-
-.search-button-localisation,
-.geolocation-button-localisation,
-.confirm-button-localisation,
-.cancel-button-localisation {
-    padding: 10px 20px;
+    padding: 12px 16px;
     border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    color: white;
+    border-radius: 8px;
     font-size: 16px;
-    transition: background-color 0.3s;
-}
-
-.search-button-localisation,
-.geolocation-button-localisation,
-.confirm-button-localisation {
-    background-color: #8dc73f;
-}
-
-.cancel-button-localisation {
-    background-color: #dc3545;
-}
-
-.search-button-localisation:hover,
-.geolocation-button-localisation:hover,
-.confirm-button-localisation:hover {
-    background-color: #7ab336;
-}
-
-.cancel-button-localisation:hover {
-    background-color: #c82333;
-}
-
-@media (max-width: 600px) {
-    .location-picker-localisation {
-        width: 95%;
-        padding: 15px;
+    color: #333;
+    background-color: white;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .location-picker-search-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(34, 139, 34, 0.3);
+  }
+  
+  /* Bouton de recherche */
+  .location-picker-search-button {
+    background-color: white;
+    color: #228b22;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin-left: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .location-picker-search-button:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-2px);
+  }
+  
+  /* Bouton de géolocalisation */
+  .location-picker-geolocation-button {
+    background-color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    margin-left: 10px;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .location-picker-geolocation-button:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-2px);
+  }
+  
+  /* Conteneur de la carte */
+  .location-picker-map-container {
+    width: 100%;
+    height: 400px;
+    position: relative;
+    z-index: 10;
+  }
+  
+  /* Pied de page avec les boutons */
+  .location-picker-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-top: 1px solid #e0e0e0;
+  }
+  
+  /* Bouton Confirmer */
+  .location-picker-confirm-button {
+    background: linear-gradient(135deg, #228b22, #56ab2f);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 12px 24px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .location-picker-confirm-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(34, 139, 34, 0.3);
+  }
+  
+  /* Bouton Annuler */
+  .location-picker-cancel-button {
+    background-color: #f1f1f1;
+    color: #333;
+    border: none;
+    border-radius: 30px;
+    padding: 12px 24px;
+    margin-right: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .location-picker-cancel-button:hover {
+    background-color: #e0e0e0;
+  }
+  
+  /* Animation d'entrée */
+  @keyframes locationPickerFadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
     }
-
-    .map-container-localisation {
-        height: 300px;
+    to {
+      opacity: 1;
+      transform: scale(1);
     }
-
-    .signup-input-localisation {
-        font-size: 14px;
-        padding: 8px;
+  }
+  
+  /* Styles pour les contrôles de la carte */
+  .location-picker-map-container .maplibregl-ctrl-top-right,
+  .location-picker-map-container .maplibregl-ctrl-bottom-right {
+    z-index: 20;
+  }
+  
+  /* Styles pour le marqueur */
+  .location-picker-map-container .maplibregl-marker {
+    z-index: 30;
+    cursor: grab;
+  }
+  
+  .location-picker-map-container .maplibregl-marker:active {
+    cursor: grabbing;
+  }
+  
+  /* Styles pour les popups de la carte */
+  .maplibregl-popup {
+    z-index: 40;
+  }
+  
+  .maplibregl-popup-content {
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Empêcher le défilement du corps lorsque la carte est ouverte */
+  body.map-open {
+    overflow: hidden;
+  }
+  
+  /* Styles responsifs */
+  @media (max-width: 768px) {
+    .location-picker-modal-container {
+      width: 95%;
+      max-height: 80vh;
     }
-
-    .search-button-localisation,
-    .geolocation-button-localisation,
-    .confirm-button-localisation,
-    .cancel-button-localisation {
-        padding: 8px 16px;
-        font-size: 14px;
+  
+    .location-picker-modal-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+      padding: 10px;
     }
-
-    .location-picker-buttons-localisation {
-        flex-direction: column;
-        gap: 10px;
-        margin-top: 15px;
+  
+    .location-picker-search-input {
+      width: 100%;
     }
-}
+  
+    .location-picker-search-button {
+      margin-left: 0;
+      width: 100%;
+    }
+  
+    .location-picker-geolocation-button {
+      position: absolute;
+      top: 70px;
+      right: 10px;
+      margin-left: 0;
+      background-color: white;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+  
+    .location-picker-map-container {
+      height: 300px;
+    }
+  }
+  

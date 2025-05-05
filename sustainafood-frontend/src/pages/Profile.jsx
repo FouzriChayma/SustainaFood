@@ -354,10 +354,10 @@ const Profile = () => {
             <div className="pff-detailed-info">
               <h3>Detailed Information</h3>
               <ul>
-                <li><strong>Name:</strong> {user?.name || "Loading..."}</li>
-                <li><strong>Email Address:</strong> {user?.email || "Loading..."}</li>
-                <li><strong>Phone:</strong> {user?.phone || "Loading..."}</li>
-                <li><strong>Address:</strong> {user?.address || "Loading..."}</li>
+                <li><strong>:</strong> {user?.name || "Loading..."}</li>
+                <li><strong>:</strong> {user?.email || "Loading..."}</li>
+                <li><strong>:</strong> {user?.phone || "Loading..."}</li>
+                <li><strong>:</strong> {user?.address || "Loading..."}</li>
               </ul>
             </div>
           </div>
@@ -470,33 +470,36 @@ const Profile = () => {
     {adUploadSuccess && <p style={{ color: '#1a7a1a', marginTop: '10px' }}>{adUploadSuccess}</p>}
   </div>
 )}
-            <div className="pff-inbox-section">
-              <h3>Feedbacks</h3>
-              <div className="pff-feedback-cards">
-                {feedbacks.length > 0 ? (
-                  feedbacks.map((feedback) => (
-                    <div className="pff-feedback-card" key={feedback._id}>
-                      <div className="pff-message">
-                        <div className="pff-message-header pff-feedback-tip">
-                          <img
-                            src={feedback.reviewer?.photo ? `http://localhost:3000/${feedback.reviewer.photo}` : pdp}
-                            alt="Avatar"
-                          />
-                          <div>
-                            <strong>{feedback.reviewer?.name || "Anonymous"}</strong>
-                            <StarRating rating={feedback.rating} interactive={false} />
-                            <p>{feedback.comment}</p>
-                          </div>
-                        </div>
-                        <span className="pff-time">{new Date(feedback.createdAt).toLocaleString()}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p>No feedback yet.</p>
-                )}
+            
+<div className="pff-inbox-section">
+  <h3>Feedbacks</h3>
+  <div className="pff-feedback-container">
+    {feedbacks.length > 0 ? (
+      <div className="pff-feedback-scroll">
+        {feedbacks.map((feedback) => (
+          <div className="pff-feedback-card" key={feedback._id}>
+            <div className="pff-message">
+              <div className="pff-message-header pff-feedback-tip">
+                <img
+                  src={feedback.reviewer?.photo ? `http://localhost:3000/${feedback.reviewer.photo}` : pdp}
+                  alt="Avatar"
+                />
+                <div>
+                  <strong>{feedback.reviewer?.name || "Anonymous"}</strong>
+                  <StarRating rating={feedback.rating} interactive={false} />
+                  <p>{feedback.comment}</p>
+                </div>
               </div>
+              <span className="pff-time">{new Date(feedback.createdAt).toLocaleString()}</span>
             </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p>No feedback yet.</p>
+    )}
+  </div>
+</div>
           </div>
         </div>
       </div>

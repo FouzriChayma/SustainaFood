@@ -410,20 +410,105 @@ body {
   background-color: #fff;
   border-radius: 12px;
   padding: 20px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border-left: 4px solid #8dc73f;
+  width: 290px; /* Match the width of the card above */
+  margin-left: 30px; /* Match the left margin of the card above */
+  box-sizing: border-box; /* Ensure padding is included in width */
+}
+
+.pff-detailed-info:hover {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 
 .pff-detailed-info h3 {
-  margin-bottom: 10px;
-  font-size: 16px;
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: #000;
+  font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(141, 199, 63, 0.3);
+  position: relative;
+}
+
+.pff-detailed-info h3::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: #8dc73f;
+  border-radius: 2px;
 }
 
 .pff-detailed-info ul {
   list-style-type: none;
+  padding: 0;
+  margin: 0;
 }
 
 .pff-detailed-info li {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   font-size: 14px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  background-color: rgba(245, 249, 245, 0.6);
+}
+
+.pff-detailed-info li:hover {
+  background-color: rgba(141, 199, 63, 0.1);
+}
+
+.pff-detailed-info li:last-child {
+  margin-bottom: 0;
+}
+
+.pff-detailed-info li strong {
+  min-width: 20px; /* Reduced from 120px to decrease the gap */
+  display: inline-block;
+  color: #444;
+  position: relative;
+  padding-left: 22px; /* Reduced from 22px for tighter spacing */
+  margin-right: 10px; /* Added to fine-tune the gap between label and info */
+}
+
+/* Add icons to each field */
+.pff-detailed-info li:nth-child(1) strong::before {
+  content: '👤';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.pff-detailed-info li:nth-child(2) strong::before {
+  content: '✉️';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.pff-detailed-info li:nth-child(3) strong::before {
+  content: '📞';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.pff-detailed-info li:nth-child(4) strong::before {
+  content: '📍';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 /* Colonne centrale */
@@ -2114,4 +2199,118 @@ left: 100%;
   color: #1a7a1a;
   font-size: 14px;
   margin-top: 10px;
+}
+
+/* Add these styles to your CSS file for the scrollable feedback section */
+
+.pff-feedback-container {
+  position: relative;
+  max-height: 350px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #f9f9f9;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
+}
+
+.pff-feedback-scroll {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: #8dc73f #f0f0f0;
+}
+
+/* Custom scrollbar styling */
+.pff-feedback-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pff-feedback-scroll::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 10px;
+}
+
+.pff-feedback-scroll::-webkit-scrollbar-thumb {
+  background: #8dc73f;
+  border-radius: 10px;
+}
+
+.pff-feedback-scroll::-webkit-scrollbar-thumb:hover {
+  background: #7ab62f;
+}
+
+/* Enhanced feedback card styling */
+.pff-feedback-card {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pff-feedback-card:last-child {
+  margin-bottom: 0;
+}
+
+.pff-feedback-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pff-message {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-left: 0;
+}
+
+.pff-message-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.pff-message-header img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #f0f0f0;
+}
+
+.pff-message-header strong {
+  display: block;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.pff-message-header p {
+  font-size: 13px;
+  color: #666;
+  margin: 5px 0 0 0;
+  line-height: 1.4;
+}
+
+.pff-time {
+  font-size: 11px;
+  color: #999;
+  align-self: flex-end;
+  margin-top: 5px;
+}
+
+/* Add a subtle fade effect at the bottom to indicate more content */
+.pff-feedback-container::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30px;
+  background: linear-gradient(to top, rgba(249, 249, 249, 0.9), rgba(249, 249, 249, 0));
+  pointer-events: none;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
 }

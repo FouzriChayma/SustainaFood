@@ -201,7 +201,7 @@ const DonorProfile = ({ user }) => {
                   fontWeight: "500",
                 }}
               >
-                {isAvailable ? "You are visible to recipients" : "You are hidden from recipients"}
+                {isAvailable ? "You are visible to transporters" : "You are hidden from transporters"}
               </p>
 
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>

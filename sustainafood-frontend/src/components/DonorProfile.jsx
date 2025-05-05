@@ -21,7 +21,7 @@ const DonorProfile = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 3;
+  const itemsPerPage = 1;
 
   const [isAvailable, setIsAvailable] = useState(user?.isAvailable || false);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);

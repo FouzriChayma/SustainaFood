@@ -10,10 +10,10 @@ import { useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import { getUserById, updateUser } from "../api/userService"
 import { FaCamera } from "react-icons/fa"
-import { useAlert } from '../contexts/AlertContext';
+import { useAlert } from "../contexts/AlertContext"
 
 const EditProfile = () => {
-  const { showAlert } = useAlert(); // Added useAlert
+  const { showAlert } = useAlert() // Added useAlert
 
   const [fileName, setFileName] = useState("")
   const [imagePreview, setImagePreview] = useState(null)
@@ -333,283 +333,273 @@ const EditProfile = () => {
 
     try {
       await updateUser(authUserId, data)
-      showAlert('success', 'Profile updated successfully');
+      showAlert("success", "Profile updated successfully")
 
       navigate("/profile")
     } catch (error) {
       console.error("Error updating profile:", error)
-      showAlert('error', 'Failed to update profile');
+      showAlert("error", "Failed to update profile")
     }
   }
 
   return (
     <>
       <Navbar />
-      <div className="editprofile-container rounded bg-white mt-5 mb-5">
-        <div className="editprofile-profile-image-container">
-          <img src={imagePreview || profilePhotoUrl} className="editprofile-profile-image" alt="Profile Preview" />
-          <label htmlFor="file-upload-photo" className="editprofile-photo-icon" title="Change Photo">
-            <FaCamera style={{ fontSize: "18px", color: "white" }} />
-          </label>
-          <input
-            id="file-upload-photo"
-            type="file"
-            name="photo"
-            accept="image/*"
-            onChange={handleFileChange}
-            style={{ display: "none" }}
-          />
-          <br />
-          <span className="editprofile-font-weight-bold">{formData.name || "User Name"}</span>
-          <br />
-          <span className="editprofile-text-black-50">{formData.email || "email@example.com"}</span>
+      <div className="editprofile-container">
+        <div className="editprofile-header">
+          <div className="editprofile-profile-image-container">
+            <img src={imagePreview || profilePhotoUrl} className="editprofile-profile-image" alt="Profile Preview" />
+            <label htmlFor="file-upload-photo" className="editprofile-photo-icon" title="Change Photo">
+              <FaCamera style={{ fontSize: "16px", color: "white" }} />
+            </label>
+            <input
+              id="file-upload-photo"
+              type="file"
+              name="photo"
+              accept="image/*"
+              onChange={handleFileChange}
+              style={{ display: "none" }}
+            />
+          </div>
+
+          <div className="editprofile-user-info">
+            <span className="editprofile-font-weight-bold">{formData.name || "User Name"}</span>
+            <span className="editprofile-text-black-50">{formData.email || "email@example.com"}</span>
+            <h2 className="editprofile-text-right">Profile Settings</h2>
+          </div>
         </div>
 
-        <div>
-          <h2 className="editprofile-text-right" style={{ marginTop: "70px", color: "#71a63f" }}>
-            Profile Settings
-          </h2>
-          <form onSubmit={handleSubmit}>
-            {/* Common fields */}
-            <div className="editprofile-row">
-              <div className="col-md-6 login-input-block">
-                <input
-                  type="text"
-                  className={`login-input ${errors.name ? "error" : ""}`}
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  placeholder=" "
-                />
-                <label className="login-label">Name</label>
-                {errors.name && <div className="error-field">{errors.name}</div>}
-              </div>
-              <div className="col-md-6 login-input-block">
-                <input
-                  type="email"
-                  className={`login-input ${errors.email ? "error" : ""}`}
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  placeholder=" "
-                />
-                <label className="login-label">Email</label>
-                {errors.email && <div className="error-field">{errors.email}</div>}
-              </div>
-            </div>
+        <form onSubmit={handleSubmit} className="editprofile-form">
+          {/* Common fields */}
+          <div className="login-input-block">
+            <input
+              type="text"
+              className={`login-input ${errors.name ? "error" : ""}`}
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              placeholder=" "
+            />
+            <label className="login-label">Name</label>
+            {errors.name && <div className="error-field">{errors.name}</div>}
+          </div>
 
-            <div className="editprofile-row">
-              <div className="col-md-6 login-input-block">
+          <div className="login-input-block">
+            <input
+              type="email"
+              className={`login-input ${errors.email ? "error" : ""}`}
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              placeholder=" "
+            />
+            <label className="login-label">Email</label>
+            {errors.email && <div className="error-field">{errors.email}</div>}
+          </div>
+
+          <div className="login-input-block">
+            <input
+              type="number"
+              className={`login-input ${errors.phone ? "error" : ""}`}
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+              placeholder=" "
+            />
+            <label className="login-label">Phone Number</label>
+            {errors.phone && <div className="error-field">{errors.phone}</div>}
+          </div>
+
+          <div className="login-input-block">
+            <input
+              type="text"
+              className={`login-input ${errors.address ? "error" : ""}`}
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              required
+              placeholder=" "
+            />
+            <label className="login-label">Address</label>
+            {errors.address && <div className="error-field">{errors.address}</div>}
+          </div>
+
+          {/* Role-specific fields */}
+          {role === "student" && (
+            <>
+              <div className="login-input-block">
+                <select
+                  className={`login-input ${errors.sexe ? "error" : ""}`}
+                  name="sexe"
+                  value={formData.sexe}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select Gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+                <label className="login-label">Gender</label>
+                {errors.sexe && <div className="error-field">{errors.sexe}</div>}
+              </div>
+
+              <div className="login-input-block">
                 <input
                   type="number"
-                  className={`login-input ${errors.phone ? "error" : ""}`}
-                  name="phone"
-                  value={formData.phone}
+                  className={`login-input ${errors.age ? "error" : ""}`}
+                  name="age"
+                  value={formData.age}
                   onChange={handleChange}
                   required
                   placeholder=" "
                 />
-                <label className="login-label">Phone Number</label>
-                {errors.phone && <div className="error-field">{errors.phone}</div>}
+                <label className="login-label">Age</label>
+                {errors.age && <div className="error-field">{errors.age}</div>}
               </div>
-              <div className="col-md-6 login-input-block">
+
+              <div className="login-input-block">
                 <input
                   type="text"
-                  className={`login-input ${errors.address ? "error" : ""}`}
-                  name="address"
-                  value={formData.address}
+                  className={`login-input ${errors.num_cin ? "error" : ""}`}
+                  name="num_cin"
+                  value={formData.num_cin}
                   onChange={handleChange}
                   required
                   placeholder=" "
                 />
-                <label className="login-label">Address</label>
-                {errors.address && <div className="error-field">{errors.address}</div>}
+                <label className="login-label">CIN Number</label>
+                {errors.num_cin && <div className="error-field">{errors.num_cin}</div>}
               </div>
-            </div>
 
-            {/* Role-specific fields */}
-            {role === "student" && (
-              <>
-                <div className="editprofile-row">
-                  <div className="col-md-6 login-input-block">
-                    <select
-                      className={`login-input ${errors.sexe ? "error" : ""}`}
-                      name="sexe"
-                      value={formData.sexe}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </select>
-                    <label className="login-label">Gender</label>
-                    {errors.sexe && <div className="error-field">{errors.sexe}</div>}
-                  </div>
-                  <div className="col-md-6 login-input-block">
-                    <input
-                      type="number"
-                      className={`login-input ${errors.age ? "error" : ""}`}
-                      name="age"
-                      value={formData.age}
-                      onChange={handleChange}
-                      required
-                      placeholder=" "
+              <div className="row3">
+                <div className="login-input-block">
+                  <label className="login-label">Student Card Image</label>
+                  <label htmlFor="file-upload-student" className="custom-file-upload">
+                    <img
+                      src={upload || "/placeholder.svg"}
+                      alt="upload"
+                      style={{ width: "20px", height: "10px", color: "gray" }}
                     />
-                    <label className="login-label">Age</label>
-                    {errors.age && <div className="error-field">{errors.age}</div>}
-                  </div>
-                </div>
-                <div className="editprofile-row">
-                  <div className="col-md-6 login-input-block">
-                    <input
-                      type="text"
-                      className={`login-input ${errors.num_cin ? "error" : ""}`}
-                      name="num_cin"
-                      value={formData.num_cin}
-                      onChange={handleChange}
-                      required
-                      placeholder=" "
-                    />
-                    <label className="login-label">CIN Number</label>
-                    {errors.num_cin && <div className="error-field">{errors.num_cin}</div>}
-                  </div>
-                </div>
-                <div className="row3">
-                  <div className="col-md-6 login-input-block">
-                    <label htmlFor="file-upload-student" className="custom-file-upload">
-                      <img src={upload} alt="upload" style={{ width: "20px", height: "10px", color: "gray" }} />
-                      Choose Student Card Image
-                    </label>
-                    <input
-                      id="file-upload-student"
-                      type="file"
-                      name="image_carte_etudiant"
-                      onChange={handleFileChange}
-                      required
-                    />
-                    {formData.image_carte_etudiant && typeof formData.image_carte_etudiant === "object" && (
-                      <div className="file-name">
-                        <p>{formData.image_carte_etudiant.name}</p>
-                      </div>
-                    )}
-                    {(studentCardPreview || (typeof formData.image_carte_etudiant === "string" && formData.image_carte_etudiant)) && (
-                      <div className="student-card-preview" style={{ marginTop: "10px" }}>
-                        <img
-                          src={studentCardPreview || `http://localhost:3000/${formData.image_carte_etudiant}`}
-                          alt="Student Card Preview"
-                          style={{ width: "200px", height: "auto", border: "1px solid #ccc", borderRadius: "5px" }}
-                        />
-                      </div>
-                    )}
-                    {errors.image_carte_etudiant && (
-                      <div className="error-field">{errors.image_carte_etudiant}</div>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {role === "ong" && (
-              <>
-                <div className="editprofile-row">
-                  <div className="col-md-6 login-input-block">
-                    <input
-                      type="text"
-                      className={`login-input ${errors.id_fiscale ? "error" : ""}`}
-                      name="id_fiscale"
-                      value={formData.id_fiscale}
-                      onChange={handleChange}
-                      required
-                      placeholder=" "
-                    />
-                    <label className="login-label">Fiscal ID</label>
-                    {errors.id_fiscale && <div className="error-field">{errors.id_fiscale}</div>}
-                  </div>
-                  <div className="col-md-6 login-input-block" style={{ marginLeft: "-22px" }}>
-                    <select
-                      className={`login-input ${errors.type ? "error" : ""}`}
-                      name="type"
-                      value={formData.type}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">Select ONG Type</option>
-                      <option value="advocacy">Advocacy</option>
-                      <option value="operational">Operational</option>
-                      <option value="charitable">Charitable</option>
-                      <option value="development">Development</option>
-                      <option value="environmental">Environmental</option>
-                      <option value="human-rights">Human Rights</option>
-                      <option value="relief">Relief</option>
-                      <option value="research">Research</option>
-                      <option value="philanthropic">Philanthropic</option>
-                      <option value="social_welfare">Social Welfare</option>
-                      <option value="cultural">Cultural</option>
-                      <option value="faith_based">Faith Based</option>
-                    </select>
-                    <label className="login-label">ONG Type</label>
-                    {errors.type && <div className="error-field">{errors.type}</div>}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {(role === "restaurant" || role === "supermarket") && (
-              <div className="editprofile-row">
-                <div className="col-md-6 login-input-block">
+                    Choose Student Card Image
+                  </label>
                   <input
-                    type="text"
-                    className={`login-input ${errors.taxReference ? "error" : ""}`}
-                    name="taxReference"
-                    value={formData.taxReference}
-                    onChange={handleChange}
+                    id="file-upload-student"
+                    type="file"
+                    name="image_carte_etudiant"
+                    onChange={handleFileChange}
                     required
-                    placeholder=" "
                   />
-                  <label className="login-label">Tax Reference</label>
-                  {errors.taxReference && <div className="error-field">{errors.taxReference}</div>}
+                  {formData.image_carte_etudiant && typeof formData.image_carte_etudiant === "object" && (
+                    <div className="file-name">
+                      <p>{formData.image_carte_etudiant.name}</p>
+                    </div>
+                  )}
+                  {(studentCardPreview ||
+                    (typeof formData.image_carte_etudiant === "string" && formData.image_carte_etudiant)) && (
+                    <div className="student-card-preview">
+                      <img
+                        src={studentCardPreview || `http://localhost:3000/${formData.image_carte_etudiant}`}
+                        alt="Student Card Preview"
+                      />
+                    </div>
+                  )}
+                  {errors.image_carte_etudiant && <div className="error-field">{errors.image_carte_etudiant}</div>}
                 </div>
               </div>
-            )}
+            </>
+          )}
 
-            {role === "transporter" && (
-              <div className="editprofile-row">
-                <div className="col-md-6 login-input-block">
-                  <select
-                    className={`login-input ${errors.vehiculeType ? "error" : ""}`}
-                    name="vehiculeType"
-                    value={formData.vehiculeType}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select Vehicle Type</option>
-                    <option value="car">Car</option>
-                    <option value="motorbike">Motorbike</option>
-                    <option value="bicycle">Bicycle</option>
-                    <option value="van">Van</option>
-                    <option value="truck">Truck</option>
-                    <option value="scooter">Scooter</option>
-                  </select>
-                  <label className="login-label">Vehicle Type</label>
-                  {errors.vehiculeType && <div className="error-field">{errors.vehiculeType}</div>}
-                </div>
+          {role === "ong" && (
+            <>
+              <div className="login-input-block">
+                <input
+                  type="text"
+                  className={`login-input ${errors.id_fiscale ? "error" : ""}`}
+                  name="id_fiscale"
+                  value={formData.id_fiscale}
+                  onChange={handleChange}
+                  required
+                  placeholder=" "
+                />
+                <label className="login-label">Fiscal ID</label>
+                {errors.id_fiscale && <div className="error-field">{errors.id_fiscale}</div>}
               </div>
-            )}
 
-            <div className="text-center">
-              <button className="btn login-button" type="submit">
-                Save Profile
-              </button>
+              <div className="login-input-block">
+                <select
+                  className={`login-input ${errors.type ? "error" : ""}`}
+                  name="type"
+                  value={formData.type}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select ONG Type</option>
+                  <option value="advocacy">Advocacy</option>
+                  <option value="operational">Operational</option>
+                  <option value="charitable">Charitable</option>
+                  <option value="development">Development</option>
+                  <option value="environmental">Environmental</option>
+                  <option value="human-rights">Human Rights</option>
+                  <option value="relief">Relief</option>
+                  <option value="research">Research</option>
+                  <option value="philanthropic">Philanthropic</option>
+                  <option value="social_welfare">Social Welfare</option>
+                  <option value="cultural">Cultural</option>
+                  <option value="faith_based">Faith Based</option>
+                </select>
+                <label className="login-label">ONG Type</label>
+                {errors.type && <div className="error-field">{errors.type}</div>}
+              </div>
+            </>
+          )}
+
+          {(role === "restaurant" || role === "supermarket") && (
+            <div className="login-input-block">
+              <input
+                type="text"
+                className={`login-input ${errors.taxReference ? "error" : ""}`}
+                name="taxReference"
+                value={formData.taxReference}
+                onChange={handleChange}
+                required
+                placeholder=" "
+              />
+              <label className="login-label">Tax Reference</label>
+              {errors.taxReference && <div className="error-field">{errors.taxReference}</div>}
             </div>
-          </form>
-        </div>
+          )}
+
+          {role === "transporter" && (
+            <div className="login-input-block">
+              <select
+                className={`login-input ${errors.vehiculeType ? "error" : ""}`}
+                name="vehiculeType"
+                value={formData.vehiculeType}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select Vehicle Type</option>
+                <option value="car">Car</option>
+                <option value="motorbike">Motorbike</option>
+                <option value="bicycle">Bicycle</option>
+                <option value="van">Van</option>
+                <option value="truck">Truck</option>
+                <option value="scooter">Scooter</option>
+              </select>
+              <label className="login-label">Vehicle Type</label>
+              {errors.vehiculeType && <div className="error-field">{errors.vehiculeType}</div>}
+            </div>
+          )}
+
+          <button className="btn login-button" type="submit">
+            Save Profile
+          </button>
+        </form>
       </div>
-      <br />
-      <br />
       <Footer />
     </>
   )

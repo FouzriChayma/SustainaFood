@@ -206,7 +206,7 @@ const RecipientProfile = ({ user }) => {
                   fontWeight: "500",
                 }}
               >
-                {isAvailable ? "You are visible to transporters" : "You are hidden from transporters"}
+                {isAvailable ? "Status: Available" : "Status: Not Available"}
               </p>
 
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>

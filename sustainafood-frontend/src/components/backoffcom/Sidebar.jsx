@@ -35,10 +35,7 @@ const Sidebar = () => {
         <Link to="/dashboard" className={location.pathname === "/dashboard" ? "active" : ""}>
           <FaChartBar className="icon" /> <span>Dashboard</span>
         </Link>
-        {/* Reports link */}
-        <Link to="/reports">
-          <FaFileAlt className="icon" /> <span>Reports</span>
-        </Link>
+     
         {/* Contact Submissions link */}
         <Link to="/contact/submissions" className={isContactSubmissionsActive ? "active" : ""}>
           <FaFileAlt className="icon" /> <span>Contact Submissions</span>
@@ -105,17 +102,11 @@ const Sidebar = () => {
           <FaTruck className="icon" /> <span>Logistics & Transport</span>
         </Link>
         {/* Settings link */}
-        <Link to="/settings">
+        <Link to="/admin-profile">
           <FaCogs className="icon" /> <span>Settings</span>
         </Link>
-        {/* Authentification link */}
-        <Link to="/Authentification">
-          <FaLock className="icon" /> <span>Authentification</span>
-        </Link>
-        {/* Help Center link */}
-        <Link to="/Help-Center">
-          <FaQuestionCircle className="icon" /> <span>Help Center</span>
-        </Link>
+     
+   
       </nav>
     </div>
   );

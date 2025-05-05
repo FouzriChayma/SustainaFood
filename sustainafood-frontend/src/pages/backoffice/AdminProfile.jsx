@@ -27,14 +27,14 @@ const AdminProfile = () => {
       console.error("No token found. User is not authenticated.")
       return
     }
-
+        const userId = authUser._id || authUser.id;
     const fetchUserData = async () => {
       try {
-        if (!authUser || !authUser.id) {
+        if (!authUser || !authUser.id ) {
           console.error("⛔ authUser id is undefined!")
           return
         }
-        const response = await getUserById(authUser.id)
+        const response = await getUserById(userId)
         const userData = response.data
         setAdmin({
           name: userData.name || "",

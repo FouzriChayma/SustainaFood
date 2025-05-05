@@ -220,7 +220,7 @@ const [statusFilter, setStatusFilter] = useState("");
             request.status || "N/A",
             request.description?.trim() || "N/A",
             products,
-            request.location || "N/A",
+            request.address || "N/A",
         ];
     });
 
@@ -398,7 +398,7 @@ const [statusFilter, setStatusFilter] = useState("");
                             </div>
                           )}
                         </td>
-                        <td>{request.location || "N/A"}</td>
+                        <td>{request.address || "N/A"}</td>
                         <td >
                           <button className="view-btn">
                             <Link to={`/requests/view/${request._id}`}>

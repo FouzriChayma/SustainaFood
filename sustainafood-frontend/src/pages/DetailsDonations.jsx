@@ -618,6 +618,7 @@ const DetailsDonations = () => {
   if (!donation) return <div>No donation found.</div>;
 
   const { title, expirationDate, products, meals } = donation;
+  const isExpired = new Date(expirationDate) < new Date();
 
   return (
     <>
@@ -932,7 +933,7 @@ const DetailsDonations = () => {
             </Button>
           )}
 
-          {!isTheOwner && isRecipient && donation.status !== "fulfilled" && (
+          {!isTheOwner && isRecipient && donation.status !== "fulfilled" && !isExpired && (
             <Button
               variant={isAddingRequest ? "cancel" : "add"}
               onClick={() => setIsAddingRequest(!isAddingRequest)}

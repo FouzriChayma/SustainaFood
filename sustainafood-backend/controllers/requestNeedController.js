@@ -37,7 +37,7 @@ const checkBadWords = (text) => {
 // ✅ Get all requests
 async function getAllRequests(req, res) {
   try {
-    const requests = await RequestNeed.find({ isaPost: true })
+    const requests = await RequestNeed.find({ isaPost: true , status:{ $ne: 'fulfilled' } })
       .populate('recipient')
       .populate('requestedProducts.product')
       .populate('requestedMeals.meal');

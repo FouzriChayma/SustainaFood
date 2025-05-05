@@ -4,6 +4,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Line } from "react-chartjs-2";
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import logo from '../assets/images/logooo.png';
 import axios from 'axios';
 import { Chart as ChartJS, CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js';
@@ -217,14 +218,14 @@ const ErrorMessage = styled.p`
   text-align: center;
 `;
 
-const PreductionForDonor = () => {
+const PredictionForDonor = () => {
   const { authUser, user } = useAuth();
   const [userId, setuserId] = useState("");
   const [donationForecast, setDonationForecast] = useState([]);
   const [requestForecast, setRequestForecast] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const chartRef = useRef(null);
+  const chartContainerRef = useRef(null);
   const isDonor = user?.role === "restaurant" || user?.role === "supermarket" || user?.role === "personaldonor";
   const isRecipient = user?.role === "ong" || user?.role === "student";
 
@@ -383,36 +384,117 @@ const PreductionForDonor = () => {
   };
 
   const downloadPDF = () => {
-    const doc = new jsPDF();
-    const img = new Image();
-    img.src = logo;
-    doc.addImage(img, 'PNG', 10, 10, 50, 20);
-    doc.setFontSize(18);
-    doc.setTextColor(34, 139, 34);
-    doc.text(isDonor ? "Request Forecast Report" : "Donation Forecast Report", 70, 20);
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    let yPosition = 170;
-    if (isDonor) {
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+
+    // Header setup
+    const addHeader = () => {
+      doc.setFillColor(245, 245, 245);
+      doc.rect(0, 0, doc.internal.pageSize.width, 40, "F");
+      doc.setDrawColor(144, 196, 60);
+      doc.setLineWidth(1.5);
+      doc.line(0, 40, doc.internal.pageSize.width, 40);
+      doc.addImage(logo, "PNG", 10, 5, 30, 30);
+      doc.setFontSize(18);
       doc.setTextColor(34, 139, 34);
-      doc.text("Request Forecast Details:", 10, yPosition);
-      doc.setTextColor(0, 0, 0);
-      yPosition += 10;
-      requestForecast.forEach((entry) => {
-        doc.text(`${entry.ds}: ${entry.yhat.toFixed(2)} (Range: ${entry.yhat_lower.toFixed(2)} - ${entry.yhat_upper.toFixed(2)})`, 10, yPosition);
-        yPosition += 10;
+      doc.setFont("helvetica", "bold");
+      doc.text(isDonor ? "Request Forecast Report" : "Donation Forecast Report", doc.internal.pageSize.width / 2, 20, { align: "center" });
+      const today = new Date();
+      const dateStr = today.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
-    } else {
-      doc.setTextColor(34, 139, 34);
-      doc.text("Donation Forecast Details:", 10, yPosition);
-      doc.setTextColor(0, 0, 0);
-      yPosition += 10;
-      donationForecast.forEach((entry) => {
-        doc.text(`${entry.ds}: ${entry.yhat.toFixed(2)} (Range: ${entry.yhat_lower.toFixed(2)} - ${entry.yhat_upper.toFixed(2)})`, 10, yPosition);
-        yPosition += 10;
-      });
-    }
-    doc.save(isDonor ? "request_forecast.pdf" : "donation_forecast.pdf");
+      doc.setFontSize(10);
+      doc.setTextColor(80, 80, 80);
+      doc.text(`Generated: ${dateStr}`, doc.internal.pageSize.width - 50, 35);
+    };
+
+    // Footer setup
+    const addFooter = (page, pageCount) => {
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.5);
+      doc.line(15, doc.internal.pageSize.height - 20, doc.internal.pageSize.width - 15, doc.internal.pageSize.height - 20);
+      doc.setFillColor(144, 196, 60);
+      doc.roundedRect(doc.internal.pageSize.width / 2 - 15, doc.internal.pageSize.height - 18, 30, 12, 3, 3, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.text(`Page ${page} of ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: "center" });
+      doc.setTextColor(120, 120, 120);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "italic");
+      doc.text("Confidential - For internal use only", 15, doc.internal.pageSize.height - 10);
+      doc.text("© SustainaFood", doc.internal.pageSize.width - 45, doc.internal.pageSize.height - 10);
+    };
+
+    // Add header to the first page
+    addHeader();
+
+    // Capture the chart
+    setTimeout(() => {
+      if (chartContainerRef.current) {
+        const canvas = chartContainerRef.current.querySelector('canvas');
+        if (canvas) {
+          html2canvas(canvas, { scale: 2 }).then((capturedCanvas) => {
+            const chartImgData = capturedCanvas.toDataURL('image/png');
+            const imgWidth = 190;
+            const chartImgHeight = (capturedCanvas.height * imgWidth) / capturedCanvas.width;
+
+            // Add chart to PDF
+            let yPosition = 50;
+            doc.addImage(chartImgData, 'PNG', 10, yPosition, imgWidth, chartImgHeight);
+            yPosition += chartImgHeight + 20;
+
+            // Add forecast details
+            doc.setFontSize(14);
+            doc.setTextColor(34, 139, 34);
+            doc.setFont("helvetica", "bold");
+            doc.text(isDonor ? "Request Forecast Details" : "Donation Forecast Details", 10, yPosition);
+            yPosition += 10;
+
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            doc.setFont("helvetica", "normal");
+            const forecastData = isDonor ? requestForecast : donationForecast;
+            forecastData.forEach((entry) => {
+              if (yPosition > 250) {
+                doc.addPage();
+                addHeader();
+                yPosition = 50;
+              }
+              doc.text(
+                `${entry.ds}: ${entry.yhat.toFixed(2)} (Range: ${entry.yhat_lower.toFixed(2)} - ${entry.yhat_upper.toFixed(2)})`,
+                10,
+                yPosition
+              );
+              yPosition += 8;
+            });
+
+            // Add footer to all pages
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+              doc.setPage(i);
+              addFooter(i, pageCount);
+            }
+
+            // Save the PDF
+            doc.save(isDonor ? "request_forecast.pdf" : "donation_forecast.pdf");
+          }).catch((err) => {
+            console.error("Error capturing chart:", err);
+            alert("Failed to capture chart for PDF. Please try again.");
+          });
+        } else {
+          console.error("Canvas not found in chart container");
+          alert("Chart canvas not found. Please ensure the chart is rendered before exporting.");
+        }
+      } else {
+        console.error("Chart container reference not found");
+        alert("Chart container not found. Please try again.");
+      }
+    }, 1000); // Increased delay to ensure chart rendering
   };
 
   if (loading) return <ForecastContainer><LoadingMessage>Loading analytics...</LoadingMessage></ForecastContainer>;
@@ -429,8 +511,8 @@ const PreductionForDonor = () => {
             <>
               <div>
                 <Subtitle>Request Forecast</Subtitle>
-                <ChartWrapper>
-                  <Line ref={chartRef} data={chartData} options={chartOptions} />
+                <ChartWrapper ref={chartContainerRef}>
+                  <Line data={chartData} options={chartOptions} />
                 </ChartWrapper>
                 <DownloadButton onClick={downloadPDF}>
                   Download PDF Report
@@ -449,8 +531,8 @@ const PreductionForDonor = () => {
             <>
               <div>
                 <Subtitle>Donation Forecast</Subtitle>
-                <ChartWrapper>
-                  <Line ref={chartRef} data={chartData} options={chartOptions} />
+                <ChartWrapper ref={chartContainerRef}>
+                  <Line data={chartData} options={chartOptions} />
                 </ChartWrapper>
                 <DownloadButton onClick={downloadPDF}>
                   Download PDF Report
@@ -473,4 +555,4 @@ const PreductionForDonor = () => {
   );
 };
 
-export default PreductionForDonor;
+export default PredictionForDonor;

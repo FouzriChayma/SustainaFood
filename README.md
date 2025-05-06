@@ -1,207 +1,213 @@
+# 🌍 SustainaFood: Revolutionizing Food Redistribution
 
+📧 Contact: sustainafood.team@gmail.com  
+🌐 [GitHub Repository](https://github.com/FouzriChayma/SustainaFood)
 
-  
+---
 
+## 🥖 A Feast of Waste in a Hungry World
 
+Shelves groaning with unsold bread. Crates of bruised apples.  
+Across the street, a student digs through their bag for the last crumpled ramen packet.  
+Society produces more than enough food, yet millions go hungry. It’s not a supply issue — it’s a distribution failure.
 
-SustainaFood: Revolutionizing Food Redistribution 🌍
+**SustainaFood** bridges that gap.
 
+Developed as a 4th-year integrated project at **Esprit School of Engineering**, SustainaFood connects:
+- 🍽️ **Food donors** (restaurants, supermarkets, individuals)
+- 🙋‍♀️ **Recipients** (NGOs, students)
+- 🚚 **Transporters**
 
-  📧 sustainafood.team@gmail.com |
-  🌐 GitHub Repository
+Our mission is simple: **turn surplus into sustenance**.
 
+---
 
+## 🎯 Project Vision
 
-A Feast of Waste in a Hungry World
-Picture this: shelves groaning with unsold bread, crates of slightly bruised apples that nobody bought. Across the street, a student digs through their bag for the last crumpled ramen packet, while an NGO volunteer sighs over an empty pantry. It’s a tale of two worlds—one drowning in excess, the other starving for a chance. Society produces more than enough food, yet millions go hungry. It’s not a supply issue—it’s a distribution failure.
-SustainaFood is here to bridge that gap. Developed as a 4th-year integrated project at Esprit School of Engineering, SustainaFood is a platform designed to tackle food waste in Tunisia and Setif by connecting food donors (restaurants, supermarkets, personal donors), recipients (NGOs, students), and transporters in a seamless, efficient ecosystem. Our mission is to turn surplus into sustenance, ensuring no food goes to waste while no one goes hungry.
+- ♻️ **Redistribute Surplus** — Link donors to recipients in real-time.
+- 🛻 **Optimize Deliveries** — Assign and track transporters.
+- 🤖 **Leverage AI** — Detect anomalies, predict needs, classify donations.
+- 💪 **Empower Communities** — Create a sustainable food ecosystem.
 
-🎯 Project Vision
-SustainaFood addresses the paradox of food waste and hunger by:
+---
 
-Redistributing Surplus: Connecting donors with excess food to recipients in need.
-Optimizing Logistics: Assigning transporters to ensure timely deliveries.
-Leveraging AI: Using machine learning to detect donation anomalies, predict supply/demand, and classify food items.
-Empowering Communities: Enabling NGOs, students, restaurants, supermarkets, and individuals to participate in a sustainable food ecosystem.
+## 🚀 Features
 
+- ✅ Donation Management: Create, update, track donations.
+- 📦 Request System: NGOs/students request food items.
+- 🤖 AI-Powered Insights:
+  - Detect anomalies in donation data
+  - Predict food supply/demand
+  - Classify food types
+- 🚚 Delivery Coordination: Assign and track transporters
+- 🔐 User Roles: Admin, Donor, Recipient, Transporter (RBAC)
+- 📊 Dashboards: Contribution insights for donors/recipients
+- 🔔 Real-Time Notifications
+- ⭐ Feedback System: Rate & review deliveries
+- 🔐 Google Authentication + Optional 2FA
+- 🛠️ Backoffice for Admins
 
-🚀 Features
+---
 
-Donation Management: Create, update, and track food donations (prepared meals or packaged products).
-Request System: NGOs and students can request specific food items based on their needs.
-AI-Powered Insights:
-Anomaly detection to flag suspicious donations (e.g., large quantities near expiry).
-Supply/demand forecasting to anticipate food needs.
-Food classification to ensure donations meet recipient requirements.
+## 🛠️ Tech Stack
 
+### Backend
 
-Delivery Coordination: Assign transporters to deliveries and track their status.
-User Roles: Supports multiple roles (admin, donor, recipient, transporter) with role-based access control.
-Analytics Dashboards: Provide donors and recipients with insights into their contributions and fulfilled requests.
-Notifications: Real-time alerts for donation approvals, rejections, and delivery updates.
-Feedback System: Allows users to rate and review delivery experiences.
-Google Authentication: Secure login with Google OAuth and optional 2FA.
-Backoffice for Admins: Manage users, donations, requests, and anomalies with a comprehensive admin dashboard.
+- **Node.js** & **Express** – RESTful API
+- **MongoDB** & **Mongoose** – NoSQL database
+- **Passport.js** – Google OAuth
+- **JWT** – Token-based auth
+- **Nodemailer** – Email notifications
+- **Multer** – File uploads
 
+### Frontend
 
-🛠️ Tech Stack
-Backend
+- **React** & **React Router**
+- **Axios** – API communication
+- **Context API** – Global state
+- **Tailwind CSS** – Responsive UI
 
-Node.js & Express: RESTful API for handling requests and business logic.
-MongoDB & Mongoose: NoSQL database for storing donations, requests, users, and transactions.
-Passport.js: Google OAuth for secure authentication.
-JWT: Token-based authentication for secure API access.
-Nodemailer: Email notifications for donation approvals/rejections and user actions.
-Multer: File uploads for user profiles and donation images.
+### AI
 
-Frontend
+- **Python** & **Flask** – AI API
+- **scikit-learn**, **Pandas** – ML tools
+- **venv** – Python dependency management
 
-React & React Router: Single-page application with dynamic routing.
-Axios: HTTP client for API communication.
-Context API: Global state management for alerts and user data.
-Tailwind CSS: Utility-first CSS for responsive design.
+### DevOps
 
-AI
+- **Jenkins** – CI/CD pipeline
+- **dotenv** – Config management
+- **node-cron** – Scheduled ML updates
 
-Python & Flask: RESTful API for AI-driven forecasting and anomaly detection.
-scikit-learn & Pandas: Machine learning and data processing.
-Virtual Environment: venv for Python dependency management.
+---
 
-Other
+## ⚙️ Getting Started
 
-Jenkins: CI/CD pipeline configuration.
-dotenv: Environment variable management for secure configuration.
-node-cron: Scheduled tasks for periodic ML model updates.
+### Prerequisites
 
+- Node.js (v16+)
+- MongoDB (local or Atlas)
+- Python (v3.8+)
+- Git
+- pip
 
-🏗️ Getting Started
-Prerequisites
+---
 
-Node.js (v16 or higher)
-MongoDB (local or Atlas)
-Python (v3.8 or higher)
-Git
-pip: Python package manager
+### 🔧 Installation
 
-Installation
-
-Clone the Repository:
+# 1. Clone the repo
 git clone https://github.com/FouzriChayma/SustainaFood.git
 cd sustainafood
 
-
-Install Backend Dependencies:
+# 2. Backend Setup
 cd sustainafood-backend
 npm install
 cd ..
 
-
-Install Frontend Dependencies:
+# 3. Frontend Setup
 cd sustainafood-frontend
 npm install
 cd ..
 
-
-Set Up AI Environment:
+# 4. AI Setup
 cd sustinia-ai
 python -m venv venv
-venv\Scripts\activate  # On Windows
-# venv/bin/activate    # On macOS/Linux
+source venv/bin/activate     # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
+🔐 Environment Variables
+Create a .env in sustainafood-backend:
 
-
-Set Up Environment Variables:Create a .env file in sustainafood-backend with:
-MONGODB_URI=your_mongodb_connection_string
+env
+Copier
+Modifier
+MONGODB_URI=your_mongodb_uri
 EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_email_app_password
-JWT_SECRET=your_jwt_secret_key
+EMAIL_PASS=your_app_password
+JWT_SECRET=your_jwt_secret
 NODE_ENV=development
-
-
-Configure MongoDB:Update sustainafood-backend/config/database.json with your MongoDB connection details if not using .env.
-
-Run the AI Flask API:
+▶️ Running the App
+bash
+Copier
+Modifier
+# Start AI Server (http://127.0.0.1:5000)
 cd sustinia-ai
-venv\Scripts\activate  # On Windows
+source venv/bin/activate
 python app.py
 
-The API will run on http://127.0.0.1:5000.
-
-Start the Backend:
+# Start Backend (http://localhost:3000)
 cd sustainafood-backend
 npm start
 
-The server will run on http://localhost:3000.
-
-Start the Frontend:
+# Start Frontend (http://localhost:3001)
 cd sustainafood-frontend
 npm start
+📡 API Endpoints
+Auth
+GET /auth/google – Login
 
-The React app will run on http://localhost:3001 (or another port if configured).
+GET /auth/google/callback – Callback
 
+Donations
+GET /donation
 
+POST /donation
 
-API Endpoints
+GET /donation/anomalies
 
-Auth: 
-/auth/google (Google OAuth login)
-/auth/google/callback (callback)
+Requests
+GET /request
 
+POST /request
 
-Donations: 
-GET /donation (list all donations)
-POST /donation (create donation)
-GET /donation/anomalies (list anomalous donations)
+AI Forecasts
+GET /forecast/donations
 
+GET /forecast/requests
 
-Requests: 
-GET /request (list all requests)
-POST /request (create request)
+🌐 Frontend Pages
+Public: Home, Login, Signup, Contact, About, Forgot Password
 
+User: Profile, Add Donation, My Donations, Requests, Analytics
 
-AI Forecasts: 
-GET http://127.0.0.1:5000/forecast/donations (donation predictions)
-GET http://127.0.0.1:5000/forecast/requests (request predictions)
-
-
-
-
-Frontend Pages
-
-Public: Home, Login, Signup, Contact, About, Forget Password
-User: Profile, Edit Profile, Add Donation, My Donations, My Requests, Analytics Dashboard
-Admin: Dashboard, Donation List, Anomaly Dashboard, User Management
-
+Admin: Dashboard, User Management, Anomaly Detection
 
 🤝 Contributing
-We welcome contributions from the community! To contribute:
+We welcome contributions from the community!
 
-Fork the repository.
-Create a feature branch (git checkout -b feature/your-feature).
-Commit your changes (git commit -m "Add your feature").
-Push to the branch (git push origin feature/your-feature).
-Open a Pull Request.
+Fork the repository
 
-Please follow our Code of Conduct and ensure your code adheres to our linting and formatting standards.
+Create your feature branch
+git checkout -b feature/your-feature
 
-🧑‍💻 The Dev Dreamers Team
-Developed by the talented 4th-year students at Esprit School of Engineering:
+Commit your changes
+git commit -m "Add your feature"
+
+Push to the branch
+git push origin feature/your-feature
+
+Open a Pull Request
+
+Please follow our Code of Conduct and ensure your code follows our standards.
+
+👥 Dev Dreamers Team
+Made with ❤️ by 4th-year engineering students at Esprit:
 
 Ben Rebah Mouna
+
 Satouri Tassnime
+
 Chayma Fouzei
+
 Mariem Touzri
+
 Wala Amar
 
-
 📜 License
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the MIT License. See the LICENSE file.
 
 📬 Contact
-For questions or feedback, reach out to us at:
+📧 Email: sustainafood.team@gmail.com
 
-Email: sustainafood.team@gmail.com
-GitHub Issues: Create an issue in this repository
-
+🐛 GitHub Issues: Report issues here
 
 🌱 SustainaFood – Turning waste into hope, one donation at a time.

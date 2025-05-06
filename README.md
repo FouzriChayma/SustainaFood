@@ -211,7 +211,7 @@ Made with ❤️ by 4th-year engineering students at Esprit:
 
 - Ben Rebah Mouna  
 - Satouri Tassnime  
-- Chayma Fouzei  
+- Chayma Fouzri  
 - Mariem Touzri  
 - Wala Amar
 

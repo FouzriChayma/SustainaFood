@@ -32,6 +32,8 @@ services:
     image:  mariemtouzri1/soustaina_front:2
     ports:
       - "8070:80"
+    depends_on:
+      - app
 
 volumes:
   mongo-data:

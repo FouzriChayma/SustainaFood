@@ -1,4 +1,3 @@
-// controllers/statistics.js
 const Donation = require("../models/Donation");
 const RequestNeed = require("../models/RequestNeed");
 const DonationTransaction = require("../models/DonationTransaction");
@@ -22,12 +21,23 @@ async function getStatistics(req, res) {
     // Category filter
     const categoryFilter = category === "all" ? {} : { category };
 
+    // Generate placeholder dates for userGrowth to ensure the chart always has data points
+    const generateDateRange = (start, end) => {
+      const dates = [];
+      let currentDate = new Date(start);
+      while (currentDate <= end) {
+        dates.push({ date: currentDate.toISOString().split("T")[0], count: 0 });
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      return dates;
+    };
+
     // Run independent queries in parallel for better performance
     const [
       // 1. User Statistics
       totalUsers,
       userRoles,
-      userGrowth,
+      userGrowthRaw,
       // 2. Donation Statistics
       totalDonations,
       donationStatus,
@@ -130,25 +140,8 @@ async function getStatistics(req, res) {
         { $sort: { _id: 1 } },
         { $project: { date: "$_id", count: 1, _id: 0 } },
       ]),
-      // Fix for topRecipients: Since requestedProducts and requestedMeals are ObjectIds, we need to populate them
       RequestNeed.aggregate([
         { $match: categoryFilter },
-        {
-          $lookup: {
-            from: "products",
-            localField: "requestedProducts",
-            foreignField: "_id",
-            as: "requestedProductsDetails",
-          },
-        },
-        {
-          $lookup: {
-            from: "meals",
-            localField: "requestedMeals",
-            foreignField: "_id",
-            as: "requestedMealsDetails",
-          },
-        },
         {
           $group: {
             _id: "$recipient",
@@ -156,8 +149,8 @@ async function getStatistics(req, res) {
             totalItems: {
               $sum: {
                 $add: [
-                  { $sum: "$requestedProductsDetails.totalQuantity" },
-                  { $sum: "$requestedMealsDetails.quantity" },
+                  { $sum: "$requestedProducts.quantity" },
+                  { $sum: "$requestedMeals.quantity" },
                 ],
               },
             },
@@ -181,12 +174,14 @@ async function getStatistics(req, res) {
       Product.countDocuments(),
       Meal.countDocuments(),
       Product.aggregate([
+        { $match: categoryFilter },
         { $group: { _id: "$productType", count: { $sum: "$totalQuantity" } } },
         { $project: { productType: "$_id", count: 1, _id: 0 } },
       ]).then((result) =>
         result.reduce((acc, { productType, count }) => ({ ...acc, [productType]: count }), {})
       ),
       Meal.aggregate([
+        { $match: categoryFilter },
         { $group: { _id: "$mealType", count: { $sum: "$quantity" } } },
         { $project: { mealType: "$_id", count: 1, _id: 0 } },
       ]).then((result) =>
@@ -221,6 +216,17 @@ async function getStatistics(req, res) {
         },
       ]).then((result) => (result[0] ? result[0].totalWeight : 0)),
     ]);
+
+    // Merge userGrowth with placeholder dates to ensure all dates in the range are represented
+    const placeholderDates = generateDateRange(startDate, endDate);
+    const userGrowthMap = userGrowthRaw.reduce((acc, entry) => {
+      acc[entry.date] = entry.count;
+      return acc;
+    }, {});
+    const userGrowth = placeholderDates.map((entry) => ({
+      date: entry.date,
+      count: userGrowthMap[entry.date] || 0,
+    }));
 
     // Compile the response
     const stats = {

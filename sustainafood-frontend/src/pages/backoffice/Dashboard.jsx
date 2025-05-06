@@ -1,4 +1,3 @@
-// src/pages/backoffice/Dashboard.jsx
 import React, { useState, useEffect } from "react";
 import Sidebar from "../../components/backoffcom/Sidebar";
 import Navbar from "../../components/backoffcom/Navbar";
@@ -7,27 +6,26 @@ import { Bar, Line, Pie } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend } from "chart.js";
 import "/src/assets/styles/backoffcss/dashboard.css";
 import axios from "axios";
-import { CSVLink } from "react-csv"; // For exporting data to CSV
+import { CSVLink } from "react-csv";
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend);
 
 const Dashboard = () => {
-  // State for statistics data
   const [stats, setStats] = useState({
-    totalUsers: 0,
+    totalUsers: 20,
     userRoles: {},
-    totalDonations: 0,
+    totalDonations: 21,
     donationStatus: {},
-    totalRequests: 0,
+    totalRequests: 17,
     requestStatus: {},
-    totalTransactions: 0,
+    totalTransactions: 19,
     transactionStatus: {},
-    totalProducts: 0,
-    totalMeals: 0,
-    expiringDonations: 0,
-    foodDistributed: 0,
-    foodWastePrevented: 0,
+    totalProducts: 2,
+    totalMeals: 15,
+    expiringDonations: 8,
+    foodDistributed: 1,
+    foodWastePrevented: 7,
     topDonors: [],
     topRecipients: [],
     donationTrends: [],
@@ -37,17 +35,14 @@ const Dashboard = () => {
     mealBreakdown: {},
   });
 
-  // State for filters
   const [filters, setFilters] = useState({
-    dateRange: "30d", // Options: 7d, 30d, 90d, all
-    category: "all", // Options: all, packaged_products, prepared_meals
+    dateRange: "30d",
+    category: "all",
   });
 
-  // State for loading and error handling
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch statistics from the backend
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true);
@@ -67,13 +62,11 @@ const Dashboard = () => {
     fetchStats();
   }, [filters]);
 
-  // Handle filter changes
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Prepare data for CSV export
   const csvData = [
     { label: "Total Users", value: stats.totalUsers },
     { label: "Total Donations", value: stats.totalDonations },
@@ -82,7 +75,6 @@ const Dashboard = () => {
     { label: "Total Products", value: stats.totalProducts },
     { label: "Total Meals", value: stats.totalMeals },
     { label: "Expiring Donations", value: stats.expiringDonations },
-    { label: "Food Distributed (units)", value: stats.foodDistributed },
     { label: "Food Waste Prevented (kg)", value: stats.foodWastePrevented },
     ...Object.entries(stats.userRoles).map(([role, count]) => ({
       label: `Users - ${role}`,
@@ -110,7 +102,6 @@ const Dashboard = () => {
     })),
   ];
 
-  // Chart data for donation trends
   const donationTrendsData = {
     labels: stats.donationTrends.map((trend) => trend.date),
     datasets: [
@@ -124,7 +115,6 @@ const Dashboard = () => {
     ],
   };
 
-  // Chart data for request trends
   const requestTrendsData = {
     labels: stats.requestTrends.map((trend) => trend.date),
     datasets: [
@@ -138,7 +128,6 @@ const Dashboard = () => {
     ],
   };
 
-  // Chart data for user growth
   const userGrowthData = {
     labels: stats.userGrowth.map((growth) => growth.date),
     datasets: [
@@ -152,64 +141,57 @@ const Dashboard = () => {
     ],
   };
 
-  // Chart data for product breakdown
+  const productBreakdownData = {
+    labels: Object.keys(stats.productBreakdown),
+    datasets: [
+      {
+        label: "Product Types",
+        data: Object.values(stats.productBreakdown),
+        backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF"],
+      },
+    ],
+  };
 
+  const mealBreakdownData = {
+    labels: Object.keys(stats.mealBreakdown),
+    datasets: [
+      {
+        label: "Meal Types",
+        data: Object.values(stats.mealBreakdown),
+        backgroundColor: ["#FF6387", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF"],
+      },
+    ],
+  };
 
-  // Chart data for meal breakdown
-
-
-  // Chart data for donation status breakdown
   const donationStatusData = {
     labels: Object.keys(stats.donationStatus),
     datasets: [
       {
         label: "Donation Status",
         data: Object.values(stats.donationStatus),
-        backgroundColor: [
-          "#FF6384",
-          "#36A2EB",
-          "#FFCE56",
-          "#4BC0C0",
-          "#9966FF",
-          "#FF9F40",
-        ],
+        backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40"],
       },
     ],
   };
 
-  // Chart data for request status breakdown
   const requestStatusData = {
     labels: Object.keys(stats.requestStatus),
     datasets: [
       {
         label: "Request Status",
         data: Object.values(stats.requestStatus),
-        backgroundColor: [
-          "#FF6384",
-          "#36A2EB",
-          "#FFCE56",
-          "#4BC0C0",
-          "#9966FF",
-        ],
+        backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF"],
       },
     ],
   };
 
-  // Chart data for transaction status breakdown
   const transactionStatusData = {
     labels: Object.keys(stats.transactionStatus),
     datasets: [
       {
         label: "Transaction Status",
         data: Object.values(stats.transactionStatus),
-        backgroundColor: [
-          "#FF6384",
-          "#36A2EB",
-          "#FFCE56",
-          "#4BC0C0",
-          "#9966FF",
-          "#FF9F40",
-        ],
+        backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40"],
       },
     ],
   };
@@ -219,8 +201,6 @@ const Dashboard = () => {
       <Sidebar />
       <div className="dashboard-content">
         <Navbar />
-
-        {/* Filter Bar and Export Button */}
         <div className="filter-bar">
           <div className="filter-group">
             <label>
@@ -249,19 +229,15 @@ const Dashboard = () => {
             Export to CSV
           </CSVLink>
         </div>
-
-        {/* Loading and Error States */}
         {loading && <div className="loading">Loading statistics...</div>}
         {error && <div className="error">{error}</div>}
-
         {!loading && !error && (
           <>
-            {/* Key Metrics Cards */}
             <div className="card-container">
               <CardStats
                 title="Total Users"
                 value={stats.totalUsers}
-                percentage={0}
+                percentage={null}
                 icon="users"
                 color="blue"
                 progress={0}
@@ -269,7 +245,7 @@ const Dashboard = () => {
               <CardStats
                 title="Total Donations"
                 value={stats.totalDonations}
-                percentage={0}
+                percentage={null}
                 icon="utensils"
                 color="green"
                 progress={0}
@@ -277,7 +253,7 @@ const Dashboard = () => {
               <CardStats
                 title="Total Requests"
                 value={stats.totalRequests}
-                percentage={0}
+                percentage={null}
                 icon="handHoldingHeart"
                 color="orange"
                 progress={0}
@@ -285,31 +261,24 @@ const Dashboard = () => {
               <CardStats
                 title="Total Transactions"
                 value={stats.totalTransactions}
-                percentage={0}
-                icon="exchange"
+                percentage={null}
+                icon="chart"
                 color="purple"
                 progress={0}
               />
-              <CardStats
-                title="Food Distributed"
-                value={`${stats.foodDistributed} units`}
-                percentage={0}
-                icon="chart"
-                color="red"
-                progress={0}
-              />
+              
               <CardStats
                 title="Food Waste Prevented"
                 value={`${stats.foodWastePrevented} kg`}
-                percentage={0}
-                icon="leaf"
+                percentage={null}
+                icon="trash"
                 color="teal"
                 progress={0}
               />
               <CardStats
                 title="Expiring Donations"
                 value={stats.expiringDonations}
-                percentage={0}
+                percentage={null}
                 icon="clock"
                 color="yellow"
                 progress={0}
@@ -317,7 +286,7 @@ const Dashboard = () => {
               <CardStats
                 title="Total Products"
                 value={stats.totalProducts}
-                percentage={0}
+                percentage={null}
                 icon="box"
                 color="pink"
                 progress={0}
@@ -325,14 +294,12 @@ const Dashboard = () => {
               <CardStats
                 title="Total Meals"
                 value={stats.totalMeals}
-                percentage={0}
+                percentage={null}
                 icon="utensils"
                 color="cyan"
                 progress={0}
               />
             </div>
-
-            {/* Charts Section */}
             <div className="charts-status-container">
               <div className="chart-section">
                 <h3>Donation Trends</h3>
@@ -346,7 +313,14 @@ const Dashboard = () => {
                 <h3>User Growth</h3>
                 <Line data={userGrowthData} options={{ responsive: true }} />
               </div>
-              
+              <div className="chart-section">
+                <h3>Product Breakdown</h3>
+                <Pie data={productBreakdownData} options={{ responsive: true }} />
+              </div>
+              <div className="chart-section">
+                <h3>Meal Breakdown</h3>
+                <Pie data={mealBreakdownData} options={{ responsive: true }} />
+              </div>
               <div className="chart-section">
                 <h3>Donation Status</h3>
                 <Pie data={donationStatusData} options={{ responsive: true }} />
@@ -360,8 +334,6 @@ const Dashboard = () => {
                 <Pie data={transactionStatusData} options={{ responsive: true }} />
               </div>
             </div>
-
-            {/* Detailed Statistics Section */}
             <div className="detailed-stats">
               <div className="stats-section">
                 <h3>User Role Breakdown</h3>
@@ -382,7 +354,6 @@ const Dashboard = () => {
                   </tbody>
                 </table>
               </div>
-
               <div className="stats-section">
                 <h3>Top Donors</h3>
                 <table>
@@ -404,7 +375,6 @@ const Dashboard = () => {
                   </tbody>
                 </table>
               </div>
-
               <div className="stats-section">
                 <h3>Top Recipients</h3>
                 <table>

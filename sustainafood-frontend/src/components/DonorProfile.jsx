@@ -23,7 +23,7 @@ const DonorProfile = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 1
+  const itemsPerPage = 2
 
   const [isAvailable, setIsAvailable] = useState(user?.isAvailable || false)
   const [availabilityLoading, setAvailabilityLoading] = useState(false)
@@ -74,6 +74,125 @@ const DonorProfile = ({ user }) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page)
     }
+  }
+
+  // Pagination logic to show limited page numbers with ellipses
+  const renderPaginationButtons = () => {
+    const pageButtons = []
+    const maxVisibleButtons = 5 // Maximum number of page buttons to show
+
+    // Always show first page button
+    pageButtons.push(
+      <button
+        key={1}
+        onClick={() => handlePageChange(1)}
+        style={{
+          background: currentPage === 1 ? "#228b22" : "#f5f5f5",
+          color: currentPage === 1 ? "white" : "#555",
+          border: "none",
+          padding: "8px 14px",
+          borderRadius: "6px",
+          cursor: "pointer",
+          transition: "background 0.3s",
+          margin: "0 4px",
+          fontWeight: currentPage === 1 ? "bold" : "normal",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = currentPage === 1 ? "#1e7a1e" : "#e0e0e0"
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = currentPage === 1 ? "#228b22" : "#f5f5f5"
+        }}
+      >
+        1
+      </button>,
+    )
+
+    // Calculate range of visible page buttons
+    let startPage = Math.max(2, currentPage - Math.floor(maxVisibleButtons / 2))
+    const endPage = Math.min(totalPages - 1, startPage + maxVisibleButtons - 3)
+
+    if (endPage - startPage < maxVisibleButtons - 3) {
+      startPage = Math.max(2, endPage - (maxVisibleButtons - 3) + 1)
+    }
+
+    // Add ellipsis after first page if needed
+    if (startPage > 2) {
+      pageButtons.push(
+        <span key="ellipsis1" style={{ margin: "0 4px", color: "#555" }}>
+          ...
+        </span>,
+      )
+    }
+
+    // Add page buttons between start and end
+    for (let i = startPage; i <= endPage; i++) {
+      pageButtons.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          style={{
+            background: currentPage === i ? "#228b22" : "#f5f5f5",
+            color: currentPage === i ? "white" : "#555",
+            border: "none",
+            padding: "8px 14px",
+            borderRadius: "6px",
+            cursor: "pointer",
+            transition: "background 0.3s",
+            margin: "0 4px",
+            fontWeight: currentPage === i ? "bold" : "normal",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = currentPage === i ? "#1e7a1e" : "#e0e0e0"
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = currentPage === i ? "#228b22" : "#f5f5f5"
+          }}
+        >
+          {i}
+        </button>,
+      )
+    }
+
+    // Add ellipsis before last page if needed
+    if (endPage < totalPages - 1) {
+      pageButtons.push(
+        <span key="ellipsis2" style={{ margin: "0 4px", color: "#555" }}>
+          ...
+        </span>,
+      )
+    }
+
+    // Always show last page button if there's more than one page
+    if (totalPages > 1) {
+      pageButtons.push(
+        <button
+          key={totalPages}
+          onClick={() => handlePageChange(totalPages)}
+          style={{
+            background: currentPage === totalPages ? "#228b22" : "#f5f5f5",
+            color: currentPage === totalPages ? "white" : "#555",
+            border: "none",
+            padding: "8px 14px",
+            borderRadius: "6px",
+            cursor: "pointer",
+            transition: "background 0.3s",
+            margin: "0 4px",
+            fontWeight: currentPage === totalPages ? "bold" : "normal",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = currentPage === totalPages ? "#1e7a1e" : "#e0e0e0"
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = currentPage === totalPages ? "#228b22" : "#f5f5f5"
+          }}
+        >
+          {totalPages}
+        </button>,
+      )
+    }
+
+    return pageButtons
   }
 
   const handleToggleAvailability = async () => {
@@ -127,23 +246,7 @@ const DonorProfile = ({ user }) => {
           padding: "0 20px",
         }}
       >
-        <div style={{ paddingTop: "10px" }}>
-          <h3
-            style={{
-              fontSize: "34px",
-              fontWeight: "600",
-              color: "#228b22",
-              margin: 0,
-              fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-              position: "relative",
-              display: "inline-block",
-            }}
-          >
-            <span style={{ color: "#228b22", fontWeight: "500" }}>{user?.name || "User"}'s</span>{" "}
-            <span style={{ color: "#228b22", fontWeight: "700" }}>Donations</span>
-            
-          </h3>
-        </div>
+   
 
         {isOwnProfile && (
           <div
@@ -152,7 +255,7 @@ const DonorProfile = ({ user }) => {
               borderRadius: "12px",
               overflow: "hidden",
               border: "1px solid rgba(34, 139, 34, 0.12)",
-              width: "350px",
+              width: "530px",
             }}
           >
             <div
@@ -606,18 +709,19 @@ const DonorProfile = ({ user }) => {
         </div>
 
         {totalPages > 1 && (
-          <div style={{ display: "flex", justifyContent: "center", marginTop: "20px", gap: "10px" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginTop: "20px", gap: "10px", flexWrap: "wrap" }}>
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
               style={{
-                background: currentPage === 1 ? "#ddd" : "#228b22",
-                color: currentPage === 1 ? "#555" : "white",
+                background: currentPage === 1 ? "#e0e0e0" : "#228b22",
+                color: currentPage === 1 ? "#999" : "white",
                 border: "none",
-                padding: "8px 12px",
+                padding: "8px 16px",
                 borderRadius: "6px",
-                cursor: "pointer",
+                cursor: currentPage === 1 ? "not-allowed" : "pointer",
                 transition: "background 0.3s",
+                fontWeight: "bold",
               }}
               onMouseEnter={(e) => {
                 if (currentPage !== 1) e.currentTarget.style.background = "#1e7a1e"
@@ -628,40 +732,21 @@ const DonorProfile = ({ user }) => {
             >
               Previous
             </button>
-            {[...Array(totalPages)].map((_, index) => (
-              <button
-                key={index}
-                onClick={() => handlePageChange(index + 1)}
-                style={{
-                  background: currentPage === index + 1 ? "#228b22" : "#ddd",
-                  color: currentPage === index + 1 ? "white" : "#555",
-                  border: "none",
-                  padding: "8px 12px",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  transition: "background 0.3s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = currentPage === index + 1 ? "#1e7a1e" : "#bbb"
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = currentPage === index + 1 ? "#228b22" : "#ddd"
-                }}
-              >
-                {index + 1}
-              </button>
-            ))}
+
+            {renderPaginationButtons()}
+
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
               style={{
-                background: currentPage === totalPages ? "#ddd" : "#228b22",
-                color: currentPage === totalPages ? "#555" : "white",
+                background: currentPage === totalPages ? "#e0e0e0" : "#228b22",
+                color: currentPage === totalPages ? "#999" : "white",
                 border: "none",
-                padding: "8px 12px",
+                padding: "8px 16px",
                 borderRadius: "6px",
-                cursor: "pointer",
+                cursor: currentPage === totalPages ? "not-allowed" : "pointer",
                 transition: "background 0.3s",
+                fontWeight: "bold",
               }}
               onMouseEnter={(e) => {
                 if (currentPage !== totalPages) e.currentTarget.style.background = "#1e7a1e"

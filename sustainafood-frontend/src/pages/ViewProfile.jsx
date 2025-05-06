@@ -455,32 +455,35 @@ const ViewProfile = () => {
                   </form>
                 </div>
               )}
-              <div className="pff-feedback-cards">
-                {feedbacks.length > 0 ? (
-                  feedbacks.map((feedback) => (
-                    <div className="pff-feedback-card" key={feedback._id}>
-                      <div className="pff-message">
-                        <div className="pff-message-header pff-feedback-tip">
-                          <img
-                            src={feedback.reviewer?.photo ? `http://localhost:3000/${feedback.reviewer.photo}` : pdp}
-                            alt="Avatar"
-                          />
-                          <div>
-                            <strong>{feedback.reviewer?.name || 'Anonymous'}</strong>
-                            <StarRating rating={feedback.rating} interactive={false} />
-                            <p>{feedback.comment}</p>
-                          </div>
-                        </div>
-                        <span className="pff-time">
-                          {new Date(feedback.createdAt).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p>No feedback yet.</p>
-                )}
+          <div className="pff-inbox-section">
+  <h3>Feedbacks</h3>
+  <div className="pff-feedback-container">
+    {feedbacks.length > 0 ? (
+      <div className="pff-feedback-scroll">
+        {feedbacks.map((feedback) => (
+          <div className="pff-feedback-card" key={feedback._id}>
+            <div className="pff-message">
+              <div className="pff-message-header pff-feedback-tip">
+                <img
+                  src={feedback.reviewer?.photo ? `http://localhost:3000/${feedback.reviewer.photo}` : pdp}
+                  alt="Avatar"
+                />
+                <div>
+                  <strong>{feedback.reviewer?.name || "Anonymous"}</strong>
+                  <StarRating rating={feedback.rating} interactive={false} />
+                  <p>{feedback.comment}</p>
+                </div>
               </div>
+              <span className="pff-time">{new Date(feedback.createdAt).toLocaleString()}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p>No feedback yet.</p>
+    )}
+  </div>
+</div>
             </div>
           </div>
         </div>

@@ -13,7 +13,8 @@ FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # Remplacement de la config nginx pour servir sur un sous-chemin si besoin
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf 
+# C'est cette ligne qui est importante
 
 EXPOSE 80
 

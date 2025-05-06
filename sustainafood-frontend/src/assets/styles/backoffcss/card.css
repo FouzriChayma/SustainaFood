@@ -1,63 +1,153 @@
-/* Style de base des cartes */
 .card {
     background: white;
-    padding: 10px; /* Réduction de l’espace interne */
-    border-radius: 8px;
-    width: 180px; /* Réduction de la largeur */
-    height: 110px; /* Réduction de la hauteur */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-}
-
-/* Effet au survol */
-.card:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Ajuster l'icône */
-.card .icon {
-    font-size: 20px; /* Réduction de la taille de l’icône */
-    margin-bottom: 5px;
-}
-
-/* Style du titre */
-.card h3 {
+    height: 100%;
+    min-height: 120px;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+  }
+  
+  .card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background-color: var(--card-accent-color, #34495e);
+    opacity: 0.8;
+  }
+  
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  
+  .card .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background-color: var(--card-accent-color, #4caf50);
+    color: white;
+    font-size: 18px;
+    opacity: 0.9;
+  }
+  
+  .card-info {
+    flex: 1;
+  }
+  
+  .card h3 {
     font-size: 14px;
-    font-weight: bold;
+    font-weight: 500;
+    color: #666;
+    margin: 0 0 4px 0;
+  }
+  
+  .card .value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #333;
     margin: 0;
-}
-
-/* Valeur principale */
-.card .value {
-    font-size: 14px;
-    font-weight: bold;
-    margin: 3px 0;
-}
-
-/* Pourcentage en couleur */
-.card .percentage {
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.progress-bar {
-    width: 100%; /* Toutes les barres ont la même largeur */
-    height: 10px; /* Hauteur uniforme */
-    background-color: #e0e0e0; /* Couleur de fond */
-    border-radius: 5px; /* Coins arrondis */
-    overflow: hidden; /* Empêche le dépassement */
-    display: flex; /* Assure l'alignement correct */
-}
-
-.progress {
-    height: 100%; /* Remplit toute la hauteur */
-    border-radius: 5px; /* Arrondi les bords */
-    transition: width 0.5s ease-in-out; /* Animation fluide */
-}
-
-
+  }
+  
+  .card .percentage {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--percentage-color, #4caf50);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: auto;
+  }
+  
+  .progress {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease-in-out;
+    background-color: var(--card-accent-color, #4caf50);
+    opacity: 0.8;
+  }
+  
+  /* Card color variations with updated colors */
+  .card[data-color="blue"] {
+    --card-accent-color: #3498db;
+  }
+  
+  .card[data-color="green"] {
+    --card-accent-color: #27ae60;
+  }
+  
+  .card[data-color="orange"] {
+    --card-accent-color: #d35400;
+  }
+  
+  .card[data-color="purple"] {
+    --card-accent-color: #8e44ad;
+  }
+  
+  .card[data-color="teal"] {
+    --card-accent-color: #16a085;
+  }
+  
+  .card[data-color="yellow"] {
+    --card-accent-color: #f39c12;
+  }
+  
+  .card[data-color="pink"] {
+    --card-accent-color: #2c3e50;
+  }
+  
+  .card[data-color="cyan"] {
+    --card-accent-color: #2980b9;
+  }
+  
+  .card[data-color="indigo"] {
+    --card-accent-color: #5b4de0; /* Added for Total Deliveries */
+  }
+  
+  .card[data-color="gold"] {
+    --card-accent-color: #f1c40f; /* Added for Average Rating */
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .card {
+      padding: 12px;
+      min-height: 100px;
+    }
+  
+    .card .icon {
+      width: 32px;
+      height: 32px;
+      font-size: 16px;
+    }
+  
+    .card .value {
+      font-size: 18px;
+    }
+  }

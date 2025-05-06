@@ -4,7 +4,20 @@ const DonationTransaction = require("../models/DonationTransaction");
 const User = require("../models/User");
 const Product = require("../models/Product");
 const Meal = require("../models/Meals");
+const Feedback = require("../models/Feedback");
+const Delivery = require("../models/Delivery");
 const mongoose = require("mongoose");
+
+// Access Role enum from User model
+const Role = {
+  ADMIN: 'admin',
+  ONG: 'ong',
+  RESTAURANT: 'restaurant',
+  SUPERMARKET: 'supermarket',
+  STUDENT: 'student',
+  TRANSPORTER: 'transporter',
+  PERSONALDONOR: 'personaldonor'
+};
 
 async function getStatistics(req, res) {
   try {
@@ -36,7 +49,7 @@ async function getStatistics(req, res) {
     const [
       // 1. User Statistics
       totalUsers,
-      userRoles,
+      userRolesRaw,
       userGrowthRaw,
       // 2. Donation Statistics
       totalDonations,
@@ -60,15 +73,21 @@ async function getStatistics(req, res) {
       // 6. Platform Health Metrics
       foodDistributed,
       foodWastePrevented,
+      // 7. Feedback Statistics
+      totalFeedbacks,
+      averageRating,
+      feedbackTrends,
+      // 8. Delivery Statistics
+      totalDeliveries,
+      deliveryStatus,
+      deliveryTrends,
     ] = await Promise.all([
       // 1. User Statistics
       User.countDocuments(),
       User.aggregate([
         { $group: { _id: "$role", count: { $sum: 1 } } },
         { $project: { role: "$_id", count: 1, _id: 0 } },
-      ]).then((result) =>
-        result.reduce((acc, { role, count }) => ({ ...acc, [role]: count }), {})
-      ),
+      ]),
       User.aggregate([
         { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
         {
@@ -215,7 +234,55 @@ async function getStatistics(req, res) {
           },
         },
       ]).then((result) => (result[0] ? result[0].totalWeight : 0)),
+      // 7. Feedback Statistics
+      Feedback.countDocuments(),
+      Feedback.aggregate([
+        {
+          $group: {
+            _id: null,
+            averageRating: { $avg: "$rating" },
+          },
+        },
+      ]).then((result) => (result[0] ? parseFloat(result[0].averageRating.toFixed(2)) : 0)),
+      Feedback.aggregate([
+        { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+        { $project: { date: "$_id", count: 1, _id: 0 } },
+      ]),
+      // 8. Delivery Statistics
+      Delivery.countDocuments({ createdAt: { $gte: startDate, $lte: endDate } }),
+      Delivery.aggregate([
+        { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+        { $project: { status: "$_id", count: 1, _id: 0 } },
+      ]).then((result) =>
+        result.reduce((acc, { status, count }) => ({ ...acc, [status]: count }), {})
+      ),
+      Delivery.aggregate([
+        { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+        { $project: { date: "$_id", count: 1, _id: 0 } },
+      ]),
     ]);
+
+    // Ensure all roles are included in userRoles, even those with zero counts
+    const userRoles = Object.values(Role).reduce((acc, role) => {
+      const found = userRolesRaw.find((item) => item.role === role);
+      acc[role] = found ? found.count : 0;
+      return acc;
+    }, {});
 
     // Merge userGrowth with placeholder dates to ensure all dates in the range are represented
     const placeholderDates = generateDateRange(startDate, endDate);
@@ -243,6 +310,12 @@ async function getStatistics(req, res) {
       expiringDonations,
       foodDistributed,
       foodWastePrevented,
+      totalFeedbacks,
+      averageRating,
+      feedbackTrends,
+      totalDeliveries,
+      deliveryStatus,
+      deliveryTrends,
       topDonors,
       topRecipients,
       donationTrends,

@@ -1,7 +1,8 @@
+
 <p align="center">
-  <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHkwMjF5Zm9naDU2MWl5dXRwMzhzNDdoejBhbmJoYXowZTJyejllcCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/a7kYlAGwDBffXZKosw/giphy.gif" alt="Java Animation" style="width:100%;">
+  <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHkwMjF5Zm9naDU2MWl5dXRwMzhzNDdoejBhbmJoYXowZTJyejllcCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/a7kYlAGwDBffXZKosw/giphy.gif" alt="Java Animation" width="100%">
 </p>
----
+
 # 🌍 SustainaFood: Revolutionizing Food Redistribution
 
 📧 Contact: sustainafood.team@gmail.com  
@@ -99,6 +100,7 @@ Our mission is simple: **turn surplus into sustenance**.
 
 ### 🔧 Installation
 
+```bash
 # 1. Clone the repo
 git clone https://github.com/FouzriChayma/SustainaFood.git
 cd sustainafood
@@ -118,21 +120,23 @@ cd sustinia-ai
 python -m venv venv
 source venv/bin/activate     # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
-🔐 Environment Variables
-Create a .env in sustainafood-backend:
+```
 
-env
-Copier
-Modifier
+### 🔐 Environment Variables
+
+Create a `.env` file in `sustainafood-backend`:
+
+```env
 MONGODB_URI=your_mongodb_uri
 EMAIL_USER=your_email@gmail.com
 EMAIL_PASS=your_app_password
 JWT_SECRET=your_jwt_secret
 NODE_ENV=development
-▶️ Running the App
-bash
-Copier
-Modifier
+```
+
+### ▶️ Running the App
+
+```bash
 # Start AI Server (http://127.0.0.1:5000)
 cd sustinia-ai
 source venv/bin/activate
@@ -145,73 +149,85 @@ npm start
 # Start Frontend (http://localhost:3001)
 cd sustainafood-frontend
 npm start
-📡 API Endpoints
-Auth
-GET /auth/google – Login
+```
 
-GET /auth/google/callback – Callback
+---
 
-Donations
-GET /donation
+## 📡 API Endpoints
 
-POST /donation
+### Auth
+- `GET /auth/google` – Login  
+- `GET /auth/google/callback` – Callback
 
-GET /donation/anomalies
+### Donations
+- `GET /donation`
+- `POST /donation`
+- `GET /donation/anomalies`
 
-Requests
-GET /request
+### Requests
+- `GET /request`
+- `POST /request`
 
-POST /request
+### AI Forecasts
+- `GET /forecast/donations`
+- `GET /forecast/requests`
 
-AI Forecasts
-GET /forecast/donations
+---
 
-GET /forecast/requests
+## 🌐 Frontend Pages
 
-🌐 Frontend Pages
-Public: Home, Login, Signup, Contact, About, Forgot Password
+- **Public**: Home, Login, Signup, Contact, About, Forgot Password  
+- **User**: Profile, Add Donation, My Donations, Requests, Analytics  
+- **Admin**: Dashboard, User Management, Anomaly Detection
 
-User: Profile, Add Donation, My Donations, Requests, Analytics
+---
 
-Admin: Dashboard, User Management, Anomaly Detection
+## 🤝 Contributing
 
-🤝 Contributing
 We welcome contributions from the community!
 
-Fork the repository
-
-Create your feature branch
-git checkout -b feature/your-feature
-
-Commit your changes
-git commit -m "Add your feature"
-
-Push to the branch
-git push origin feature/your-feature
-
-Open a Pull Request
+1. Fork the repository  
+2. Create your feature branch  
+   ```bash
+   git checkout -b feature/your-feature
+   ```
+3. Commit your changes  
+   ```bash
+   git commit -m "Add your feature"
+   ```
+4. Push to the branch  
+   ```bash
+   git push origin feature/your-feature
+   ```
+5. Open a Pull Request
 
 Please follow our Code of Conduct and ensure your code follows our standards.
 
-👥 Dev Dreamers Team
+---
+
+## 👥 Dev Dreamers Team
+
 Made with ❤️ by 4th-year engineering students at Esprit:
 
-Ben Rebah Mouna
+- Ben Rebah Mouna  
+- Satouri Tassnime  
+- Chayma Fouzei  
+- Mariem Touzri  
+- Wala Amar
 
-Satouri Tassnime
+---
 
-Chayma Fouzei
+## 📜 License
 
-Mariem Touzri
-
-Wala Amar
-
-📜 License
 This project is licensed under the MIT License. See the LICENSE file.
 
-📬 Contact
-📧 Email: sustainafood.team@gmail.com
+---
 
+## 📬 Contact
+
+📧 Email: sustainafood.team@gmail.com  
 🐛 GitHub Issues: Report issues here
 
-🌱 SustainaFood – Turning waste into hope, one donation at a time.
+---
+
+🌱 **SustainaFood** – Turning waste into hope, one donation at a time.

@@ -1,9 +1,12 @@
+const numeric = require('numeric');
+const { IsolationForest } = require('ml-isolation-forest');
+const DonationTransaction = require('../models/DonationTransaction');
 const Donation = require('../models/Donation');
-const Product = require('../models/Product');
-const Counter = require('../models/Counter');
+const RequestNeed = require('../models/RequestNeed');
 const mongoose = require('mongoose');
 const Meal = require('../models/Meals');
-const RequestNeed = require('../models/RequestNeed');
+const Product = require('../models/Product');
+const Counter = require('../models/Counter');
 const { classifyFoodItem } = require('../aiService/classifyFoodItem');
 const { predictSupplyDemand } = require('../aiService/predictSupplyDemand');
 const User = require('../models/User');
@@ -13,7 +16,6 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
-// Liste de "bad words" (à déplacer dans un fichier séparé si nécessaire)
 const badWords = [
   "damn",
   "hell",
@@ -21,10 +23,8 @@ const badWords = [
   "stupid",
   "fuck",
   "t**t"
-  // Ajoutez d'autres mots interdits selon vos besoins
 ];
 
-// Fonction utilitaire pour vérifier les "bad words"
 const containsBadWords = (text) => {
   if (!text || typeof text !== 'string') return false;
   const lowerText = text.toLowerCase();
@@ -38,16 +38,368 @@ const checkBadWords = (text) => {
   return badWord ? { containsBadWords: true, badWord } : null;
 };
 
-// ✅ Create a Donation
-// ✅ Create a Donation
+async function sendEmail(to, subject, text) {
+  try {
+    let transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      tls: {
+        rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : false,
+      },
+    });
+
+    let mailOptions = {
+      from: `"SustainaFood Team" <${process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      text,
+    };
+
+    await transporter.verify();
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Email sent to ${to}: ${info.messageId}`);
+  } catch (error) {
+    console.error('Error sending email:', {
+      message: error.message,
+      stack: error.stack,
+      to,
+      subject,
+    });
+    throw new Error(`Failed to send email: ${error.message}`);
+  }
+}
+
+class DonationRecommender {
+  constructor() {
+    this.interactionMatrix = null;
+    this.donationIds = [];
+    this.requestIds = [];
+    this.U = null;
+    this.S = null;
+    this.Vt = null;
+  }
+
+  async buildInteractionMatrix() {
+    const transactions = await DonationTransaction.find({ status: 'completed' })
+      .populate('donation')
+      .populate('requestNeed');
+
+    console.log('Transactions found:', transactions.length);
+    console.log('Sample transaction:', transactions[0] || 'No transactions');
+
+    const donationSet = new Set();
+    const requestSet = new Set();
+    const interactions = {};
+
+    transactions.forEach((tx) => {
+      const donationId = tx.donation._id.toString();
+      const requestId = tx.requestNeed._id.toString();
+      donationSet.add(donationId);
+      requestSet.add(requestId);
+      const key = `${donationId}-${requestId}`;
+      interactions[key] = (interactions[key] || 0) + 1;
+    });
+
+    this.donationIds = Array.from(donationSet);
+    this.requestIds = Array.from(requestSet);
+
+    console.log('Donation IDs:', this.donationIds);
+    console.log('Request IDs:', this.requestIds);
+    console.log('Interactions:', interactions);
+
+    if (this.donationIds.length === 0 || this.requestIds.length === 0) {
+      console.log('No data to build matrix. Setting to empty 1x1 matrix.');
+      this.interactionMatrix = [[0]];
+    } else {
+      this.interactionMatrix = numeric.dim([this.donationIds.length, this.requestIds.length], 0);
+      Object.entries(interactions).forEach(([key, count]) => {
+        const [donationId, requestId] = key.split('-');
+        const donationIdx = this.donationIds.indexOf(donationId);
+        const requestIdx = this.requestIds.indexOf(requestId);
+        if (donationIdx >= 0 && requestIdx >= 0) {
+          this.interactionMatrix[donationIdx][requestIdx] = count;
+        }
+      });
+    }
+
+    console.log('Matrix dimensions:', [this.donationIds.length, this.requestIds.length]);
+    console.log('Built Interaction Matrix:', this.interactionMatrix);
+  }
+
+  train(k = 10) {
+    if (!this.interactionMatrix) throw new Error('Interaction matrix not built');
+
+    console.log('Interaction Matrix in train:', this.interactionMatrix);
+    console.log('Donation IDs length:', this.donationIds.length);
+    console.log('Request IDs length:', this.requestIds.length);
+
+    if (this.donationIds.length === 0 || this.requestIds.length === 0) {
+      console.log('No interactions available. Initializing default model.');
+      this.U = numeric.dim([1, k], 0);
+      this.S = numeric.dim([k], 0);
+      this.Vt = numeric.dim([k, 1], 0);
+      return;
+    }
+
+    const svd = numeric.svd(this.interactionMatrix);
+    this.U = svd.U;
+    this.S = svd.S;
+    this.Vt = svd.V;
+
+    this.U = numeric.getBlock(this.U, [0, 0], [this.donationIds.length - 1, k - 1]);
+    this.S = this.S.slice(0, k);
+    this.Vt = numeric.getBlock(this.Vt, [0, 0], [k - 1, this.requestIds.length - 1]);
+
+    console.log('Model trained successfully');
+  }
+
+  async getRecommendations(donationId, topN = 5) {
+    if (!this.U || !this.S || !this.Vt) throw new Error('Model not trained');
+
+    const donation = await Donation.findById(donationId);
+    if (!donation) throw new Error('Donation not found');
+
+    let donationIdx = this.donationIds.indexOf(donationId.toString());
+    let donationVector;
+
+    if (donationIdx === -1) {
+      donationVector = await this.createDonationVector(donation);
+    } else {
+      donationVector = this.U[donationIdx].slice(0, this.S.length);
+    }
+
+    const scores = numeric.dot(numeric.dot(donationVector, numeric.diag(this.S)), this.Vt);
+
+    const requestScores = scores.map((score, idx) => ({
+      requestId: this.requestIds[idx],
+      score,
+    })).sort((a, b) => b.score - a.score).slice(0, topN);
+
+    const recommendations = await Promise.all(
+      requestScores.map(async ({ requestId, score }) => {
+        const request = await RequestNeed.findById(requestId).populate('recipient');
+        const fulfilledItems = this.calculateFulfilledItems(donation, request);
+        return { request, fulfilledItems, matchScore: score };
+      })
+    );
+
+    return recommendations;
+  }
+
+  async createDonationVector(donation) {
+    const requests = await RequestNeed.find({ category: donation.category, status: 'pending' });
+    const similarityScores = await Promise.all(
+      requests.map(async (req) => {
+        const fulfilledItems = this.calculateFulfilledItems(donation, req);
+        return fulfilledItems.length > 0
+          ? fulfilledItems.reduce((sum, item) => sum + item.quantity, 0) * 10
+          : 0;
+      })
+    );
+
+    const avgVector = numeric.div(numeric.add(...this.U), this.U.length);
+    return numeric.add(avgVector.slice(0, this.S.length), similarityScores.map((s) => s / 100));
+  }
+
+  calculateFulfilledItems(donation, request) {
+    const fulfilledItems = [];
+    if (donation.category === 'packaged_products') {
+      for (const reqProduct of request.requestedProducts || []) {
+        const matchingProduct = donation.products.find(
+          (p) => p.product.toString() === reqProduct.product.toString()
+        );
+        if (matchingProduct) {
+          const fulfilledQty = Math.min(matchingProduct.quantity, reqProduct.quantity);
+          fulfilledItems.push({ product: reqProduct.product, quantity: fulfilledQty });
+        }
+      }
+    } else if (donation.category === 'prepared_meals') {
+      const requestedMeals = request.numberOfMeals || 0;
+      const donatedMeals = donation.numberOfMeals || 0;
+      if (requestedMeals > 0 && donatedMeals > 0) {
+        const fulfilledQty = Math.min(donatedMeals, requestedMeals);
+        fulfilledItems.push({ quantity: fulfilledQty });
+      }
+    }
+    return fulfilledItems;
+  }
+
+  async detectAnomalies() {
+    const donations = await Donation.find();
+    const currentDate = new Date();
+
+    console.log('Found donations in detectAnomalies:', donations.length);
+    console.log('Sample donations:', donations.slice(0, 2).map(d => ({
+      id: d._id,
+      title: d.title,
+      quantity: d.category === 'prepared_meals' ? d.numberOfMeals : d.products.reduce((sum, p) => sum + p.quantity, 0),
+      expirationDate: d.expirationDate,
+      isAnomaly: d.isAnomaly,
+    })));
+
+    if (donations.length === 0) {
+      console.log('No donations found in database.');
+      return [];
+    }
+
+    if (donations.length === 1) {
+      console.log('Only one donation found, checking for extreme values...');
+      const d = donations[0];
+      const quantity = d.category === 'prepared_meals'
+        ? d.numberOfMeals || 0
+        : d.products ? d.products.reduce((sum, p) => sum + p.quantity, 0) : 0;
+      const daysToExpiry = d.expirationDate
+        ? Math.max(0, Math.ceil((new Date(d.expirationDate) - currentDate) / (1000 * 60 * 60 * 24)))
+        : 1000;
+
+      console.log('Single donation check:', { id: d._id, quantity, daysToExpiry });
+
+      if (quantity >= 100 && daysToExpiry <= 4 && quantity !== 1) {
+        return [{
+          donationId: d._id,
+          donor: d.donor,
+          title: d.title,
+          quantity,
+          daysToExpiry,
+          linkedRequests: d.linkedRequests ? d.linkedRequests.length : 0,
+          anomalyScore: 0.9,
+          reason: `Large quantity (${quantity}) near expiry (${daysToExpiry} days)`
+        }];
+      }
+      console.log('Single donation does not meet anomaly criteria.');
+      return [];
+    }
+
+    const features = donations.map((d) => {
+      const quantity = d.category === 'prepared_meals'
+        ? d.numberOfMeals || 0
+        : d.products ? d.products.reduce((sum, p) => sum + p.quantity, 0) : 0;
+      const frequency = donations.filter(
+        (don) => don.donor.toString() === d.donor.toString()
+      ).length;
+      const daysToExpiry = d.expirationDate
+        ? Math.max(0, Math.ceil((new Date(d.expirationDate) - currentDate) / (1000 * 60 * 60 * 24)))
+        : 1000;
+      const numLinkedRequests = d.linkedRequests ? d.linkedRequests.length : 0;
+
+      return [Math.log1p(quantity), frequency, daysToExpiry, numLinkedRequests]; // Apply log scaling to quantity
+    });
+
+    console.log('Features for anomaly detection:', features);
+
+    // Validate features
+    const validFeatures = features.filter(f => f.every(val => !isNaN(val) && val !== null));
+    if (validFeatures.length === 0) {
+      console.log('No valid features for anomaly detection.');
+      return [];
+    }
+
+    const normalize = (arr) => {
+      const mean = arr.reduce((sum, val) => sum + val, 0) / arr.length;
+      const std = Math.sqrt(
+        arr.map((val) => (val - mean) ** 2).reduce((sum, val) => sum + val, 0) / arr.length
+      ) || 1; // Avoid division by zero
+      return arr.map((val) => (val - mean) / std);
+    };
+
+    const transposedFeatures = validFeatures[0].map((_, colIdx) => validFeatures.map((row) => row[colIdx]));
+    const normalizedFeatures = transposedFeatures
+      .map(normalize)
+      .reduce((acc, col, colIdx) => {
+        validFeatures.forEach((row, rowIdx) => {
+          if (!acc[rowIdx]) acc[rowIdx] = [];
+          acc[rowIdx][colIdx] = col[rowIdx];
+        });
+        return acc;
+      }, []);
+
+    console.log('Normalized features:', normalizedFeatures);
+
+    const forest = new IsolationForest({
+      nTrees: 100,
+      maxSamples: Math.min(256, validFeatures.length),
+      contamination: 0.1,
+    });
+
+    console.log('Training Isolation Forest with', validFeatures.length, 'samples...');
+    forest.train(normalizedFeatures);
+
+    console.log('Predicting anomalies...');
+    const anomalyScores = forest.predict(normalizedFeatures);
+    console.log('Anomaly scores:', anomalyScores.map((score, idx) => ({
+      donationId: donations[idx]._id,
+      score,
+      quantity: validFeatures[idx][0],
+      daysToExpiry: validFeatures[idx][2]
+    })));
+
+    const threshold = 0.6; // Increased threshold for more sensitivity
+
+    const anomalies = donations
+      .filter((d, idx) => {
+        if (idx >= validFeatures.length) return false; // Skip invalid features
+        const rawQuantity = d.category === 'prepared_meals'
+          ? d.numberOfMeals || 0
+          : d.products ? d.products.reduce((sum, p) => sum + p.quantity, 0) : 0;
+        const daysToExpiry = d.expirationDate
+          ? Math.max(0, Math.ceil((new Date(d.expirationDate) - currentDate) / (1000 * 60 * 60 * 24)))
+          : 1000;
+
+        const isLargeQuantity = rawQuantity >= 100;
+        const isNearExpiry = daysToExpiry <= 4;
+        const isSmallDonation = rawQuantity === 1;
+        const isExtremeCase = rawQuantity >= 10000 && daysToExpiry <= 7; // Flag extreme quantities
+
+        const isAnomaly = (anomalyScores[idx] < threshold || isExtremeCase) && isLargeQuantity && isNearExpiry && !isSmallDonation;
+        console.log('Anomaly check for donation:', {
+          donationId: d._id,
+          rawQuantity,
+          daysToExpiry,
+          anomalyScore: anomalyScores[idx],
+          isLargeQuantity,
+          isNearExpiry,
+          isSmallDonation,
+          isExtremeCase,
+          isAnomaly
+        });
+
+        return isAnomaly;
+      })
+      .map((d, idx) => ({
+        donationId: d._id,
+        title: d.title,
+        donor: d.donor,
+        quantity: d.category === 'prepared_meals'
+          ? d.numberOfMeals || 0
+          : d.products ? d.products.reduce((sum, p) => sum + p.quantity, 0) : 0,
+        daysToExpiry: d.expirationDate
+          ? Math.max(0, Math.ceil((new Date(d.expirationDate) - currentDate) / (1000 * 60 * 60 * 24)))
+          : 1000,
+        linkedRequests: d.linkedRequests ? d.linkedRequests.length : 0,
+        anomalyScore: anomalyScores[idx],
+        reason: `Large quantity (${d.category === 'prepared_meals' ? d.numberOfMeals || 0 : d.products.reduce((sum, p) => sum + p.quantity, 0)}) near expiry (${d.expirationDate ? Math.max(0, Math.ceil((new Date(d.expirationDate) - currentDate) / (1000 * 60 * 60 * 24))) : 1000} days)`
+      }));
+
+    console.log('Detected anomalies:', anomalies);
+    if (anomalies.length === 0) {
+      console.log('No anomalies detected. Possible reasons: strict criteria, insufficient data, or invalid donation fields.');
+    }
+    return anomalies;
+  }
+}
+
 async function createDonation(req, res) {
   let newDonation;
+  const recommender = new DonationRecommender();
 
   try {
     let {
       title,
       location,
-      address, // Correction de l'orthographe (adress → address)
+      address,
       expirationDate,
       description,
       category,
@@ -61,7 +413,6 @@ async function createDonation(req, res) {
 
     console.log("Incoming Request Body:", req.body);
 
-    // Parse location from JSON string
     let parsedLocation;
     try {
       parsedLocation = JSON.parse(location);
@@ -78,12 +429,10 @@ async function createDonation(req, res) {
       throw new Error('Invalid location format: must be a valid GeoJSON string');
     }
 
-    // Validation du champ address
     if (!address || typeof address !== 'string' || !address.trim()) {
       throw new Error('Missing or invalid required field: address');
     }
 
-    // Vérification des "bad words" (inclure address)
     const badWordChecks = [];
     const titleCheck = checkBadWords(title);
     if (titleCheck) badWordChecks.push({ field: 'title', ...titleCheck });
@@ -105,7 +454,6 @@ async function createDonation(req, res) {
       if (descCheck) badWordChecks.push({ field: `meal description for "${meal.mealName}"`, ...descCheck });
     }
 
-    // Si des "bad words" sont détectés, bloquer la création
     if (badWordChecks.length > 0) {
       return res.status(400).json({
         message: 'Inappropriate language detected in submission',
@@ -113,7 +461,6 @@ async function createDonation(req, res) {
       });
     }
 
-    // Validation et traitement des produits et repas
     if (!Array.isArray(products)) {
       if (typeof products === 'string') {
         try {
@@ -181,7 +528,7 @@ async function createDonation(req, res) {
         }
         const totalQuantity = parseInt(product.totalQuantity);
         if (isNaN(totalQuantity) || totalQuantity <= 0) {
-          throw new Error(`Product at index ${index} has an invalid totalQuantity: ${product.totalQuantity}`);
+          throw new Error(`Product at index ${index} is an invalid totalQuantity: ${product.totalQuantity}`);
         }
         if (!product.status || typeof product.status !== 'string') {
           throw new Error(`Product at index ${index} is missing a valid status`);
@@ -234,8 +581,8 @@ async function createDonation(req, res) {
 
     newDonation = new Donation({
       title,
-      location: parsedLocation, // Use parsed GeoJSON object
-      address, // Ajout du champ address
+      location: parsedLocation,
+      address,
       expirationDate: new Date(expirationDate),
       description,
       category: category || 'prepared_meals',
@@ -305,6 +652,33 @@ async function createDonation(req, res) {
 
     await newDonation.save();
 
+    const anomalies = await recommender.detectAnomalies();
+    const isAnomaly = anomalies.some(anomaly => anomaly.donationId.toString() === newDonation._id.toString());
+
+    if (isAnomaly) {
+      newDonation.isAnomaly = true;
+      await newDonation.save();
+
+      const donorUser = await newDonation.populate('donor', 'email name');
+      const donorEmail = donorUser.donor.email;
+      const donorName = donorUser.donor.name || 'Donor';
+      const anomalyDetails = anomalies.find(anomaly => anomaly.donationId.toString() === newDonation._id.toString());
+
+      const emailSubject = 'Anomaly Detected in Your Donation';
+      const emailText = `
+        Dear ${donorName},
+
+        Your donation titled "${newDonation.title}" has been flagged as an anomaly.
+        Reason: ${anomalyDetails.reason}.
+        Please review your donation details or contact support for assistance.
+
+        Thank you,
+        The Donation Platform Team
+      `;
+
+      await sendEmail(donorEmail, emailSubject, emailText);
+    }
+
     const populatedDonation = await Donation.findById(newDonation._id)
       .populate('donor', 'name role email')
       .populate('products.product')
@@ -312,7 +686,8 @@ async function createDonation(req, res) {
 
     res.status(201).json({
       message: 'Donation created successfully',
-      donation: populatedDonation
+      donation: populatedDonation,
+      isAnomaly: newDonation.isAnomaly
     });
   } catch (error) {
     if (newDonation && newDonation._id) {
@@ -334,7 +709,7 @@ async function createDonation(req, res) {
   }
 }
 
-// ✅ Update a Donation
+// Other functions remain unchanged
 async function updateDonation(req, res) {
   try {
     const { id } = req.params;
@@ -349,7 +724,6 @@ async function updateDonation(req, res) {
       return res.status(404).json({ message: 'Donation not found' });
     }
 
-    // Parse location if provided
     let parsedLocation;
     if (location) {
       try {
@@ -368,7 +742,6 @@ async function updateDonation(req, res) {
       }
     }
 
-    // Vérification des "bad words" (skip location and address)
     const badWordChecks = [];
     if (donationData.title) {
       const titleCheck = checkBadWords(donationData.title);
@@ -403,7 +776,6 @@ async function updateDonation(req, res) {
       }
     }
 
-    // Si des "bad words" sont détectés, bloquer la mise à jour
     if (badWordChecks.length > 0) {
       return res.status(400).json({
         message: 'Inappropriate language detected in submission',
@@ -528,7 +900,7 @@ async function updateDonation(req, res) {
       'category',
       'description',
       'numberOfMeals',
-      'address' // Added address to allowed fields
+      'address'
     ];
     const updateData = {};
     allowedFields.forEach((field) => {
@@ -566,7 +938,6 @@ async function updateDonation(req, res) {
   }
 }
 
-// ✅ Delete a Donation
 async function deleteDonation(req, res) {
   try {
     const { id } = req.params;
@@ -580,7 +951,7 @@ async function deleteDonation(req, res) {
       const productIds = donation.products.map(entry => entry.product);
       await Product.deleteMany({ _id: { $in: productIds } });
     }
-    if (donation.meals && donation.products.length > 0) {
+    if (donation.meals && donation.meals.length > 0) {
       const mealIds = donation.meals.map(entry => entry.meal);
       await Meal.deleteMany({ _id: { $in: mealIds } });
     }
@@ -594,7 +965,6 @@ async function deleteDonation(req, res) {
   }
 }
 
-// ✅ Get Donations by Status
 async function getDonationsByStatus(req, res) {
   try {
     const { status } = req.params;
@@ -614,10 +984,9 @@ async function getDonationsByStatus(req, res) {
   }
 }
 
-// ✅ Get All Donations
 async function getAllDonations(req, res) {
   try {
-    const donations = await Donation.find({ isaPost: true, isAnomaly: false, status:{ $ne: 'fulfilled' } })
+    const donations = await Donation.find({ isaPost: true, isAnomaly: false, status: { $ne: 'rejected' } })
       .populate('donor', 'name role email photo')
       .populate('products.product')
       .populate('meals.meal')
@@ -630,7 +999,6 @@ async function getAllDonations(req, res) {
   }
 }
 
-// ✅ Get Donation by ID
 async function getDonationById(req, res) {
   try {
     const { id } = req.params;
@@ -651,7 +1019,6 @@ async function getDonationById(req, res) {
   }
 }
 
-// ✅ Get Donations by User ID
 async function getDonationsByUserId(req, res) {
   try {
     const { userId } = req.params;
@@ -688,7 +1055,7 @@ async function getRequestDonationsByUserId(req, res) {
     res.status(500).json({ message: 'Server error', error: error.message || error.toString() });
   }
 }
-// ✅ Get Donations by Date
+
 async function getDonationsByDate(req, res) {
   try {
     const { date } = req.params;
@@ -714,7 +1081,6 @@ async function getDonationsByDate(req, res) {
   }
 }
 
-// ✅ Get Donations by Type
 async function getDonationsByType(req, res) {
   try {
     const { type } = req.params;
@@ -733,7 +1099,6 @@ async function getDonationsByType(req, res) {
   }
 }
 
-// ✅ Get Donations by Category
 async function getDonationsByCategory(req, res) {
   try {
     const { category } = req.params;
@@ -752,25 +1117,21 @@ async function getDonationsByCategory(req, res) {
   }
 }
 
-// ✅ Get Donation by Request ID
 const getDonationByRequestId = async (req, res) => {
   try {
     const { requestId } = req.params;
 
-    // First, fetch the RequestNeed document to get the linkedDonation IDs
     const request = await RequestNeed.findById(requestId);
     if (!request) {
       return res.status(404).json({ message: 'Request not found' });
     }
 
-    // Get the list of donation IDs from the linkedDonation field
     const donationIds = request.linkedDonation || [];
 
     if (donationIds.length === 0) {
-      return res.status(200).json([]); // No linked donations, return empty array
+      return res.status(200).json([]);
     }
 
-    // Fetch the donations using the linkedDonation IDs
     const donations = await Donation.find({ _id: { $in: donationIds } })
       .populate('products.product')
       .populate('meals.meal')
@@ -783,7 +1144,6 @@ const getDonationByRequestId = async (req, res) => {
   }
 };
 
-// ✅ Classify a Food Item
 async function classifyFood(req, res) {
   try {
     const { name, description, category } = req.body;
@@ -817,7 +1177,6 @@ async function classifyFood(req, res) {
   }
 }
 
-// ✅ Get Supply/Demand Prediction
 async function getSupplyDemandPrediction(req, res) {
   console.log('getSupplyDemandPrediction called');
   try {
@@ -835,7 +1194,6 @@ async function getSupplyDemandPrediction(req, res) {
   }
 }
 
-// ✅ Match Donation to Requests
 async function matchDonationToRequests(donation) {
   const { category, products, meals, expirationDate, numberOfMeals: donatedMeals } = donation;
 
@@ -887,7 +1245,7 @@ async function matchDonationToRequests(donation) {
     }
   }
 
-  return matches.sort((a, b) => b.matchScore - a.matchScore);
+  return matches.sort((a, b) => b.score - a.score);
 }
 
 module.exports = {

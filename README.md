@@ -1,21 +1,7 @@
-
-
-  
-
-
-
 SustainaFood: Revolutionizing Food Redistribution 🌍
-
-
-  📧 sustainafood.team@gmail.com |
-  🌐 GitHub Repository
-
-
-
-A Feast of Waste in a Hungry World
-Picture this: shelves groaning with unsold bread, crates of slightly bruised apples that nobody bought. Across the street, a student digs through their bag for the last crumpled ramen packet, while an NGO volunteer sighs over an empty pantry. It’s a tale of two worlds—one drowning in excess, the other starving for a chance. Society produces more than enough food, yet millions go hungry. It’s not a supply issue—it’s a distribution failure.
+📧 sustainafood.team@gmail.com | 🌐 GitHub Repository
+A Feast of Waste in a Hungry WorldPicture this: shelves groaning with unsold bread, crates of slightly bruised apples that nobody bought. Across the street, a student digs through their bag for the last crumpled ramen packet, while an NGO volunteer sighs over an empty pantry. It’s a tale of two worlds—one drowning in excess, the other starving for a chance. Society produces more than enough food, yet millions go hungry. It’s not a supply issue—it’s a distribution failure.
 SustainaFood is here to bridge that gap. Developed as a 4th-year integrated project at Esprit School of Engineering, SustainaFood is a platform designed to tackle food waste in Tunisia and Setif by connecting food donors (restaurants, supermarkets, personal donors), recipients (NGOs, students), and transporters in a seamless, efficient ecosystem. Our mission is to turn surplus into sustenance, ensuring no food goes to waste while no one goes hungry.
-
 🎯 Project Vision
 SustainaFood addresses the paradox of food waste and hunger by:
 
@@ -23,7 +9,6 @@ Redistributing Surplus: Connecting donors with excess food to recipients in need
 Optimizing Logistics: Assigning transporters to ensure timely deliveries.
 Leveraging AI: Using machine learning to detect donation anomalies, predict supply/demand, and classify food items.
 Empowering Communities: Enabling NGOs, students, restaurants, supermarkets, and individuals to participate in a sustainable food ecosystem.
-
 
 🚀 Features
 
@@ -42,7 +27,6 @@ Notifications: Real-time alerts for donation approvals, rejections, and delivery
 Feedback System: Allows users to rate and review delivery experiences.
 Google Authentication: Secure login with Google OAuth and optional 2FA.
 Backoffice for Admins: Manage users, donations, requests, and anomalies with a comprehensive admin dashboard.
-
 
 🛠️ Tech Stack
 Backend
@@ -73,7 +57,6 @@ Jenkins: CI/CD pipeline configuration.
 dotenv: Environment variable management for secure configuration.
 node-cron: Scheduled tasks for periodic ML model updates.
 
-
 🏗️ Getting Started
 Prerequisites
 
@@ -85,33 +68,28 @@ pip: Python package manager
 
 Installation
 
-Clone the Repository:
-git clone https://github.com/FouzriChayma/SustainaFood.git
+Clone the Repository:git clone https://github.com/FouzriChayma/SustainaFood.git
 cd sustainafood
 
 
-Install Backend Dependencies:
-cd sustainafood-backend
+Install Backend Dependencies:cd sustainafood-backend
 npm install
 cd ..
 
 
-Install Frontend Dependencies:
-cd sustainafood-frontend
+Install Frontend Dependencies:cd sustainafood-frontend
 npm install
 cd ..
 
 
-Set Up AI Environment:
-cd sustinia-ai
+Set Up AI Environment:cd sustinia-ai
 python -m venv venv
 venv\Scripts\activate  # On Windows
 # venv/bin/activate    # On macOS/Linux
 pip install -r requirements.txt
 
 
-Set Up Environment Variables:Create a .env file in sustainafood-backend with:
-MONGODB_URI=your_mongodb_connection_string
+Set Up Environment Variables:Create a .env file in sustainafood-backend with:MONGODB_URI=your_mongodb_connection_string
 EMAIL_USER=your_email@gmail.com
 EMAIL_PASS=your_email_app_password
 JWT_SECRET=your_jwt_secret_key
@@ -119,59 +97,47 @@ NODE_ENV=development
 
 
 Configure MongoDB:Update sustainafood-backend/config/database.json with your MongoDB connection details if not using .env.
-
-Run the AI Flask API:
-cd sustinia-ai
+Run the AI Flask API:cd sustinia-ai
 venv\Scripts\activate  # On Windows
 python app.py
 
 The API will run on http://127.0.0.1:5000.
-
-Start the Backend:
-cd sustainafood-backend
+Start the Backend:cd sustainafood-backend
 npm start
 
 The server will run on http://localhost:3000.
-
-Start the Frontend:
-cd sustainafood-frontend
+Start the Frontend:cd sustainafood-frontend
 npm start
 
 The React app will run on http://localhost:3001 (or another port if configured).
 
-
-
 API Endpoints
+Auth
 
-Auth: 
 /auth/google (Google OAuth login)
 /auth/google/callback (callback)
 
+Donations
 
-Donations: 
 GET /donation (list all donations)
 POST /donation (create donation)
 GET /donation/anomalies (list anomalous donations)
 
+Requests
 
-Requests: 
 GET /request (list all requests)
 POST /request (create request)
 
+AI Forecasts
 
-AI Forecasts: 
 GET http://127.0.0.1:5000/forecast/donations (donation predictions)
 GET http://127.0.0.1:5000/forecast/requests (request predictions)
-
-
-
 
 Frontend Pages
 
 Public: Home, Login, Signup, Contact, About, Forget Password
 User: Profile, Edit Profile, Add Donation, My Donations, My Requests, Analytics Dashboard
 Admin: Dashboard, Donation List, Anomaly Dashboard, User Management
-
 
 🤝 Contributing
 We welcome contributions from the community! To contribute:
@@ -183,7 +149,6 @@ Push to the branch (git push origin feature/your-feature).
 Open a Pull Request.
 
 Please follow our Code of Conduct and ensure your code adheres to our linting and formatting standards.
-
 🧑‍💻 The Dev Dreamers Team
 Developed by the talented 4th-year students at Esprit School of Engineering:
 
@@ -193,15 +158,12 @@ Chayma Fouzei
 Mariem Touzri
 Wala Amar
 
-
 📜 License
 This project is licensed under the MIT License. See the LICENSE file for details.
-
 📬 Contact
 For questions or feedback, reach out to us at:
 
 Email: sustainafood.team@gmail.com
 GitHub Issues: Create an issue in this repository
-
 
 🌱 SustainaFood – Turning waste into hope, one donation at a time.

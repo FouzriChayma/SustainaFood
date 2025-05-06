@@ -480,15 +480,20 @@ const Profile = () => {
           <div className="pff-feedback-card" key={feedback._id}>
             <div className="pff-message">
               <div className="pff-message-header pff-feedback-tip">
+              <Link  to={`/ViewProfile/${feedback.reviewer?._id}`}>
+
                 <img
                   src={feedback.reviewer?.photo ? `http://localhost:3000/${feedback.reviewer.photo}` : pdp}
                   alt="Avatar"
                 />
+                </Link>
                 <div>
-                  <strong>{feedback.reviewer?.name || "Anonymous"}</strong>
+                <Link style={{textDecoration: 'none'}} to={`/ViewProfile/${feedback.reviewer?._id}`}><strong>{feedback.reviewer?.name || "Anonymous"}</strong></Link>
+                
+                 
                   <StarRating rating={feedback.rating} interactive={false} />
                   <p>{feedback.comment}</p>
-                </div>
+                </div> 
               </div>
               <span className="pff-time">{new Date(feedback.createdAt).toLocaleString()}</span>
             </div>

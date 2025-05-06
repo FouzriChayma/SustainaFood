@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+
 import { getTransactionsByRecipientId, createAndAcceptDonationTransaction, rejectDonationTransaction } from '../api/donationTransactionService';
 import imgmouna from '../assets/images/imgmouna.png';
 import styled, { createGlobalStyle } from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
 import { useAlert } from '../contexts/AlertContext';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate,Link } from 'react-router-dom';
 
 // Global Styles
 const GlobalStyle = createGlobalStyle`
@@ -575,13 +576,18 @@ const MyRequestDonation = () => {
           currentTransactions.map((transaction) => (
             <TransactionCard key={transaction._id}>
               <ProfileInfo>
+              <Link  to={`/ViewProfile/${transaction.donor?._id}`}>
+
                 <ProfileImg
                   src={transaction.donor?.photo ? `http://localhost:3000/${transaction.donor.photo}` : imgmouna}
                   alt="Donor"
                   onError={(e) => (e.target.src = imgmouna)}
                 />
+                </Link>
                 <ProfileText>
-                  {transaction.donor?.name || 'Unknown Donor'}
+                <Link  style={{color:'black' , textDecoration: 'none'}} to={`/ViewProfile/${transaction.donor?._id}`}>
+
+                  {transaction.donor?.name || 'Unknown Donor'}</Link>
                   <StatusBadge className={transaction.status.toLowerCase()}>
                     {transaction.status.replace('_', ' ')}
                   </StatusBadge>

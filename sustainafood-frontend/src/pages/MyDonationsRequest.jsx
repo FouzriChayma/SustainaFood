@@ -6,7 +6,7 @@ import imgmouna from '../assets/images/imgmouna.png';
 import styled, { createGlobalStyle } from 'styled-components';
 import { FaSearch } from 'react-icons/fa';
 import { useAlert } from '../contexts/AlertContext';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link , useParams, useNavigate } from 'react-router-dom';
 
 // Global Styles
 const GlobalStyle = createGlobalStyle`
@@ -580,12 +580,17 @@ const MyDonationsRequest = () => {
             
             <TransactionCard key={transaction._id}>
               <ProfileInfo>
+              <Link  style={{color:'black' , textDecoration: 'none'}} to={`/ViewProfile/${transaction.requestNeed.recipient?._id}`}>
+
                 <ProfileImg
                   src={transaction.requestNeed.recipient?.photo ? `http://localhost:3000/${transaction.requestNeed.recipient.photo}` : imgmouna}
                   alt="Recipient"
-                />
+                /></Link>
                 <ProfileText>
+                <Link  style={{color:'black' , textDecoration: 'none'}} to={`/ViewProfile/${transaction.requestNeed.recipient?._id}`}>
+
                   {transaction.requestNeed.recipient?.name || 'Unknown Recipient'}
+                  </Link>
                   <StatusBadge className={transaction.status.toLowerCase()}>
                     {transaction.status.replace('_', ' ')}
                   </StatusBadge>

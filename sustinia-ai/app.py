@@ -23,8 +23,8 @@ model = MobileNetV2(weights='imagenet')
 
 # Load Prophet models for forecasting
 try:
-    model_donations = joblib.load('donation_forecast_model1.pkl')
-    model_requests = joblib.load('request_forecast_model1.pkl')
+    model_donations = joblib.load('donation_forecast_model2.pkl')
+    model_requests = joblib.load('request_forecast_model2.pkl')
 except FileNotFoundError as e:
     logger.error(f"Failed to load Prophet models: {e}")
     model_donations = None

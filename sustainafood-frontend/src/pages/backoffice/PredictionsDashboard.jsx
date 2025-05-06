@@ -375,27 +375,30 @@ const PredictionsDashboard = () => {
   };
 
   return (
-    <div className="admin-dashboard">
+    <div className="prdd-admin-dashboard">
       <Sidebar />
-      <div className="profile-container-predections">
+      <div className="prdd-profile-container">
         <Navbar />
-        <div className="ong-list">
-          <div className="header-container">
-            <h1 style={{ marginTop: '0px', color: 'green' }}>Weekly Supply and Demand Predictions (Next Two Weeks)</h1>
-            <button className="export-pdf-btn" onClick={downloadPDF}>
-              <FaFilePdf /> Export to PDF
-            </button>
-          </div>
+        <div className="prdd-chart-container">
+          <h1 style={{ marginTop: '0px', color: '#28a745' }}>
+            Weekly Supply and Demand Predictions (Next Two Weeks)
+          </h1>
+          <button className="prdd-download-button" onClick={downloadPDF}>
+            <FaFilePdf /> Export to PDF
+          </button>
           <div ref={chartRef}>
             <Line data={chartData} options={options} />
-            <div style={{ marginTop: '20px', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}>
-              <div dangerouslySetInnerHTML={{ __html: generateReport() }} />
-            </div>
           </div>
+        </div>
+  
+        <div className="prdd-week-section">
+          <h4>Prediction Details</h4>
+          <div dangerouslySetInnerHTML={{ __html: generateReport() }} />
         </div>
       </div>
     </div>
   );
+  
 };
 
 export default PredictionsDashboard;

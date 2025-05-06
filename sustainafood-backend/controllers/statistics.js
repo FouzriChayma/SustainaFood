@@ -1,11 +1,23 @@
-// controllers/statistics.js
 const Donation = require("../models/Donation");
 const RequestNeed = require("../models/RequestNeed");
 const DonationTransaction = require("../models/DonationTransaction");
 const User = require("../models/User");
 const Product = require("../models/Product");
 const Meal = require("../models/Meals");
+const Feedback = require("../models/Feedback");
+const Delivery = require("../models/Delivery");
 const mongoose = require("mongoose");
+
+// Access Role enum from User model
+const Role = {
+  ADMIN: 'admin',
+  ONG: 'ong',
+  RESTAURANT: 'restaurant',
+  SUPERMARKET: 'supermarket',
+  STUDENT: 'student',
+  TRANSPORTER: 'transporter',
+  PERSONALDONOR: 'personaldonor'
+};
 
 async function getStatistics(req, res) {
   try {
@@ -22,12 +34,23 @@ async function getStatistics(req, res) {
     // Category filter
     const categoryFilter = category === "all" ? {} : { category };
 
+    // Generate placeholder dates for userGrowth to ensure the chart always has data points
+    const generateDateRange = (start, end) => {
+      const dates = [];
+      let currentDate = new Date(start);
+      while (currentDate <= end) {
+        dates.push({ date: currentDate.toISOString().split("T")[0], count: 0 });
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      return dates;
+    };
+
     // Run independent queries in parallel for better performance
     const [
       // 1. User Statistics
       totalUsers,
-      userRoles,
-      userGrowth,
+      userRolesRaw,
+      userGrowthRaw,
       // 2. Donation Statistics
       totalDonations,
       donationStatus,
@@ -50,15 +73,21 @@ async function getStatistics(req, res) {
       // 6. Platform Health Metrics
       foodDistributed,
       foodWastePrevented,
+      // 7. Feedback Statistics
+      totalFeedbacks,
+      averageRating,
+      feedbackTrends,
+      // 8. Delivery Statistics
+      totalDeliveries,
+      deliveryStatus,
+      deliveryTrends,
     ] = await Promise.all([
       // 1. User Statistics
       User.countDocuments(),
       User.aggregate([
         { $group: { _id: "$role", count: { $sum: 1 } } },
         { $project: { role: "$_id", count: 1, _id: 0 } },
-      ]).then((result) =>
-        result.reduce((acc, { role, count }) => ({ ...acc, [role]: count }), {})
-      ),
+      ]),
       User.aggregate([
         { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
         {
@@ -130,25 +159,8 @@ async function getStatistics(req, res) {
         { $sort: { _id: 1 } },
         { $project: { date: "$_id", count: 1, _id: 0 } },
       ]),
-      // Fix for topRecipients: Since requestedProducts and requestedMeals are ObjectIds, we need to populate them
       RequestNeed.aggregate([
         { $match: categoryFilter },
-        {
-          $lookup: {
-            from: "products",
-            localField: "requestedProducts",
-            foreignField: "_id",
-            as: "requestedProductsDetails",
-          },
-        },
-        {
-          $lookup: {
-            from: "meals",
-            localField: "requestedMeals",
-            foreignField: "_id",
-            as: "requestedMealsDetails",
-          },
-        },
         {
           $group: {
             _id: "$recipient",
@@ -156,8 +168,8 @@ async function getStatistics(req, res) {
             totalItems: {
               $sum: {
                 $add: [
-                  { $sum: "$requestedProductsDetails.totalQuantity" },
-                  { $sum: "$requestedMealsDetails.quantity" },
+                  { $sum: "$requestedProducts.quantity" },
+                  { $sum: "$requestedMeals.quantity" },
                 ],
               },
             },
@@ -181,12 +193,14 @@ async function getStatistics(req, res) {
       Product.countDocuments(),
       Meal.countDocuments(),
       Product.aggregate([
+        { $match: categoryFilter },
         { $group: { _id: "$productType", count: { $sum: "$totalQuantity" } } },
         { $project: { productType: "$_id", count: 1, _id: 0 } },
       ]).then((result) =>
         result.reduce((acc, { productType, count }) => ({ ...acc, [productType]: count }), {})
       ),
       Meal.aggregate([
+        { $match: categoryFilter },
         { $group: { _id: "$mealType", count: { $sum: "$quantity" } } },
         { $project: { mealType: "$_id", count: 1, _id: 0 } },
       ]).then((result) =>
@@ -220,7 +234,66 @@ async function getStatistics(req, res) {
           },
         },
       ]).then((result) => (result[0] ? result[0].totalWeight : 0)),
+      // 7. Feedback Statistics
+      Feedback.countDocuments(),
+      Feedback.aggregate([
+        {
+          $group: {
+            _id: null,
+            averageRating: { $avg: "$rating" },
+          },
+        },
+      ]).then((result) => (result[0] ? parseFloat(result[0].averageRating.toFixed(2)) : 0)),
+      Feedback.aggregate([
+        { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+        { $project: { date: "$_id", count: 1, _id: 0 } },
+      ]),
+      // 8. Delivery Statistics
+      Delivery.countDocuments({ createdAt: { $gte: startDate, $lte: endDate } }),
+      Delivery.aggregate([
+        { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+        { $project: { status: "$_id", count: 1, _id: 0 } },
+      ]).then((result) =>
+        result.reduce((acc, { status, count }) => ({ ...acc, [status]: count }), {})
+      ),
+      Delivery.aggregate([
+        { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+        { $project: { date: "$_id", count: 1, _id: 0 } },
+      ]),
     ]);
+
+    // Ensure all roles are included in userRoles, even those with zero counts
+    const userRoles = Object.values(Role).reduce((acc, role) => {
+      const found = userRolesRaw.find((item) => item.role === role);
+      acc[role] = found ? found.count : 0;
+      return acc;
+    }, {});
+
+    // Merge userGrowth with placeholder dates to ensure all dates in the range are represented
+    const placeholderDates = generateDateRange(startDate, endDate);
+    const userGrowthMap = userGrowthRaw.reduce((acc, entry) => {
+      acc[entry.date] = entry.count;
+      return acc;
+    }, {});
+    const userGrowth = placeholderDates.map((entry) => ({
+      date: entry.date,
+      count: userGrowthMap[entry.date] || 0,
+    }));
 
     // Compile the response
     const stats = {
@@ -237,6 +310,12 @@ async function getStatistics(req, res) {
       expiringDonations,
       foodDistributed,
       foodWastePrevented,
+      totalFeedbacks,
+      averageRating,
+      feedbackTrends,
+      totalDeliveries,
+      deliveryStatus,
+      deliveryTrends,
       topDonors,
       topRecipients,
       donationTrends,

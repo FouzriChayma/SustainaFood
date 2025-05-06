@@ -212,8 +212,8 @@ const Footer = () => {
         <Column>
           <ColumnTitle>Contact & Social</ColumnTitle>
           <ContactInfo>
-            <p>Email: <a href="mailto:info@sustainafood.com">info@sustainafood.com</a></p>
-            <p>Phone: +216 123 456 789</p>
+            <p style={{color: "#e6ffe6"}}>Email: <a href="mailto:info@sustainafood.com">info@sustainafood.com</a></p>
+            <p style={{color: "#e6ffe6"}}>Phone: +216 123 456 789</p>
           </ContactInfo>
           <SocialIcons>
             <FaFacebookF />

@@ -665,6 +665,7 @@ const DetailsRequest = () => {
     mealDescription,
     mealType,
   } = request;
+  const isExpired = new Date(expirationDate) < new Date();
 
   return (
     <>
@@ -1072,7 +1073,7 @@ const DetailsRequest = () => {
 
           <Button variant="back" onClick={() => window.history.back()}>🔙 Go Back</Button>
 
-          {!isTheOwner && request.status !== "fulfilled" && (
+          {!isTheOwner && request.status !== "fulfilled" && !isExpired && (
             <Button
               variant={isAddingDonation ? "cancel" : "add"}
               onClick={() => setIsAddingDonation(!isAddingDonation)}

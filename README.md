@@ -58,42 +58,6 @@ Jenkins: CI/CD pipeline configuration (jenkinsfile).
 dotenv: Environment variable management for secure configuration.
 node-cron: Scheduled tasks for periodic ML model updates (assumed from backend).
 
-📂 Project Structure
-sustainafood/
-├── sustainafood-backend/       # Node.js backend with Express routes and controllers
-│   ├── config/                # Configuration files
-│   ├── controllers/           # API logic
-│   ├── models/                # Mongoose schemas
-│   ├── routes/                # Express route definitions
-│   ├── Middleware/            # Custom middleware
-│   ├── public/                # Static assets
-│   ├── views/                 # Twig templates
-│   └── ...
-├── sustainafood-frontend/     # React frontend
-│   ├── src/                   # React components and pages
-│   │   ├── pages/            # React page components
-│   │   ├── components/       # Reusable React components
-│   │   ├── contexts/         # React context
-│   │   └── App.jsx           # Main React app
-│   └── ...
-├── sustinia-ai/               # AI component with Flask API
-│   ├── food41/               # Data or model files (e.g., food41_classifier.h5)
-│   ├── venv/                 # Virtual environment
-│   ├── app.py                # Flask API entry point
-│   ├── class_indices.json    # Class indices for model
-│   ├── cmd_ai                # AI command script
-│   ├── data/                 # Dataset and augmentation files
-│   ├── decoupage.py          # Data processing script
-│   ├── donation_forecast_model.pkl # Trained donation forecast model
-│   ├── evaluate_model.py     # Model evaluation script
-│   ├── model.py              # Machine learning model definition
-│   ├── request_forecast_model.pkl # Trained request forecast model
-│   └── ...
-├── jenkinsfile                # Jenkins CI/CD configuration
-├── package-lock.json          # Node.js dependency lock file
-├── repomix-output.xml         # Repository mix output (likely CI/CD artifact)
-└── README.md                  # Project documentation
-
 🏗️ Getting Started
 Prerequisites
 
@@ -106,7 +70,7 @@ pip: Python package manager
 Installation
 
 Clone the Repository:
-git clone https://github.com/your-repo/sustainafood.git
+git clone https://github.com/FouzriChayma/SustainaFood.git
 cd sustainafood
 
 

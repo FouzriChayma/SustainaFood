@@ -1,6 +1,5 @@
 <p align="center">
-  <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHkwMjF5Zm9naDU2MWl5dXRwMzhzNDdoejBhbmJoYXowZTJyejllcCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/a7kYlAGwDBffXZKosw/giphy.gif
-" alt="Java Animation" style="width:100%;">
+  <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHkwMjF5Zm9naDU2MWl5dXRwMzhzNDdoejBhbmJoYXowZTJyejllcCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/a7kYlAGwDBffXZKosw/giphy.gif" alt="Java Animation" style="width:100%;">
 </p>
 # 🌍 SustainaFood: Revolutionizing Food Redistribution
 

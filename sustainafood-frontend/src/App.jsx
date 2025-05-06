@@ -68,6 +68,8 @@ import ViewProfile from "./pages/ViewProfile.jsx";
 import Deliveries from "./pages/Deliveries.jsx";
 import ContactSubmissionList from "./pages/backoffice/ContactSubmissionList.jsx";
 import SubmissionDetails from "./pages/backoffice/SubmissionDetails.jsx";
+import GamePage from './pages/GamePage'; // <-- Ajoutez cet import
+
 const App = () => {
   return (
     <AlertProvider>
@@ -86,6 +88,7 @@ const App = () => {
         <Route path="/two-fa-verification" element={<TwoFAVerification />} />
         <Route path="/ListDonationsRequest/:id" element={<ListDonationsRequest />} />
         <Route path="/deliveries/:transporterId" element={<AssignedDeliveries />} />
+        <Route path="/game" element={<GamePage />} /> {/* Ajoutez cette ligne pour la page de jeu */}
         {/* Routes privées pour les admins */}
         <Route element={<PrivateRoute roles={["admin"]} />}>
         <Route path="/contact/submissions" element={<ContactSubmissionList />} />

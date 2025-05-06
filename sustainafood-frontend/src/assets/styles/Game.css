@@ -1,0 +1,141 @@
+body {
+    font-family: sans-serif;
+    /* Ajustez ou supprimez ces styles s'ils entrent en conflit avec votre projet global */
+    /* display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f0f0; */
+  }
+  
+  .app-container {
+    text-align: center;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    /* Ajoutez des styles pour s'intégrer à votre mise en page si nécessaire */
+     margin: 20px auto; /* Exemple pour centrer la boîte de jeu */
+     max-width: 700px; /* Limiter la largeur */
+  }
+  
+  /* Pour s'assurer que le conteneur spécifique à la page du jeu prend de la place */
+  .game-page-container {
+      padding-top: 80px; /* Ajustez si vous avez une navbar fixe */
+      padding-bottom: 40px;
+  }
+  
+  
+  /* --- Fruit Selector --- */
+  .fruit-selector h2 {
+    margin-bottom: 15px;
+    color: #388e3c; /* Thème SustainaFood */
+  }
+  
+  .fruit-options button {
+    font-size: 2rem; /* Make emojis bigger */
+    margin: 0 10px;
+    padding: 10px;
+    border: 2px solid transparent;
+    background: none;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+  
+  .fruit-options button:hover {
+    transform: scale(1.2);
+  }
+  
+  .fruit-options button.selected {
+    border: 2px solid #4caf50; /* Thème SustainaFood */
+    border-radius: 5px;
+  }
+  
+  .start-button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    background-color: #4caf50; /* Thème SustainaFood */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+  }
+  .start-button:hover:not(:disabled) {
+    background-color: #388e3c;
+  }
+  
+  .start-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  /* --- Game Area --- */
+  .game-area {
+    width: 100%; /* Prend toute la largeur du conteneur parent */
+    max-width: 600px; /* Limite maximale */
+    height: 300px; /* Adjust as needed */
+    border: 2px solid #a5d6a7; /* Thème SustainaFood */
+    margin: 20px auto;
+    position: relative; /* Crucial for positioning elements inside */
+    overflow: hidden; /* Hide elements that go outside */
+    background-color: #e8f5e9; /* Thème SustainaFood - vert très pâle */
+  }
+  
+  .score-display {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #2e7d32; /* Thème SustainaFood */
+  }
+  
+  .fruit {
+    position: absolute;
+    bottom: 10px; /* Initial ground position */
+    left: 50px;   /* Fixed horizontal position */
+    font-size: 2rem;
+    transition: bottom 0.2s ease-out; /* Smooth jump */
+    user-select: none; /* Prevent text selection */
+    z-index: 10;
+  }
+  
+  .trash {
+    position: absolute;
+    bottom: 10px; /* Ground position */
+    font-size: 2rem;
+    user-select: none; /* Prevent text selection */
+    z-index: 5;
+    color: #795548; /* Marron pour la poubelle */
+  }
+  
+  /* --- Game Over --- */
+  .game-over {
+    margin-top: 20px;
+  }
+  
+  .game-over h2 {
+    color: #d32f2f; /* Rouge pour Game Over */
+  }
+  
+  .game-over p {
+    font-size: 1.2rem;
+    margin: 10px 0;
+    color: #333;
+  }
+  
+  .restart-button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    background-color: #007bff; /* Bleu pour redémarrer */
+    color: white;
+    border: none;
+    border-radius: 5px;
+     transition: background-color 0.3s;
+  }
+  .restart-button:hover {
+      background-color: #0056b3;
+  }

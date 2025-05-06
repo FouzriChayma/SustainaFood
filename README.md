@@ -1,4 +1,4 @@
-**SustainaFood: Revolutionizing Food Redistribution 🌍
+SustainaFood: Revolutionizing Food Redistribution 🌍
 
 A Feast of Waste in a Hungry WorldPicture this: shelves groaning with unsold bread, crates of slightly bruised apples that nobody bought. Across the street, a student digs through their bag for the last crumpled ramen packet, while an NGO volunteer sighs over an empty pantry. It’s a tale of two worlds—one drowning in excess, the other starving for a chance. Society produces more than enough food, yet millions go hungry. It’s not a supply issue—it’s a distribution failure.
 

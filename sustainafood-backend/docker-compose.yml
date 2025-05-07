@@ -28,15 +28,15 @@ services:
       - .:/app
       - /app/node_modules
 
-  front:
-    image:  mariemtouzri1/soustaina_front:2
-    ports:
-      - "8070:80"
   # front:
-  #   build: ./sustainafood-frontend # Indique à Docker Compose de construire à partir de ce dossier
-  #   # image: mariemtouzri1/soustaina_front:2 # Commentez ou supprimez cette ligne
+  #   image:  mariemtouzri1/soustaina_front:2
   #   ports:
   #     - "8070:80"
+  front:
+    build: ./sustainafood-frontend # Indique à Docker Compose de construire à partir de ce dossier
+    # image: mariemtouzri1/soustaina_front:2 # Commentez ou supprimez cette ligne
+    ports:
+      - "8070:80"
     depends_on: # Optionnel, mais peut aider à s'assurer que le backend est prêt
       - app
 

@@ -189,7 +189,7 @@ const PersonalStatus = () => {
   const chartRef = useRef(null);
  // Set the page title dynamically
  useEffect(() => {
-  document.title = "SustainaFood -  Personal Status";
+  document.title = "SustainaFood -  Personal Statistics";
   return () => {
     document.title = "SustainaFood"; // Reset to default on unmount
   };

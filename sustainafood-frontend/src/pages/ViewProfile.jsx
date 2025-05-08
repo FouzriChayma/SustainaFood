@@ -92,6 +92,7 @@ const ViewProfile = () => {
 
   const handleSave = async () => {
     try {
+      // Assuming onUpdateDescription is defined elsewhere
       await onUpdateDescription(id, description);
       setUser(prevUser => ({ ...prevUser, description }));
       setIsEditing(false);
@@ -115,13 +116,19 @@ const ViewProfile = () => {
 
     try {
       const reviewerId = authUser._id || authUser.id; // Get reviewer ID from authUser
-      const feedback = await createFeedback(id, newFeedback.rating, newFeedback.comment, reviewerId, token);
+      const feedback = await createFeedback(
+        id,
+        newFeedback.rating,
+        newFeedback.comment,
+        reviewerId,
+        token
+      );
       setFeedbacks([feedback, ...feedbacks]); // Add new feedback to the top
       setNewFeedback({ rating: 0, comment: '' }); // Reset form
       setFeedbackError('');
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      setFeedbackError('Failed to submit feedback. Please try again.');
+      setFeedbackError(error.message || 'Failed to submit feedback. Please try again.');
     }
   };
 
@@ -342,10 +349,10 @@ const ViewProfile = () => {
             <div className="pff-detailed-info">
               <h3>Detailed Information</h3>
               <ul>
-                <li><strong>:</strong> {user?.name || 'Loading...'}</li>
-                <li><strong>:</strong> {user?.email || 'Not provided'}</li>
-                <li><strong>:</strong> {user?.phone || 'Not provided'}</li>
-                <li><strong>:</strong> {user?.address || 'Not provided'}</li>
+                <li><strong>Name:</strong> {user?.name || 'Loading...'}</li>
+                <li><strong>Email:</strong> {user?.email || 'Not provided'}</li>
+                <li><strong>Phone:</strong> {user?.phone || 'Not provided'}</li>
+                <li><strong>Address:</strong> {user?.address || 'Not provided'}</li>
               </ul>
             </div>
           </div>
@@ -455,35 +462,33 @@ const ViewProfile = () => {
                   </form>
                 </div>
               )}
-          <div className="pff-inbox-section">
-  <h3>Feedbacks</h3>
-  <div className="pff-feedback-container">
-    {feedbacks.length > 0 ? (
-      <div className="pff-feedback-scroll">
-        {feedbacks.map((feedback) => (
-          <div className="pff-feedback-card" key={feedback._id}>
-            <div className="pff-message">
-              <div className="pff-message-header pff-feedback-tip">
-                <img
-                  src={feedback.reviewer?.photo ? `http://localhost:3000/${feedback.reviewer.photo}` : pdp}
-                  alt="Avatar"
-                />
-                <div>
-                  <strong>{feedback.reviewer?.name || "Anonymous"}</strong>
-                  <StarRating rating={feedback.rating} interactive={false} />
-                  <p>{feedback.comment}</p>
-                </div>
+              <div className="pff-feedback-container">
+                {feedbacks.length > 0 ? (
+                  <div className="pff-feedback-scroll">
+                    {feedbacks.map((feedback) => (
+                      <div className="pff-feedback-card" key={feedback._id}>
+                        <div className="pff-message">
+                          <div className="pff-message-header pff-feedback-tip">
+                            <img
+                              src={feedback.reviewer?.photo ? `http://localhost:3000/${feedback.reviewer.photo}` : pdp}
+                              alt="Avatar"
+                            />
+                            <div>
+                              <strong>{feedback.reviewer?.name || "Anonymous"}</strong>
+                              <StarRating rating={feedback.rating} interactive={false} />
+                              <p>Satisfaction Score: {feedback.satisfactionScore || 'N/A'}</p>
+                              <p>{feedback.comment}</p>
+                            </div>
+                          </div>
+                          <span className="pff-time">{new Date(feedback.createdAt).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p>No feedback yet.</p>
+                )}
               </div>
-              <span className="pff-time">{new Date(feedback.createdAt).toLocaleString()}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    ) : (
-      <p>No feedback yet.</p>
-    )}
-  </div>
-</div>
             </div>
           </div>
         </div>

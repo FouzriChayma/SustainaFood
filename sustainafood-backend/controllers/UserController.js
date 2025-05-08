@@ -1001,6 +1001,7 @@ const getTransporters = async (req, res) => {
 
   // Fetch gamification data (rank and score) for a specific user
   const Donation = require("../models/Donation");
+  const Feedback = require("../models/Feedback");
 
   async function getUserGamificationData(req, res) {
     try {
@@ -1016,6 +1017,24 @@ const getTransporters = async (req, res) => {
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
+  
+      // Calculate average satisfaction score from feedback
+      const feedbackStats = await Feedback.aggregate([
+        { $match: { recipient: new mongoose.Types.ObjectId(userId) } },
+        {
+          $group: {
+            _id: null,
+            avgSatisfactionScore: { $avg: "$satisfactionScore" },
+            feedbackCount: { $sum: 1 },
+          },
+        },
+      ]);
+  
+      const avgSatisfactionScore = feedbackStats.length > 0 && feedbackStats[0].avgSatisfactionScore
+        ? feedbackStats[0].avgSatisfactionScore
+        : 0; // Default to 0 if no feedback
+  
+      console.log(`Average satisfaction score for user ${userId}:`, avgSatisfactionScore);
   
       // Define roles for donors, recipients, and transporters
       const donorRoles = ["restaurant", "supermarket", "personaldonor"];
@@ -1052,15 +1071,19 @@ const getTransporters = async (req, res) => {
   
         console.log(`Donors for user ${userId} (${user.role}):`, donors);
   
-        // Calculate a score for each donor
-        rankedUsers = donors.map((donor, index) => ({
-          rank: index + 1,
-          userId: donor._id.toString(),
-          name: donor.name,
-          donationCount: donor.donationCount,
-          totalItems: donor.totalItems,
-          score: donor.donationCount * 10 + donor.totalItems,
-        }));
+        // Calculate a score for each donor, including satisfaction score
+        rankedUsers = donors.map((donor, index) => {
+          const baseScore = donor.donationCount * 10 + donor.totalItems;
+          const satisfactionBonus = donor._id.toString() === userId ? avgSatisfactionScore * 0.5 : 0;
+          return {
+            rank: index + 1,
+            userId: donor._id.toString(),
+            name: donor.name,
+            donationCount: donor.donationCount,
+            totalItems: donor.totalItems,
+            score: baseScore + satisfactionBonus,
+          };
+        });
   
         userGamification = rankedUsers.find(donor => donor.userId === userId);
       } else if (recipientRoles.includes(user.role)) {
@@ -1091,20 +1114,24 @@ const getTransporters = async (req, res) => {
   
         console.log(`Aggregated recipients for user ${userId} (${user.role}):`, recipients);
   
-        // Calculate a score for each recipient based on request count
-        rankedUsers = recipients.map((recipient, index) => ({
-          rank: index + 1,
-          userId: recipient._id.toString(),
-          name: recipient.name,
-          requestCount: recipient.requestCount,
-          score: recipient.requestCount * 10, // Score = 10 points per request
-        }));
+        // Calculate a score for each recipient, including satisfaction score
+        rankedUsers = recipients.map((recipient, index) => {
+          const baseScore = recipient.requestCount * 10;
+          const satisfactionBonus = recipient._id.toString() === userId ? avgSatisfactionScore * 0.5 : 0;
+          return {
+            rank: index + 1,
+            userId: recipient._id.toString(),
+            name: recipient.name,
+            requestCount: recipient.requestCount,
+            score: baseScore + satisfactionBonus,
+          };
+        });
   
         userGamification = rankedUsers.find(recipient => recipient.userId === userId);
       } else if (transporterRoles.includes(user.role)) {
         // Aggregate by transporter for users who complete deliveries
         const transporters = await Delivery.aggregate([
-          { $match: { status: "delivered" } }, // Only count completed deliveries
+          { $match: { status: "delivered" } },
           {
             $group: {
               _id: "$transporter",
@@ -1125,14 +1152,18 @@ const getTransporters = async (req, res) => {
   
         console.log(`Transporters for user ${userId} (${user.role}):`, transporters);
   
-        // Calculate a score for each transporter based on delivery count
-        rankedUsers = transporters.map((transporter, index) => ({
-          rank: index + 1,
-          userId: transporter._id.toString(),
-          name: transporter.name,
-          deliveryCount: transporter.deliveryCount,
-          score: transporter.deliveryCount * 15, // Score = 15 points per delivery
-        }));
+        // Calculate a score for each transporter, including satisfaction score
+        rankedUsers = transporters.map((transporter, index) => {
+          const baseScore = transporter.deliveryCount * 15;
+          const satisfactionBonus = transporter._id.toString() === userId ? avgSatisfactionScore * 0.5 : 0;
+          return {
+            rank: index + 1,
+            userId: transporter._id.toString(),
+            name: transporter.name,
+            deliveryCount: transporter.deliveryCount,
+            score: baseScore + satisfactionBonus,
+          };
+        });
   
         userGamification = rankedUsers.find(transporter => transporter.userId === userId);
       } else {

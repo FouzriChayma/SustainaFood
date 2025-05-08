@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Feedback = require('../models/Feedback');
+const mongoose = require('mongoose');
+const axios = require('axios');
 
 // POST - Create new feedback
 router.post('/', async (req, res) => {
@@ -8,8 +10,7 @@ router.post('/', async (req, res) => {
     const { reviewer, recipient, rating, comment } = req.body;
     const authUserId = req.user?._id || req.user?.id; // From auth middleware
 
-    // Verify the reviewer matches the authenticated user
-   
+
 
     if (!recipient || !rating || !comment || !reviewer) {
       return res.status(400).json({ message: 'All fields are required' });
@@ -19,11 +20,26 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'Rating must be between 1 and 5' });
     }
 
+    // Compute satisfaction score by calling Flask endpoint
+    let satisfactionScore;
+    try {
+      const response = await axios.post('http://localhost:5000/compute_satisfaction', {
+        rating,
+        comment,
+      });
+      satisfactionScore = response.data.satisfactionScore;
+    } catch (error) {
+      console.error('Error computing satisfaction score:', error.message);
+      // Fallback to rating-based score
+      satisfactionScore = Math.round(((rating - 1) / 4) * 100);
+    }
+
     const feedback = new Feedback({
       reviewer,
       recipient,
       rating,
       comment,
+      satisfactionScore,
     });
 
     await feedback.save();
@@ -33,6 +49,7 @@ router.post('/', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 // GET - Get all feedback for a user
 router.get('/:userId', async (req, res) => {
   try {
@@ -47,7 +64,7 @@ router.get('/:userId', async (req, res) => {
   }
 });
 
-// PUT - Update feedback (optional, for future use)
+// PUT - Update feedback
 router.put('/:id', async (req, res) => {
   try {
     const feedback = await Feedback.findById(req.params.id);
@@ -62,6 +79,21 @@ router.put('/:id', async (req, res) => {
     feedback.rating = req.body.rating || feedback.rating;
     feedback.comment = req.body.comment || feedback.comment;
 
+    // Recompute satisfaction score if rating or comment is updated
+    if (req.body.rating || req.body.comment) {
+      try {
+        const response = await axios.post('http://localhost:5000/compute_satisfaction', {
+          rating: feedback.rating,
+          comment: feedback.comment,
+        });
+        feedback.satisfactionScore = response.data.satisfactionScore;
+      } catch (error) {
+        console.error('Error computing satisfaction score:', error.message);
+        // Fallback to rating-based score
+        feedback.satisfactionScore = Math.round(((feedback.rating - 1) / 4) * 100);
+      }
+    }
+
     await feedback.save();
     res.json(feedback);
   } catch (error) {
@@ -70,7 +102,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE - Delete feedback (optional, for future use)
+// DELETE - Delete feedback
 router.delete('/:id', async (req, res) => {
   try {
     const feedback = await Feedback.findById(req.params.id);
@@ -82,7 +114,7 @@ router.delete('/:id', async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to delete this feedback' });
     }
 
-    await feedback.remove();
+    await feedback.deleteOne();
     res.json({ message: 'Feedback deleted' });
   } catch (error) {
     console.error('Error deleting feedback:', error);

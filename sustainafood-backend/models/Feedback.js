@@ -22,6 +22,12 @@ const feedbackSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  satisfactionScore: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: null,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

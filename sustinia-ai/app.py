@@ -8,6 +8,7 @@ from prophet import Prophet
 import pandas as pd
 import joblib
 import logging
+from transformers import pipeline
 
 app = Flask(__name__)
 
@@ -40,6 +41,34 @@ except FileNotFoundError as e:
     traffic_model = None
     weather_encoder = None
     vehicle_encoder = None
+
+# Initialize sentiment analysis pipeline
+try:
+    sentiment_analyzer = pipeline('sentiment-analysis', model='distilbert-base-uncased-finetuned-sst-2-english')
+except Exception as e:
+    logger.error(f"Failed to initialize sentiment analyzer: {e}")
+    sentiment_analyzer = None
+
+# Function to compute satisfaction score
+def compute_satisfaction_score(rating, comment):
+    try:
+        # Normalize rating (1-5) to (0-100)
+        normalized_rating = ((rating - 1) / 4) * 100
+
+        # Perform sentiment analysis on the comment
+        sentiment_score = 50  # Default to neutral if sentiment analysis fails
+        if sentiment_analyzer:
+            result = sentiment_analyzer(comment)[0]
+            # Convert sentiment score to 0-100 scale
+            sentiment_score = (result['score'] * 100) if result['label'] == 'POSITIVE' else ((1 - result['score']) * 100)
+
+        # Weighted combination: 60% rating, 40% sentiment
+        satisfaction_score = (0.6 * normalized_rating) + (0.4 * sentiment_score)
+        return round(max(0, min(100, satisfaction_score)))
+    except Exception as e:
+        logger.error(f"Error computing satisfaction score: {e}")
+        # Fallback to rating-based score
+        return round(((rating - 1) / 4) * 100)
 
 # Route for image analysis
 @app.route('/analyze', methods=['POST'])
@@ -183,6 +212,38 @@ def predict_duration():
     except Exception as e:
         logger.error(f"Error in duration prediction: {e}")
         return jsonify({'error': f'Failed to predict duration: {str(e)}'}), 500
+
+# Route for computing satisfaction score
+@app.route('/compute_satisfaction', methods=['POST'])
+def compute_satisfaction():
+    try:
+        data = request.get_json()
+        logger.info(f"Received data for satisfaction score: {data}")
+
+        # Validate required fields
+        required_fields = ['rating', 'comment']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
+
+        rating = data['rating']
+        comment = data['comment']
+
+        # Validate rating
+        if not isinstance(rating, (int, float)) or rating < 1 or rating > 5:
+            return jsonify({'error': 'Rating must be a number between 1 and 5'}), 400
+
+        # Validate comment
+        if not isinstance(comment, str) or not comment.strip():
+            return jsonify({'error': 'Comment must be a non-empty string'}), 400
+
+        # Compute satisfaction score
+        satisfaction_score = compute_satisfaction_score(rating, comment)
+
+        return jsonify({'satisfactionScore': satisfaction_score})
+    except Exception as e:
+        logger.error(f"Error in satisfaction score computation: {e}")
+        return jsonify({'error': f'Failed to compute satisfaction score: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

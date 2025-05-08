@@ -9,6 +9,13 @@ import { FaBan, FaUnlock } from "react-icons/fa";
 const ViewSupermarket = () => {
     const { id } = useParams();
     const [supermarket, setSupermarket] = useState(null);
+ // Set the page title dynamically
+ useEffect(() => {
+    document.title = "SustainaFood - View Supermarket";
+    return () => {
+      document.title = "SustainaFood"; // Reset to default on unmount
+    };
+  }, []);
 
     useEffect(() => {
         axios.get(`http://localhost:3000/users/view/${id}`)

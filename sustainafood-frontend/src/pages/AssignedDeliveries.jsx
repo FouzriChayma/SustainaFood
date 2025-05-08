@@ -38,6 +38,13 @@ const AssignedDeliveries = () => {
   const [transporterLocation, setTransporterLocation] = useState({ type: "Point", coordinates: [0, 0] })
   const [feedbackModal, setFeedbackModal] = useState(null)
   const [feedbackState, setFeedbackState] = useState({})
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Assigned Deliveries";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   const initializeFeedbackState = (deliveryId, targetRole) => ({
     rating: 0,

@@ -19,6 +19,13 @@ const EditProfile = () => {
   const [imagePreview, setImagePreview] = useState(null)
   const [studentCardPreview, setStudentCardPreview] = useState(null)
   const [errors, setErrors] = useState({})
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Edit Profile";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   const navigate = useNavigate()
   const { user: authUser } = useAuth()

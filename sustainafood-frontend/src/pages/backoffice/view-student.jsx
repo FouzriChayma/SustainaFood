@@ -9,6 +9,13 @@ import { FaBan, FaUnlock } from "react-icons/fa";
 const ViewStudent = () => {
     const { id } = useParams();
     const [student, setStudent] = useState(null);
+ // Set the page title dynamically
+ useEffect(() => {
+    document.title = "SustainaFood - View Student";
+    return () => {
+      document.title = "SustainaFood"; // Reset to default on unmount
+    };
+  }, []);
 
     useEffect(() => {
         axios.get(`http://localhost:3000/users/view/${id}`)

@@ -20,6 +20,13 @@ const Delivery = () => {
     const [filterOption, setFilterOption] = useState("all");
     const [sortOption, setSortOption] = useState("date");
     const [deliveriesPerPage] = useState(5);
+ // Set the page title dynamically
+ useEffect(() => {
+    document.title = "SustainaFood - Delivery List";
+    return () => {
+      document.title = "SustainaFood"; // Reset to default on unmount
+    };
+  }, []);
 
     // Fetch deliveries
     useEffect(() => {

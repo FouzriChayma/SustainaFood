@@ -22,6 +22,13 @@ const SupermarketList = () => {
   const supermarketsPerPage = 5
 
   const pagesVisited = currentPage * supermarketsPerPage
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Supermarket List";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     axios

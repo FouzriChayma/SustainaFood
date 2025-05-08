@@ -161,6 +161,7 @@ const Contact = () => {
           <iframe
             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3164.329763530718!2d10.1772!3d36.8760!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x12d347f3d5b8d4d5%3A0x3a8d6db8ed2f31b0!2sAriana+Soghra!5e0!3m2!1sen!2stn!4v1622064481553"
             width="100%"
+            alt="SustainaFood Location"
             height="400"
             style={{ border: 0 }}
             allowFullScreen=""

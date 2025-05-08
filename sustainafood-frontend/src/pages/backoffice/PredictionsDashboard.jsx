@@ -17,6 +17,13 @@ const PredictionsDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const chartRef = useRef(null);
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Predictions Dashboard";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     const fetchPredictions = async () => {

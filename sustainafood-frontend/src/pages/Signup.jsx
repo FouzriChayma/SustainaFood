@@ -127,6 +127,13 @@ const Signup = () => {
   const isTransporter = role === "transporter";
   const isDonor = role === "supermarket" || role === "restaurant";
   const isPersonnel = role === "personaldonor";
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Sign Up";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   // State for errors
   const [errors, setErrors] = useState({

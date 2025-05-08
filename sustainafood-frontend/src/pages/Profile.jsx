@@ -31,6 +31,13 @@ const Profile = () => {
   const [adUploadSuccess, setAdUploadSuccess] = useState("");
 
   const profilePhotoUrl = user?.photo ? `http://localhost:3000/${user.photo}` : pdp;
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Profile";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     const fetchUserAndFeedback = async () => {

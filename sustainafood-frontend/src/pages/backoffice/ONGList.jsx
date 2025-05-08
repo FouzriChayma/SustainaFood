@@ -22,6 +22,13 @@ const ONGList = () => {
   const ongsPerPage = 5
 
   const pagesVisited = currentPage * ongsPerPage
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - ONGs";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     axios

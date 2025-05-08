@@ -52,6 +52,13 @@ const RequestDetail = () => {
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Request Details";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     const fetchRequest = async () => {

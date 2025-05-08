@@ -20,6 +20,13 @@ const ProductList = () => {
   const productsPerPage = 5;
 
   const pagesVisited = currentPage * productsPerPage;
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Products";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     const fetchProducts = async () => {

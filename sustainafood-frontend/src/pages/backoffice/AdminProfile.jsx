@@ -21,6 +21,13 @@ const AdminProfile = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editedData, setEditedData] = useState({ ...admin })
   const [errors, setErrors] = useState({})
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Admin Profile";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     if (!token) {

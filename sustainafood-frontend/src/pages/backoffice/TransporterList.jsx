@@ -21,6 +21,13 @@ const TransporterList = () => {
 
     // Calculate pagesVisited
     const pagesVisited = currentPage * transportersPerPage;
+ // Set the page title dynamically
+ useEffect(() => {
+    document.title = "SustainaFood - Transporter List";
+    return () => {
+      document.title = "SustainaFood"; // Reset to default on unmount
+    };
+  }, []);
 
     // Récupération des transporteurs depuis le backend
     useEffect(() => {

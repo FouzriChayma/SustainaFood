@@ -4,6 +4,14 @@ import Footer from "../components/Footer" // Import the Footer component
 import "../assets/styles/Notfound.css" // Import the styles for the NotFound page
 
 const NotFound = () => {
+   // Set the page title dynamically
+   useEffect(() => {
+    document.title = "SustainaFood -  Not Found";
+    return () => {
+      document.title = "SustainaFood"; // Reset to default on unmount
+    };
+  }, []);
+
     return (
       <div className="notfound-container">
   

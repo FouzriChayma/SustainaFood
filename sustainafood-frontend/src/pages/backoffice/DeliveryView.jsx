@@ -184,6 +184,13 @@ const DeliveryView = () => {
     const [isMapOpen, setIsMapOpen] = useState(false);
     const [routeInfo, setRouteInfo] = useState(null);
     const [transporterLocation, setTransporterLocation] = useState({ type: "Point", coordinates: [0, 0] });
+ // Set the page title dynamically
+ useEffect(() => {
+    document.title = "SustainaFood - Delivery View";
+    return () => {
+      document.title = "SustainaFood"; // Reset to default on unmount
+    };
+  }, []);
 
     // Fetch delivery details
     useEffect(() => {

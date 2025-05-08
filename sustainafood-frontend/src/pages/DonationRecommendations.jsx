@@ -256,6 +256,13 @@ const DonationRecommendations = () => {
     const [expirationFilter, setExpirationFilter] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const donationsPerPage = 3;
+ // Set the page title dynamically
+ useEffect(() => {
+    document.title = "SustainaFood - Donation Recommendations";
+    return () => {
+      document.title = "SustainaFood"; // Reset to default on unmount
+    };
+  }, []);
 
     useEffect(() => {
         const fetchData = async () => {

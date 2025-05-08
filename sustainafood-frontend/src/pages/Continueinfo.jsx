@@ -31,6 +31,13 @@ const ContinueInfo = () => {
   const validateCIN = (cin) => /^\d{8}$/.test(cin);
   const validateFiscalID = (id) => /^TN\d{8}$/.test(id);
   const validateTaxReference = (ref) => /^VAT-\d{8}$/.test(ref);
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Continue Info";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

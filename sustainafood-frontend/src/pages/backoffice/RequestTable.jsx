@@ -75,6 +75,13 @@ const [statusFilter, setStatusFilter] = useState("");
       description: request.description ? request.description.trim() : "",
     };
   };
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Requests";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     const fetchRequests = async () => {

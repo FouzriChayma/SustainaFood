@@ -7,6 +7,13 @@ const ResetCode = () => {
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(window.location.search);
   const email = searchParams.get('email');
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood -  ResetCode";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

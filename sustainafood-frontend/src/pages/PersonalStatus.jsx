@@ -187,6 +187,13 @@ const PersonalStatus = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const chartRef = useRef(null);
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood -  Personal Status";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     if (authUser && (authUser._id || authUser.id)) {

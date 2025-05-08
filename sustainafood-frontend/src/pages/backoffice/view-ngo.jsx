@@ -9,6 +9,13 @@ import { FaBan, FaUnlock } from "react-icons/fa";
 const ViewNGO = () => {
     const { id } = useParams();
     const [ngo, setNgo] = useState(null);
+ // Set the page title dynamically
+ useEffect(() => {
+    document.title = "SustainaFood - View NGO";
+    return () => {
+      document.title = "SustainaFood"; // Reset to default on unmount
+    };
+  }, []);
 
     useEffect(() => {
         axios.get(`http://localhost:3000/users/view/${id}`)

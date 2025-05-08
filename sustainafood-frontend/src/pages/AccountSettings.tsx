@@ -18,6 +18,13 @@ const AccountSettings = () => {
   const [alertType, setAlertType] = useState("success");
 
   const [showConfirmationModal, setShowConfirmationModal] = useState(false); // State for confirmation modal
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Account Settings";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   const handleChangePassword = async (e) => {
     e.preventDefault();

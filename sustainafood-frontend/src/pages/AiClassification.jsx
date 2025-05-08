@@ -21,6 +21,14 @@ const AiClassification = () => {
     const [loading, setLoading] = useState(true); // Loading state while fetching data
     const [userId, setUserId] = useState(null);
     // Fetch user and donations when the component mounts
+     // Set the page title dynamically
+  useEffect(() => {
+    document.title = "SustainaFood -  AiClassification";
+    return () => {
+      document.title = "SustainaFood"; // Reset to default on unmount
+    };
+  }, []);
+
     useEffect(() => {
         const fetchData = async () => {
             // Check if the user is authenticated

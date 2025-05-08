@@ -12,6 +12,13 @@ const SubmissionDetails = () => {
   const [submission, setSubmission] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Submission Details";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     axios

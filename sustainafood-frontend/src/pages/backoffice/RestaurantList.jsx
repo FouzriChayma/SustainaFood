@@ -21,6 +21,13 @@ const RestaurantList = () => {
 
     // Calculate pagesVisited
     const pagesVisited = currentPage * restaurantsPerPage;
+ // Set the page title dynamically
+ useEffect(() => {
+    document.title = "SustainaFood - Restaurants";
+    return () => {
+      document.title = "SustainaFood"; // Reset to default on unmount
+    };
+  }, []);
 
     // Récupération des restaurants depuis le backend
     useEffect(() => {

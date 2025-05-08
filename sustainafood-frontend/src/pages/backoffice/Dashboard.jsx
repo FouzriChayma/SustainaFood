@@ -81,6 +81,13 @@ const Dashboard = () => {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Dashboard";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     const fetchStats = async () => {

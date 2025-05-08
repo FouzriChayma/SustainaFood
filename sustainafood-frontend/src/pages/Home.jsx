@@ -894,6 +894,13 @@ const Home = () => {
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
   const [touchStart, setTouchStart] = useState(null)
   const [touchEnd, setTouchEnd] = useState(null)
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood -  Home";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
       const fetchAdvertisements = async () => {
@@ -1064,7 +1071,7 @@ const Home = () => {
     <AdSlide key={ad._id} rank={ad.rank}>
       <TopDonorBadge rank={ad.rank} />
       <AdImageEnhanced
-        src={`http://localhost:3000/${ad.advertisementImage}`}
+        src={`http://localhost:3000/${ad.advertisementImage}` }
         alt={`Advertisement by ${ad.name}`}
       />
       <DonorInfo>

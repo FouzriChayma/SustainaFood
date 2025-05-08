@@ -101,6 +101,13 @@ export const AddDonation = () => {
   const weightUnits = ["kg", "g", "lb", "oz", "ml", "l"];
   const statuses = ["available", "pending", "reserved", "out_of_stock"];
   const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack", "Dessert", "Other"];
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Add Donation";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     const fetchUser = async () => {

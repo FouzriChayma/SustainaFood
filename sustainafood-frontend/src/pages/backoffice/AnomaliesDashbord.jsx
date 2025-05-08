@@ -71,6 +71,13 @@ const AnomaliesDashboard = () => {
   const [sortOrder, setSortOrder] = useState("asc");
   const [roleFilter, setRoleFilter] = useState("");
   const anomaliesPerPage = 4;
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Anomalies";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   // Fetch anomalies on component mount
   useEffect(() => {

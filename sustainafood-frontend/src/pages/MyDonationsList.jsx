@@ -304,6 +304,13 @@ export default function MyDonationsList() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(6);
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood -  My Donations List";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     const fetchDonations = async () => {

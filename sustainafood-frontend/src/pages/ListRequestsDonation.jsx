@@ -391,6 +391,13 @@ const ListRequestsDonation = () => {
   const [processing, setProcessing] = useState({});
   const [rejectionReason, setRejectionReason] = useState('');
   const [currentRejectionId, setCurrentRejectionId] = useState(null);
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - List Requests Donation";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     const fetchData = async () => {

@@ -24,6 +24,13 @@ const Login = () => {
     const [password, setPassword] = useState("");
     const [isRightPanelActive, setIsRightPanelActive] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+ // Set the page title dynamically
+ useEffect(() => {
+    document.title = "SustainaFood - Login";
+    return () => {
+      document.title = "SustainaFood"; // Reset to default on unmount
+    };
+  }, []);
 
     const handleLogin = async (e) => {
         e.preventDefault();

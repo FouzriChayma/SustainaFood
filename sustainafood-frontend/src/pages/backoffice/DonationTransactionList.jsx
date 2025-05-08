@@ -27,6 +27,13 @@ const DonationTransactionList = () => {
     const handleViewClick = (transactionId) => {
         navigate(`/donation-transactions/view/${transactionId}`);
     };
+ // Set the page title dynamically
+ useEffect(() => {
+    document.title = "SustainaFood - Donation Transactions";
+    return () => {
+      document.title = "SustainaFood"; // Reset to default on unmount
+    };
+  }, []);
 
     useEffect(() => {
         const fetchDonationTransactions = async () => {

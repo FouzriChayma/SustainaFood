@@ -16,6 +16,14 @@ import fooddist from "../assets/images/fooddist.png"
 import solution from "../assets/images/solution.jpg"
 
 const About = () => {
+   // Set the page title dynamically
+   useEffect(() => {
+    document.title = "SustainaFood - About";
+    return () => {
+      document.title = "SustainaFood"; // Reset to default on unmount
+    };
+  }, []);
+
   return (
     <>
       <Navbar />

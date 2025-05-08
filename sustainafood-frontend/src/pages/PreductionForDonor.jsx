@@ -228,6 +228,13 @@ const PredictionForDonor = () => {
   const chartContainerRef = useRef(null);
   const isDonor = user?.role === "restaurant" || user?.role === "supermarket" || user?.role === "personaldonor";
   const isRecipient = user?.role === "ong" || user?.role === "student";
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood -  Predictions";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     if (authUser && (authUser._id || authUser.id)) {

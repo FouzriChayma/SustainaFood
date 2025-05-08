@@ -424,6 +424,14 @@ const ListOfDonations = () => {
   const { user: authUser, token, logout } = useAuth();
 
   const [user, setUser] = useState(authUser);
+   // Set the page title dynamically
+   useEffect(() => {
+    document.title = "SustainaFood -  List Of Donations";
+    return () => {
+      document.title = "SustainaFood"; // Reset to default on unmount
+    };
+  }, []);
+
   useEffect(() => {
     const fetchUser = async () => {
       if (typeof authUser.id === "number") {

@@ -92,6 +92,13 @@ const DonationList = () => {
     status: donation.status ? donation.status.trim() : "",
    
   });
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Donation List";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     const fetchDonations = async () => {

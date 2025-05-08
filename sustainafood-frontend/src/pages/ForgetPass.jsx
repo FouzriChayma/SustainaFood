@@ -6,6 +6,13 @@ import '../assets/styles/ForgetPass.css';
 const ForgetPass = () => {
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Forget Password";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

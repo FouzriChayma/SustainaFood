@@ -22,6 +22,13 @@ const PersonnelList = () => {
   const studentsPerPage = 3
 
   const pagesVisited = currentPage * studentsPerPage
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Personnel List";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     axios

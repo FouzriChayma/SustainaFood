@@ -33,6 +33,14 @@ const ViewProfile = () => {
 
   const isOwnProfile = authUser && (authUser._id === id || authUser.id === id);
 
+  
+  useEffect(() => {
+    document.title = `SustainaFood - ${isOwnProfile ? 'My Profile' : 'Profile'}`;
+    return () => {
+      document.title = 'SustainaFood'; // Reset to default on unmount
+    };
+  }, [isOwnProfile]);
+
   useEffect(() => {
     const fetchUserAndFeedback = async () => {
       if (!id) {

@@ -137,6 +137,13 @@ const DonationDetails = () => {
     const [donation, setDonation] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Donation Details";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
     useEffect(() => {
         const fetchDonation = async () => {

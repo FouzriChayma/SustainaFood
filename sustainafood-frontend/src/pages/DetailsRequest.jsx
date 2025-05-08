@@ -177,6 +177,13 @@ const DetailsRequest = () => {
   const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack", "Dessert", "Other"];
   const navigate = useNavigate();
   const { showAlert } = useAlert();
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Details Request";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   useEffect(() => {
     if (user) {

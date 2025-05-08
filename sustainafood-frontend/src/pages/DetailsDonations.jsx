@@ -135,6 +135,13 @@ const DetailsDonations = () => {
     numberOfMeals: 0,
     donationType: 'products',
   });
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Details Donations";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   const productTypes = [
     {

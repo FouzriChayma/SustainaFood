@@ -19,6 +19,13 @@ const ContactSubmissionList = () => {
   const [sortOrder, setSortOrder] = useState("desc");
   const submissionsPerPage = 5;
   const pagesVisited = currentPage * submissionsPerPage;
+ // Set the page title dynamically
+ useEffect(() => {
+  document.title = "SustainaFood - Contact Submissions";
+  return () => {
+    document.title = "SustainaFood"; // Reset to default on unmount
+  };
+}, []);
 
   // Fetch submissions from backend
   useEffect(() => {

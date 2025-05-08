@@ -824,6 +824,14 @@ const Deliveries = () => {
   const [feedbackState, setFeedbackState] = useState({});
   const itemsPerPage = 3;
 
+   // Set the page title dynamically
+   useEffect(() => {
+    document.title = "SustainaFood - Deliveries";
+    return () => {
+      document.title = "SustainaFood"; // Reset to default on unmount
+    };
+  }, []);
+
   const initializeFeedbackState = (deliveryId, targetRole) => ({
     rating: 0,
     comment: '',

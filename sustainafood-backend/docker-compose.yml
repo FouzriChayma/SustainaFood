@@ -29,7 +29,7 @@ services:
       - /app/node_modules
 
   front:
-    image:  mariemtouzri1/soustaina_front:2
+    image:  walaammar/soustaina_front:9
     ports:
       - "8070:80"
   # front:

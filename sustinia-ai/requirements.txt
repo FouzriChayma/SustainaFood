@@ -1,0 +1,9 @@
+Flask
+Flask-CORS
+tensorflow # ou tensorflow-cpu
+numpy
+Pillow
+prophet
+pandas
+joblib
+gunicorn # Pour la production

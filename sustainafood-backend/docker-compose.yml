@@ -28,6 +28,22 @@ services:
       - .:/app
       - /app/node_modules
 
+  # Service IA (Python/Flask) - UTILISE L'IMAGE DU REGISTRE
+  ai_service:
+    # Remplacez par le nom exact de l'image que votre pipeline Jenkins IA pousse
+    # Exemple pour Docker Hub:
+    image: walaammar/sustainafood-ai-service:latest
+    # Exemple pour Nexus:
+    # image: localhost:8083/sustainafood-ai-service:latest
+    container_name: back_ai
+    restart: unless-stopped
+    ports:
+      - "5001:5000" # Map le port 5001 de l'hôte au port 5000 du conteneur IA (où Flask/Gunicorn écoute)
+    # PAS DE SECTION 'build:' ici car l'image est tirée du registre.
+    environment:
+      FLASK_ENV: production # Ou 'development' si nécessaire, mais 'production' est mieux pour Gunicorn
+      # Ajoutez d'autres variables d'environnement si votre app.py en a besoin
+      
   front:
     image: walaammar/soustaina_front:10
     ports:
@@ -36,6 +52,8 @@ services:
     restart: unless-stopped
     depends_on:
       - app
+      - sustaina-ai
 
+  
 volumes:
   mongo-data:

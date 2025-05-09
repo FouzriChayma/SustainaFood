@@ -1,0 +1,259 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+4. Repository files, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+<additional_info>
+
+</additional_info>
+
+</file_summary>
+
+<directory_structure>
+.gitignore
+app.py
+class_indices.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".gitignore">
+# Virtual environment
+venv/
+
+# Compiled Python files
+__pycache__/
+*.pyc
+</file>
+
+<file path="app.py">
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input, decode_predictions
+from tensorflow.keras.preprocessing import image
+import numpy as np
+from PIL import Image
+from prophet import Prophet
+import pandas as pd
+import joblib
+import logging
+
+app = Flask(__name__)
+
+# Configure CORS to allow requests from the frontend
+CORS(app, resources={r"*": {"origins": "http://localhost:5173"}})
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Load the pre-trained image analysis model
+model = MobileNetV2(weights='imagenet')
+
+# Load Prophet models for forecasting
+try:
+    model_donations = joblib.load('donation_forecast_model2.pkl')
+    model_requests = joblib.load('request_forecast_model2.pkl')
+except FileNotFoundError as e:
+    logger.error(f"Failed to load Prophet models: {e}")
+    model_donations = None
+    model_requests = None
+
+# Load traffic prediction model, weather encoder, and vehicle encoder
+try:
+    traffic_model = joblib.load('traffic_model.pkl')
+    weather_encoder = joblib.load('weather_encoder.pkl')
+    vehicle_encoder = joblib.load('vehicle_encoder.pkl')
+except FileNotFoundError as e:
+    logger.error(f"Failed to load traffic model or encoders: {e}")
+    traffic_model = None
+    weather_encoder = None
+    vehicle_encoder = None
+
+# Route for image analysis
+@app.route('/analyze', methods=['POST'])
+def analyze_image():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+
+    file = request.files['file']
+
+    try:
+        img = Image.open(file.stream).convert('RGB').resize((224, 224))
+    except Exception as e:
+        logger.error(f"Error opening image: {e}")
+        return jsonify({'error': f'Failed to process image: {str(e)}'}), 400
+
+    img_array = image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0)
+    img_array = preprocess_input(img_array)
+
+    predictions = model.predict(img_array)
+    decoded = decode_predictions(predictions, top=3)[0]
+
+    results = [{'description': desc, 'confidence': float(prob)} for (_, desc, prob) in decoded]
+    return jsonify(results)
+
+# Route for donation forecasting
+@app.route('/forecast/donations', methods=['GET'])
+def forecast_donations():
+    if not model_donations:
+        return jsonify({'error': 'Donation forecast model not loaded'}), 500
+
+    try:
+        days = int(request.args.get('days', 30))
+        if days <= 0:
+            return jsonify({'error': 'Days must be a positive integer'}), 400
+
+        future = model_donations.make_future_dataframe(periods=days)
+        forecast = model_donations.predict(future)
+        forecast_data = forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail(days)
+        forecast_data['ds'] = forecast_data['ds'].dt.strftime('%Y-%m-%d')
+        return jsonify(forecast_data.to_dict(orient='records'))
+    except Exception as e:
+        logger.error(f"Error in donation forecast: {e}")
+        return jsonify({'error': f'Failed to generate donation forecast: {str(e)}'}), 500
+
+# Route for request forecasting
+@app.route('/forecast/requests', methods=['GET'])
+def forecast_requests():
+    if not model_requests:
+        return jsonify({'error': 'Request forecast model not loaded'}), 500
+
+    try:
+        days = int(request.args.get('days', 30))
+        if days <= 0:
+            return jsonify({'error': 'Days must be a positive integer'}), 400
+
+        future = model_requests.make_future_dataframe(periods=days)
+        forecast = model_requests.predict(future)
+        forecast_data = forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail(days)
+        forecast_data['ds'] = forecast_data['ds'].dt.strftime('%Y-%m-%d')
+        return jsonify(forecast_data.to_dict(orient='records'))
+    except Exception as e:
+        logger.error(f"Error in request forecast: {e}")
+        return jsonify({'error': f'Failed to generate request forecast: {str(e)}'}), 500
+
+# Route for predicting route duration
+@app.route('/predict_duration', methods=['POST'])
+def predict_duration():
+    if not traffic_model or not weather_encoder or not vehicle_encoder:
+        return jsonify({'error': 'Traffic prediction model or encoders not loaded'}), 500
+
+    try:
+        data = request.get_json()
+        logger.info(f"Received data for duration prediction: {data}")
+
+        # Validate required fields
+        required_fields = ['distance', 'osrmDuration', 'hour', 'weather', 'vehicleType']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
+
+        distance = float(data['distance'])  # in km
+        osrm_duration = float(data['osrmDuration'])  # in seconds
+        hour = int(data['hour'])
+        weather = data['weather'].title()  # e.g., 'Clear', 'Clouds'
+        vehicle_type = data['vehicleType'].title()  # e.g., 'Car', 'Motorcycle'
+
+        # Validate input ranges
+        if distance <= 0:
+            return jsonify({'error': 'Distance must be positive'}), 400
+        if osrm_duration <= 0:
+            return jsonify({'error': 'OSRM duration must be positive'}), 400
+        if hour < 0 or hour > 23:
+            return jsonify({'error': 'Hour must be between 0 and 23'}), 400
+
+        # Validate weather category
+        known_weather_categories = weather_encoder.classes_
+        if weather not in known_weather_categories:
+            return jsonify({
+                'error': f'Invalid weather value: "{weather}". Expected one of: {", ".join(known_weather_categories)}'
+            }), 400
+
+        # Validate vehicle type
+        known_vehicle_types = vehicle_encoder.classes_
+        if vehicle_type not in known_vehicle_types:
+            return jsonify({
+                'error': f'Invalid vehicle type: "{vehicle_type}". Expected one of: {", ".join(known_vehicle_types)}'
+            }), 400
+
+        # Encode features
+        weather_encoded = weather_encoder.transform([weather])[0]
+        vehicle_encoded = vehicle_encoder.transform([vehicle_type])[0]
+        logger.info(f"Encoded values: weather={weather_encoded}, vehicle_type={vehicle_encoded}")
+
+        # Normalize features
+        distance_meters = distance * 1000  # Convert km to meters
+        osrm_duration_minutes = osrm_duration / 60  # Convert seconds to minutes
+        hour_normalized = hour / 23.0  # Normalize hour to [0, 1]
+
+        # Prepare features for prediction
+        features = np.array([[distance_meters, osrm_duration_minutes, hour_normalized, weather_encoded, vehicle_encoded]])
+        logger.info(f"Normalized features for prediction: {features}")
+
+        # Make prediction using the traffic model
+        try:
+            predicted_duration = traffic_model.predict(features)[0]
+            logger.info(f"Model predicted duration (minutes): {predicted_duration}")
+            predicted_duration = predicted_duration * 60  # Convert minutes to seconds
+        except Exception as e:
+            logger.error(f"Model prediction failed: {e}")
+            return jsonify({'error': f'Failed to predict duration: {str(e)}'}), 500
+
+        # Ensure positive duration
+        predicted_duration = max(predicted_duration, 60)  # Minimum 1 minute
+        logger.info(f"Final predicted duration (seconds): {predicted_duration}")
+
+        return jsonify({'predictedDuration': float(predicted_duration)})
+    except ValueError as ve:
+        logger.error(f"Value error in duration prediction: {ve}")
+        return jsonify({'error': f'Invalid input format: {str(ve)}'}), 400
+    except Exception as e:
+        logger.error(f"Error in duration prediction: {e}")
+        return jsonify({'error': f'Failed to predict duration: {str(e)}'}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
+</file>
+
+<file path="class_indices.json">
+{"apple_pie": 0, "baby_back_ribs": 1, "baklava": 2, "beef_carpaccio": 3, "beef_tartare": 4, "beet_salad": 5, "beignets": 6, "bibimbap": 7, "bread_pudding": 8, "breakfast_burrito": 9, "bruschetta": 10, "caesar_salad": 11, "cannoli": 12, "caprese_salad": 13, "carrot_cake": 14, "ceviche": 15, "cheese_plate": 16, "cheesecake": 17, "chicken_curry": 18, "chicken_quesadilla": 19, "chicken_wings": 20, "chocolate_cake": 21, "chocolate_mousse": 22, "churros": 23, "clam_chowder": 24, "club_sandwich": 25, "crab_cakes": 26, "creme_brulee": 27, "croque_madame": 28, "cup_cakes": 29, "deviled_eggs": 30, "donuts": 31, "dumplings": 32, "edamame": 33, "eggs_benedict": 34, "escargots": 35, "falafel": 36, "filet_mignon": 37, "fish_and_chips": 38, "foie_gras": 39, "french_fries": 40, "french_onion_soup": 41, "french_toast": 42, "fried_calamari": 43, "fried_rice": 44, "frozen_yogurt": 45, "garlic_bread": 46, "gnocchi": 47, "greek_salad": 48, "grilled_cheese_sandwich": 49, "grilled_salmon": 50, "guacamole": 51, "gyoza": 52, "hamburger": 53, "hot_and_sour_soup": 54, "hot_dog": 55, "huevos_rancheros": 56, "hummus": 57, "ice_cream": 58, "lasagna": 59, "lobster_bisque": 60, "lobster_roll_sandwich": 61, "macaroni_and_cheese": 62, "macarons": 63, "miso_soup": 64, "mussels": 65, "nachos": 66, "omelette": 67, "onion_rings": 68, "oysters": 69, "pad_thai": 70, "paella": 71, "pancakes": 72, "panna_cotta": 73, "peking_duck": 74, "pho": 75, "pizza": 76, "pork_chop": 77, "poutine": 78, "prime_rib": 79, "pulled_pork_sandwich": 80, "ramen": 81, "ravioli": 82, "red_velvet_cake": 83, "risotto": 84, "samosa": 85, "sashimi": 86, "scallops": 87, "seaweed_salad": 88, "shrimp_and_grits": 89, "spaghetti_bolognese": 90, "spaghetti_carbonara": 91, "spring_rolls": 92, "steak": 93, "strawberry_shortcake": 94, "sushi": 95, "tacos": 96, "takoyaki": 97, "tiramisu": 98, "tuna_tartare": 99, "waffles": 100}
+</file>
+
+</files>

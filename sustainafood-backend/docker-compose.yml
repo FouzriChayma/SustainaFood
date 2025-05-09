@@ -31,14 +31,13 @@ services:
   front:
     image:  walaammar/soustaina_front:9
     ports:
-      - "8070:80"
+      - "86:86"
   # front:
   #   build: ./sustainafood-frontend # Indique à Docker Compose de construire à partir de ce dossier
   #   image: walaammar/soustaina_front:7 # Commentez ou supprimez cette ligne
   #   ports:
   #     - "8070:80"
-    depends_on: # Optionnel, mais peut aider à s'assurer que le backend est prêt
-      - app
+    
 
 volumes:
   mongo-data:

@@ -37,7 +37,8 @@ services:
   #   image: walaammar/soustaina_front:7 # Commentez ou supprimez cette ligne
   #   ports:
   #     - "8070:80"
-    
+    depends_on:
+      - app
 
 volumes:
   mongo-data:

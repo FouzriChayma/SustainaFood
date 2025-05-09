@@ -32,11 +32,8 @@ services:
     image: walaammar/soustaina_front:10
     ports:
       - "86:86"
-  # front:
-  #   build: ./sustainafood-frontend # Indique à Docker Compose de construire à partir de ce dossier
-  #   image: walaammar/soustaina_front:7 # Commentez ou supprimez cette ligne
-  #   ports:
-  #     - "8070:80"
+    container_name: front
+    restart: unless-stopped
     depends_on:
       - app
 

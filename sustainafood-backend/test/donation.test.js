@@ -56,11 +56,17 @@ const getValidBaseData = (category = 'packaged_products') => {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 7);
     return {
-        title: `Valid Transient Item ${Date.now()}`, location: 'Transient Location',
-        expirationDate: futureDate.toISOString(), description: 'Transient description.',
-        donor: testUser._id.toString(), category: category,
+        title: `Valid Transient Item ${Date.now()}`,
+        // Fournir un objet GeoJSON Point valide, stringifié
+        location: JSON.stringify({ type: "Point", coordinates: [10.12345, 36.54321] }),
+        address: "123 Test Street, Test City", // Ajouter le champ address
+        expirationDate: futureDate.toISOString(),
+        description: 'Transient description.',
+        donor: testUser._id.toString(),
+        category: category,
     };
 };
+
 
 // Construit la requête POST avec les données fournies
 const buildPostRequest = (data) => {

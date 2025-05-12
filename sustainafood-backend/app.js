@@ -105,9 +105,16 @@ const trainModel = async () => {
 
 // Step 6: Training and Maintenance
 // Initial Training: Run when the server starts
-trainModel();
+// trainModel();
 
 // Schedule Model Updates: Run daily at midnight
-cron.schedule('0 0 * * *', trainModel);
+if (process.env.NODE_ENV !== 'test') { // Ajouter cette condition
+  // Initial Training: Run when the server starts
+  trainModel();
+
+  // Schedule Model Updates: Run daily at midnight
+  cron.schedule('0 0 * * *', trainModel);
+} // Fermer la condition
+
 
 module.exports = app;

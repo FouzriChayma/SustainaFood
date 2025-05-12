@@ -2,7 +2,7 @@ import { Link } from "react-router-dom"
 import Navbar from "../components/Navbar" // Import the Navbar component
 import Footer from "../components/Footer" // Import the Footer component
 import "../assets/styles/Notfound.css" // Import the styles for the NotFound page
-
+import { useEffect } from "react"
 const NotFound = () => {
    // Set the page title dynamically
    useEffect(() => {

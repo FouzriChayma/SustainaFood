@@ -1,3 +1,5 @@
+"use client"
+
 import {
   FaUtensils,
   FaLink,
@@ -8,27 +10,78 @@ import {
   FaRocket,
   FaUsers,
   FaLeaf,
-} from "react-icons/fa"
-import Navbar from "../components/Navbar"
-import Footer from "../components/Footer"
-import "../assets/styles/About.css"
-import fooddist from "../assets/images/fooddist.png"
-import solution from "../assets/images/solution.jpg"
+} from "react-icons/fa";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import "../assets/styles/About.css";
+import fooddist from "../assets/images/fooddist.png";
+import solution from "../assets/images/solution.jpg";
+import React, { useState, useEffect, useRef } from 'react';
+import SpeechButton from "../components/SpeechButton";
 
 const About = () => {
-   // Set the page title dynamically
-   useEffect(() => {
+  const [pageText, setPageText] = useState("");
+  const contentRef = useRef(null);
+
+  useEffect(() => {
     document.title = "SustainaFood - About";
     return () => {
-      document.title = "SustainaFood"; // Reset to default on unmount
+      document.title = "SustainaFood";
     };
+  }, []);
+
+  useEffect(() => {
+    const collectText = () => {
+      const wrapper = contentRef.current;
+      if (!wrapper) return;
+
+      const textNodes = [];
+      const walk = document.createTreeWalker(
+        wrapper,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode: (node) => {
+            if (
+              node.parentElement.tagName === "SCRIPT" ||
+              node.parentElement.tagName === "STYLE" ||
+              node.parentElement.classList.contains("about-leaf") ||
+              node.parentElement.classList.contains("about-divider-icon") ||
+              node.parentElement.tagName === "IMG" ||
+              node.parentElement.classList.contains("about-stat-number")
+            ) {
+              return NodeFilter.FILTER_REJECT;
+            }
+            return NodeFilter.FILTER_ACCEPT;
+          },
+        }
+      );
+
+      let node;
+      while ((node = walk.nextNode())) {
+        let text = node.textContent.trim();
+        if (!text) continue;
+        text = text
+          .replace(/[\u{1F000}-\u{1FFFF}]/gu, '') // Remove emojis
+          .replace(/[^\w\s.,!?]/g, '') // Remove special characters
+          .replace(/\s+/g, ' ') // Normalize spaces
+          .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove invisible characters
+          .replace(/\.+/g, '.') // Normalize periods
+          .replace(/\s*\.\s*/g, '. ') // Ensure single space after period
+        if (text) textNodes.push(text);
+      }
+
+      const finalText = textNodes.join('. ');
+      console.log("Collected text (length:", finalText.length, "):", finalText.substring(0, 200) + "...");
+      setPageText(finalText);
+    };
+
+    collectText();
   }, []);
 
   return (
     <>
       <Navbar />
-      <div className="about-container">
-        {/* Decorative elements */}
+      <div className="about-container" ref={contentRef}>
         <div className="about-leaf about-leaf-1">
           <svg className="about-leaf-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
             <path d="M17,8C8,10,5.9,16.17,3.82,21.34L5.71,22l1-2.3A4.49,4.49,0,0,0,8,20a4,4,0,0,0,4-4,4,4,0,0,0-4-4,4.12,4.12,0,0,0-1,.14l2.9-2.9A7,7,0,0,1,17,8Z" />
@@ -41,7 +94,6 @@ const About = () => {
         </div>
 
         <div className="about-wrapper">
-          {/* Hero Section with Image */}
           <div className="about-hero">
             <div className="about-hero-content about-animate">
               <h1 className="about-title">
@@ -57,7 +109,6 @@ const About = () => {
             </div>
           </div>
 
-          {/* Mission & Vision Section without Images */}
           <div className="about-mission-vision">
             <div className="about-card about-animate about-delay-1">
               <div className="about-card-content">
@@ -84,7 +135,6 @@ const About = () => {
             </div>
           </div>
 
-          {/* Section Divider */}
           <div className="about-divider">
             <div className="about-divider-line"></div>
             <div className="about-divider-icon">
@@ -93,7 +143,6 @@ const About = () => {
             <div className="about-divider-line"></div>
           </div>
 
-          {/* Values Section with Background Image */}
           <div className="about-values">
             <div className="about-values-bg"></div>
             <h2 className="about-section-title about-animate">Our Core Values</h2>
@@ -130,7 +179,6 @@ const About = () => {
             </div>
           </div>
 
-          {/* Section Divider */}
           <div className="about-divider">
             <div className="about-divider-line"></div>
             <div className="about-divider-icon">
@@ -139,7 +187,6 @@ const About = () => {
             <div className="about-divider-line"></div>
           </div>
 
-          {/* Solution Section with Image */}
           <div className="about-solution">
             <div className="about-solution-content about-animate">
               <h2 className="about-solution-title">Our Proposed Solution</h2>
@@ -199,7 +246,6 @@ const About = () => {
             </div>
           </div>
 
-          {/* Impact Statistics Section */}
           <div className="about-impact about-animate about-delay-1">
             <h2 className="about-impact-title">Our Impact</h2>
             <div className="about-stats">
@@ -223,9 +269,10 @@ const About = () => {
           </div>
         </div>
       </div>
+      <SpeechButton textToRead={pageText} position="right" />
       <Footer />
     </>
-  )
-}
+  );
+};
 
-export default About
+export default About;

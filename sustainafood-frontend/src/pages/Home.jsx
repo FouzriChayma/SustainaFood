@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import styled, { createGlobalStyle, keyframes, css } from "styled-components"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
+import SpeechButton from "../components/SpeechButton"
 import donation1 from "../assets/images/home1.png"
 import donation2 from "../assets/images/home2.png"
 import donation3 from "../assets/images/home3.png"
@@ -42,18 +43,6 @@ const float = keyframes`
 const shimmer = keyframes`
   0% { background-position: -1000px 0; }
   100% { background-position: 1000px 0; }
-`
-
-const glowPulse = keyframes`
-  0% { box-shadow: 0 0 10px rgba(34, 139, 34, 0.3), 0 0 20px rgba(34, 139, 34, 0.2); }
-  50% { box-shadow: 0 0 20px rgba(34, 139, 34, 0.5), 0 0 30px rgba(34, 139, 34, 0.3); }
-  100% { box-shadow: 0 0 10px rgba(34, 139, 34, 0.3), 0 0 20px rgba(34, 139, 34, 0.2); }
-`
-
-const starTwinkle = keyframes`
-  0% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.2); opacity: 1; }
-  100% { transform: scale(1); opacity: 0.8; }
 `
 
 const HomeContainer = styled.div`
@@ -197,13 +186,6 @@ const TopTransporterBadge = styled.div`
     &::before {
       font-size: 14px;
     }
-  }
-
-  /* Accessibility: Ensure sufficient contrast */
-  @media (prefers-contrast: high) {
-    background: #ffcc00;
-    color: #1a1a1a;
-    border: 1px solid #1a1a1a;
   }
 `
 
@@ -591,7 +573,6 @@ const ColumnSection = styled.div`
   }
 `
 
-// Clean title styling to match the reference image
 const DonorSectionTitle = styled.h2`
   font-size: 40px;
   font-weight: 700;
@@ -614,7 +595,6 @@ const DonorSectionTitle = styled.h2`
   }
 `
 
-// Update the AdCarouselContainer for a cleaner look with cream background
 const AdCarouselContainer = styled.div`
   position: relative;
   width: 100%;
@@ -622,18 +602,15 @@ const AdCarouselContainer = styled.div`
   overflow: hidden;
   border-radius: 16px;
   background-color: #fff8e1;
-    animation: ${float} 6s ease-in-out infinite;
-
+  animation: ${float} 6s ease-in-out infinite;
 `
 
-// Make the AdCarouselTrack taller to accommodate larger images
 const AdCarouselTrack = styled.div`
   display: flex;
   transition: transform 0.5s ease-in-out;
   height: 450px;
 `
 
-// Update the AdSlide for a cleaner background
 const AdSlide = styled.div`
   min-width: 100%;
   position: relative;
@@ -643,15 +620,14 @@ const AdSlide = styled.div`
   justify-content: center;
   padding: 20px;
   background: ${(props) => {
-    if (props.rank === 0) return "#fff8e1" // Gold background for 1st
-    if (props.rank === 1) return "#f5f5f5" // Silver background for 2nd
-    if (props.rank === 2) return "#fff0e6" // Bronze background for 3rd
+    if (props.rank === 0) return "#fff8e1"
+    if (props.rank === 1) return "#f5f5f5"
+    if (props.rank === 2) return "#fff0e6"
     return "transparent"
   }};
   border-radius: 16px;
 `
 
-// Make the AdImageEnhanced bigger
 const AdImageEnhanced = styled.img`
   width: 100%;
   height: 280px;
@@ -659,7 +635,6 @@ const AdImageEnhanced = styled.img`
   border-radius: 12px;
 `
 
-// Update the DonorInfo for a cleaner look
 const DonorInfo = styled.div`
   text-align: center;
   position: relative;
@@ -667,27 +642,25 @@ const DonorInfo = styled.div`
   border-radius: 12px;
 `
 
-// Update the DonorName for a cleaner look
 const DonorName = styled.h3`
   font-size: 24px;
   font-weight: 600;
   color: ${(props) => {
-    if (props.rank === 0) return "#d4af37" // Gold
-    if (props.rank === 1) return "#717171" // Silver
-    if (props.rank === 2) return "#a05a2c" // Bronze
+    if (props.rank === 0) return "#d4af37"
+    if (props.rank === 1) return "#717171"
+    if (props.rank === 2) return "#a05a2c"
     return "#333333"
   }};
   margin-bottom: 10px;
 `
 
-// Update the DonorRank for a cleaner look
 const DonorRank = styled.span`
   display: inline-block;
   padding: 6px 6px;
   background: ${(props) => {
-    if (props.rank === 0) return "#ffd800" // Gold
-    if (props.rank === 1) return "#c0c0c0" // Silver
-    if (props.rank === 2) return "#cd7f32" // Bronze
+    if (props.rank === 0) return "#ffd800"
+    if (props.rank === 1) return "#c0c0c0"
+    if (props.rank === 2) return "#cd7f32"
     return "#4caf50"
   }};
   color: ${(props) => (props.rank === 1 ? "#333" : "white")};
@@ -696,15 +669,14 @@ const DonorRank = styled.span`
   font-weight: 600;
 `
 
-// Update the TopDonorBadge to match the reference image
 const TopDonorBadge = styled.div`
   position: absolute;
   top: 15px;
   right: 15px;
   background: ${(props) => {
-    if (props.rank === 0) return "#ffd700" // Gold
-    if (props.rank === 1) return "#c0c0c0" // Silver
-    if (props.rank === 2) return "#cd7f32" // Bronze
+    if (props.rank === 0) return "#ffd700"
+    if (props.rank === 1) return "#c0c0c0"
+    if (props.rank === 2) return "#cd7f32"
     return "#ff9800"
   }};
   color: ${(props) => (props.rank === 1 ? "#333" : "white")};
@@ -736,7 +708,6 @@ const TopDonorBadge = styled.div`
   }
 `
 
-// Update the CarouselControls to position arrows on the sides
 const CarouselControls = styled.div`
   position: absolute;
   top: 0;
@@ -751,7 +722,6 @@ const CarouselControls = styled.div`
   z-index: 5;
 `
 
-// Update the CarouselButton for side positioning
 const CarouselButton = styled.button`
   background: rgba(255, 255, 255, 0.8);
   color: #228b22;
@@ -787,7 +757,6 @@ const CarouselButton = styled.button`
   }
 `
 
-// Update the CarouselDots to be at the bottom
 const CarouselDots = styled.div`
   position: absolute;
   bottom: 15px;
@@ -800,7 +769,6 @@ const CarouselDots = styled.div`
   pointer-events: auto;
 `
 
-// Update the CarouselDot for a cleaner look
 const CarouselDot = styled.button`
   width: ${(props) => (props.isActive ? "10px" : "8px")};
   height: ${(props) => (props.isActive ? "10px" : "8px")};
@@ -825,20 +793,19 @@ const ErrorMessage = styled.p`
   border-radius: 8px;
 `
 
-// Add a new styled component for the thank you/promotional message
 const DonorPromoMessage = styled.div`
   margin-top: 10px;
   padding: 12px 15px;
   background: ${(props) => {
-    if (props.rank === 0) return "rgba(255, 215, 0, 0.1)" // Gold
-    if (props.rank === 1) return "rgba(192, 192, 192, 0.1)" // Silver
-    if (props.rank === 2) return "rgba(205, 127, 50, 0.1)" // Bronze
+    if (props.rank === 0) return "rgba(255, 215, 0, 0.1)"
+    if (props.rank === 1) return "rgba(192, 192, 192, 0.1)"
+    if (props.rank === 2) return "rgba(205, 127, 50, 0.1)"
     return "rgba(76, 175, 80, 0.1)"
   }};
   border: 1px solid ${(props) => {
-    if (props.rank === 0) return "rgba(255, 215, 0, 0.3)" // Gold
-    if (props.rank === 1) return "rgba(192, 192, 192, 0.3)" // Silver
-    if (props.rank === 2) return "rgba(205, 127, 50, 0.3)" // Bronze
+    if (props.rank === 0) return "rgba(255, 215, 0, 0.3)"
+    if (props.rank === 1) return "rgba(192, 192, 192, 0.3)"
+    if (props.rank === 2) return "rgba(205, 127, 50, 0.3)"
     return "rgba(76, 175, 80, 0.3)"
   }};
   border-radius: 8px;
@@ -854,9 +821,9 @@ const DonorPromoTitle = styled.p`
   font-weight: 600;
   margin-bottom: 5px;
   color: ${(props) => {
-    if (props.rank === 0) return "#d4af37" // Gold
-    if (props.rank === 1) return "#717171" // Silver
-    if (props.rank === 2) return "#a05a2c" // Bronze
+    if (props.rank === 0) return "#d4af37"
+    if (props.rank === 1) return "#717171"
+    if (props.rank === 2) return "#a05a2c"
     return "#1a7a1a"
   }};
 `
@@ -866,9 +833,9 @@ const DonorPromoButton = styled.a`
   margin-top: 8px;
   padding: 6px 12px;
   background: ${(props) => {
-    if (props.rank === 0) return "#ffd700" // Gold
-    if (props.rank === 1) return "#c0c0c0" // Silver
-    if (props.rank === 2) return "#cd7f32" // Bronze
+    if (props.rank === 0) return "#ffd700"
+    if (props.rank === 1) return "#c0c0c0"
+    if (props.rank === 2) return "#cd7f32"
     return "#4caf50"
   }};
   color: ${(props) => (props.rank === 1 ? "#333" : "white")};
@@ -894,44 +861,41 @@ const Home = () => {
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
   const [touchStart, setTouchStart] = useState(null)
   const [touchEnd, setTouchEnd] = useState(null)
- // Set the page title dynamically
- useEffect(() => {
-  document.title = "SustainaFood -  Home";
-  return () => {
-    document.title = "SustainaFood"; // Reset to default on unmount
-  };
-}, []);
+  const [pageText, setPageText] = useState("")
+  const contentRef = useRef(null)
 
   useEffect(() => {
-      const fetchAdvertisements = async () => {
-        try {
-          const response = await fetch("http://localhost:3000/users/top-donor-ad", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const data = await response.json();
-          if (response.ok) {
-            console.log("Fetched advertisements:", data); // Debug log
-            setAdvertisements(data);
-            setAdError("");
-          } else {
-            console.log("Fetch error response:", data); // Debug error details
-            setAdError(data.error || "Failed to fetch advertisements");
-          }
-        } catch (error) {
-          console.error("Error fetching advertisements:", error);
-          setAdError("Failed to fetch advertisements");
+    document.title = "SustainaFood - Home"
+    return () => {
+      document.title = "SustainaFood"
+    }
+  }, [])
+
+  useEffect(() => {
+    const fetchAdvertisements = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/users/top-donor-ad", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const data = await response.json()
+        if (response.ok) {
+          setAdvertisements(data)
+          setAdError("")
+        } else {
+          setAdError(data.error || "Failed to fetch advertisements")
         }
-      };
-      fetchAdvertisements();
-    }, [token]);
+      } catch (error) {
+        setAdError("Failed to fetch advertisements")
+      }
+    }
+    fetchAdvertisements()
+  }, [token])
 
   useEffect(() => {
     const fetchTopTransporter = async () => {
       try {
         const response = await fetch("http://localhost:3000/users/top-transporter", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         })
         const data = await response.json()
         if (response.ok) {
@@ -941,12 +905,64 @@ const Home = () => {
           setTransporterError(data.error || "Failed to fetch top transporter")
         }
       } catch (error) {
-        console.error("Error fetching top transporter:", error)
         setTransporterError("Failed to fetch top transporter")
       }
     }
     fetchTopTransporter()
   }, [token])
+
+  useEffect(() => {
+    const collectText = () => {
+      const wrapper = contentRef.current
+      if (!wrapper) {
+        console.warn("Content container not found")
+        return
+      }
+
+      const textNodes = []
+      const walk = document.createTreeWalker(
+        wrapper,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode: (node) => {
+            if (
+              node.parentElement.tagName === "SCRIPT" ||
+              node.parentElement.tagName === "STYLE" ||
+              node.parentElement.tagName === "IMG" ||
+              node.parentElement.classList.contains("TopTransporterBadge") ||
+              node.parentElement.classList.contains("TopDonorBadge") ||
+              node.parentElement.classList.contains("CarouselButton") ||
+              node.parentElement.classList.contains("CarouselDot")
+            ) {
+              return NodeFilter.FILTER_REJECT
+            }
+            return NodeFilter.FILTER_ACCEPT
+          },
+        }
+      )
+
+      let node
+      while ((node = walk.nextNode())) {
+        let text = node.textContent.trim()
+        if (!text) continue
+        text = text
+          .replace(/[\u{1F000}-\u{1FFFF}]/gu, '') // Remove emojis
+          .replace(/[^\w\s.,!?]/g, '') // Remove special characters
+          .replace(/\s+/g, ' ') // Normalize spaces
+          .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove invisible characters
+          .replace(/\.+/g, '.') // Normalize periods
+          .replace(/\s*\.\s*/g, '. ') // Ensure single space after period
+        if (text) textNodes.push(text)
+      }
+
+      const finalText = textNodes.join('. ')
+      console.log("Collected text (length:", finalText.length, "):", finalText.substring(0, 200) + "...")
+      setPageText(finalText)
+    }
+
+    const timer = setTimeout(collectText, 1000)
+    return () => clearTimeout(timer)
+  }, [advertisements, topTransporter, adError, transporterError])
 
   useEffect(() => {
     const sections = document.querySelectorAll("section")
@@ -1012,14 +1028,10 @@ const Home = () => {
 
   const getRankText = (index) => {
     switch (index) {
-      case 0:
-        return "Top 1 Donor"
-      case 1:
-        return "Top 2 Donor"
-      case 2:
-        return "Top 3 Donor"
-      default:
-        return `${index + 1}th Donor`
+      case 0: return "Top 1 Donor"
+      case 1: return "Top 2 Donor"
+      case 2: return "Top 3 Donor"
+      default: return `${index + 1}th Donor`
     }
   }
 
@@ -1027,13 +1039,12 @@ const Home = () => {
     <>
       <GlobalStyle />
       <Navbar />
-      <HomeContainer>
+      <HomeContainer ref={contentRef}>
         <HeroSection>
           <HeroText>
             <h1>Welcome to SustainaFood</h1>
             <p>
-              Connecting donors, recipients, and transporters to reduce food waste and bring help where it's needed
-              most.
+              Connecting donors, recipients, and transporters to reduce food waste and bring help where it's needed most.
             </p>
             {!authUser && <CallToAction href="/signup">Join Us Today</CallToAction>}
           </HeroText>
@@ -1067,41 +1078,40 @@ const Home = () => {
                   onTouchEnd={handleTouchEnd}
                 >
                   <AdCarouselTrack style={{ transform: `translateX(-${currentAdIndex * 100}%)` }}>
-  {advertisements.map((ad) => (
-    <AdSlide key={ad._id} rank={ad.rank}>
-      <TopDonorBadge rank={ad.rank} />
-      <AdImageEnhanced
-        src={`http://localhost:3000/${ad.advertisementImage}` }
-        alt={`Advertisement by ${ad.name}`}
-      />
-      <DonorInfo>
-        <DonorName rank={ad.rank}>{ad.name}</DonorName>
-        <DonorRank rank={ad.rank}>{getRankText(ad.rank)}</DonorRank>
-      </DonorInfo>
-      <DonorPromoMessage rank={ad.rank}>
-        <DonorPromoTitle rank={ad.rank}>
-          {ad.rank === 0
-            ? "🏆 Gold Donor Spotlight"
-            : ad.rank === 1
-            ? "🥈 Silver Donor Highlight"
-            : ad.rank === 2
-            ? "🥉 Bronze Donor Feature"
-            : "✨ Featured Donor"}
-        </DonorPromoTitle>
-        <p>
-          {ad.rank === 0
-            ? "Support this top donor's business! Their generous contributions make a significant impact on our mission to reduce food waste."
-            : ad.rank === 1
-            ? "This silver-tier donor helps us connect surplus food with those who need it most. Consider supporting their business!"
-            : ad.rank === 2
-            ? "Our bronze donor plays a vital role in our community. Visit their business to show your appreciation!"
-            : "Thank you to this valued donor for supporting our cause. Your patronage of their business helps our community!"}
-        </p>
-      </DonorPromoMessage>
-    </AdSlide>
-  ))}
-</AdCarouselTrack>
-
+                    {advertisements.map((ad) => (
+                      <AdSlide key={ad._id} rank={ad.rank}>
+                        <TopDonorBadge rank={ad.rank} />
+                        <AdImageEnhanced
+                          src={`http://localhost:3000/${ad.advertisementImage}`}
+                          alt={`Advertisement by ${ad.name}`}
+                        />
+                        <DonorInfo>
+                          <DonorName rank={ad.rank}>{ad.name}</DonorName>
+                          <DonorRank rank={ad.rank}>{getRankText(ad.rank)}</DonorRank>
+                        </DonorInfo>
+                        <DonorPromoMessage rank={ad.rank}>
+                          <DonorPromoTitle rank={ad.rank}>
+                            {ad.rank === 0
+                              ? "🏆 Gold Donor Spotlight"
+                              : ad.rank === 1
+                              ? "🥈 Silver Donor Highlight"
+                              : ad.rank === 2
+                              ? "🥉 Bronze Donor Feature"
+                              : "✨ Featured Donor"}
+                          </DonorPromoTitle>
+                          <p>
+                            {ad.rank === 0
+                              ? "Support this top donor's business! Their generous contributions make a significant impact on our mission to reduce food waste."
+                              : ad.rank === 1
+                              ? "This silver-tier donor helps us connect surplus food with those who need it most. Consider supporting their business!"
+                              : ad.rank === 2
+                              ? "Our bronze donor plays a vital role in our community. Visit their business to show your appreciation!"
+                              : "Thank you to this valued donor for supporting our cause. Your patronage of their business helps our community!"}
+                          </p>
+                        </DonorPromoMessage>
+                      </AdSlide>
+                    ))}
+                  </AdCarouselTrack>
                   {advertisements.length > 1 && (
                     <>
                       <CarouselControls>
@@ -1116,7 +1126,16 @@ const Home = () => {
                           </svg>
                         </CarouselButton>
                       </CarouselControls>
-                      
+                      <CarouselDots>
+                        {advertisements.map((_, index) => (
+                          <CarouselDot
+                            key={index}
+                            isActive={index === currentAdIndex}
+                            onClick={() => goToAd(index)}
+                            aria-label={`Go to advertisement ${index + 1}`}
+                          />
+                        ))}
+                      </CarouselDots>
                     </>
                   )}
                 </AdCarouselContainer>
@@ -1140,8 +1159,7 @@ const Home = () => {
                   {topTransporter.name} - {topTransporter.deliveryCount} Deliveries
                 </TransporterInfo>
                 <ThankYouMessage>
-                  Thank you, {topTransporter.name}, for your dedication in delivering food to those in need. Your
-                  efforts help reduce waste and strengthen our community!
+                  Thank you, {topTransporter.name}, for your dedication in delivering food to those in need. Your efforts help reduce waste and strengthen our community!
                 </ThankYouMessage>
               </CarouselContainer>
             ) : (
@@ -1174,32 +1192,28 @@ const Home = () => {
           <SectionTitle align="left">Our Proposed Solution</SectionTitle>
           <ProposedSolutionList>
             <li>
-              <strong>Real-time Analytics:</strong> Track the impact of actions and adjust strategies as needed with
-              comprehensive dashboards and reports.
+              <strong>Real-time Analytics:</strong> Track the impact of actions and adjust strategies as needed with comprehensive dashboards and reports.
             </li>
             <li>
-              <strong>Free Services for All Stakeholders:</strong> Completely free services for NGOs, partner companies,
-              and other stakeholders to maximize participation.
+              <strong>Free Services for All Stakeholders:</strong> Completely free services for NGOs, partner companies, and other stakeholders to maximize participation.
             </li>
             <li>
-              <strong>Artificial Intelligence:</strong> Optimize routes and stock management to reduce logistics costs
-              and improve efficiency with cutting-edge AI technology.
+              <strong>Artificial Intelligence:</strong> Optimize routes and stock management to reduce logistics costs and improve efficiency with cutting-edge AI technology.
             </li>
             <li>
-              <strong>Gamification:</strong> Reward both consumers and merchants to encourage active participation
-              through points, badges, and recognition.
+              <strong>Gamification:</strong>
+              <p>Reward both consumers and merchants to encourage active participation through points, badges, and recognition.</p>
             </li>
             <li>
-              <strong>Awareness Campaign:</strong> Collaborate with local associations to expand the partner network and
-              maximize national impact through targeted outreach.
+              <strong>Awareness Campaign:</strong> Collaborate with local associations to expand the partner network and maximize national impact through targeted outreach.
             </li>
           </ProposedSolutionList>
           <SummaryText>
-            In summary, SustainaFood offers a flexible, intelligent, and scalable solution to effectively combat food
-            waste in Tunisia/Setif while building a stronger, more connected community.
+            In summary, SustainaFood offers a flexible, intelligent, and scalable solution to effectively combat food waste in Tunisia/Setif while building a stronger, more connected community.
           </SummaryText>
         </SectionWrapper>
       </HomeContainer>
+      <SpeechButton textToRead={pageText} />
       <Footer />
     </>
   )

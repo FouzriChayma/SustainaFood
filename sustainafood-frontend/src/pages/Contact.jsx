@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
+import SpeechButton from "../components/SpeechButton"
 import "../assets/styles/Contact.css"
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaClock } from "react-icons/fa"
 import { submitContactForm } from "../api/contactService"
@@ -15,10 +16,11 @@ const Contact = () => {
     email: "",
     comment: "",
   })
-
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [pageText, setPageText] = useState("")
+  const contentRef = useRef(null)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -94,10 +96,69 @@ const Contact = () => {
     },
   ]
 
+  useEffect(() => {
+    const collectText = () => {
+      const wrapper = contentRef.current
+      if (!wrapper) {
+        console.warn("Content container not found")
+        return
+      }
+
+      const textNodes = []
+      const walk = document.createTreeWalker(
+        wrapper,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode: (node) => {
+            if (
+              node.parentElement.tagName === "SCRIPT" ||
+              node.parentElement.tagName === "STYLE" ||
+              node.parentElement.tagName === "IMG" ||
+              node.parentElement.tagName === "IFRAME" ||
+              node.parentElement.tagName === "INPUT" ||
+              node.parentElement.tagName === "TEXTAREA" ||
+              node.parentElement.classList.contains("error-message") ||
+              node.parentElement.classList.contains("feedback-success")
+            ) {
+              return NodeFilter.FILTER_REJECT
+            }
+            return NodeFilter.FILTER_ACCEPT
+          },
+        }
+      )
+
+      let node
+      while ((node = walk.nextNode())) {
+        let text = node.textContent.trim()
+        if (!text) continue
+        text = text
+          .replace(/[\u{1F000}-\u{1FFFF}]/gu, '') // Remove emojis
+          .replace(/[^\w\s.,!?]/g, '') // Remove special characters
+          .replace(/\s+/g, ' ') // Normalize spaces
+          .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove invisible characters
+          .replace(/[\n\r\t]+/g, ' ') // Replace newlines and tabs
+          .replace(/\.+/g, '.') // Normalize periods
+          .replace(/,+/, ',') // Normalize commas
+          .replace(/!+/, '!') // Normalize exclamation marks
+          .replace(/\?+/, '?') // Normalize question marks
+          .replace(/\s*[.,!?]\s*/g, '$&. ') // Ensure single space after punctuation
+          .replace(/(\w)\1{2,}/g, '$1$1') // Limit repeated characters
+          .trim()
+        if (text) textNodes.push(text)
+      }
+
+      const finalText = textNodes.join('. ')
+      console.log("Collected text (length:", finalText.length, "):", finalText.substring(0, 200) + (finalText.length > 200 ? "..." : ""))
+      setPageText(finalText)
+    }
+
+    collectText()
+  }, [submitted]) // Re-collect text when form submission state changes
+
   return (
     <>
       <Navbar />
-      <div className="contact-page">
+      <div className="contact-page" ref={contentRef}>
         <h2 className="contact-title">Get In Touch</h2>
         <div className="contact-message">
           Have a question, a suggestion, or need assistance? We're here to help! Whether you're looking for support,
@@ -172,6 +233,7 @@ const Contact = () => {
           />
         </div>
       </div>
+      <SpeechButton textToRead={pageText} position="right" />
       <Footer />
     </>
   )

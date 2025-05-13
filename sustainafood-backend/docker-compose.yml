@@ -22,7 +22,7 @@ services:
       - "3000:3000"
     depends_on:
       - db
-      - ai_service # L'ancien service AI (si vous le gardez)
+      # - ai_service 
       - sustinia_ai_service # Dépendance au nouveau service AI
     environment:
       - MONGODB_URI=mongodb://db:27017/sustainafood

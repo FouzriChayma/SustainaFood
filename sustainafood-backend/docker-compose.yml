@@ -44,7 +44,7 @@ services:
   sustinia_ai_service: # Nom du service dans Docker Compose
     # Utilisez l'image construite par votre pipeline pour sustinia-ai
     # Exemple si poussé sur Docker Hub:
-    image: walaammar/sustaina-ai:latest
+    image: walaammar/ai:latest
     # Exemple si construit localement et non poussé :
     # image: sustaina-ai:latest # S'assurer que le nom correspond à celui utilisé lors du build
     # build: ../sustinia-ai # Alternative si vous voulez le construire ici, mais moins idéal pour la séparation

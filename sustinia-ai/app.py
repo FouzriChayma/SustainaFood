@@ -10,9 +10,13 @@ import joblib
 import logging
 
 app = Flask(__name__)
-
+allowed_origins = [
+    "http://localhost:86",      # Accès via localhost:86 (Nginx)
+    "http://172.17.88.223:86", # Accès via IP:86 (Nginx)
+    "http://localhost:5173",    # Origine de développement Vite
+]
 # Configure CORS to allow requests from the frontend
-CORS(app, resources={r"*": {"origins": "http://localhost:5173"}})
+CORS(app, resources={r"/*": {"origins":  allowed_origins}}, supports_credentials=True)
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

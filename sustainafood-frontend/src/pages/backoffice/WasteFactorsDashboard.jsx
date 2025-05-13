@@ -26,7 +26,7 @@ const WasteFactorsDashboard = () => {
   useEffect(() => {
     const fetchFactors = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/waste-factors');
+        const response = await axios.get('http://localhost:5001/waste-factors');
         // Transform the response into an array of { feature, importance } objects
         const factorsData = Object.entries(response.data).map(([feature, importance]) => ({
           feature,

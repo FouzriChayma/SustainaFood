@@ -32,7 +32,7 @@ const FoodDemandDashboard = () => {
         ];
         const predictions = await Promise.all(
           events.map(async (event) => {
-            const response = await axios.post('http://localhost:5000/forecast_food_demand', {
+            const response = await axios.post('http://localhost:5001/forecast_food_demand', {
               'Number of Guests': event.numberOfGuests,
               'Type of Food': event.typeOfFood,
               'Event Type': event.eventType,

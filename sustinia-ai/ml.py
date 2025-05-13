@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input, decode_predictions
 from tensorflow.keras.preprocessing import image
+from tensorflow.keras.models import load_model
 import numpy as np
 from PIL import Image
 from prophet import Prophet
@@ -42,6 +43,21 @@ except FileNotFoundError as e:
     weather_encoder = None
     vehicle_encoder = None
 
+# Load food quantity and waste models
+try:
+    food_quantity_model = load_model('food_quantity_model.keras')
+    food_waste_model = load_model('food_waste_model.keras')
+    scaler = joblib.load('scaler.pkl')
+    feature_columns = joblib.load('feature_columns.pkl')
+    feature_importance = joblib.load('feature_importance.pkl')
+except FileNotFoundError as e:
+    logger.error(f"Failed to load food models or artifacts: {e}")
+    food_quantity_model = None
+    food_waste_model = None
+    scaler = None
+    feature_columns = None
+    feature_importance = None
+
 # Initialize sentiment analysis pipeline
 try:
     sentiment_analyzer = pipeline('sentiment-analysis', model='distilbert-base-uncased-finetuned-sst-2-english')
@@ -52,26 +68,46 @@ except Exception as e:
 # Function to compute satisfaction score
 def compute_satisfaction_score(rating, comment):
     try:
-        # Normalize rating (1-5) to (0-100)
         normalized_rating = ((rating - 1) / 4) * 100
-
-        # Perform sentiment analysis on the comment
-        sentiment_score = 50  # Default to neutral if sentiment analysis fails
+        sentiment_score = 50
         if sentiment_analyzer:
             result = sentiment_analyzer(comment)[0]
-            # Convert sentiment score to 0-100 scale
             sentiment_score = (result['score'] * 100) if result['label'] == 'POSITIVE' else ((1 - result['score']) * 100)
-
-        # Weighted combination: 60% rating, 40% sentiment
         satisfaction_score = (0.6 * normalized_rating) + (0.4 * sentiment_score)
         return round(max(0, min(100, satisfaction_score)))
     except Exception as e:
         logger.error(f"Error computing satisfaction score: {e}")
-        # Fallback to rating-based score
         return round(((rating - 1) / 4) * 100)
 
-# Route for image analysis
-@app.route('/analyze', methods=['POST'])
+# Helper function to preprocess input data
+def preprocess_input(data):
+    try:
+        input_data = pd.DataFrame([data])
+        numerical_cols = ['Number of Guests', 'Quantity of Food'] if 'Quantity of Food' in data else ['Number of Guests']
+        for col in numerical_cols:
+            input_data[col] = pd.to_numeric(input_data[col], errors='coerce')
+        if input_data[numerical_cols].isna().any().any():
+            raise ValueError("Invalid numerical inputs")
+
+        categorical_columns = [
+            'Type of Food', 'Event Type', 'Storage Conditions',
+            'Purchase History', 'Seasonality', 'Preparation Method',
+            'Geographical Location', 'Pricing'
+        ]
+        input_encoded = pd.get_dummies(input_data, columns=categorical_columns, drop_first=True)
+
+        for col in feature_columns:
+            if col not in input_encoded.columns:
+                input_encoded[col] = 0
+        input_encoded = input_encoded[feature_columns]
+
+        input_scaled = scaler.transform(input_encoded)
+        return input_scaled
+    except Exception as e:
+        logger.error(f"Error preprocessing input: {e}")
+        raise
+
+# Route for image analysis@app.route('/analyze', methods=['POST'])
 def analyze_image():
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
@@ -99,12 +135,10 @@ def analyze_image():
 def forecast_donations():
     if not model_donations:
         return jsonify({'error': 'Donation forecast model not loaded'}), 500
-
     try:
         days = int(request.args.get('days', 30))
         if days <= 0:
             return jsonify({'error': 'Days must be a positive integer'}), 400
-
         future = model_donations.make_future_dataframe(periods=days)
         forecast = model_donations.predict(future)
         forecast_data = forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail(days)
@@ -119,12 +153,10 @@ def forecast_donations():
 def forecast_requests():
     if not model_requests:
         return jsonify({'error': 'Request forecast model not loaded'}), 500
-
     try:
         days = int(request.args.get('days', 30))
         if days <= 0:
             return jsonify({'error': 'Days must be a positive integer'}), 400
-
         future = model_requests.make_future_dataframe(periods=days)
         forecast = model_requests.predict(future)
         forecast_data = forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail(days)
@@ -139,76 +171,31 @@ def forecast_requests():
 def predict_duration():
     if not traffic_model or not weather_encoder or not vehicle_encoder:
         return jsonify({'error': 'Traffic prediction model or encoders not loaded'}), 500
-
     try:
         data = request.get_json()
         logger.info(f"Received data for duration prediction: {data}")
-
-        # Validate required fields
         required_fields = ['distance', 'osrmDuration', 'hour', 'weather', 'vehicleType']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
-
-        distance = float(data['distance'])  # in km
-        osrm_duration = float(data['osrmDuration'])  # in seconds
+        distance = float(data['distance'])
+        osrm_duration = float(data['osrmDuration'])
         hour = int(data['hour'])
-        weather = data['weather'].title()  # e.g., 'Clear', 'Clouds'
-        vehicle_type = data['vehicleType'].title()  # e.g., 'Car', 'Motorcycle'
-
-        # Validate input ranges
-        if distance <= 0:
-            return jsonify({'error': 'Distance must be positive'}), 400
-        if osrm_duration <= 0:
-            return jsonify({'error': 'OSRM duration must be positive'}), 400
-        if hour < 0 or hour > 23:
-            return jsonify({'error': 'Hour must be between 0 and 23'}), 400
-
-        # Validate weather category
-        known_weather_categories = weather_encoder.classes_
-        if weather not in known_weather_categories:
-            return jsonify({
-                'error': f'Invalid weather value: "{weather}". Expected one of: {", ".join(known_weather_categories)}'
-            }), 400
-
-        # Validate vehicle type
-        known_vehicle_types = vehicle_encoder.classes_
-        if vehicle_type not in known_vehicle_types:
-            return jsonify({
-                'error': f'Invalid vehicle type: "{vehicle_type}". Expected one of: {", ".join(known_vehicle_types)}'
-            }), 400
-
-        # Encode features
+        weather = data['weather'].title()
+        vehicle_type = data['vehicleType'].title()
+        if distance <= 0 or osrm_duration <= 0 or hour < 0 or hour > 23:
+            return jsonify({'error': 'Invalid input ranges'}), 400
+        if weather not in weather_encoder.classes_ or vehicle_type not in vehicle_encoder.classes_:
+            return jsonify({'error': 'Invalid weather or vehicle type'}), 400
         weather_encoded = weather_encoder.transform([weather])[0]
         vehicle_encoded = vehicle_encoder.transform([vehicle_type])[0]
-        logger.info(f"Encoded values: weather={weather_encoded}, vehicle_type={vehicle_encoded}")
-
-        # Normalize features
-        distance_meters = distance * 1000  # Convert km to meters
-        osrm_duration_minutes = osrm_duration / 60  # Convert seconds to minutes
-        hour_normalized = hour / 23.0  # Normalize hour to [0, 1]
-
-        # Prepare features for prediction
+        distance_meters = distance * 1000
+        osrm_duration_minutes = osrm_duration / 60
+        hour_normalized = hour / 23.0
         features = np.array([[distance_meters, osrm_duration_minutes, hour_normalized, weather_encoded, vehicle_encoded]])
-        logger.info(f"Normalized features for prediction: {features}")
-
-        # Make prediction using the traffic model
-        try:
-            predicted_duration = traffic_model.predict(features)[0]
-            logger.info(f"Model predicted duration (minutes): {predicted_duration}")
-            predicted_duration = predicted_duration * 60  # Convert minutes to seconds
-        except Exception as e:
-            logger.error(f"Model prediction failed: {e}")
-            return jsonify({'error': f'Failed to predict duration: {str(e)}'}), 500
-
-        # Ensure positive duration
-        predicted_duration = max(predicted_duration, 60)  # Minimum 1 minute
-        logger.info(f"Final predicted duration (seconds): {predicted_duration}")
-
+        predicted_duration = traffic_model.predict(features)[0] * 60
+        predicted_duration = max(predicted_duration, 60)
         return jsonify({'predictedDuration': float(predicted_duration)})
-    except ValueError as ve:
-        logger.error(f"Value error in duration prediction: {ve}")
-        return jsonify({'error': f'Invalid input format: {str(ve)}'}), 400
     except Exception as e:
         logger.error(f"Error in duration prediction: {e}")
         return jsonify({'error': f'Failed to predict duration: {str(e)}'}), 500
@@ -219,31 +206,79 @@ def compute_satisfaction():
     try:
         data = request.get_json()
         logger.info(f"Received data for satisfaction score: {data}")
-
-        # Validate required fields
         required_fields = ['rating', 'comment']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
-
         rating = data['rating']
         comment = data['comment']
-
-        # Validate rating
-        if not isinstance(rating, (int, float)) or rating < 1 or rating > 5:
-            return jsonify({'error': 'Rating must be a number between 1 and 5'}), 400
-
-        # Validate comment
-        if not isinstance(comment, str) or not comment.strip():
-            return jsonify({'error': 'Comment must be a non-empty string'}), 400
-
-        # Compute satisfaction score
+        if not isinstance(rating, (int, float)) or rating < 1 or rating > 5 or not isinstance(comment, str) or not comment.strip():
+            return jsonify({'error': 'Invalid rating or comment'}), 400
         satisfaction_score = compute_satisfaction_score(rating, comment)
-
         return jsonify({'satisfactionScore': satisfaction_score})
     except Exception as e:
         logger.error(f"Error in satisfaction score computation: {e}")
         return jsonify({'error': f'Failed to compute satisfaction score: {str(e)}'}), 500
 
+# Route for forecasting food demand
+@app.route('/forecast_food_demand', methods=['POST'])
+def forecast_food_demand():
+    if not food_quantity_model or not scaler or not feature_columns:
+        return jsonify({'error': 'Food demand model or artifacts not loaded'}), 500
+    try:
+        data = request.get_json()
+        logger.info(f"Received data for food demand forecasting: {data}")
+        required_fields = [
+            'Number of Guests', 'Type of Food', 'Event Type', 'Storage Conditions',
+            'Purchase History', 'Seasonality', 'Preparation Method', 'Geographical Location', 'Pricing'
+        ]
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
+        input_scaled = preprocess_input(data)
+        prediction = food_quantity_model.predict(input_scaled, verbose=0)[0][0]
+        prediction = max(0, prediction)
+        return jsonify({'predictedQuantity': float(prediction)})
+    except Exception as e:
+        logger.error(f"Error in food demand forecasting: {e}")
+        return jsonify({'error': f'Failed to forecast food demand: {str(e)}'}), 500
+
+# Route for predicting food waste
+@app.route('/predict_food_waste', methods=['POST'])
+def predict_food_waste():
+    if not food_waste_model or not scaler or not feature_columns:
+        return jsonify({'error': 'Food waste model or artifacts not loaded'}), 500
+    try:
+        data = request.get_json()
+        logger.info(f"Received data for food waste prediction: {data}")
+        required_fields = [
+            'Number of Guests', 'Quantity of Food', 'Type of Food', 'Event Type',
+            'Storage Conditions', 'Purchase History', 'Seasonality',
+            'Preparation Method', 'Geographical Location', 'Pricing'
+        ]
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
+        input_scaled = preprocess_input(data)
+        prediction = food_waste_model.predict(input_scaled, verbose=0)[0][0]
+        prediction = max(0, prediction)
+        return jsonify({'predictedWaste': float(prediction)})
+    except Exception as e:
+        logger.error(f"Error in food waste prediction: {e}")
+        return jsonify({'error': f'Failed to predict food waste: {str(e)}'}), 500
+
+# Route for waste factors
+@app.route('/waste-factors', methods=['GET'])
+def get_waste_factors():
+    if feature_importance is None:
+        return jsonify({'error': 'Feature importance data not loaded'}), 500
+    try:
+        # Convert DataFrame to dictionary with feature and importance
+        factors = feature_importance.set_index('feature')['importance'].to_dict()
+        return jsonify(factors)
+    except Exception as e:
+        logger.error(f"Error processing waste factors: {e}")
+        return jsonify({'error': f'Failed to load waste factors: {str(e)}'}), 500
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)

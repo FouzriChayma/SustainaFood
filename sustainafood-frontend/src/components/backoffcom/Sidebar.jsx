@@ -13,6 +13,7 @@ import {
   FaUniversity,
   FaHandsHelping,
   FaFileAlt,
+  FaTrash, FaUtensils
 } from "react-icons/fa"
 import logo from "../../assets/images/logooo.png"
 import "/src/assets/styles/backoffcss/sidebar.css"
@@ -167,6 +168,15 @@ const Sidebar = () => {
         </div>
 
         {/* Logistics & Transport link */}
+        <Link to="/admin/food-waste">
+  <FaTrash className="icon" /> <span>Food Waste</span>
+</Link>
+<Link to="/admin/waste-factors">
+  <FaChartBar className="icon" /> <span>Waste Factors</span>
+</Link>
+<Link to="/admin/FoodDemandDashboard">
+  <FaUtensils className="icon" /> <span>Food Demand</span>
+</Link>
         <Link to="/Delivery">
           <FaTruck className="icon" /> <span>Logistics & Transport</span>
         </Link>

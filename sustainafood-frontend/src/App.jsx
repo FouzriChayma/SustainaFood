@@ -70,6 +70,9 @@ import ContactSubmissionList from "./pages/backoffice/ContactSubmissionList.jsx"
 import SubmissionDetails from "./pages/backoffice/SubmissionDetails.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
 import MessagingPage from "./pages/MessagingPage.jsx";
+import WasteFactorsDashboard from "./pages/backoffice/WasteFactorsDashboard.jsx";
+import FoodWasteDashboard from "./pages/backoffice/FoodWasteDashboard.jsx";
+import FoodDemandDashboard from "./pages/backoffice/FoodDemandDashboard.jsx";
 const App = () => {
   return (
     <AlertProvider>
@@ -120,6 +123,9 @@ const App = () => {
           <Route path="/PersonnelList" element={<PersonnelList />} />
           <Route path="/Delivery" element={<Delivery />} />
           <Route path="/deliveries/view/:id" element={<DeliveryView />} />
+          <Route path="/admin/waste-factors" element={<WasteFactorsDashboard />} />
+          <Route path="/admin/food-waste" element={<FoodWasteDashboard />} />
+          <Route path="/admin/FoodDemandDashboard" element={<FoodDemandDashboard />} />
 
 
         </Route>

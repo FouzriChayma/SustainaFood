@@ -33,12 +33,12 @@ services:
       - /app/node_modules
 
   # Ancien service AI (celui que vous aviez déjà)
-  ai_service:
-    image: walaammar/sustainafood-ai-service:latest # ou localhost:8083/sustainafood-ai-service:latest
-    container_name: back_ai_original # Renommé pour clarté
-    restart: unless-stopped
-    ports:
-      - "5001:5000" # Hôte:Conteneur
+  # ai_service:
+  #   image: walaammar/sustainafood-ai-service:latest # ou localhost:8083/sustainafood-ai-service:latest
+  #   container_name: back_ai_original # Renommé pour clarté
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5001:5000" # Hôte:Conteneur
 
   # NOUVEAU SERVICE AI (depuis sustinia-ai)
   sustinia_ai_service: # Nom du service dans Docker Compose
@@ -66,7 +66,7 @@ services:
     restart: unless-stopped
     depends_on:
       - app
-      - ai_service # L'ancien
+      # - ai_service 
       - sustinia_ai_service # Le nouveau
 
 volumes:

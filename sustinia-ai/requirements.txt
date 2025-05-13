@@ -1,9 +1,9 @@
 Flask
 Flask-CORS
-tensorflow # ou tensorflow-cpu
+tensorflow 
 numpy
 Pillow
 prophet
 pandas
 joblib
-gunicorn # Pour la production
+gunicorn 

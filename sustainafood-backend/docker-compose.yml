@@ -8,41 +8,55 @@ services:
     environment:
       MONGO_INITDB_DATABASE: sustainafood
     ports:
-      - "27017:27017" # Only needed if you want to access from host
+      - "27017:27017"
     volumes:
       - mongo-data:/data/db
       - ./data/dump:/dump
 
-  app:
+  app: # Votre backend Node.js
     build: .
-    image: localhost:8083/nodeapp:6.0
+    image: localhost:8083/nodeapp:6.0 # Ou le nom de votre image backend
     container_name: back
     restart: unless-stopped
     ports:
       - "3000:3000"
     depends_on:
       - db
+      - ai_service # L'ancien service AI (si vous le gardez)
+      - sustinia_ai_service # Dépendance au nouveau service AI
     environment:
       - MONGODB_URI=mongodb://db:27017/sustainafood
+      # Ajoutez l'URL pour le nouveau service AI
+      - SUSTINIA_AI_SERVICE_URL=http://sustinia_ai_service:5000 # Communication interne Docker
     volumes:
       - .:/app
       - /app/node_modules
 
-  # Service IA (Python/Flask) - UTILISE L'IMAGE DU REGISTRE
+  # Ancien service AI (celui que vous aviez déjà)
   ai_service:
-    # Remplacez par le nom exact de l'image que votre pipeline Jenkins IA pousse
-    # Exemple pour Docker Hub:
-    image: walaammar/sustainafood-ai-service:latest
-    # Exemple pour Nexus:
-    # image: localhost:8083/sustainafood-ai-service:latest
-    container_name: back_ai
+    image: walaammar/sustainafood-ai-service:latest # ou localhost:8083/sustainafood-ai-service:latest
+    container_name: back_ai_original # Renommé pour clarté
     restart: unless-stopped
     ports:
-      - "5001:5000" # Map le port 5001 de l'hôte au port 5000 du conteneur IA (où Flask/Gunicorn écoute)
-    # PAS DE SECTION 'build:' ici car l'image est tirée du registre.
-    environment:
-      FLASK_ENV: production # Ou 'development' si nécessaire, mais 'production' est mieux pour Gunicorn
-      # Ajoutez d'autres variables d'environnement si votre app.py en a besoin
+      - "5001:5000" # Hôte:Conteneur
+
+  # NOUVEAU SERVICE AI (depuis sustinia-ai)
+  sustinia_ai_service: # Nom du service dans Docker Compose
+    # Utilisez l'image construite par votre pipeline pour sustinia-ai
+    # Exemple si poussé sur Docker Hub:
+    image: walaammar/sustaina-ai:latest
+    # Exemple si construit localement et non poussé :
+    # image: sustaina-ai:latest # S'assurer que le nom correspond à celui utilisé lors du build
+    # build: ../sustinia-ai # Alternative si vous voulez le construire ici, mais moins idéal pour la séparation
+    container_name: sustinia_ai_container # Nom du conteneur
+    restart: unless-stopped
+    ports:
+      # Mapper un port différent sur l'hôte pour éviter les conflits avec l'autre ai_service
+      # Le port interne du conteneur (après les deux-points) est 5000 (celui exposé par Gunicorn)
+      - "5002:5000" # Hôte:Conteneur
+    # Si votre app.py a besoin de variables d'environnement, ajoutez-les ici
+    # environment:
+    #   - FLASK_ENV=production
 
   front:
     image: walaammar/soustaina_front:10
@@ -52,8 +66,8 @@ services:
     restart: unless-stopped
     depends_on:
       - app
-      - ai_service
+      - ai_service # L'ancien
+      - sustinia_ai_service # Le nouveau
 
-  
 volumes:
   mongo-data:

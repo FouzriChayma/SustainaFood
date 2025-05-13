@@ -244,7 +244,9 @@ const Navbar = () => {
                   <div
                     key={conversation.chatId}
                     className="messenger-conversation-item"
-                    onClick={() => navigate(`/chat/${recipient._id}`)}
+                    //onClick={() => navigate(`/chat/${recipient._id}`)}
+                    onClick={() => navigate(`/messaging`)}
+
                   >
                     <img
                       src={recipientPhotoUrl || "/placeholder.svg"}

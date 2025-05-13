@@ -169,13 +169,13 @@ const Navbar = () => {
                 <span className="dropdown-toggle">Donations</span>
                 {dropdownOpen === "donations" && (
                   <div className="dropdown-content">
-                    <Link to="/list-of-donations">List of Donations</Link>
-                    <Link to="/list-of-requests">List of Requests</Link>
-                    {isRecipient && <Link to="/my-request">My Requests</Link>}
-                    {isDonner && <Link to="/my-donations">My Donations</Link>}
-                    {isDonner && <Link to="/add-donation">Add Donation</Link>}
-                    {isRecipient && <Link to="/add-donation">Add Request</Link>}
-                    {isDonner && <Link to="/donation-recommendations">Donation Recommendations</Link>}
+                    <Link to="/ListOfDonations">List of Donations</Link>
+                    <Link to="/ListOfRequests">List of Requests</Link>
+                    {isRecipient && <Link to="/myrequest">My Requests</Link>}
+                    {isDonner && <Link to="/mydonations">My Donations</Link>}
+                    {isDonner && <Link to="/addDonation">Add Donation</Link>}
+                    {isRecipient && <Link to="/addDonation">Add Request</Link>}
+                    {isDonner && <Link to="/DonationRecommendations">Donation Recommendations</Link>}
                     {isDonner && <Link to={`/donor/${user?._id || user?.id}/requests`}>My Donation Transactions</Link>}
                     {isRecipient && <Link to={`/recipient/${user?._id || user?.id}/transactions`}>My Requests Transactions</Link>}
                   </div>
@@ -193,7 +193,7 @@ const Navbar = () => {
                   {isTransporter && <Link to={`/transporter/${user?._id || user?.id}/dashboard`}>Transporter Dashboard</Link>}
                   {isTransporter && <Link to={`/deliveries/${user?._id || user?.id}`}>Assigned Deliveries</Link>}
                   {isTransporter && <Link to="#">Route Optimization</Link>}
-                  {!isTransporter && <Link to="/deliveries">Deliveries</Link>}
+                  {!isTransporter && <Link to="/Deliveries">Deliveries</Link>}
                 </div>
               )}
             </div>
@@ -208,8 +208,8 @@ const Navbar = () => {
                   <div className="dropdown-content">
                     {isRecipient && <Link to="/analytics">Request Statistics</Link>}
                     {isDonner && <Link to="/analytics">Donation Statistics</Link>}
-                    <Link to="/personal-status">Personal Stats</Link>
-                    <Link to="/prediction">Prediction</Link>
+                    <Link to="/PersonalStatus">Personal Stats</Link>
+                    <Link to="/Preduction">Prediction</Link>
                   </div>
                 )}
               </div>

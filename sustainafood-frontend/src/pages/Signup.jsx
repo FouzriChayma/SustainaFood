@@ -367,7 +367,6 @@ const Signup = () => {
                 >
                   <option value="male">Men</option>
                   <option value="female">Women</option>
-                  <option value="other">Other</option>
                 </select>
                 <input
                   className="signup-input"

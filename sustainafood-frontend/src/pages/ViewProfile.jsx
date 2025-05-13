@@ -33,11 +33,10 @@ const ViewProfile = () => {
 
   const isOwnProfile = authUser && (authUser._id === id || authUser.id === id);
 
-  
   useEffect(() => {
     document.title = `SustainaFood - ${isOwnProfile ? 'My Profile' : 'Profile'}`;
     return () => {
-      document.title = 'SustainaFood'; // Reset to default on unmount
+      document.title = 'SustainaFood';
     };
   }, [isOwnProfile]);
 
@@ -49,7 +48,6 @@ const ViewProfile = () => {
       }
 
       try {
-        // Fetch user data
         const userResponse = await getUserById(id);
         setUser(userResponse.data);
         setDescription(userResponse.data.description || "");
@@ -57,11 +55,9 @@ const ViewProfile = () => {
           setWelcomeMessage(userResponse.data.welcomeMessage);
         }
 
-        // Fetch feedback for the user
         const feedbackResponse = await getFeedbackByUserId(id);
         setFeedbacks(feedbackResponse);
 
-        // Fetch gamification data for the user
         try {
           const gamificationResponse = await getUserGamificationData(id);
           setGamificationData({
@@ -123,7 +119,7 @@ const ViewProfile = () => {
     }
 
     try {
-      const reviewerId = authUser._id || authUser.id; // Get reviewer ID from authUser
+      const reviewerId = authUser._id || authUser.id;
       const feedback = await createFeedback(
         id,
         newFeedback.rating,
@@ -131,8 +127,8 @@ const ViewProfile = () => {
         reviewerId,
         token
       );
-      setFeedbacks([feedback, ...feedbacks]); // Add new feedback to the top
-      setNewFeedback({ rating: 0, comment: '' }); // Reset form
+      setFeedbacks([feedback, ...feedbacks]);
+      setNewFeedback({ rating: 0, comment: '' });
       setFeedbackError('');
     } catch (error) {
       console.error('Error submitting feedback:', error);
@@ -290,16 +286,25 @@ const ViewProfile = () => {
         <header>
           <div className="pff-profile-header">
             <h1>{isOwnProfile ? "My Profile" : `${user.name}'s Profile`}</h1>
-            {isOwnProfile && (
-              <div className="pff-date-switcher">
+            <div className="pff-date-switcher">
+              {isOwnProfile ? (
                 <button className='pff-btnProfile'>
                   <Link to="/edit-profile">
                     <img style={{ marginRight: '8px', marginTop: '6px' }} width="18px" src={edit} alt="Edit Profile" />
                   </Link>
                   Edit
                 </button>
-              </div>
-            )}
+              ) : (
+                <button
+                  className='pff-btnProfile'
+                  onClick={() => navigate(`/chat/${id}`)}
+                  disabled={!authUser}
+                  aria-label={`Message ${user.name}`}
+                >
+                  Message
+                </button>
+              )}
+            </div>
           </div>
         </header>
 

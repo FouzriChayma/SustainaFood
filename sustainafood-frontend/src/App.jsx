@@ -68,6 +68,8 @@ import ViewProfile from "./pages/ViewProfile.jsx";
 import Deliveries from "./pages/Deliveries.jsx";
 import ContactSubmissionList from "./pages/backoffice/ContactSubmissionList.jsx";
 import SubmissionDetails from "./pages/backoffice/SubmissionDetails.jsx";
+import ChatPage from "./pages/ChatPage.jsx";
+import MessagingPage from "./pages/MessagingPage.jsx";
 const App = () => {
   return (
     <AlertProvider>
@@ -131,6 +133,8 @@ const App = () => {
           <Route path="/analytics" element={<AnalyticsDashboard />} />
           <Route path="/PersonalStatus" element={<PersonalStatus />} />
           <Route path="/ViewProfile/:id" element={<ViewProfile />} />
+          <Route path="/chat/:recipientId" element={<ChatPage />} />
+          <Route path="/messaging" element={<MessagingPage />} />
         </Route>
 
         {/* Routes privées pour ong, restaurant, supermarket, student */}

@@ -1,3 +1,4 @@
+
 /* Style général */
 .navbarfront {
   background: white;
@@ -380,4 +381,136 @@
   display: flex;
   align-items: center;
   gap: 15px;
+}
+.messenger-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.messenger-dropdown-toggle {
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f0f2f5;
+  transition: background-color 0.3s;
+}
+
+.messenger-dropdown-toggle:hover {
+  background-color: #e4e6eb;
+}
+
+.messenger-notification-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #fa3e3e;
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.messenger-notification-dropdown {
+  position: absolute;
+  right: 0;
+  top: 45px;
+  width: 320px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  overflow: hidden;
+  max-height: 500px;
+  display: flex;
+  flex-direction: column;
+}
+
+.messenger-messaging-search {
+  padding: 12px 16px;
+  border: none;
+  border-bottom: 1px solid #e4e6eb;
+  width: 100%;
+  font-size: 14px;
+  outline: none;
+}
+
+.messenger-messaging-conversations {
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+.messenger-conversation-item {
+  display: flex;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.messenger-conversation-item:hover {
+  background-color: #f0f2f5;
+}
+
+.messenger-conversation-photo {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 12px;
+}
+
+.messenger-conversation-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.messenger-conversation-info h3 {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #050505;
+}
+
+.messenger-conversation-info p {
+  margin: 0;
+  font-size: 13px;
+  color: #65676b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.messenger-conversation-time {
+  font-size: 12px;
+  color: #65676b;
+  position: absolute;
+  top: 12px;
+  right: 16px;
+}
+
+.messenger-unread-count {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  background-color: #0084ff;
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
 }

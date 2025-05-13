@@ -1,7 +1,6 @@
-// src/components/Navbar.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // Added useRef
 import { Link, useNavigate } from "react-router-dom";
-import { FaSignOutAlt, FaBell, FaSignInAlt, FaUserPlus } from "react-icons/fa";
+import { FaSignOutAlt, FaBell, FaSignInAlt, FaUserPlus, FaEnvelope } from "react-icons/fa";
 import logo from "../assets/images/logooo.png";
 import imgmouna from "../assets/images/imgmouna.png";
 import { useAuth } from "../contexts/AuthContext";
@@ -17,15 +16,19 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [filteredConversations, setFilteredConversations] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+
+  // Ref to track the messaging dropdown element
+  const messagingDropdownRef = useRef(null);
 
   const profilePhotoUrl = user?.photo ? `http://localhost:3000/${user.photo}` : imgmouna;
 
-  // Fetch user details
   useEffect(() => {
     const fetchUser = async () => {
       if (!authUser || (!authUser._id && !authUser.id)) return;
-
       const userId = authUser._id || authUser.id;
       try {
         const response = await getUserById(userId);
@@ -35,18 +38,14 @@ const Navbar = () => {
       }
     };
 
-    if (authUser) {
-      fetchUser();
-    }
+    if (authUser) fetchUser();
   }, [authUser]);
 
-  // Fetch notifications for the logged-in user
   useEffect(() => {
     const fetchNotifications = async () => {
       if (!authUser || !token) return;
       const userId = authUser._id || authUser.id;
       if (!userId) return;
-
       try {
         const response = await getNotificationsByReceiver(userId, token);
         setNotifications(response.notifications || []);
@@ -58,7 +57,53 @@ const Navbar = () => {
     fetchNotifications();
   }, [authUser, token]);
 
-  // Handle marking a notification as read
+  useEffect(() => {
+    const fetchConversations = async () => {
+      if (!authUser) return;
+      try {
+        const response = await fetch(`http://localhost:3000/messages/conversations`, {
+          headers: { "X-User-Id": authUser?._id || authUser?.id },
+        });
+        if (!response.ok) throw new Error("Error fetching conversations");
+        const data = await response.json();
+        setConversations(data);
+        setFilteredConversations(data);
+      } catch (err) {
+        console.error("Error fetching conversations:", err);
+      }
+    };
+
+    fetchConversations();
+  }, [authUser]);
+
+  // Handle clicks outside the messaging dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownOpen === "messaging" &&
+        messagingDropdownRef.current &&
+        !messagingDropdownRef.current.contains(event.target)
+      ) {
+        setDropdownOpen(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownOpen]);
+
+  const handleSearch = (e) => {
+    const query = e.target.value.toLowerCase();
+    setSearchQuery(query);
+    const filtered = conversations.filter((conv) => {
+      const recipient = conv.participants.find((p) => p._id !== (authUser?._id || authUser?.id));
+      return recipient?.name.toLowerCase().includes(query);
+    });
+    setFilteredConversations(filtered);
+  };
+
   const handleMarkAsRead = async (notificationId) => {
     try {
       await markNotificationAsRead(notificationId, token);
@@ -83,6 +128,9 @@ const Navbar = () => {
   const isAdmin = user?.role === "admin";
   const isTransporter = user?.role === "transporter";
 
+  // Calculate total unread messages
+  const totalUnreadMessages = conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
+
   return (
     <nav className="navbarfront">
       <div className="logo-container">
@@ -90,7 +138,6 @@ const Navbar = () => {
         <h1 className="title">SustainaFood</h1>
       </div>
 
-      {/* Menu Burger */}
       <div
         className={`menu-toggle ${mobileMenuOpen ? "open" : ""}`}
         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -100,15 +147,14 @@ const Navbar = () => {
         <span className="bar"></span>
       </div>
 
-      {/* Navigation Links */}
       <ul className={`nav-links ${mobileMenuOpen ? "open" : ""}`}>
         <Link to="/" className="nav-link">
           Home
         </Link>
-        <Link to="/About" className="nav-link">
+        <Link to="/about" className="nav-link">
           About
         </Link>
-        <Link to="/Contact" className="nav-link">
+        <Link to="/contact" className="nav-link">
           Contact
         </Link>
 
@@ -123,13 +169,13 @@ const Navbar = () => {
                 <span className="dropdown-toggle">Donations</span>
                 {dropdownOpen === "donations" && (
                   <div className="dropdown-content">
-                    <Link to="/ListOfDonations">List of Donations</Link>
-                    <Link to="/ListOfRequests">List of Requests</Link>
-                    {isRecipient && <Link to="/myrequest">My Requests</Link>}
-                    {isDonner && <Link to="/mydonations">My Donations</Link>}
-                    {isDonner && <Link to="/addDonation">Add Donation</Link>}
-                    {isRecipient && <Link to="/addDonation">Add Request</Link>}
-                    {isDonner && <Link to="/DonationRecommendations">Donation Recommendations</Link>}
+                    <Link to="/list-of-donations">List of Donations</Link>
+                    <Link to="/list-of-requests">List of Requests</Link>
+                    {isRecipient && <Link to="/my-request">My Requests</Link>}
+                    {isDonner && <Link to="/my-donations">My Donations</Link>}
+                    {isDonner && <Link to="/add-donation">Add Donation</Link>}
+                    {isRecipient && <Link to="/add-donation">Add Request</Link>}
+                    {isDonner && <Link to="/donation-recommendations">Donation Recommendations</Link>}
                     {isDonner && <Link to={`/donor/${user?._id || user?.id}/requests`}>My Donation Transactions</Link>}
                     {isRecipient && <Link to={`/recipient/${user?._id || user?.id}/transactions`}>My Requests Transactions</Link>}
                   </div>
@@ -144,14 +190,10 @@ const Navbar = () => {
               <span className="dropdown-toggle">Transporter</span>
               {dropdownOpen === "transporter" && (
                 <div className="dropdown-content">
-                  {isTransporter && (
-                    <Link to={`/transporter/${user?._id || user?.id}/dashboard`}>
-                      Transporter Dashboard
-                    </Link>
-                  )}
+                  {isTransporter && <Link to={`/transporter/${user?._id || user?.id}/dashboard`}>Transporter Dashboard</Link>}
                   {isTransporter && <Link to={`/deliveries/${user?._id || user?.id}`}>Assigned Deliveries</Link>}
                   {isTransporter && <Link to="#">Route Optimization</Link>}
-                  {!isTransporter && <Link to="/Deliveries">Deliveries</Link>}
+                  {!isTransporter && <Link to="/deliveries">Deliveries</Link>}
                 </div>
               )}
             </div>
@@ -166,15 +208,74 @@ const Navbar = () => {
                   <div className="dropdown-content">
                     {isRecipient && <Link to="/analytics">Request Statistics</Link>}
                     {isDonner && <Link to="/analytics">Donation Statistics</Link>}
-                    <Link to="/PersonalStatus">Personal Stats</Link>
-                    <Link to="/Preduction">Preduction</Link>
+                    <Link to="/personal-status">Personal Stats</Link>
+                    <Link to="/prediction">Prediction</Link>
                   </div>
                 )}
               </div>
             )}
-           
-
-            {/* Notification Bell with Dropdown */}
+            <div className="messenger-dropdown">
+      <span
+        className="messenger-dropdown-toggle"
+        onClick={() => setDropdownOpen(dropdownOpen === "messaging" ? null : "messaging")}
+      >
+        <FaEnvelope />
+        {totalUnreadMessages > 0 && <span className="messenger-notification-count">{totalUnreadMessages}</span>}
+      </span>
+      {dropdownOpen === "messaging" && (
+        <div
+          className="messenger-notification-dropdown"
+          ref={messagingDropdownRef}
+          onClick={(e) => e.stopPropagation()} // Prevent click events inside the dropdown from bubbling up
+        >
+          <input
+            type="text"
+            placeholder="Search by name..."
+            value={searchQuery}
+            onChange={handleSearch}
+            className="messenger-messaging-search"
+          />
+          <div className="messenger-messaging-conversations">
+            {filteredConversations.length > 0 ? (
+              filteredConversations.map((conversation) => {
+                const recipient = conversation.participants.find((p) => p._id !== (authUser?._id || authUser?.id))
+                const recipientPhotoUrl = recipient?.photo ? `http://localhost:3000/${recipient.photo}` : imgmouna
+                return (
+                  <div
+                    key={conversation.chatId}
+                    className="messenger-conversation-item"
+                    onClick={() => navigate(`/chat/${recipient._id}`)}
+                  >
+                    <img
+                      src={recipientPhotoUrl || "/placeholder.svg"}
+                      alt={`Profile photo of ${recipient.name}`}
+                      className="messenger-conversation-photo"
+                    />
+                    <div className="messenger-conversation-info">
+                      <h3>{recipient.name}</h3>
+                      <p>{conversation.lastMessage?.content || "No messages yet."}</p>
+                      <span className="messenger-conversation-time">
+                        {conversation.lastMessage
+                          ? new Date(conversation.lastMessage.timestamp).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : ""}
+                      </span>
+                      {conversation.unreadCount > 0 && (
+                        <span className="messenger-unread-count">{conversation.unreadCount}</span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })
+            ) : (
+              <p>No conversations found.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
             <div className="social-icons">
               <div
                 className="notification-bell"
@@ -191,26 +292,21 @@ const Navbar = () => {
                 <div className="notification-dropdown">
                   {notifications.length > 0 ? (
                     notifications.map((notification) => {
-                      // Safely handle sender photo
                       const senderPhotoUrl = notification.sender?.photo
                         ? `http://localhost:3000/${notification.sender.photo}`
                         : imgmouna;
-
                       return (
                         <div
                           key={notification._id}
                           className={`notification-item ${notification.isRead ? "read" : "unread"}`}
                           onClick={() => handleMarkAsRead(notification._id)}
                         >
-                          {/* Avatar à gauche */}
                           <img
                             src={senderPhotoUrl}
                             alt="Sender"
                             className="notification-avatar"
-                            onError={(e) => (e.target.src = imgmouna)} // Fallback on error
+                            onError={(e) => (e.target.src = imgmouna)}
                           />
-
-                          {/* Contenu à droite */}
                           <div className="notification-content">
                             <p>
                               <strong>{notification.sender?.name || "Unknown User"}</strong>{" "}
@@ -218,8 +314,6 @@ const Navbar = () => {
                             </p>
                             <small>{new Date(notification.createdAt).toLocaleString()}</small>
                           </div>
-
-                          {/* Indicateur de non-lu */}
                           {!notification.isRead && <div className="notification-status"></div>}
                         </div>
                       );
@@ -232,22 +326,12 @@ const Navbar = () => {
                 </div>
               )}
             </div>
-
-            {/* Render Profile Menu Only for Non-Admin Users */}
             {!isAdmin && (
               <div className="profile-menu" onClick={() => setMenuOpen(!menuOpen)}>
-                <img
-                  src={profilePhotoUrl || "/placeholder.svg"}
-                  alt="Profile"
-                  className="profile-img"
-                />
+                <img src={profilePhotoUrl || "/placeholder.svg"} alt="Profile" className="profile-img" />
                 <div className={`dropdown-menu ${menuOpen ? "active" : ""}`}>
                   <div className="profile-info">
-                    <img
-                      src={profilePhotoUrl || "/placeholder.svg"}
-                      alt="Profile"
-                      className="dropdown-img"
-                    />
+                    <img src={profilePhotoUrl || "/placeholder.svg"} alt="Profile" className="dropdown-img" />
                     <div>
                       <p className="user-name">{user?.name || "Loading..."}</p>
                       <p className="user-email">{user?.email || "Loading..."}</p>
@@ -255,23 +339,17 @@ const Navbar = () => {
                   </div>
                   <hr />
                   <button onClick={() => navigate("/profile")} className="menu-item">
-                    Profile and visibility
+                    Profile and Visibility
                   </button>
-                  <button
-                    className="menu-item"
-                    onClick={() => navigate("/account-settings")}
-                  >
+                  <button onClick={() => navigate("/account-settings")} className="menu-item">
                     Account Settings
                   </button>
-                  <button
-                    className="menu-item"
-                    onClick={() => navigate("/edit-profile")}
-                  >
+                  <button onClick={() => navigate("/edit-profile")} className="menu-item">
                     Edit Profile
                   </button>
                   <hr />
                   <button onClick={handleLogout} className="menu-item logout">
-                    <FaSignOutAlt /> LogOut
+                    <FaSignOutAlt /> Logout
                   </button>
                 </div>
               </div>

@@ -243,8 +243,8 @@ const PredictionForDonor = () => {
     const fetchForecasts = async () => {
       try {
         setLoading(true);
-        const donationResponse = await axios.get('http://localhost:3000/api/api/forecast/donations?days=7');
-        const requestResponse = await axios.get('http://localhost:3000/api/api/forecast/requests?days=7');
+        const donationResponse = await axios.get('${import.meta.env.VITE_API_URL}/forecast/donations?days=7');
+        const requestResponse = await axios.get('${import.meta.env.VITE_API_URL}/forecast/requests?days=7');
         setDonationForecast(donationResponse.data);
         setRequestForecast(requestResponse.data);
         setError(null);

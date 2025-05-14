@@ -27,7 +27,7 @@ services:
     environment:
       - MONGODB_URI=mongodb://db:27017/sustainafood
       # Ajoutez l'URL pour le nouveau service AI
-      - SUSTINIA_AI_SERVICE_URL=http://sustinia_ai_service:5002 # Communication interne Docker
+      - SUSTINIA_AI_SERVICE_URL=http://sustinia_ai_service:5000 # Communication interne Docker
     volumes:
       - .:/app
       - /app/node_modules

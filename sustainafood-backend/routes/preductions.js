@@ -2,12 +2,11 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
-const FORECAST_API_URL = 'http://localhost:5000'; // Flask API URL
-
-router.get('/api/forecast/donations', async (req, res) => {
+const SUSTINIA_AI_URL = process.env.SUSTINIA_AI_SERVICE_URL || 'http://localhost:5002';
+router.get('/forecast/donations', async (req, res) => {
   try {
     const days = req.query.days || 30;
-    const response = await axios.get(`${FORECAST_API_URL}/forecast/donations?days=${days}`);
+    const response = await axios.get(`${SUSTINIA_AI_URL}/forecast/donations?days=${days}`);
     res.json(response.data);
   } catch (error) {
     console.error('Error fetching donation forecast:', error.message);
@@ -15,10 +14,10 @@ router.get('/api/forecast/donations', async (req, res) => {
   }
 });
 
-router.get('/api/forecast/requests', async (req, res) => {
+router.get('/forecast/requests', async (req, res) => {
   try {
     const days = req.query.days || 30;
-    const response = await axios.get(`${FORECAST_API_URL}/forecast/requests?days=${days}`);
+    const response = await axios.get(`${SUSTINIA_AI_URL}/forecast/requests?days=${days}`);
     res.json(response.data);
   } catch (error) {
     console.error('Error fetching request forecast:', error.message);

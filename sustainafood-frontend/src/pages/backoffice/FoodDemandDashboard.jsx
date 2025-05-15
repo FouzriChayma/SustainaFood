@@ -13,55 +13,78 @@ import logo from '../../assets/images/logooo.png';
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const FoodDemandDashboard = () => {
+  const [formData, setFormData] = useState({
+    numberOfGuests: '',
+    quantityOfFood: '',
+    typeOfFood: 'Meat',
+    eventType: 'Corporate',
+    storageConditions: 'Refrigerated',
+    purchaseHistory: 'Regular',
+    seasonality: 'All Seasons',
+    preparationMethod: 'Buffet',
+    geographicalLocation: 'Urban',
+    pricing: 'Moderate',
+  });
   const [predictions, setPredictions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const chartRef = useRef(null);
 
   useEffect(() => {
-    document.title = "SustainaFood - Food Demand Dashboard";
+    document.title = "SustainaFood - Prediction Dashboard";
     return () => { document.title = "SustainaFood"; };
   }, []);
 
-  useEffect(() => {
-    const fetchPredictions = async () => {
-      try {
-        const events = [
-          { eventId: 1, eventType: "Corporate", numberOfGuests: 300, typeOfFood: "Meat", storageConditions: "Refrigerated" },
-          { eventId: 2, eventType: "Wedding", numberOfGuests: 150, typeOfFood: "Vegetables", storageConditions: "Room Temperature" },
-        ];
-        const predictions = await Promise.all(
-          events.map(async (event) => {
-            const response = await axios.post('http://localhost:5001/forecast_food_demand', {
-              'Number of Guests': event.numberOfGuests,
-              'Type of Food': event.typeOfFood,
-              'Event Type': event.eventType,
-              'Storage Conditions': event.storageConditions,
-              'Purchase History': 'Regular',
-              'Seasonality': 'All Seasons',
-              'Preparation Method': 'Buffet',
-              'Geographical Location': 'Urban',
-              'Pricing': 'Moderate'
-            });
-            return { ...event, predictedQuantity: response.data.predictedQuantity };
-          })
-        );
-        setPredictions(predictions);
-        setLoading(false);
-      } catch (err) {
-        console.error('Prediction Fetch Error:', err);
-        setError('Failed to load predictions: ' + (err.response?.data?.message || err.message));
-        setLoading(false);
-      }
-    };
-    fetchPredictions();
-  }, []);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const payload = {
+        'Number of Guests': parseInt(formData.numberOfGuests),
+        'Quantity of Food': parseFloat(formData.quantityOfFood) || 100,
+        'Type of Food': formData.typeOfFood,
+        'Event Type': formData.eventType,
+        'Storage Conditions': formData.storageConditions,
+        'Purchase History': formData.purchaseHistory,
+        'Seasonality': formData.seasonality,
+        'Preparation Method': formData.preparationMethod,
+        'Geographical Location': formData.geographicalLocation,
+        'Pricing': formData.pricing,
+      };
+
+      const [wasteResponse, demandResponse] = await Promise.all([
+        axios.post('http://localhost:5001/predict_food_waste', payload),
+        axios.post('http://localhost:5001/forecast_food_demand', payload),
+      ]);
+
+      setPredictions([{
+        eventId: 1,
+        eventType: formData.eventType,
+        numberOfGuests: formData.numberOfGuests,
+        typeOfFood: formData.typeOfFood,
+        storageConditions: formData.storageConditions,
+        predictedWaste: wasteResponse.data.predictedWaste,
+        predictedQuantity: demandResponse.data.predictedQuantity,
+      }]);
+      setLoading(false);
+    } catch (err) {
+      console.error('Prediction Error:', err);
+      setError('Failed to load predictions: ' + (err.response?.data?.error || err.message));
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="admin-dashboard">
+      <div className="prdd-admin-dashboard">
         <Sidebar />
-        <div className="profile-container">
+        <div className="prdd-profile-container">
           <Navbar />
           <div>Loading predictions...</div>
         </div>
@@ -71,9 +94,9 @@ const FoodDemandDashboard = () => {
 
   if (error) {
     return (
-      <div className="admin-dashboard">
+      <div className="prdd-admin-dashboard">
         <Sidebar />
-        <div className="profile-container">
+        <div className="prdd-profile-container">
           <Navbar />
           <div>{error}</div>
         </div>
@@ -81,7 +104,18 @@ const FoodDemandDashboard = () => {
     );
   }
 
-  const chartData = {
+  const wasteChartData = {
+    labels: predictions.map(p => `Event ${p.eventId}`),
+    datasets: [{
+      label: 'Predicted Waste (kg)',
+      data: predictions.map(p => p.predictedWaste),
+      backgroundColor: 'rgba(75, 192, 192, 0.2)',
+      borderColor: 'rgba(75, 192, 192, 1)',
+      borderWidth: 1,
+    }],
+  };
+
+  const demandChartData = {
     labels: predictions.map(p => `Event ${p.eventId}`),
     datasets: [{
       label: 'Predicted Quantity (kg)',
@@ -94,12 +128,13 @@ const FoodDemandDashboard = () => {
 
   const options = {
     responsive: true,
-    plugins: { legend: { position: 'top' }, title: { display: true, text: 'Food Demand Predictions' } },
+    plugins: { legend: { position: 'top' } },
+    scales: { y: { beginAtZero: true } },
   };
 
   const generateReport = () => {
     let report = '<div class="report-container" style="font-family: Poppins, sans-serif; color: #333;">';
-    report += '<h1 style="font-size: 26px; text-align: center; font-weight: bold;">Food Demand Prediction Report</h1>';
+    report += '<h1 style="font-size: 26px; text-align: center; font-weight: bold;">Food Prediction Report</h1>';
     predictions.forEach(p => {
       report += `<div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">`;
       report += `<h4 style="font-size: 20px; color: #444;">Event ${p.eventId}</h4>`;
@@ -107,8 +142,9 @@ const FoodDemandDashboard = () => {
       report += `<p style="font-size: 14px;">Number of Guests: ${p.numberOfGuests}</p>`;
       report += `<p style="font-size: 14px;">Type of Food: ${p.typeOfFood}</p>`;
       report += `<p style="font-size: 14px;">Storage Conditions: ${p.storageConditions}</p>`;
-      report += `<p style="font-size: 14px; font-weight: bold;">Predicted Quantity: ${p.predictedQuantity.toFixed(2)} kg</p>`;
-      report += `<p style="font-size: 14px;">Action: Adjust supply based on demand.</p>`;
+      report += `<p style="font-size: 14px; font-weight: bold;">Predicted Waste: ${p.predictedWaste?.toFixed(2)} kg</p>`;
+      report += `<p style="font-size: 14px; font-weight: bold;">Predicted Demand: ${p.predictedQuantity?.toFixed(2)} kg</p>`;
+      report += `<p style="font-size: 14px;">Action: Adjust supply and plan redistribution if waste > 20 kg.</p>`;
       report += `</div>`;
     });
     report += `</div>`;
@@ -127,7 +163,7 @@ const FoodDemandDashboard = () => {
       doc.setFontSize(28);
       doc.setTextColor(50, 62, 72);
       doc.setFont("helvetica", "bold");
-      doc.text("Food Demand Report", doc.internal.pageSize.width / 2, 20, { align: "center" });
+      doc.text("Food Prediction Report", doc.internal.pageSize.width / 2, 20, { align: "center" });
       const today = new Date();
       doc.setFontSize(10);
       doc.setTextColor(80, 80, 80);
@@ -146,26 +182,36 @@ const FoodDemandDashboard = () => {
     };
 
     addHeader();
-    const chartCanvas = chartRef.current.querySelector('canvas');
-    html2canvas(chartCanvas, { scale: 2 }).then(chartCanvas => {
-      const chartImgData = chartCanvas.toDataURL('image/png');
-      const imgWidth = 190;
-      const chartImgHeight = (chartCanvas.height * imgWidth) / chartCanvas.width;
-      doc.addImage(chartImgData, 'PNG', 10, 50, imgWidth, chartImgHeight);
-      doc.setFontSize(16);
-      doc.setTextColor(50, 62, 72);
-      doc.text("Prediction Details", 10, 70 + chartImgHeight);
+    const chartCanvas = chartRef.current.querySelectorAll('canvas');
+    let position = 50;
+    const addChart = (canvas, title, yOffset) => {
+      return html2canvas(canvas, { scale: 2 }).then(canvas => {
+        const chartImgData = canvas.toDataURL('image/png');
+        const imgWidth = 190;
+        const chartImgHeight = (canvas.height * imgWidth) / canvas.width;
+        doc.addImage(chartImgData, 'PNG', 10, yOffset, imgWidth, chartImgHeight);
+        doc.setFontSize(16);
+        doc.setTextColor(50, 62, 72);
+        doc.text(title, 10, yOffset + chartImgHeight + 10);
+        return yOffset + chartImgHeight + 20;
+      });
+    };
+
+    Promise.all([
+      addChart(chartCanvas[0], "Waste Prediction", 50),
+      addChart(chartCanvas[1], "Demand Prediction", 50 + 100),
+    ]).then(([wasteHeight, demandHeight]) => {
+      let position = demandHeight;
       doc.setFontSize(12);
       doc.setTextColor(80, 80, 80);
-      let position = 80 + chartImgHeight;
       predictions.forEach(p => {
         if (position > 250) { doc.addPage(); addHeader(); position = 50; }
-        doc.text(`Event ${p.eventId} - Predicted Quantity: ${p.predictedQuantity.toFixed(2)} kg`, 10, position);
+        doc.text(`Event ${p.eventId} - Waste: ${p.predictedWaste?.toFixed(2)} kg, Demand: ${p.predictedQuantity?.toFixed(2)} kg`, 10, position);
         position += 10;
       });
       const pageCount = doc.internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) { doc.setPage(i); addFooter(i, pageCount); }
-      doc.save(`Food_Demand_Report_${today.toISOString().split("T")[0]}.pdf`);
+      doc.save(`Food_Prediction_Report_${new Date().toISOString().split("T")[0]}.pdf`);
     });
   };
 
@@ -175,11 +221,111 @@ const FoodDemandDashboard = () => {
       <div className="prdd-profile-container">
         <Navbar />
         <div className="prdd-chart-container">
-          <h1 style={{ marginTop: '0px', color: '#28a745' }}>Food Demand Predictions</h1>
-          <button className="prdd-download-button" onClick={downloadPDF}><FaFilePdf /> Export to PDF</button>
-          <div ref={chartRef}><Bar data={chartData} options={options} /></div>
+          <h1 style={{ marginTop: '0px', color: '#28a745' }}>Food Waste and Demand Predictions</h1>
+          <form onSubmit={handleSubmit} style={{ marginBottom: '20px', display: 'grid', gap: '10px', maxWidth: '500px' }}>
+            <div>
+              <label>Number of Guests:</label>
+              <input
+                type="number"
+                name="numberOfGuests"
+                value={formData.numberOfGuests}
+                onChange={handleInputChange}
+                required
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            <div>
+              <label>Quantity of Food (kg):</label>
+              <input
+                type="number"
+                name="quantityOfFood"
+                value={formData.quantityOfFood}
+                onChange={handleInputChange}
+                step="0.1"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            <div>
+              <label>Type of Food:</label>
+              <select name="typeOfFood" value={formData.typeOfFood} onChange={handleInputChange} style={{ width: '100%', padding: '8px' }}>
+                <option value="Meat">Meat</option>
+                <option value="Vegetables">Vegetables</option>
+                <option value="Dairy">Dairy</option>
+                <option value="Grains">Grains</option>
+              </select>
+            </div>
+            <div>
+              <label>Event Type:</label>
+              <select name="eventType" value={formData.eventType} onChange={handleInputChange} style={{ width: '100%', padding: '8px' }}>
+                <option value="Corporate">Corporate</option>
+                <option value="Wedding">Wedding</option>
+                <option value="Party">Party</option>
+                <option value="Charity">Charity</option>
+              </select>
+            </div>
+            <div>
+              <label>Storage Conditions:</label>
+              <select name="storageConditions" value={formData.storageConditions} onChange={handleInputChange} style={{ width: '100%', padding: '8px' }}>
+                <option value="Refrigerated">Refrigerated</option>
+                <option value="Room Temperature">Room Temperature</option>
+                <option value="Frozen">Frozen</option>
+              </select>
+            </div>
+            <div>
+              <label>Purchase History:</label>
+              <select name="purchaseHistory" value={formData.purchaseHistory} onChange={handleInputChange} style={{ width: '100%', padding: '8px' }}>
+                <option value="Regular">Regular</option>
+                <option value="Occasional">Occasional</option>
+                <option value="First Time">First Time</option>
+              </select>
+            </div>
+            <div>
+              <label>Seasonality:</label>
+              <select name="seasonality" value={formData.seasonality} onChange={handleInputChange} style={{ width: '100%', padding: '8px' }}>
+                <option value="All Seasons">All Seasons</option>
+                <option value="Summer">Summer</option>
+                <option value="Winter">Winter</option>
+              </select>
+            </div>
+            <div>
+              <label>Preparation Method:</label>
+              <select name="preparationMethod" value={formData.preparationMethod} onChange={handleInputChange} style={{ width: '100%', padding: '8px' }}>
+                <option value="Buffet">Buffet</option>
+                <option value="Plated">Plated</option>
+                <option value="Family Style">Family Style</option>
+              </select>
+            </div>
+            <div>
+              <label>Geographical Location:</label>
+              <select name="geographicalLocation" value={formData.geographicalLocation} onChange={handleInputChange} style={{ width: '100%', padding: '8px' }}>
+                <option value="Urban">Urban</option>
+                <option value="Suburban">Suburban</option>
+                <option value="Rural">Rural</option>
+              </select>
+            </div>
+            <div>
+              <label>Pricing:</label>
+              <select name="pricing" value={formData.pricing} onChange={handleInputChange} style={{ width: '100%', padding: '8px' }}>
+                <option value="Moderate">Moderate</option>
+                <option value="Premium">Premium</option>
+                <option value="Budget">Budget</option>
+              </select>
+            </div>
+            <button type="submit" style={{ padding: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px' }}>
+              Generate Predictions
+            </button>
+          </form>
+          {predictions.length > 0 && (
+            <>
+              <button className="prdd-download-button" onClick={downloadPDF}><FaFilePdf /> Export to PDF</button>
+              <div ref={chartRef}>
+                <Bar data={wasteChartData} options={{ ...options, plugins: { ...options.plugins, title: { display: true, text: 'Food Waste Predictions' } } }} />
+                <Bar data={demandChartData} options={{ ...options, plugins: { ...options.plugins, title: { display: true, text: 'Food Demand Predictions' } } }} />
+              </div>
+              <div className="prdd-week-section" dangerouslySetInnerHTML={{ __html: generateReport() }} />
+            </>
+          )}
         </div>
-        <div className="prdd-week-section" dangerouslySetInnerHTML={{ __html: generateReport() }} />
       </div>
     </div>
   );
